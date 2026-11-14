@@ -28,7 +28,8 @@ Client frames SHALL be exactly:
 Server frames SHALL be exactly:
 - `Welcome { t, protocolVersion, playerId, revision, view }`;
 - `Ack { t, commandId, outcome, revision, error? }` with `outcome` one of
-  `accepted`, `rejected`, and `error { code, message }`;
+  `accepted`, `rejected`; `error { code, message }` SHALL be present exactly
+  when `outcome` is `rejected`;
 - `Update { t, revision, view, events }`;
 - `Error { t, code, message }`.
 

@@ -82,6 +82,24 @@ server to add to Ajv. `isValidNickname(s)`: no leading/trailing whitespace
 `\p{Cc}`, `\p{Cf}`, `\p{Cs}`, `\p{Co}`, `\p{Cn}`, `\p{Zl}`, `\p{Zp}`.
 `normalizeNickname(s)` trims and returns the value or `null`, for the client.
 
+### D9. Team Lead confirmations (Apply)
+
+- Ack is a two-member union: `accepted` has no `error`, `rejected` requires
+  one. Same fields as the handoff; the pairing removes an impossible state.
+- Lobby: `RoomSummary { roomId, creatorId, status, members }`; create, join
+  and start return `{ room }`, list returns `{ rooms }`; `roomId` is the
+  `gameId` of `Hello`. No leave-room operation (open owner question).
+- Lobby auth: `AuthHeadersSchema` requires `authorization: Bearer <token>`
+  and is open, because real requests carry other headers. Error body is
+  `ErrorBodySchema { code, message }`; `LOBBY_ERROR_CODES` adds
+  `NOT_ROOM_CREATOR`, `INVALID_REQUEST`; the static `ErrorCode` type covers
+  protocol and lobby codes plus any engine string.
+- Token: 1-512 visible ASCII characters in both `Hello` and the header.
+- `decodeClientFrame`/`decodeServerFrame` take `unknown` (a superset of the
+  handoff's `string`) so a binary WebSocket message is rejected, not cast.
+- Decoders dispatch on `t` through a `Map` (no prototype lookup) to the
+  compiled schema of that frame, so error messages name the failing field.
+
 ## Risks / Trade-offs
 
 - Shallow `view` check trusts the server's projection shape. Accepted:
