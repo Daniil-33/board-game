@@ -19,7 +19,8 @@ doubles); the client implements none of those rules.
 
 - `apps/client` becomes a Vite + Vue 3 + PixiJS application
   (`@game/client`), depending on `@game/protocol` and on `@game/game-core`
-  for types and the pure constant `PLACEHOLDER_RING` only.
+  for types and pure constants only (`PLACEHOLDER_RING` and the two target
+  kinds).
 - Login screen: nickname -> guest login; `{ guestId, token, nickname }` kept
   in `localStorage`.
 - Lobby screen: list joinable rooms, create, join; room view with members and
@@ -54,10 +55,12 @@ doubles); the client implements none of those rules.
 - `apps/client/**` (new sources, `index.html`, Vite and vitest config,
   mock server, tests).
 - `pnpm-lock.yaml`: `vue`, `pixi.js`, `vite`, `@vitejs/plugin-vue`,
-  `vue-tsc`, `@vue/test-utils`, `happy-dom`, `ws` (mock only).
-- One line in the root `package.json` if the Team Lead accepts design
-  decision D10 (typecheck of `.vue` files); otherwise nothing outside
-  `apps/client/**` and the lockfile.
+  `vue-tsc`, `@vue/test-utils`, `happy-dom`, `vite-node` and `ws` (mock only),
+  `@sinclair/typebox` (lobby response checks).
+- One line in the root `package.json`: `build` becomes
+  `pnpm -r run typecheck` so `.vue` files are typechecked (design D10,
+  approved by the Team Lead). Nothing else outside `apps/client/**` and the
+  lockfile.
 - No change to `packages/game-core`, `packages/protocol`, `apps/server`.
 
 ## Out of Scope
