@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-stage-1-skeleton
-revision: 1
+revision: 2
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-14T15:00:00Z
@@ -41,7 +41,8 @@ Agreed with the owner. Source: ROADMAP.md stage 1, owner decisions of
    before movement, resets the streak and ends the turn.
 5. Interim jail rule (no money, marked temporary in code and protocol, replaced
    in stage 6): on each of up to three own turns the prisoner tries to roll a
-   double; a double releases and the player moves by that sum; after the third
+   double; a double releases and the player moves by that sum, and this double
+   grants no bonus turn (owner decision 2026-11-14); after the third
    failed roll the player leaves and moves by that roll's sum.
 6. Movement by the 2d6 sum around a ring of 40 cells. The layout is a
    placeholder for stage 2 and must be clearly marked as such.
@@ -103,9 +104,6 @@ interfaces, test strategy, task order, snapshot frequency.
 
 Reserved to the owner (escalate via CTO):
 
-- Whether a double that releases a prisoner under the interim jail rule also
-  grants a bonus turn. Open; blocks only that rule's final test. Ask before
-  implementing it; do not guess.
 - Any product rule not listed above.
 
 ## Dependencies, risks, and limits
@@ -135,6 +133,12 @@ escalations.
   player auto-rolled and turn closed by deadline; third double sends to jail.
 - Replay test for the new core rules.
 - ROADMAP.md "Сделано" updated.
+
+## Revision history
+
+- 1: initial handoff.
+- 2: owner resolved the interim jail bonus question (no bonus turn); no other
+  change.
 
 ## Acceptance
 
