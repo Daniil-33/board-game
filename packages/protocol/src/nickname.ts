@@ -3,12 +3,14 @@ import { FormatRegistry } from '@sinclair/typebox';
 export const NICKNAME_MIN_CODE_POINTS = 1;
 export const NICKNAME_MAX_CODE_POINTS = 24;
 
-// Control, format, surrogate, private-use, unassigned, line and paragraph separators.
-const NON_PRINTABLE = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}]/u;
+// Control, format, surrogate, private-use, unassigned, line and paragraph
+// separators. ZWNJ (U+200C) and ZWJ (U+200D) are format characters but are
+// allowed: emoji sequences and scripts such as Persian need them.
+const NON_PRINTABLE = /(?![\u200C\u200D])[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}]/u;
 
 /**
  * Technical nickname rule: equal to its own trim, 1-24 Unicode code points,
- * printable code points only. No product rules.
+ * printable code points only (ZWNJ and ZWJ allowed). No product rules.
  */
 export function isValidNickname(value: unknown): value is string {
   if (typeof value !== 'string' || value !== value.trim()) return false;

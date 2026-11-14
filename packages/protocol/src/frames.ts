@@ -28,13 +28,13 @@ export const StateViewSchema = Type.Unsafe<StateView>(
     {
       additionalProperties: true,
       description:
-        'Public projection of the game state (game-core StateView). Checked only as a JSON object; ' +
-        'game-core owns the shape. TEMPORARY: the interim jail part of the view (game-core ' +
-        'INTERIM_JAIL_RULE, stage 1) is replaced by the final jail rules in stage 6.',
+        'Public projection of the game state (game-core StateView), checked only as a JSON object. ' +
+        'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
     },
   ),
 );
 
+/** Event payload is required; an event without data carries `payload: null`. */
 export const GameEventSchema = Type.Unsafe<GameEvent>(
   Type.Object({ type: Type.String({ minLength: 1 }), payload: Type.Unknown() }, closed),
 );

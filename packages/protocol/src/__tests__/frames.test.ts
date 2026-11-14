@@ -44,9 +44,9 @@ describe('static types come from game-core', () => {
   });
 
   it('view schema marks interim jail as temporary', () => {
-    expect(StateViewSchema.description).toMatch(/TEMPORARY/);
-    expect(StateViewSchema.description).toMatch(/interim jail/i);
-    expect(StateViewSchema.description).toMatch(/stage 6/);
+    expect(StateViewSchema.description).toContain(
+      'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
+    );
   });
 });
 
@@ -147,9 +147,19 @@ describe('field validation', () => {
     ['event without type', { t: 'Update', revision: 1, view, events: [{ payload: 1 }] }],
     ['event without payload', { t: 'Update', revision: 1, view, events: [{ type: 'E' }] }],
     ['empty error code', { t: 'Error', code: '', message: 'm' }],
+    ['error code over 64 characters', { t: 'Error', code: 'X'.repeat(65), message: 'm' }],
+    ['ack error code over 64 characters', { t: 'Ack', commandId: 'c', outcome: 'rejected', revision: 1, error: { code: 'X'.repeat(65), message: 'm' } }],
     ['welcome without view', { t: 'Welcome', protocolVersion: 1, playerId: 'p', revision: 0 }],
   ])('server: %s', (_name, frame) => {
     expect(isMalformed(decodeServerFrame(enc(frame)))).toBe(true);
+  });
+
+  it('accepts an error code of exactly 64 characters', () => {
+    expect(decodeServerFrame(enc({ t: 'Error', code: 'X'.repeat(64), message: 'm' })).ok).toBe(true);
+  });
+
+  it('accepts a payload-less event as payload null', () => {
+    expect(decodeServerFrame(enc({ t: 'Update', revision: 1, view, events: [{ type: 'TurnEnded', payload: null }] })).ok).toBe(true);
   });
 
   it('engine error codes pass through unchanged', () => {

@@ -50,13 +50,19 @@ describe('nickname', () => {
     ['tab inside', 'a\tb', false],
     ['newline inside', 'a\nb', false],
     ['NUL', 'a\u0000', false],
-    ['zero-width space (Cf)', 'a​b', false],
-    ['RTL override (Cf)', 'a‮b', false],
-    ['line separator', 'a b', false],
-    ['paragraph separator', 'a b', false],
-    ['private use', 'a', false],
+    ['ZWJ emoji (woman technologist)', '👩\u200D💻', true],
+    ['ZWJ family (man, woman, girl)', '👨\u200D👩\u200D👧', true],
+    ['Persian name with ZWNJ', 'مهر\u200Cآسا', true],
+    ['zero-width space (Cf)', 'a\u200Bb', false],
+    ['soft hyphen (Cf)', 'a\u00ADb', false],
+    ['word joiner (Cf)', 'a\u2060b', false],
+    ['BOM inside (Cf)', 'a\uFEFFb', false],
+    ['RTL override (Cf)', 'a\u202Eb', false],
+    ['line separator', 'a\u2028b', false],
+    ['paragraph separator', 'a\u2029b', false],
+    ['private use', 'a\uE000', false],
     ['lone surrogate', 'a\uD800', false],
-    ['unassigned', 'a͸', false],
+    ['unassigned', 'a\u0378', false],
   ])('%s', (_name, value, valid) => {
     expect(isValidNickname(value)).toBe(valid);
     expect(NICKNAME_FORMAT.validate(value)).toBe(valid);

@@ -35,7 +35,7 @@ const hostile: [string, unknown][] = [
   ['lone surrogate', '{"t":"\uD800"}'],
   ['escaped lone surrogate', '{"t":"Hello","token":"\\uD800","gameId":"g","protocolVersion":1,"lastRevision":null}'],
   ['NUL byte', '\u0000'],
-  ['BOM prefix', '﻿' + validHello],
+  ['BOM prefix', '\uFEFF' + validHello],
   ['deeply nested arrays', deepArray],
   ['deeply nested objects', deepObject],
   ['huge number', '{"t":"Hello","protocolVersion":1e400,"token":"a","gameId":"g","lastRevision":null}'],

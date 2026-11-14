@@ -58,8 +58,8 @@ properties.
 The protocol error codes SHALL be `PROTOCOL_VERSION_UNSUPPORTED`,
 `UNAUTHENTICATED`, `NOT_A_PARTICIPANT`, `MALFORMED_FRAME`,
 `ROOM_UNAVAILABLE`. The `code` of an `Error` frame or an `Ack` error SHALL
-accept these and any other non-empty string, so engine error codes pass
-through unchanged.
+accept these and any other string of 1 to 64 characters, so engine error
+codes pass through unchanged; a longer code SHALL be rejected.
 
 #### Scenario: Engine code passes through
 - **WHEN** an `Ack` with `outcome: 'rejected'` and `error.code: 'TARGET_MISMATCH'` is decoded
@@ -79,8 +79,10 @@ return `{ ok: false, error: { code: 'MALFORMED_FRAME', message } }`.
 `view` SHALL have the static type `StateView` and `events` the static type
 `GameEvent[]` from `@game/game-core`. At runtime the decoder SHALL check that
 `view` is a JSON object and that each event is `{ type: string, payload }`.
-Interim-jail data reaching the client SHALL be described as temporary
-(stage 1 interim rule, replaced in stage 6) in the schema `description`.
+`payload` SHALL be present on every event; an event without data SHALL carry
+`payload: null`. The `view` schema `description` SHALL state: "Interim jail
+state in this view is temporary (stage 1 interim rule, replaced in stage 6)."
+without naming game-core symbols.
 
 #### Scenario: View must be an object
 - **WHEN** an `Update` has `view: null` or `view: []`

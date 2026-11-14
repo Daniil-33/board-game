@@ -49,12 +49,16 @@ and `INVALID_REQUEST`, alongside the protocol codes `UNAUTHENTICATED` and
 A nickname SHALL be 1 to 24 Unicode code points, SHALL equal its own trim,
 and SHALL contain only printable code points (no control, format,
 surrogate, private-use, unassigned, line- or paragraph-separator code
-points). No other product rule applies. `normalizeNickname` SHALL trim its
+points), except that U+200C ZWNJ and U+200D ZWJ SHALL be allowed. No other product rule applies. `normalizeNickname` SHALL trim its
 input and return it when valid, otherwise `null`.
 
 #### Scenario: Bounds
 - **WHEN** nicknames of 0, 1, 24 and 25 code points (including astral characters) are checked
 - **THEN** only the 1- and 24-code-point nicknames SHALL be valid
+
+#### Scenario: Joiners allowed
+- **WHEN** `👩‍💻`, `👨‍👩‍👧` and a Persian name containing ZWNJ are checked
+- **THEN** each SHALL be valid, while a zero-width space (U+200B) SHALL still be rejected
 
 #### Scenario: Untrimmed rejected, normalized accepted
 - **WHEN** `' bob '` is checked and normalized

@@ -42,7 +42,9 @@ The returned frame is the parsed value (no defaults or coercion applied).
 `commandId`, `playerId`, `revision` are `Type.Unsafe<CommandId>(Type.String(...))`
 etc., so decoded frames carry game-core brands without casts at call sites.
 Technical bounds: ids are non-empty strings of at most 128 UTF-16 units;
-revision is a non-negative safe integer; token at most 512 units.
+revision is a non-negative safe integer; token at most 512 units; error
+codes (protocol, lobby and passed-through engine codes) are 1-64 UTF-16
+units.
 
 ### D5. `view` and `events` are shallow-checked, statically typed
 
@@ -54,7 +56,10 @@ parallel. The client gets a compile-time type from game-core and a runtime
 guarantee only that the frame envelope is well-formed. The `view` schema
 `description` states that the interim-jail part of the view
 (`INTERIM_JAIL_RULE`, replaced in stage 6) is temporary; no protocol field
-carries jail data of its own.
+carries jail data of its own. The description does not name game-core
+symbols: "Interim jail state in this view is temporary (stage 1 interim rule,
+replaced in stage 6)." An event's `payload` is required; an event without
+data carries `payload: null`.
 
 ### D6. Command type stub
 
@@ -79,7 +84,9 @@ disagree on astral characters, so the nickname is not expressed with
 `FormatRegistry` and exports `NICKNAME_FORMAT = { name, validate }` for the
 server to add to Ajv. `isValidNickname(s)`: no leading/trailing whitespace
 (`s === s.trim()`), 1-24 code points, every code point printable: not
-`\p{Cc}`, `\p{Cf}`, `\p{Cs}`, `\p{Co}`, `\p{Cn}`, `\p{Zl}`, `\p{Zp}`.
+`\p{Cc}`, `\p{Cf}`, `\p{Cs}`, `\p{Co}`, `\p{Cn}`, `\p{Zl}`, `\p{Zp}`,
+except that U+200C ZWNJ and U+200D ZWJ are allowed (emoji ZWJ sequences,
+Persian and other scripts need them).
 `normalizeNickname(s)` trims and returns the value or `null`, for the client.
 
 ### D9. Team Lead confirmations (Apply)
