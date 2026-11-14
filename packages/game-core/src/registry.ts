@@ -2,6 +2,7 @@ import type { Revision } from './types.js';
 import type { TransitionContext } from './context.js';
 import type {
   ActorKind,
+  TargetRef,
   EngineError,
   GameCommand,
   GameEngine,
@@ -32,6 +33,9 @@ export type HandlerResult =
  * - `target`: the command must name the current target of `targetKind`
  *   (e.g. the current turn); the global revision is not checked, and the
  *   handler re-validates against the current state.
+ * - `targets`: like `target`, over several kinds: the command must name one of
+ *   the state's current targets of `targetKinds` (e.g. a `Timeout` naming
+ *   either the current turn or the current order roll).
  */
 export type ConcurrencyGuard =
   | { readonly kind: 'revision' }
@@ -40,6 +44,12 @@ export type ConcurrencyGuard =
       readonly targetKind: string;
       /** Id of the current target of this kind, or null when there is none. */
       currentTarget(state: GameState): string | null;
+    }
+  | {
+      readonly kind: 'targets';
+      readonly targetKinds: readonly string[];
+      /** Every current target; entries of other kinds are ignored. */
+      currentTargets(state: GameState): readonly TargetRef[];
     };
 
 export const revisionGuard: ConcurrencyGuard = Object.freeze({ kind: 'revision' });
@@ -47,6 +57,14 @@ export const revisionGuard: ConcurrencyGuard = Object.freeze({ kind: 'revision' 
 /** Guard a command type by the current target of `targetKind` instead of the global revision. */
 export function targetGuard(targetKind: string, currentTarget: (state: GameState) => string | null): ConcurrencyGuard {
   return Object.freeze({ kind: 'target', targetKind, currentTarget });
+}
+
+/** Guard a command type by any one of the current targets of `targetKinds`. */
+export function targetsGuard(
+  targetKinds: readonly string[],
+  currentTargets: (state: GameState) => readonly TargetRef[],
+): ConcurrencyGuard {
+  return Object.freeze({ kind: 'targets', targetKinds: Object.freeze([...targetKinds]), currentTargets });
 }
 
 /**
@@ -94,6 +112,19 @@ function checkExpectation(guard: ConcurrencyGuard, expected: unknown, state: Gam
     if (isRecord(expected) && expected.kind === 'revision' && expected.revision === state.revision) return null;
     const seen = isRecord(expected) && expected.kind === 'revision' ? String(expected.revision) : 'a non-revision expectation';
     return { code: 'REVISION_MISMATCH', message: `Expected revision ${seen}, state is at ${state.revision}` };
+  }
+  if (guard.kind === 'targets') {
+    const current = guard.currentTargets(state).filter((t) => guard.targetKinds.includes(t.kind));
+    const kinds = guard.targetKinds.join('|');
+    if (current.length === 0) {
+      return { code: 'TARGET_MISMATCH', message: `No current ${kinds} target` };
+    }
+    const target = isRecord(expected) && expected.kind === 'target' && isRecord(expected.target) ? expected.target : null;
+    if (target !== null && current.some((t) => t.kind === target.kind && t.id === target.id)) return null;
+    return {
+      code: 'TARGET_MISMATCH',
+      message: `Command must target a current ${kinds} target (${current.map((t) => `${t.kind} "${t.id}"`).join(', ')})`,
+    };
   }
   const current = guard.currentTarget(state);
   if (current === null) {

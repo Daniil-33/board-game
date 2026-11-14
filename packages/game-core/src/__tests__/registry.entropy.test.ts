@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createEngine, revisionGuard, ok, fail, type CommandRegistry } from '../registry.js';
 import { nextIntInclusive, type RngState } from '../rng.js';
-import { gameEngine } from '../lifecycle.js';
+import { gameEngine } from '../rules.js';
 import { genesis } from '../state.js';
 import { entropy } from '../types.js';
 import { cmd, ctx, lobbyState, deepFreeze } from './helpers/fixtures.js';
@@ -45,7 +45,7 @@ describe('entropy absorption in the engine', () => {
   });
 
   it('CreateGame ignores entropy: the rng derives from the seed alone', () => {
-    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-1' }, { rev: 0 });
+    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-2' }, { rev: 0 });
     const r1 = gameEngine.execute(genesis(), c, ctx(undefined, E1));
     const r2 = gameEngine.execute(genesis(), c, ctx(undefined, E2));
     expect(r1.kind).toBe('accepted');

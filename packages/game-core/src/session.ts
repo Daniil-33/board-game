@@ -10,6 +10,7 @@ import type {
 } from './engine.js';
 import { genesis, type GameState } from './state.js';
 import { canonicalJson, isPlainData } from './canonical.js';
+import { checkInvariants } from './invariants.js';
 
 export type SessionErrorCode = 'INVALID_PAYLOAD' | 'COMMAND_ID_CONFLICT';
 
@@ -71,9 +72,10 @@ function rejectAtSession(
 /**
  * In-memory, deterministic holder of one game's state.
  * Performs no I/O and is safe to drive synchronously from any host.
+ * `initial` defaults to `genesis()`; `restoreSession` passes a snapshot.
  */
-export function createSession(engine: Engine): Session {
-  let state = genesis();
+export function createSession(engine: Engine, initial: GameState = genesis()): Session {
+  let state = initial;
   const log: LogEntry[] = [];
   const index = new Map<string, IndexEntry>();
 
@@ -136,15 +138,13 @@ export class ReplayDivergenceError extends Error {
   }
 }
 
-/**
- * Rebuild a live session from genesis by re-submitting every logged command
- * with its recorded time and entropy. Throws ReplayDivergenceError on the first entry that
- * is rejected or yields a different revision or events; no partial session is
- * returned.
- */
-export function replay(engine: Engine, entries: readonly LogEntry[]): Session {
-  const session = createSession(engine);
+/** Re-submit `entries` to `session`, verifying each against its record. */
+function reexecute(session: Session, entries: readonly LogEntry[]): void {
   entries.forEach((entry, index) => {
+    const expectedRevision = session.state.revision + 1;
+    if (entry.revision !== expectedRevision) {
+      throw new ReplayDivergenceError(index, `recorded revision ${entry.revision} does not follow ${session.state.revision}`);
+    }
     let result: TransitionResult<GameState, GameEvent>;
     try {
       result = session.submit(entry.command, { now: entry.now, entropy: entry.entropy });
@@ -161,5 +161,31 @@ export function replay(engine: Engine, entries: readonly LogEntry[]): Session {
       throw new ReplayDivergenceError(index, 'events differ from recorded events');
     }
   });
+}
+
+/**
+ * Rebuild a live session from a state snapshot plus the log entries accepted
+ * after it (`tail[0].revision === snapshot.revision + 1`), re-submitting each
+ * with its recorded time and entropy. Throws ReplayDivergenceError on the first
+ * entry that does not follow the previous revision, is rejected, or yields a
+ * different revision or events; no partial session is returned. The snapshot
+ * is copied, so later caller mutation cannot affect the session. Command ids
+ * logged before the snapshot are not deduplicated; that is the host's job.
+ */
+export function restoreSession(engine: Engine, snapshotState: GameState, tail: readonly LogEntry[]): Session {
+  const initial = snapshot(snapshotState);
+  checkInvariants(initial);
+  const session = createSession(engine, initial);
+  reexecute(session, tail);
   return session;
+}
+
+/**
+ * Rebuild a live session from genesis by re-submitting every logged command
+ * with its recorded time and entropy. Throws ReplayDivergenceError on the first entry that
+ * is rejected or yields a different revision or events; no partial session is
+ * returned.
+ */
+export function replay(engine: Engine, entries: readonly LogEntry[]): Session {
+  return restoreSession(engine, genesis(), entries);
 }

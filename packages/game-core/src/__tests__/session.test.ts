@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { createSession } from '../session.js';
-import { gameEngine } from '../lifecycle.js';
+import { gameEngine } from '../rules.js';
 import { genesis } from '../state.js';
 import { cmd, ctx, player } from './helpers/fixtures.js';
 
-const create = (id = 'c-create') => cmd('CreateGame', { seed: 42, rulesVersion: 'core-1' }, { id, rev: 0 });
+const create = (id = 'c-create') => cmd('CreateGame', { seed: 42, rulesVersion: 'core-2' }, { id, rev: 0 });
 const add = (playerId: string, rev: number, id = `c-add-${playerId}`) =>
   cmd('AddPlayer', { playerId }, { id, rev });
 
@@ -84,8 +84,8 @@ describe('deduplication by commandId', () => {
 
   it('payload key order is irrelevant to the fingerprint', () => {
     const s = createSession(gameEngine);
-    const first = s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-1' }, { id: 'k', rev: 0 }), ctx());
-    const again = s.submit(cmd('CreateGame', { rulesVersion: 'core-1', seed: 42 }, { id: 'k', rev: 0 }), ctx());
+    const first = s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-2' }, { id: 'k', rev: 0 }), ctx());
+    const again = s.submit(cmd('CreateGame', { rulesVersion: 'core-2', seed: 42 }, { id: 'k', rev: 0 }), ctx());
     expect(again).toBe(first);
   });
 
@@ -93,7 +93,7 @@ describe('deduplication by commandId', () => {
     const s = createSession(gameEngine);
     s.submit(create('dup'), ctx());
     const before = s.state;
-    const r = s.submit(cmd('CreateGame', { seed: 43, rulesVersion: 'core-1' }, { id: 'dup', rev: 0 }), ctx());
+    const r = s.submit(cmd('CreateGame', { seed: 43, rulesVersion: 'core-2' }, { id: 'dup', rev: 0 }), ctx());
     expect(r.kind).toBe('rejected');
     if (r.kind === 'rejected') expect(r.error.code).toBe('COMMAND_ID_CONFLICT');
     expect(s.state).toBe(before);
@@ -104,7 +104,7 @@ describe('deduplication by commandId', () => {
     const s = createSession(gameEngine);
     s.submit(create('dup'), ctx());
     const r = s.submit(
-      cmd('CreateGame', { seed: 42, rulesVersion: 'core-1' }, { id: 'dup', rev: 0, actor: player('a') }),
+      cmd('CreateGame', { seed: 42, rulesVersion: 'core-2' }, { id: 'dup', rev: 0, actor: player('a') }),
       ctx(),
     );
     expect(r.kind === 'rejected' && r.error.code).toBe('COMMAND_ID_CONFLICT');
@@ -124,9 +124,9 @@ describe('deduplication by commandId', () => {
 describe('payload must be plain data', () => {
   it.each([
     ['function', { f: () => 1 }],
-    ['undefined field', { seed: undefined, rulesVersion: 'core-1' }],
-    ['NaN', { seed: NaN, rulesVersion: 'core-1' }],
-    ['Infinity', { seed: Infinity, rulesVersion: 'core-1' }],
+    ['undefined field', { seed: undefined, rulesVersion: 'core-2' }],
+    ['NaN', { seed: NaN, rulesVersion: 'core-2' }],
+    ['Infinity', { seed: Infinity, rulesVersion: 'core-2' }],
   ])('%s -> INVALID_PAYLOAD at the session', (_n, payload) => {
     const s = createSession(gameEngine);
     const r = s.submit(cmd('CreateGame', payload, { rev: 0 }), ctx());

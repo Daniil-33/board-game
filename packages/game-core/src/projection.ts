@@ -2,6 +2,8 @@ import type { PlayerId } from './types.js';
 import type { GameState } from './state.js';
 import type { GameEvent } from './engine.js';
 import type { LifecycleEvent } from './lifecycle.js';
+import type { SetupEvent } from './setup.js';
+import type { TurnEvent } from './turns.js';
 
 /**
  * Who a projection is for. The host (Room) uses the raw state; projection is
@@ -24,6 +26,11 @@ export const STATE_VISIBILITY = {
   phase: 'public',
   players: 'public',
   rng: 'secret',
+  setup: 'public',
+  order: 'public',
+  turn: 'public',
+  positions: 'public',
+  jail: 'public',
 } as const satisfies Record<keyof GameState, Visibility>;
 
 type PublicStateKey = {
@@ -68,14 +75,29 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
 
 /**
  * Visibility of every event type the engine can emit. Adding an event type to
- * `LifecycleEvent` without classifying it here is a compile error; an event
+ * `CoreEvent` without classifying it here is a compile error; an event
  * type missing at runtime fails closed in `projectEvents`.
  */
 export const EVENT_VISIBILITY = {
   GameCreated: 'public',
   PlayerAdded: 'public',
   GameStarted: 'public',
-} as const satisfies Record<LifecycleEvent['type'], Visibility>;
+  OrderRollStarted: 'public',
+  OrderDieRolled: 'public',
+  OrderTied: 'public',
+  TurnOrderDetermined: 'public',
+  TurnStarted: 'public',
+  DiceRolled: 'public',
+  PlayerMoved: 'public',
+  TurnContinued: 'public',
+  TurnEnded: 'public',
+  SentToJail: 'public',
+  InterimJailAttemptFailed: 'public',
+  InterimJailReleased: 'public',
+} as const satisfies Record<CoreEvent['type'], Visibility>;
+
+/** Every event type this rules version emits. */
+export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

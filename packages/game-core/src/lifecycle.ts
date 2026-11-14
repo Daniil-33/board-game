@@ -1,11 +1,12 @@
 import type { PlayerId, Timestamp } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
-import { createEngine, fail, ok, revisionGuard, type CommandRegistry } from './registry.js';
+import { fail, ok, revisionGuard, type CommandRegistry } from './registry.js';
 import { isValidSeed, seedRng } from './rng.js';
 import { MAX_PLAYERS, MIN_PLAYERS } from './state.js';
+import { beginOrderRoll } from './setup.js';
 
 /** Rules versions this engine can run. Bump when transitions or the RNG stream change. */
-export const SUPPORTED_RULES_VERSIONS: readonly string[] = ['core-1'];
+export const SUPPORTED_RULES_VERSIONS: readonly string[] = ['core-2'];
 
 export type LifecycleErrorCode =
   | 'INVALID_PAYLOAD'
@@ -94,7 +95,7 @@ export const lifecycleCommands: CommandRegistry = {
     guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
-    handle(state) {
+    handle(state, _command, context) {
       if (state.players.length < MIN_PLAYERS) {
         return fail('NOT_ENOUGH_PLAYERS', `At least ${MIN_PLAYERS} players are required, have ${state.players.length}`);
       }
@@ -102,10 +103,8 @@ export const lifecycleCommands: CommandRegistry = {
         type: 'GameStarted',
         payload: { playerIds: state.players.map((pl) => pl.id) },
       };
-      return ok({ ...state, phase: 'setup' }, [event]);
+      const opened = beginOrderRoll({ ...state, phase: 'setup' }, context.now);
+      return ok(opened.state, [event, ...opened.events]);
     },
   },
 };
-
-/** The default engine for this rules version. */
-export const gameEngine = createEngine(lifecycleCommands);
