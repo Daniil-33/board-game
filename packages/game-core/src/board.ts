@@ -71,4 +71,3 @@ export function movePlayer(
     event: { type: 'PlayerMoved', payload: { playerId, from, to, steps } },
   };
 }
-
