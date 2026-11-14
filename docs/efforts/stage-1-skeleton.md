@@ -110,9 +110,9 @@ Reserved to the owner (escalate via CTO):
 
 ## Dependencies, risks, and limits
 
-- Docker access: user `agents` cannot reach the Docker socket yet (owner action
-  pending). Compose and Postgres-backed tests are blocked until then; core,
-  protocol and client work are not.
+- Docker: user `agents` is in group `docker` since 2026-11-14. Sessions
+  started before that must run Docker as `sg docker -c '<command>'` until
+  they are restarted.
 - The owner develops locally in parallel. VM agents work only on branches with
   PRs; never push to `main` directly. Rebase on current `main` before PR.
 - First task: CI (GitHub Actions: pnpm install, typecheck, tests) so later PRs
