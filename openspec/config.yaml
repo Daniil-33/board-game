@@ -12,17 +12,22 @@ context: |
   - Commands are idempotent: a rejected command never mutates state or consumes randomness.
   - Replay: given the same seed/config + ordered inputs → identical full state and events.
 
-  Tech stack:
-  - Runtime: Node.js, TypeScript strict mode
-  - Package manager: pnpm workspaces
-  - Testing: vitest
-  - No UI framework in core packages
+  Tech stack (accepted, see ROADMAP.md §"Технические решения"):
+  - Runtime: Node.js, TypeScript strict mode; package manager: pnpm workspaces; testing: vitest
+  - packages/game-core: pure rules engine, no UI framework, no I/O
+  - packages/protocol: client/server message schemas shared by both sides
+  - apps/server: Fastify + @fastify/websocket; PostgreSQL (command log and snapshots in jsonb,
+    users/rooms/results relational) via Drizzle or Kysely; guest login (nickname + session token)
+  - apps/client: Vite + TypeScript, Vue 3 for DOM UI, PixiJS for board rendering
+  - Deployment: Docker Compose, single node; no Redis or horizontal scaling in MVP
 
-  MVP scope (see GAME-BREAKDOWN.md §"MVP: что входит и что отложено"):
-  - Local simulation with N auto players — no multiplayer, no WebSocket, no persistence
-  - CLASSIC_40 board (40 cells), 2–6 players
-  - Full economic cycle: movement, purchase, rent, building, auction, trade, mortgage, bankruptcy
-  - Casino cell and chance card subset
+  MVP scope (see ROADMAP.md and GAME-BREAKDOWN.md §"MVP: что входит и что отложено"):
+  - A complete networked game: 2–6 guests in separate browsers play a full CLASSIC_40 game to a winner
+  - Rules: the accepted profile in GAME-BREAKDOWN.md (movement, purchase, auction, three rent
+    families, building, mortgage, auto-liquidation, bankruptcy, casino, chance subset, trades)
+  - Infrastructure: authoritative room server, WebSocket protocol, persistence and recovery,
+    reconnect, timeouts so AFK players cannot stall a room
+  - Development order: ROADMAP.md stages; each stage delivers one mechanic through all layers
 
   Agents must not invent product rules. If a rule is marked "open" in GAME-BREAKDOWN.md it
   must be surfaced as an open question, not silently assumed.
