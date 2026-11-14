@@ -1,9 +1,9 @@
 # Stage 1 skeleton: Team Lead technical design
 
-Effort: `EFF-stage-1-skeleton`, handoff `docs/efforts/stage-1-skeleton.md`
-revision 1, accepted by the Team Lead on 2026-11-14 at main `5a05807`.
-Revision 2 (PR #2: an interim-jail release double grants no bonus turn) is
-acknowledged once it is on `main`.
+Effort: `EFF-stage-1-skeleton`, handoff `docs/efforts/stage-1-skeleton.md`.
+Revision 1 accepted by the Team Lead on 2026-11-14 at main `5a05807`.
+Revision 2 (interim-jail release double grants no bonus turn, PR #2) acknowledged
+on 2026-11-14 at main `a68ed55`.
 
 This document holds the technical decisions delegated to the Team Lead. It does
 not change product behavior; product rules come only from the handoff,

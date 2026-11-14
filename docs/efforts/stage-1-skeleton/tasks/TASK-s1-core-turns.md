@@ -5,7 +5,7 @@ id: TASK-s1-core-turns
 revision: 1
 effort: EFF-stage-1-skeleton
 project: economic-board-game
-source_commit: 5a05807 # rebase on main after TASK-s1-ci and handoff revision 2 merge
+source_commit: a68ed55 # handoff revision 2; rebase on main after TASK-s1-ci merges
 owner: team-lead
 status: proposed
 ```
@@ -71,7 +71,7 @@ client code.
 
 ## Canonical references
 
-- `docs/efforts/stage-1-skeleton.md` (revision 2 once merged).
+- `docs/efforts/stage-1-skeleton.md` revision 2.
 - `docs/efforts/stage-1-skeleton/design.md` § "Core additions".
 - `ROADMAP.md` stage 1 including "Решения владельца (приняты 2026-11-14)".
 - `GAME-BREAKDOWN.md` § "Порядок ходов, ход и кости".
@@ -86,7 +86,7 @@ Target ids are never reused within a game.
 
 ## Dependencies
 
-Starts after `TASK-s1-ci` merges and handoff revision 2 is on `main`. Runs in
+Starts after `TASK-s1-ci` merges (handoff revision 2 is on `main`). Runs in
 parallel with `TASK-s1-protocol`; the protocol task imports only exported
 types from this package. Publish command, event and state type names in the
 proposal so the protocol task can align; the Team Lead relays them.
