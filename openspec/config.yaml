@@ -1,0 +1,44 @@
+schema: spec-driven
+
+context: |
+  Economic board game — Monopoly-inspired, built in TypeScript/Node.js.
+  Game rules live in GAME-BREAKDOWN.md at the repo root — this is the canonical product spec.
+
+  Architecture constraints (non-negotiable):
+  - Headless deterministic core: no imports from UI, server, DB, network, timers, or global random.
+    Trusted time and randomness are passed explicitly via TransitionContext.
+  - Pure functions for transitions: same (state, command, context) → same result, always.
+  - Monetary arithmetic uses integer quanta of 10 (Q(x) = 10 × floor(x/10)); no floating point for money.
+  - Commands are idempotent: a rejected command never mutates state or consumes randomness.
+  - Replay: given the same seed/config + ordered inputs → identical full state and events.
+
+  Tech stack:
+  - Runtime: Node.js, TypeScript strict mode
+  - Package manager: pnpm workspaces
+  - Testing: vitest
+  - No UI framework in core packages
+
+  MVP scope (see GAME-BREAKDOWN.md §"MVP: что входит и что отложено"):
+  - Local simulation with N auto players — no multiplayer, no WebSocket, no persistence
+  - CLASSIC_40 board (40 cells), 2–6 players
+  - Full economic cycle: movement, purchase, rent, building, auction, trade, mortgage, bankruptcy
+  - Casino cell and chance card subset
+
+  Agents must not invent product rules. If a rule is marked "open" in GAME-BREAKDOWN.md it
+  must be surfaced as an open question, not silently assumed.
+
+rules:
+  proposal:
+    - State explicitly what is out of scope for this change
+    - Reference the relevant GAME-BREAKDOWN.md sections by heading
+  tasks:
+    - Each task must be independently verifiable
+    - Implementation tasks must reference the spec section they implement
+    - No task should require more than one new package or module
+
+operations:
+  apply:
+    guidance:
+      - Run tsc --noEmit after each package change to catch type errors early
+      - Write vitest tests alongside implementation, not after
+      - Never introduce floating point for monetary values

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "paths": {
+      "@game/game-core": ["../../packages/game-core/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}
