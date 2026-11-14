@@ -8,7 +8,7 @@ import type {
   TransitionResult,
 } from '../engine.js';
 import type { CommandId, PlayerId, Revision } from '../types.js';
-import { timestamp } from '../types.js';
+import { entropy, timestamp } from '../types.js';
 import type { TransitionContext } from '../context.js';
 
 // Minimal concrete state for fixture testing
@@ -21,7 +21,7 @@ type FixtureCommand = GameCommand<{ increment: number }, 'INCREMENT'>;
 type FixtureEvent = GameEvent<{ delta: number }, 'INCREMENTED'>;
 
 function makeContext(): TransitionContext {
-  return { now: timestamp(1_767_225_600_000) };
+  return { now: timestamp(1_767_225_600_000), entropy: entropy([1, 2, 3, 4]) };
 }
 
 function makeCommand(expectedRevision: number): FixtureCommand {
@@ -29,14 +29,14 @@ function makeCommand(expectedRevision: number): FixtureCommand {
     type: 'INCREMENT',
     commandId: 'cmd-1' as CommandId,
     actor: { kind: 'player', id: 'player-1' as PlayerId },
-    expectedRevision: expectedRevision as Revision,
+    expected: { kind: 'revision', revision: expectedRevision as Revision },
     payload: { increment: 1 },
   };
 }
 
 const stubEngine: GameEngine<FixtureState, FixtureCommand, FixtureEvent> = {
   execute(state, command, _context): TransitionResult<FixtureState, FixtureEvent> {
-    if (command.expectedRevision !== state.revision) {
+    if (command.expected.kind !== 'revision' || command.expected.revision !== state.revision) {
       return {
         kind: 'rejected',
         commandId: command.commandId,

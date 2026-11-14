@@ -7,11 +7,25 @@ export type Actor =
 
 export type ActorKind = Actor['kind'];
 
+/** A game object a command acts on, e.g. a turn or an auction. Ids are never reused within a game. */
+export interface TargetRef {
+  readonly kind: string;
+  readonly id: string;
+}
+
+/**
+ * What the issuer expected when it sent the command. Which kind is valid is
+ * decided by the command type's concurrency guard.
+ */
+export type Expectation =
+  | { readonly kind: 'revision'; readonly revision: Revision }
+  | { readonly kind: 'target'; readonly target: TargetRef };
+
 export interface GameCommand<Payload = unknown, Type extends string = string> {
   readonly type: Type;
   readonly commandId: CommandId;
   readonly actor: Actor;
-  readonly expectedRevision: Revision;
+  readonly expected: Expectation;
   readonly payload: Payload;
 }
 

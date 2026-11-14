@@ -25,7 +25,7 @@ function expectCode(state: GameState, c: GameCommand, code: string) {
   }
 }
 
-const create = (seed: unknown = 42, rulesVersion: unknown = 'core-0', rev = 0) =>
+const create = (seed: unknown = 42, rulesVersion: unknown = 'core-1', rev = 0) =>
   cmd('CreateGame', { seed, rulesVersion }, { rev });
 const add = (id: string, rev: number) => cmd('AddPlayer', { playerId: id }, { rev });
 const start = (rev: number) => cmd('StartGame', null, { rev });
@@ -42,8 +42,8 @@ describe('CreateGame', () => {
     expect(r.kind).toBe('accepted');
     expect(r.revision).toBe(1);
     expect(r.state.phase).toBe('lobby');
-    expect(r.state.rulesVersion).toBe('core-0');
-    expect(r.events).toEqual([{ type: 'GameCreated', payload: { rulesVersion: 'core-0', createdAt: NOW } }]);
+    expect(r.state.rulesVersion).toBe('core-1');
+    expect(r.events).toEqual([{ type: 'GameCreated', payload: { rulesVersion: 'core-1', createdAt: NOW } }]);
   });
 
   it('same seed gives deep-equal rng; different seed differs', () => {
@@ -64,19 +64,23 @@ describe('CreateGame', () => {
     expectCode(genesis(), create(42, 'core-999'), 'UNSUPPORTED_RULES_VERSION');
   });
 
+  it('core-0 is no longer supported: the RNG stream changed in core-1', () => {
+    expectCode(genesis(), create(42, 'core-0'), 'UNSUPPORTED_RULES_VERSION');
+  });
+
   it('malformed payload', () => {
     expectCode(genesis(), cmd('CreateGame', null), 'INVALID_PAYLOAD');
-    expectCode(genesis(), cmd('CreateGame', { rulesVersion: 'core-0' }), 'INVALID_PAYLOAD');
+    expectCode(genesis(), cmd('CreateGame', { rulesVersion: 'core-1' }), 'INVALID_PAYLOAD');
     expectCode(genesis(), cmd('CreateGame', { seed: 1 }), 'INVALID_PAYLOAD');
   });
 
   it('second CreateGame in lobby -> PHASE_NOT_ALLOWED', () => {
     const s = lobbyWith(0);
-    expectCode(s, create(42, 'core-0', s.revision), 'PHASE_NOT_ALLOWED');
+    expectCode(s, create(42, 'core-1', s.revision), 'PHASE_NOT_ALLOWED');
   });
 
   it('player actor cannot create', () => {
-    expectCode(genesis(), cmd('CreateGame', { seed: 1, rulesVersion: 'core-0' }, { actor: player('a') }), 'ACTOR_NOT_ALLOWED');
+    expectCode(genesis(), cmd('CreateGame', { seed: 1, rulesVersion: 'core-1' }, { actor: player('a') }), 'ACTOR_NOT_ALLOWED');
   });
 });
 
@@ -137,7 +141,7 @@ describe('setup phase accepts no lifecycle command', () => {
   })();
 
   it.each([
-    ['CreateGame', () => create(1, 'core-0', s.revision)],
+    ['CreateGame', () => create(1, 'core-1', s.revision)],
     ['AddPlayer', () => add('late', s.revision)],
     ['StartGame', () => start(s.revision)],
   ])('%s -> PHASE_NOT_ALLOWED', (_name, make) => {

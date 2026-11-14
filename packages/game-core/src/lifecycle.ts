@@ -1,11 +1,11 @@
 import type { PlayerId, Timestamp } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
-import { createEngine, fail, ok, type CommandRegistry } from './registry.js';
+import { createEngine, fail, ok, revisionGuard, type CommandRegistry } from './registry.js';
 import { isValidSeed, seedRng } from './rng.js';
 import { MAX_PLAYERS, MIN_PLAYERS } from './state.js';
 
 /** Rules versions this engine can run. Bump when transitions or the RNG stream change. */
-export const SUPPORTED_RULES_VERSIONS: readonly string[] = ['core-0'];
+export const SUPPORTED_RULES_VERSIONS: readonly string[] = ['core-1'];
 
 export type LifecycleErrorCode =
   | 'INVALID_PAYLOAD'
@@ -47,6 +47,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 export const lifecycleCommands: CommandRegistry = {
   CreateGame: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['uninitialized'],
     handle(state, command, context) {
@@ -69,6 +70,7 @@ export const lifecycleCommands: CommandRegistry = {
   },
 
   AddPlayer: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     handle(state, command) {
@@ -89,6 +91,7 @@ export const lifecycleCommands: CommandRegistry = {
   },
 
   StartGame: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     handle(state) {

@@ -23,7 +23,7 @@ describe('genesis', () => {
 
 const lobby: GameState = {
   revision: 3 as Revision,
-  rulesVersion: 'core-0',
+  rulesVersion: 'core-1',
   phase: 'lobby',
   players: [{ id: pid('a') }, { id: pid('b') }],
   rng: seedRng(1),

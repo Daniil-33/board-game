@@ -1,4 +1,4 @@
-import type { Revision, Timestamp } from './types.js';
+import type { Entropy, Revision, Timestamp } from './types.js';
 import type { TransitionContext } from './context.js';
 import type {
   AcceptedResult,
@@ -17,6 +17,7 @@ export type SessionErrorCode = 'INVALID_PAYLOAD' | 'COMMAND_ID_CONFLICT';
 export interface LogEntry {
   readonly command: GameCommand;
   readonly now: Timestamp;
+  readonly entropy: Entropy;
   readonly revision: Revision;
   readonly events: readonly GameEvent[];
 }
@@ -40,7 +41,7 @@ function fingerprint(command: GameCommand): string {
   return canonicalJson({
     type: command.type,
     actor: command.actor,
-    expectedRevision: command.expectedRevision,
+    expected: command.expected,
     payload: command.payload,
   });
 }
@@ -107,6 +108,7 @@ export function createSession(engine: Engine): Session {
           Object.freeze({
             command: snapshot(command),
             now: context.now,
+            entropy: snapshot(context.entropy),
             revision: result.revision,
             events: snapshot(result.events),
           }),
@@ -136,7 +138,7 @@ export class ReplayDivergenceError extends Error {
 
 /**
  * Rebuild a live session from genesis by re-submitting every logged command
- * with its recorded time. Throws ReplayDivergenceError on the first entry that
+ * with its recorded time and entropy. Throws ReplayDivergenceError on the first entry that
  * is rejected or yields a different revision or events; no partial session is
  * returned.
  */
@@ -145,7 +147,7 @@ export function replay(engine: Engine, entries: readonly LogEntry[]): Session {
   entries.forEach((entry, index) => {
     let result: TransitionResult<GameState, GameEvent>;
     try {
-      result = session.submit(entry.command, { now: entry.now });
+      result = session.submit(entry.command, { now: entry.now, entropy: entry.entropy });
     } catch (cause) {
       throw new ReplayDivergenceError(index, `engine threw: ${String(cause)}`, undefined, { cause });
     }

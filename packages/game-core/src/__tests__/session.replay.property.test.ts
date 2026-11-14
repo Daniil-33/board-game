@@ -3,6 +3,8 @@ import { createSession, replay } from '../session.js';
 import { gameEngine } from '../lifecycle.js';
 import { seedRng, nextIntInclusive, type RngState } from '../rng.js';
 import type { GameCommand } from '../engine.js';
+import { entropy, type Entropy } from '../types.js';
+import { projectState } from '../projection.js';
 import { cmd, ctx, player } from './helpers/fixtures.js';
 
 // Deterministic generator for the test itself (fixed test seed, no Math.random).
@@ -32,16 +34,22 @@ function randomCommand(g: Gen, currentRevision: number, history: GameCommand[], 
     return cmd('AddPlayer', { playerId: `conflict-${seq}` }, { id: prior.commandId, rev: currentRevision });
   }
 
-  // Revision: mostly correct, sometimes stale or future.
-  const revRoll = g.int(0, 9);
-  const rev = revRoll === 0 ? Math.max(0, currentRevision - 1) : revRoll === 1 ? currentRevision + 1 : currentRevision;
+  // Expectation: mostly the correct revision, sometimes stale, future, wrong kind or malformed.
+  const expRoll = g.int(0, 19);
+  const rev = expRoll === 0 ? Math.max(0, currentRevision - 1) : expRoll === 1 ? currentRevision + 1 : currentRevision;
+  const expected: unknown =
+    expRoll === 2
+      ? { kind: 'target', target: { kind: 'turn', id: `t${g.int(0, 3)}` } } // wrong kind for lifecycle
+      : expRoll === 3
+        ? g.pick([null, { kind: 'revision' }, { kind: 'revision', revision: String(currentRevision) }, currentRevision])
+        : { kind: 'revision', revision: rev };
   const actor = g.int(0, 9) === 0 ? player(g.pick(PLAYER_IDS)) : undefined;
   const id = `c${seq}`;
-  const opts = actor ? { id, rev, actor } : { id, rev };
+  const opts = actor ? { id, expected, actor } : { id, expected };
 
   switch (g.int(0, 6)) {
     case 0:
-      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'bad' : 'core-0' }, opts);
+      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'bad' : 'core-1' }, opts);
     case 1:
     case 2:
     case 3:
@@ -57,12 +65,13 @@ function randomCommand(g: Gen, currentRevision: number, history: GameCommand[], 
 
 describe('property: any command sequence replays to the identical session', () => {
   const g = new Gen(seedRng(20261114));
-  const stats = { reachedSetup: 0, accepted: 0, duplicates: 0, conflicts: 0, rejected: 0 };
+  const stats = { reachedSetup: 0, accepted: 0, duplicates: 0, conflicts: 0, rejected: 0, revisionMismatch: 0 };
 
   for (let run = 0; run < 200; run++) {
     const length = g.int(1, 40);
     const commands: GameCommand[] = [];
     const times: number[] = [];
+    const entropies: Entropy[] = [];
 
     // Generate the sequence up front against a live session so revisions are realistic.
     const live = createSession(gameEngine);
@@ -70,28 +79,37 @@ describe('property: any command sequence replays to the identical session', () =
     for (let i = 0; i < length; i++) {
       const c = randomCommand(g, live.state.revision, commands, i);
       t += g.int(0, 5_000);
+      const e = entropy([g.int(0, 2 ** 32 - 1), g.int(0, 2 ** 32 - 1), g.int(0, 2 ** 32 - 1), g.int(0, 2 ** 32 - 1)]);
       commands.push(c);
       times.push(t);
+      entropies.push(e);
       const logBefore = live.log.length;
-      const r = live.submit(c, ctx(t)); // must never throw (no invariant violations)
+      const r = live.submit(c, ctx(t, e)); // must never throw (no invariant violations)
       if (r.kind === 'accepted') {
         if (live.log.length === logBefore) stats.duplicates += 1;
         else stats.accepted += 1;
       } else if (r.error.code === 'COMMAND_ID_CONFLICT') stats.conflicts += 1;
-      else stats.rejected += 1;
+      else {
+        stats.rejected += 1;
+        if (r.error.code === 'REVISION_MISMATCH') stats.revisionMismatch += 1;
+      }
     }
     if (live.state.phase === 'setup') stats.reachedSetup += 1;
 
     it(`run ${run}: ${length} commands`, () => {
       const s = createSession(gameEngine);
-      commands.forEach((c, i) => s.submit(c, ctx(times[i])));
+      commands.forEach((c, i) => s.submit(c, ctx(times[i], entropies[i])));
 
       expect(s.state).toEqual(live.state);
       expect(s.state.revision).toBe(s.log.length);
 
       const replayed = replay(gameEngine, s.log);
       expect(replayed.state).toEqual(s.state);
+      expect(replayed.state.rng).toEqual(s.state.rng);
       expect(replayed.log.map((e) => e.events)).toEqual(s.log.map((e) => e.events));
+
+      const view = projectState(s.state, { kind: 'spectator' });
+      expect(view).not.toHaveProperty('rng');
     });
   }
 
@@ -101,5 +119,6 @@ describe('property: any command sequence replays to the identical session', () =
     expect(stats.duplicates).toBeGreaterThan(10);
     expect(stats.conflicts).toBeGreaterThan(10);
     expect(stats.rejected).toBeGreaterThan(100);
+    expect(stats.revisionMismatch).toBeGreaterThan(50);
   });
 });

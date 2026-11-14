@@ -1,18 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { createEngine, ok, fail, type CommandRegistry } from '../registry.js';
+import { createEngine, revisionGuard, ok, fail, type CommandRegistry } from '../registry.js';
 import { cmd, ctx, lobbyState, player, SYSTEM, deepFreeze } from './helpers/fixtures.js';
 
 const registry: CommandRegistry = {
-  SYSTEM_ONLY: { allowedActors: ['system'], allowedPhases: ['lobby'], handle: (s) => ok(s, []) },
-  PLAYER_OK: { allowedActors: ['player', 'system'], allowedPhases: ['lobby'], handle: (s) => ok(s, []) },
-  SETUP_ONLY: { allowedActors: ['system'], allowedPhases: ['setup'], handle: (s) => ok(s, []) },
-  ALWAYS_FAILS: { allowedActors: ['system'], allowedPhases: ['lobby'], handle: () => fail('INVALID_PAYLOAD', 'nope') },
+  SYSTEM_ONLY: { guard: revisionGuard, allowedActors: ['system'], allowedPhases: ['lobby'], handle: (s) => ok(s, []) },
+  PLAYER_OK: { guard: revisionGuard, allowedActors: ['player', 'system'], allowedPhases: ['lobby'], handle: (s) => ok(s, []) },
+  SETUP_ONLY: { guard: revisionGuard, allowedActors: ['system'], allowedPhases: ['setup'], handle: (s) => ok(s, []) },
+  ALWAYS_FAILS: { guard: revisionGuard, allowedActors: ['system'], allowedPhases: ['lobby'], handle: () => fail('INVALID_PAYLOAD', 'nope') },
   TWO_EVENTS: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     handle: (s) => ok(s, [{ type: 'E1', payload: 1 }, { type: 'E2', payload: 2 }]),
   },
   SETS_REVISION: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     // A misbehaving handler that tries to set revision itself; the engine must override it.
@@ -98,7 +100,7 @@ describe('engine: check order', () => {
 
   it('non-membership beats wrong phase', () => {
     const reg: CommandRegistry = {
-      P_SETUP: { allowedActors: ['player'], allowedPhases: ['setup'], handle: (s) => ok(s, []) },
+      P_SETUP: { guard: revisionGuard, allowedActors: ['player'], allowedPhases: ['setup'], handle: (s) => ok(s, []) },
     };
     const s = lobbyState(REV);
     const c = cmd('P_SETUP', null, { rev: REV, actor: player('zz') });

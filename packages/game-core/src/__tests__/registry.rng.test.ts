@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createEngine, ok, fail, type CommandRegistry } from '../registry.js';
+import { createEngine, revisionGuard, ok, fail, type CommandRegistry } from '../registry.js';
 import { nextIntInclusive, type RngState } from '../rng.js';
 import { InvariantViolationError } from '../invariants.js';
 import { cmd, ctx, lobbyState, pid, deepFreeze } from './helpers/fixtures.js';
@@ -7,6 +7,7 @@ import { cmd, ctx, lobbyState, pid, deepFreeze } from './helpers/fixtures.js';
 const registry: CommandRegistry = {
   // Draws a die, then rejects: the draw must not leak.
   DRAW_THEN_REJECT: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     handle: (s) => {
@@ -16,6 +17,7 @@ const registry: CommandRegistry = {
   },
   // Draws two values, threads the RNG into the returned state, reports both.
   DRAW_TWICE: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     handle: (s) => {
@@ -26,6 +28,7 @@ const registry: CommandRegistry = {
   },
   // Produces a broken state.
   DUPLICATE_PLAYERS: {
+    guard: revisionGuard,
     allowedActors: ['system'],
     allowedPhases: ['lobby'],
     handle: (s) => ok({ ...s, players: [{ id: pid('a') }, { id: pid('a') }] }, []),

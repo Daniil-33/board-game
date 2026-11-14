@@ -1,3 +1,5 @@
+import type { Entropy } from './types.js';
+
 /**
  * Pure, seedable PRNG whose whole state is plain JSON data stored in GameState.
  *
@@ -105,4 +107,33 @@ export function nextIntInclusive(rng: RngState, lo: number, hi: number): [number
     state = next;
     if (u < limit) return [lo + (u % span), state];
   }
+}
+
+/**
+ * Mix 128 bits of host entropy into an RNG state (pure; input unchanged).
+ *
+ * Chained splitmix32 over `s[i] ^ e[i]`, forward then backward, so every
+ * output word depends on every state and entropy word.
+ * The seed contribution is kept, so constant host entropy still yields a seeded
+ * stream rather than a fixed one. Changing this function is a rules change.
+ */
+export function absorbEntropy(rng: RngState, e: Entropy): RngState {
+  const out: number[] = [];
+  // Forward pass: word i depends on input words 0..i.
+  let acc = 0;
+  for (let i = 0; i < 4; i++) {
+    const [z] = splitmix32((((rng.s[i] as number) ^ (e[i] as number)) + acc) >>> 0);
+    out.push(z);
+    acc = z;
+  }
+  // Backward pass: word 3 already depends on all inputs; fold it back so every word does.
+  for (let i = 2; i >= 0; i--) {
+    const [z] = splitmix32(((out[i] as number) + (out[i + 1] as number)) >>> 0);
+    out[i] = z;
+  }
+  const [a, b, c, d] = out as [number, number, number, number];
+  if ((a | b | c | d) === 0) {
+    return { algo: RNG_ALGORITHM, s: [1, 0, 0, 0] };
+  }
+  return { algo: RNG_ALGORITHM, s: [a, b, c, d] };
 }

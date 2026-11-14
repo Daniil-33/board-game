@@ -1,9 +1,11 @@
-import type { Timestamp } from './types.js';
+import type { Entropy, Timestamp } from './types.js';
 
 /**
  * Trusted inputs supplied by the host for one transition.
- * Randomness is NOT here: it lives in the game state as a seeded RNG state.
+ * `entropy` is fresh host randomness (e.g. from a CSPRNG) for every command;
+ * the engine mixes it into the seeded RNG state held in the game state.
  */
 export interface TransitionContext {
   readonly now: Timestamp;
+  readonly entropy: Entropy;
 }
