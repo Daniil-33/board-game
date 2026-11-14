@@ -5,7 +5,7 @@ id: TASK-s1-server-rooms
 revision: 1
 effort: EFF-stage-1-skeleton
 project: economic-board-game
-source_commit: main after TASK-s1-core-turns merges (PR #7)
+source_commit: b3d5cf3 # main after core-turns PRs #7 and #8
 owner: team-lead
 status: proposed
 ```
