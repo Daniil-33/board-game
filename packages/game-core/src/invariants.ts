@@ -1,11 +1,14 @@
 import { isWellFormedRng } from './rng.js';
 import { MAX_PLAYERS, MIN_PLAYERS, type GameState } from './state.js';
+import { PLACEHOLDER_RING } from './board.js';
 
 export type InvariantName =
   | 'revision-non-negative-integer'
   | 'unique-player-ids'
   | 'player-count-for-phase'
-  | 'rng-well-formed';
+  | 'rng-well-formed'
+  | 'phase-state-shape'
+  | 'ring-position';
 
 /**
  * Raised when an accepted transition produced a state that breaks an invariant.
@@ -54,5 +57,50 @@ export function checkInvariants(state: GameState): void {
     }
   } else if (!isWellFormedRng(state.rng)) {
     throw new InvariantViolationError('rng-well-formed', `phase ${state.phase} requires a well-formed rng`);
+  }
+
+  checkPhaseShape(state);
+}
+
+function shape(detail: string): never {
+  throw new InvariantViolationError('phase-state-shape', detail);
+}
+
+function sameMembers(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && new Set(a).size === a.length && a.every((x) => b.includes(x));
+}
+
+/** Phase-specific state is present exactly in its phase, and positions are ring cells. */
+function checkPhaseShape(state: GameState): void {
+  const ids = state.players.map((p) => p.id as string);
+  const inSetup = state.phase === 'setup';
+  const playing = state.phase === 'playing';
+
+  if ((state.setup !== null) !== inSetup) shape(`setup must be present exactly in phase setup (phase ${state.phase})`);
+  if ((state.order !== null) !== playing) shape(`order must be present exactly in phase playing (phase ${state.phase})`);
+  if ((state.turn !== null) !== playing) shape(`turn must be present exactly in phase playing (phase ${state.phase})`);
+
+  const positioned = Object.keys(state.positions);
+  if (playing ? !sameMembers(positioned, ids) : positioned.length > 0) {
+    shape(`positions must name every player exactly in phase playing (phase ${state.phase})`);
+  }
+  for (const p of Object.keys(state.jail)) {
+    if (!playing || !ids.includes(p)) shape(`jail entry for ${p} outside playing or for a non-player`);
+  }
+
+  if (state.setup !== null) {
+    const { round, playerId, groups } = state.setup;
+    if (round.pending[0] !== playerId) shape(`current roller ${playerId} is not first pending`);
+    if (!sameMembers(groups.flat(), ids)) shape('order-roll groups must partition the players');
+  }
+  if (state.order !== null && state.turn !== null) {
+    if (!sameMembers(state.order, ids)) shape('order must be a permutation of the players');
+    if (!state.order.includes(state.turn.playerId)) shape(`turn owner ${state.turn.playerId} is not in order`);
+  }
+
+  for (const [p, cell] of Object.entries(state.positions)) {
+    if (!Number.isInteger(cell) || cell < 0 || cell >= PLACEHOLDER_RING.size) {
+      throw new InvariantViolationError('ring-position', `player ${p} on cell ${cell}`);
+    }
   }
 }

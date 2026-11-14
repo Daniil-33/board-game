@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createSession, replay, ReplayDivergenceError, type LogEntry } from '../session.js';
-import { gameEngine } from '../lifecycle.js';
+import { gameEngine } from '../rules.js';
 import { cmd, ctx } from './helpers/fixtures.js';
 
 function playedSession() {
   const s = createSession(gameEngine);
-  s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-1' }, { id: 'c1', rev: 0 }), ctx(1000));
+  s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-2' }, { id: 'c1', rev: 0 }), ctx(1000));
   s.submit(cmd('AddPlayer', { playerId: 'a' }, { id: 'c2', rev: 1 }), ctx(2000));
   s.submit(cmd('AddPlayer', { playerId: 'a' }, { id: 'c2b', rev: 2 }), ctx(2500)); // DUPLICATE_PLAYER, not logged
   s.submit(cmd('AddPlayer', { playerId: 'b' }, { id: 'c3', rev: 2 }), ctx(3000));
@@ -78,9 +78,10 @@ describe('replay', () => {
     expectDivergence(() => replay(gameEngine, log), 0, 'UNSUPPORTED_RULES_VERSION');
   });
 
-  it('dropped entry -> divergence (revision mismatch) at the gap', () => {
+  it('dropped entry -> divergence at the gap: the next entry does not follow the previous revision', () => {
     const log = clone(playedSession().log);
     log.splice(1, 1);
-    expectDivergence(() => replay(gameEngine, log), 1, 'REVISION_MISMATCH');
+    expect(() => replay(gameEngine, log)).toThrow(/does not follow/);
+    expectDivergence(() => replay(gameEngine, log), 1);
   });
 });

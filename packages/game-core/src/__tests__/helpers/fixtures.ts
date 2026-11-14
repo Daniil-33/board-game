@@ -2,7 +2,7 @@ import type { Actor, Expectation, GameCommand, TargetRef } from '../../engine.js
 import type { TransitionContext } from '../../context.js';
 import type { CommandId, Entropy, PlayerId, Revision } from '../../types.js';
 import { entropy, timestamp } from '../../types.js';
-import type { GameState } from '../../state.js';
+import { genesis, type GameState } from '../../state.js';
 import { seedRng } from '../../rng.js';
 
 export const SYSTEM: Actor = { kind: 'system' };
@@ -41,8 +41,9 @@ export function cmd<P>(
 /** A lobby with players a and b, built directly (no lifecycle commands). */
 export function lobbyState(rev = 3): GameState {
   return {
+    ...genesis(),
     revision: rev as Revision,
-    rulesVersion: 'core-1',
+    rulesVersion: 'core-2',
     phase: 'lobby',
     players: [{ id: pid('a') }, { id: pid('b') }],
     rng: seedRng(99),
