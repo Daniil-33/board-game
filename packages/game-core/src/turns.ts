@@ -90,8 +90,8 @@ function startTurn(state: GameState, playerId: PlayerId, bonus: boolean, doubles
 
 /** Enter phase `playing`: everyone on the start cell, the first in `order` to move. */
 export function startPlay(state: GameState, order: readonly PlayerId[], now: Timestamp): Step {
-  const positions: Record<string, number> = {};
-  for (const p of order) positions[p] = PLACEHOLDER_RING.startCell;
+  // Object.fromEntries defines own keys, so any player id (even "__proto__") is safe.
+  const positions: Record<string, number> = Object.fromEntries(order.map((p) => [p, PLACEHOLDER_RING.startCell]));
   return startTurn({ ...state, phase: 'playing', order, positions, jail: {} }, order[0]!, false, 0, now);
 }
 
