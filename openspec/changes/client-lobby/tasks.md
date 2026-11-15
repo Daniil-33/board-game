@@ -51,7 +51,7 @@
   with agentctl engineer report --wake.
 
 ## 5. Delivery
-- [ ] 5.1 Rebase on current main; commit intended client/spec changes, record
+- [x] 5.1 Rebase on current main; commit intended client/spec changes, record
   external-operation intent, push agent/task-s1-client-lobby over authorized
   HTTPS helper, verify and confirm; open PR via the same operation protocol.
 - [ ] 5.2 Obtain green CI and independent exact-head review using the Engineer
