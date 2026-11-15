@@ -113,6 +113,39 @@ describe('LobbyScreen', () => {
     expect(JSON.parse(h.storage.getItem('game.room')!).roomId).toBe('r2');
   });
 
+  it('a background poll keeps a shown error and does not block the buttons', async () => {
+    vi.useFakeTimers();
+    try {
+      const h = harness({
+        stored: storedSession(),
+        route: (call) => (call.method === 'GET' ? { body: { rooms: [BOB_ROOM] } } : { status: 409, body: { code: 'ROOM_UNAVAILABLE', message: 'Gone' } }),
+      });
+      const wrapper = mount(LobbyScreen, provide(h));
+      await flushPromises();
+      await wrapper.find('[data-test="join"]').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('[data-test="error"]').text()).toContain('ROOM_UNAVAILABLE');
+
+      const polls = h.calls.filter((c) => c.method === 'GET').length;
+      // The poll has been sent and not answered yet.
+      vi.advanceTimersByTime(5000);
+      await wrapper.vm.$nextTick();
+      expect(h.calls.filter((c) => c.method === 'GET').length).toBe(polls + 1);
+      expect(h.client.lobby.busy).toBe(false);
+      for (const button of ['create', 'join', 'refresh']) {
+        expect(wrapper.find(`[data-test="${button}"]`).attributes('disabled')).toBeUndefined();
+      }
+      expect(wrapper.find('[data-test="error"]').text()).toContain('ROOM_UNAVAILABLE');
+      // And after it was answered.
+      await flushPromises();
+      expect(wrapper.find('[data-test="error"]').text()).toContain('ROOM_UNAVAILABLE');
+      expect(wrapper.findAll('[data-test="room"]')).toHaveLength(1);
+      wrapper.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('malformed response: shows an error and renders nothing from it', async () => {
     const h = harness({ stored: storedSession(), route: () => ({ body: { rooms: [{ roomId: 'r9', members: 'x' }] } }) });
     const wrapper = mount(LobbyScreen, provide(h));
@@ -166,6 +199,21 @@ describe('RoomScreen', () => {
     h.sockets.last().receive(update(lobbyView(['a', 'b'], 4)));
     await flushPromises();
     expect(h.calls.filter((c) => c.method === 'GET')).toHaveLength(1);
+  });
+
+  it('shows a server error and a malformed-frame problem while in the room view', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const h = inRoom();
+    const wrapper = mount(RoomScreen, provide(h));
+    h.sockets.last().receive(welcome(lobbyView(['a'])));
+    h.sockets.last().receive({ t: 'Error', code: 'MALFORMED_FRAME', message: 'bad hello' });
+    h.sockets.last().receive('garbage');
+    await flushPromises();
+    expect(wrapper.find('[data-test="message"]').text()).toContain('MALFORMED_FRAME');
+    expect(wrapper.find('[data-test="message"]').text()).toContain('bad hello');
+    expect(wrapper.find('[data-test="problem"]').text()).toContain('Unreadable');
+    await wrapper.find('[data-test="message"] button').trigger('click');
+    expect(wrapper.find('[data-test="message"]').exists()).toBe(false);
   });
 
   it('falls back to the player id when no nickname is known', async () => {

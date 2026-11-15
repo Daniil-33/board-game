@@ -23,6 +23,13 @@ const canStart = computed(() => client.game.connected && members.value.length >=
     <h2>Room {{ room.roomId }}</h2>
     <p v-if="client.game.fatal" class="error" data-test="fatal">{{ client.game.fatal }}</p>
     <p v-else-if="!client.game.connected" class="muted" data-test="connecting">Connecting…</p>
+    <p v-if="client.game.problem" class="warn-box" data-test="problem">{{ client.game.problem }}</p>
+    <ul v-if="client.game.messages.length > 0" class="messages">
+      <li v-for="message in client.game.messages" :key="message.id" class="error" data-test="message">
+        <span><strong>{{ message.code }}</strong>: {{ message.message }}</span>
+        <button class="link" aria-label="Dismiss" @click="client.connection.dismissMessage(message.id)">×</button>
+      </li>
+    </ul>
     <h3>Players</h3>
     <ul class="members">
       <li v-for="member in members" :key="member.id" data-test="member">

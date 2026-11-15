@@ -104,6 +104,11 @@ code.
   shows a reload notice. Other codes are shown and reconnect continues.
 - While a command of some type is in the outbox, its button is disabled, so a
   double click cannot issue two commands.
+- The message list and the connection problem are shown on every screen that
+  holds a socket: the room view and the game screen (review RVW-001). An
+  unrecognised `Error` code is also logged to the console.
+- The held revision used for `Hello` and for the stale-update rule is the
+  frame's checked `revision` field, not the one inside the open view object.
 
 ### D4. Player names (view gap)
 
@@ -134,7 +139,9 @@ In dev, Vite proxies `/api`, `/ws` and the mock-only `/mock` to the mock, so the
 same-origin relative URLs and needs no configuration in Compose.
 
 Responses are checked with the protocol's TypeBox schemas (`Value.Check`); a
-mismatch is reported as an error, not rendered.
+mismatch is reported as an error, not rendered. The lobby screen polls the room
+list every 5 s in the background; a poll neither disables the buttons nor
+clears an error that is on screen (review RVW-002).
 
 There is no "get room" operation and no lobby push, so the room view learns
 about new members and the game start from the game socket: on entering a
@@ -277,6 +284,12 @@ bundle and from `src/`.
 3. D5: approved. The room view opens the game socket with `Hello` in phase
    `lobby` and follows `Update` (`PlayerAdded`, `GameStarted`).
 4. D10: approved. Root `build` becomes `pnpm -r run typecheck`.
+
+Review REV-s1-client-2 dispositions (Team Lead, 2026-11-15): RVW-001 and
+RVW-002 fixed. RVW-003 (views are not schema-checked on the wire) accepted
+for stage 1. RVW-004 (animation backlog after a hidden tab) deferred to stage
+8 polish. RVW-005 (nickname of a late joiner when the room is not listed)
+deferred to the stage 1 rev 3 lobby work, which adds a get-room route.
 
 Accepted risks: display-only clock skew of the timer; Node 22 is the target
 (CI), newer local Node is fine for development.

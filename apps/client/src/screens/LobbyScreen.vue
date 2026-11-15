@@ -10,7 +10,7 @@ let timer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
   void client.refreshRooms();
   timer = setInterval(() => {
-    if (!client.lobby.busy) void client.refreshRooms();
+    if (!client.lobby.busy) void client.refreshRooms({ background: true });
   }, REFRESH_MS);
 });
 onBeforeUnmount(() => clearInterval(timer));

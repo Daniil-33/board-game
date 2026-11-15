@@ -90,6 +90,16 @@ describe('updates', () => {
     expect(h.board.steps).toEqual([{ kind: 'dice', playerId: 'a', dice: [3, 4] }]);
   });
 
+  it('takes the held revision from the frame field, not from inside the view', () => {
+    const h = joined();
+    const view = { ...playingView(['a', 'b'], { revision: 21 }), revision: 999 };
+    h.sockets.last().receive(JSON.stringify({ t: 'Update', revision: 21, view, events: [] }));
+    h.sockets.last().drop();
+    vi.advanceTimersByTime(RECONNECT_DELAYS_MS[0]);
+    h.sockets.last().open();
+    expect(h.sockets.last().sent[0]).toMatchObject({ t: 'Hello', lastRevision: 21 });
+  });
+
   it('ignores an update at or below the held revision', () => {
     const h = joined();
     h.client.attachBoard(h.board);

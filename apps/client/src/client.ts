@@ -52,7 +52,8 @@ export interface Client {
   start(): void;
   /** `nickname` must already be normalized. */
   login(nickname: string): Promise<void>;
-  refreshRooms(): Promise<void>;
+  /** `background`: a poll; it neither blocks the buttons nor clears a shown error. */
+  refreshRooms(options?: { background?: boolean }): Promise<void>;
   createRoom(): Promise<void>;
   joinRoom(roomId: string): Promise<void>;
   startGame(): Promise<void>;
@@ -193,9 +194,19 @@ export function createClient(deps: ClientDeps): Client {
         lobby.busy = false;
       }
     },
-    async refreshRooms() {
-      const rooms = await run((token) => api.listRooms(token));
-      if (rooms !== undefined) lobby.rooms = rooms;
+    async refreshRooms(options = {}) {
+      if (options.background !== true) {
+        const rooms = await run((token) => api.listRooms(token));
+        if (rooms !== undefined) lobby.rooms = rooms;
+        return;
+      }
+      const token = session.state.guest?.token;
+      if (token === undefined) return;
+      try {
+        lobby.rooms = await api.listRooms(token);
+      } catch (error) {
+        report(error);
+      }
     },
     async createRoom() {
       const room = await run((token) => api.createRoom(token));

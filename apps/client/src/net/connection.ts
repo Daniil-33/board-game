@@ -1,4 +1,4 @@
-import type { CommandId, GameEvent, StateView } from '@game/game-core';
+import type { CommandId, GameEvent, Revision, StateView } from '@game/game-core';
 import {
   PROTOCOL_VERSION,
   decodeServerFrame,
@@ -71,6 +71,8 @@ export function createConnection(options: ConnectionOptions): Connection {
   let attempt = 0;
   let retryTimer: unknown = null;
   let nextMessageId = 1;
+  /** Revision of the held view, from the frame's checked `revision` field (the view itself is an open object). */
+  let heldRevision: Revision | null = null;
 
   function send(frame: HelloFrame | CommandFrame): void {
     socket?.send(JSON.stringify(frame));
@@ -108,7 +110,7 @@ export function createConnection(options: ConnectionOptions): Connection {
           protocolVersion: PROTOCOL_VERSION,
           token,
           gameId,
-          lastRevision: state.view?.revision ?? null,
+          lastRevision: heldRevision,
         });
       },
       onMessage(data) {
@@ -142,6 +144,7 @@ export function createConnection(options: ConnectionOptions): Connection {
     switch (frame.t) {
       case 'Welcome': {
         state.playerId = frame.playerId;
+        heldRevision = frame.revision;
         state.view = frame.view;
         state.connected = true;
         state.problem = null;
@@ -153,7 +156,8 @@ export function createConnection(options: ConnectionOptions): Connection {
       }
       case 'Update': {
         // Before the first Welcome there is no view to update.
-        if (state.view === null || frame.revision <= state.view.revision) return;
+        if (state.view === null || heldRevision === null || frame.revision <= heldRevision) return;
+        heldRevision = frame.revision;
         state.view = frame.view;
         options.onUpdate?.(frame.view, frame.events);
         return;
@@ -189,6 +193,7 @@ export function createConnection(options: ConnectionOptions): Connection {
         stop();
         return;
       default:
+        console.warn('[connection] server error:', frame.code, frame.message);
         showMessage(frame.code, frame.message);
     }
   }
@@ -198,6 +203,7 @@ export function createConnection(options: ConnectionOptions): Connection {
     stop();
     attempt = 0;
     state.playerId = null;
+    heldRevision = null;
     state.view = null;
     state.pending.splice(0);
     state.problem = null;
