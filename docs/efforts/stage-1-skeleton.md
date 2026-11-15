@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-stage-1-skeleton
-revision: 2
+revision: 3
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-14T15:00:00Z
@@ -26,6 +26,16 @@ Agreed with the owner. Source: ROADMAP.md stage 1, owner decisions of
 1. Two to six people in separate browsers enter as guests (nickname plus a
    server session token), create or join a room in the lobby, and the room
    creator starts the game once at least two participants are present.
+1a. Every room is listed in the public lobby list. The creator may set an
+   access code; such a room is joinable only with the code or an invite link
+   carrying it. A room without a code is joinable from the list while seats
+   remain.
+1b. A participant may leave a room before the game starts. If the creator
+   leaves, the room closes.
+1c. Leaving during the game is resignation: the player is permanently
+   eliminated, removed from the turn order, and an unfinished own turn is
+   closed. When one active player remains, that player wins and the game ends.
+   A dropped connection is not resignation (reconnect plus timeouts apply).
 2. Setup: each participant rolls one die; order is descending; only tied
    participants reroll, starting from the first unresolved group. Each setup
    roll has a 45 s deadline; on expiry the system rolls for the participant.
@@ -139,6 +149,9 @@ escalations.
 - 1: initial handoff.
 - 2: owner resolved the interim jail bonus question (no bonus turn); no other
   change.
+- 3: owner lobby decisions 2026-11-14: public room list with optional access
+  code / invite link, leave before start (creator leaving closes the room),
+  leaving during the game = resignation (criteria 1a-1c).
 
 ## Acceptance
 
