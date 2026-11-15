@@ -18,6 +18,21 @@ jobs:
     name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      # Database of the server integration tests (`pnpm test:integration`).
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: game
+          POSTGRES_PASSWORD: game
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U game -d postgres"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,3 +57,8 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Integration test (Postgres)
+        run: pnpm test:integration
+        env:
+          TEST_DATABASE_URL: postgres://game:game@127.0.0.1:5432/postgres
