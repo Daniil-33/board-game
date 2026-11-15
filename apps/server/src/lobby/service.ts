@@ -24,6 +24,7 @@ export interface LobbyService {
 }
 
 export interface LobbyDeps {
+  readonly gameSeed?: () => number;
   readonly db: Kysely<Database>;
   readonly manager: RoomManager;
   readonly queries: RoomQueries;
@@ -115,7 +116,7 @@ export function createLobbyService(deps: LobbyDeps): LobbyService {
         const room = await openRoom(roomId);
         await submitSystem(room, (state) =>
           state.revision === 0
-            ? { type: 'CreateGame', payload: { seed: randomInt(0, 2 ** 32), rulesVersion: CURRENT_RULES_VERSION } }
+            ? { type: 'CreateGame', payload: { seed: (deps.gameSeed ?? (() => randomInt(0, 2 ** 32)))(), rulesVersion: CURRENT_RULES_VERSION } }
             : null,
         );
         await submitSystem(room, (state) => (isMember(state, guest.guestId) ? null : { type: 'AddPlayer', payload: { playerId: guest.guestId } }));

@@ -1,0 +1,6 @@
+# Fresh isolated database only. Never use this override for restart evidence.
+services:
+  server:
+    environment:
+      NODE_ENV: test
+      E2E_TEST_SEED: '1036'

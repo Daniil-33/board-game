@@ -1,3 +1,4 @@
+import { createServerContext } from './context/test-context.js';
 import { createDb } from './db/client.js';
 import { migrateToLatest } from './db/migrate.js';
 import { consoleLogger, errorFields } from './logger.js';
@@ -14,12 +15,13 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const context = createServerContext(config.testSeed);
   const db = createDb(config.databaseUrl);
   const migrated = await migrateToLatest(db);
   consoleLogger.info('database migrated', { applied: migrated });
-  const manager = createRoomManager({ db });
+  const manager = createRoomManager({ db, entropy: context.entropy });
   await manager.restoreAll();
-  const app = await createServer({ db, manager });
+  const app = await createServer({ db, manager, gameSeed: context.gameSeed });
   const address = await app.listen({ host: config.host, port: config.port });
   consoleLogger.info('server listening', { address });
 

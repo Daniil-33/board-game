@@ -16,6 +16,7 @@ import { ConnectionRegistry } from './ws/registry.js';
 import { registerGameSocket } from './ws/routes.js';
 
 export interface ServerDeps {
+  readonly gameSeed?: () => number;
   readonly db: Kysely<Database>;
   /** Created and owned by the caller (it restores rooms and shuts them down). */
   readonly manager: RoomManager;
@@ -34,7 +35,7 @@ export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
   const logger = deps.logger ?? consoleLogger;
   const guests = createGuestStore(deps.db);
   const queries = createRoomQueries(deps.db);
-  const lobby = createLobbyService({ db: deps.db, manager: deps.manager, queries, logger });
+  const lobby = createLobbyService({ db: deps.db, manager: deps.manager, queries, logger, ...(deps.gameSeed ? { gameSeed: deps.gameSeed } : {}) });
 
   const app = createHttpApp(logger);
   // A frame of MAX_FRAME_LENGTH UTF-16 units is at most 3 bytes per unit in UTF-8.
