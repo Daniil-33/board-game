@@ -4,3 +4,11 @@ dist/
 .env
 .env.*
 *.log
+
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
+.e2e-secrets.jsonl
+test-results-*/

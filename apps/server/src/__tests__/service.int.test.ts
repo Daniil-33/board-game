@@ -47,6 +47,14 @@ describe('service process', () => {
     expect(proc.lines().join('\n')).toContain('DATABASE_URL');
   }, 30_000);
 
+  it.each(['production', 'development', ''])('refuses explicit test entropy before DB access in mode %s', async (mode) => {
+    const proc = run({ NODE_ENV: mode, E2E_TEST_SEED: '', DATABASE_URL: 'postgres://unreachable', PORT: '0' });
+    expect(await proc.exit).toBe(1);
+    expect(proc.lines().join('\n')).toContain('E2E_TEST_SEED requires NODE_ENV=test');
+    expect(proc.lines().join('\n')).not.toContain('database migrated');
+    expect(proc.lines().join('\n')).not.toContain('server listening');
+  }, 30_000);
+
   it('Default bind: migrates, listens on 127.0.0.1 only, exits 0 on SIGTERM', async () => {
     const test = await createTestDatabase({ migrate: false });
     try {

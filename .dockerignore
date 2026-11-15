@@ -1,0 +1,11 @@
+.git
+node_modules
+**/node_modules
+**/dist
+.env*
+!.env.example
+test-results
+playwright-report
+test-results-*
+.e2e-secrets.jsonl
+evidence
