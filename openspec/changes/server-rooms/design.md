@@ -140,7 +140,7 @@ Faults outside the listed steps never escape `submit`:
 
 - The lookup in step 2 throws: nothing was executed, so the session still
   equals the DB. The command is `rejected PERSISTENCE_FAILED` without a
-  reload and timers are re-armed with the retry floor of D5.
+  reload and the armed timers are left alone.
 - The engine throws in step 3 (an invariant violation is a core bug): the
   session did not advance. The command is `rejected ROOM_UNAVAILABLE`, the
   error is logged, the room stays live.
@@ -169,8 +169,14 @@ state" holds. If the reload itself fails (DB unreachable, divergence), the
 room becomes `failed`: timers cancelled, subscribers get `failed`, queued and
 later commands are rejected with `ROOM_UNAVAILABLE`.
 
-To avoid a hot loop when a `Timeout` insert keeps failing while reloads
-succeed, timers armed by such a reload fire no earlier than 1000 ms later.
+The reload re-arms timers at their real deadlines. One exception avoids a
+hot loop when a `Timeout` insert keeps failing while reloads succeed: when
+the failed command is itself a system `Timeout`, the timer of that
+`Timeout`'s target fires no earlier than 1000 ms later. No other command's
+failure can move a deadline (review RVW-001: a command id Postgres cannot
+store, e.g. one containing U+0000, fails its lookup or insert every time and
+could otherwise be resent to hold a deadline open). Rejecting such ids
+before they reach the room is left to the protocol/API layer.
 
 A fired timer is consumed. If its `Timeout` then ends without resolving the
 deadline (rejected for any reason, or answered as a duplicate because a
@@ -219,9 +225,12 @@ the snapshot with the highest revision (none → `genesis()`) and all log
 entries with a higher revision in order. `restoreSession` validates the tail.
 
 `RoomManager.restoreAll()` lists `rooms` with status `lobby` or `playing` and
-loads each. A room whose load throws (`ReplayDivergenceError`, invariant
-violation, bad row) is logged at error level with game id, tail index and
-reason, kept in the manager as `failed`, and does not stop the others. A DB
+loads each. A room whose stored game is bad (`ReplayDivergenceError`,
+invariant violation, corrupt row) is logged at error level with game id, tail
+index and reason, kept in the manager as `failed`, and does not stop the
+others. A room that could not be read (a database error on that load) is
+logged and listed in `failed` too, but is not registered, so a later `open`
+loads it (review RVW-002). A DB
 error while listing rooms rejects `restoreAll` (boot fails loudly).
 
 `open(gameId)` for a room not in memory checks the `rooms` row, then loads the

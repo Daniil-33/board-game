@@ -10,6 +10,7 @@ import {
   type LogEntry,
   type PendingDeadline,
   type Session,
+  type TargetRef,
   type Timestamp,
 } from '@game/game-core';
 import type { Clock } from '../context/clock.js';
@@ -29,7 +30,7 @@ import {
 
 /** A snapshot is written at every accepted revision that is a multiple of this. */
 export const SNAPSHOT_INTERVAL = 50;
-/** After a failed write or lookup, timers fire no earlier than this much later. */
+/** A Timeout that did not resolve its deadline is retried no earlier than this much later. */
 export const RETRY_FLOOR_MS = 1000;
 
 const UNIQUE_VIOLATION = '23505';
@@ -59,6 +60,11 @@ function sameBody(a: GameCommand, b: GameCommand): boolean {
   } catch {
     return false; // not plain data, so not what was stored
   }
+}
+
+/** A system `Timeout` naming a target, as issued by a room timer. */
+function isTimeout(command: GameCommand): command is GameCommand & { expected: { kind: 'target'; target: TargetRef } } {
+  return command.type === 'Timeout' && command.actor.kind === 'system' && command.expected.kind === 'target';
 }
 
 const timerKey = (d: PendingDeadline): string => `${d.target.kind}\u0000${d.target.id}\u0000${d.at}`;
@@ -212,8 +218,9 @@ export class GameRoom implements Room {
           commandId: command.commandId,
           ...errorFields(error),
         });
-        // Nothing was executed, so the session still equals the database.
-        this.armTimers(this.retryFloor());
+        // Nothing was executed, so the session still equals the database and
+        // the armed timers stay as they are: a failing command must never be
+        // able to push a deadline back. (A Timeout is retried by `onTimer`.)
         return this.reject(command, PERSISTENCE_FAILED, 'The command could not be checked against the log');
       }
       if (prior !== undefined) {
@@ -301,7 +308,11 @@ export class GameRoom implements Room {
 
     this.session = session;
     this.committed = session.state;
-    this.armTimers(this.retryFloor());
+    // Timers follow the reloaded state at their real deadlines. Only the
+    // deadline of a Timeout that just failed is held back, so that a write
+    // that keeps failing is retried once per floor instead of in a hot loop;
+    // no other command's failure can delay a deadline.
+    this.armTimers(isTimeout(command) ? { target: command.expected.target, notBefore: this.retryFloor() } : undefined);
     if (this.committed.revision !== this.emittedRevision) {
       this.emittedRevision = this.committed.revision;
       this.emit({ kind: 'resync', revision: this.committed.revision, state: this.committed });
@@ -355,11 +366,17 @@ export class GameRoom implements Room {
     this.timers.clear();
   }
 
-  /** Replace all timers by one per pending deadline of the persisted state. */
-  private armTimers(notBefore?: Timestamp): void {
+  /**
+   * Replace all timers by one per pending deadline of the persisted state.
+   * `hold` delays the timer of one target, and only that one.
+   */
+  private armTimers(hold?: { readonly target: TargetRef; readonly notBefore: Timestamp }): void {
     this.cancelTimers();
     if (!this.accepting || this.currentStatus !== 'live') return;
-    for (const deadline of pendingDeadlines(this.committed)) this.arm(deadline, notBefore);
+    for (const deadline of pendingDeadlines(this.committed)) {
+      const held = hold !== undefined && hold.target.kind === deadline.target.kind && hold.target.id === deadline.target.id;
+      this.arm(deadline, held ? hold.notBefore : undefined);
+    }
   }
 
   private arm(deadline: PendingDeadline, notBefore?: Timestamp): void {

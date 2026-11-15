@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CONTINUATION_MS, SETUP_ROLL_DURATION_MS, TURN_DURATION_MS, pendingDeadlines } from '@game/game-core';
+import { CONTINUATION_MS, SETUP_ROLL_DURATION_MS, TURN_DURATION_MS, pendingDeadlines, type CommandId } from '@game/game-core';
 import { RETRY_FLOOR_MS } from '../rooms/room.js';
 import { logEntries, seedRoom } from './helpers/db.js';
-import { lobby, playingGame, startGame, step, T0, timeoutFor, whenIdle } from './helpers/game.js';
+import { lobby, nextMove, playingGame, startGame, step, T0, timeoutFor, whenIdle } from './helpers/game.js';
 import { record, useHarness } from './helpers/harness.js';
 
 const h = useHarness();
@@ -189,6 +189,46 @@ describe('deadline timers', () => {
     await whenIdle(room);
     expect(await timeouts(gameId)).toHaveLength(1);
     expect(events).toMatchObject([{ kind: 'update' }]);
+  });
+
+  // Review RVW-001: only a failed Timeout may hold its own deadline back.
+  it('a failing player command never delays a deadline', async () => {
+    let failWrites = false;
+    const { manager, clock } = h.manager({
+      wrapStore: (store) => ({
+        ...store,
+        async appendEntry(gameId, entry, options) {
+          if (failWrites && entry.command.type !== 'Timeout') throw new Error('write refused');
+          return store.appendEntry(gameId, entry, options);
+        },
+      }),
+    });
+    const gameId = await seedRoom(h.db);
+    const room = await manager.open(gameId);
+    await playingGame(room);
+    const deadline = room.state.turn!.deadline;
+    expect(clock.pending).toEqual([deadline]);
+
+    clock.advance(TURN_DURATION_MS - 5);
+    // A command id Postgres cannot store: the log lookup itself fails (SQLSTATE 22021).
+    for (let i = 0; i < 3; i++) {
+      const unstorable = await room.submit({ ...nextMove(room.state), commandId: `bad\u0000${i}` as CommandId });
+      expect(unstorable).toMatchObject({ kind: 'rejected', error: { code: 'PERSISTENCE_FAILED' } });
+      expect(clock.pending).toEqual([deadline]);
+    }
+    // A command the core accepts but that cannot be written: reload, same deadline.
+    failWrites = true;
+    for (let i = 0; i < 3; i++) {
+      expect(await room.submit(nextMove(room.state))).toMatchObject({ kind: 'rejected', error: { code: 'PERSISTENCE_FAILED' } });
+      expect(clock.pending).toEqual([deadline]);
+    }
+    expect(room.status).toBe('live');
+
+    clock.advance(5);
+    await whenIdle(room);
+    const [timeout, ...rest] = await timeouts(gameId);
+    expect(rest).toEqual([]);
+    expect(timeout!.now).toBe(deadline);
   });
 
   it('retries a Timeout whose command id lookup failed', async () => {

@@ -10,8 +10,14 @@ Defines how a room turns the core's pending deadlines into timers and system
 ### Requirement: One timer per pending deadline
 After every committed transition, after a restore and after a reload, the
 room SHALL cancel its timers and arm exactly one timer per entry of
-`pendingDeadlines(state)`, due at that entry's time. A rejected command SHALL
-leave the timers unchanged.
+`pendingDeadlines(state)`, due at that entry's time. A command rejected
+without a reload SHALL leave the timers unchanged. No command other than a
+failed `Timeout` SHALL cause a deadline's timer to be due later than the
+deadline.
+
+#### Scenario: Failing commands near a deadline
+- **WHEN** commands whose lookup or insert fails are submitted repeatedly just before a deadline
+- **THEN** the timer SHALL stay due at the deadline and the `Timeout` SHALL be accepted with `now` equal to it
 
 #### Scenario: Timers follow the state
 - **WHEN** a command moves the game from one turn to the next

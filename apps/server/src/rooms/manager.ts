@@ -47,11 +47,12 @@ export function createRoomManager(deps: RoomManagerDeps): RoomManager {
   let closing: Promise<void> | null = null;
 
   /**
-   * Load one room and register it. `keepOnAnyError` (boot) registers a failed
-   * room whatever went wrong; otherwise only bad data does, and a database
-   * error rejects so a later `open` can try again.
+   * Load one room and register it. A stored game that is itself bad
+   * (divergence, invariant violation, corrupt row) registers a failed room.
+   * A database error rejects and registers nothing, so a later `open` can
+   * try again.
    */
-  function load(gameId: string, keepOnAnyError: boolean): Promise<GameRoom> {
+  function load(gameId: string): Promise<GameRoom> {
     const pending = loading.get(gameId);
     if (pending !== undefined) return pending;
     const promise = (async () => {
@@ -66,7 +67,7 @@ export function createRoomManager(deps: RoomManagerDeps): RoomManager {
           ...fields,
           ...(typeof (error as { index?: unknown }).index === 'number' ? { tailIndex: (error as { index: number }).index } : {}),
         });
-        if (!keepOnAnyError && !dataError) throw error;
+        if (!dataError) throw error;
         room = GameRoom.failed(gameId, roomDeps);
       }
       rooms.set(gameId, room);
@@ -88,8 +89,14 @@ export function createRoomManager(deps: RoomManagerDeps): RoomManager {
       const restored: string[] = [];
       const failed: string[] = [];
       for (const id of ids) {
-        const room = rooms.get(id) ?? (await load(id, true));
-        (room.status === 'failed' ? failed : restored).push(id);
+        let room: GameRoom | undefined;
+        try {
+          room = rooms.get(id) ?? (await load(id));
+        } catch {
+          // Could not be read (already logged by `load`): reported as failed,
+          // not registered, so `open` loads it once the database answers.
+        }
+        (room === undefined || room.status === 'failed' ? failed : restored).push(id);
       }
       logger.info('rooms restored', { restored: restored.length, failed: failed.length });
       return { restored, failed };
@@ -103,7 +110,7 @@ export function createRoomManager(deps: RoomManagerDeps): RoomManager {
       if (pending !== undefined) return pending;
       if (!(await store.roomExists(gameId))) throw new RoomNotFoundError(gameId);
       if (closed) throw new RoomManagerClosedError();
-      return rooms.get(gameId) ?? load(gameId, false);
+      return rooms.get(gameId) ?? load(gameId);
     },
 
     get(gameId): Room | undefined {

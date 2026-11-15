@@ -44,6 +44,15 @@ restored.
 - **WHEN** a stored log entry's events are altered and the manager boots
 - **THEN** that room SHALL be `failed`, the error log SHALL name the game id, `game_log` and `game_snapshots` for it SHALL be unchanged, and a healthy second room SHALL be live
 
+### Requirement: An unreadable room is retried
+When a room cannot be read from the database at boot, the failure SHALL be
+logged and reported, the room SHALL NOT be registered as failed, and a later
+`open` SHALL load it.
+
+#### Scenario: Database error for one room at boot
+- **WHEN** loading one room fails with a database error during `restoreAll` and the database then recovers
+- **THEN** `restoreAll` SHALL list that room as failed and the others as restored, and a later `open` of it SHALL return a live room
+
 ### Requirement: Unknown room
 Opening a game id without a `rooms` row SHALL fail with a room-not-found
 error and SHALL create nothing.

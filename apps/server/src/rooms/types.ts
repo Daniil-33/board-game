@@ -57,7 +57,12 @@ export interface Room {
 }
 
 export interface RoomManager {
-  /** Boot: load every room with status `lobby` or `playing`. One bad room never throws. */
+  /**
+   * Boot: load every room with status `lobby` or `playing`. One bad room
+   * never throws. `failed` lists rooms whose stored game is bad (registered
+   * as failed rooms) and rooms that could not be read (not registered: `open`
+   * tries again).
+   */
   restoreAll(): Promise<{ restored: string[]; failed: string[] }>;
   /**
    * The live room, loaded from the database on first use (a new room has an

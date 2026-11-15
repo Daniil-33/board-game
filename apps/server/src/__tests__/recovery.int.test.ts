@@ -153,6 +153,36 @@ describe('recovery', () => {
     expect(await h.db.selectFrom('rooms').selectAll().execute()).toEqual([]);
   });
 
+  // Review RVW-002: an unreadable room is not a bad room.
+  it('a room that cannot be read at boot is reported, not registered, and opens later', async () => {
+    const first = h.manager();
+    const flaky = await seedRoom(h.db);
+    const fine = await seedRoom(h.db);
+    await lobby(await first.manager.open(flaky));
+    await lobby(await first.manager.open(fine));
+
+    let down = true;
+    const second = h.manager({
+      seed: 2,
+      wrapStore: (store) => ({
+        ...store,
+        async loadGame(gameId) {
+          if (down && gameId === flaky) throw new Error('connection reset');
+          return store.loadGame(gameId);
+        },
+      }),
+    });
+    expect(await second.manager.restoreAll()).toEqual({ restored: [fine], failed: [flaky] });
+    expect(second.manager.get(flaky)).toBeUndefined();
+    expect(second.logger.lines.some((l) => l.level === 'error' && l.fields['gameId'] === flaky)).toBe(true);
+    await expect(second.manager.open(flaky)).rejects.toThrow('connection reset');
+
+    down = false;
+    const room = await second.manager.open(flaky);
+    expect(room.status).toBe('live');
+    expect(room.state.revision).toBe(3);
+  });
+
   it('boot fails loudly when the room list cannot be read', async () => {
     const { manager } = h.manager({
       wrapStore: (store) => ({
