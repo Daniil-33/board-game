@@ -15,7 +15,8 @@ command_id, entry jsonb)` and `game_snapshots(game_id, revision, state
 jsonb)`. `game_log` SHALL be unique on `(game_id, revision)` and on
 `(game_id, command_id)`. `game_id` SHALL reference `rooms.id`. `entry` SHALL
 hold the core `LogEntry` unchanged and `state` the core `GameState` unchanged.
-`rooms.status` SHALL be `lobby` or `playing`.
+`rooms.status` SHALL be `lobby` or `playing`, enforced by a named check
+constraint that a later migration can replace.
 
 #### Scenario: Revision collision
 - **WHEN** a second row with an existing `(game_id, revision)` is inserted
@@ -24,6 +25,10 @@ hold the core `LogEntry` unchanged and `state` the core `GameState` unchanged.
 #### Scenario: Command id collision
 - **WHEN** a second row with an existing `(game_id, command_id)` is inserted at a new revision
 - **THEN** the database SHALL reject it with a unique violation
+
+#### Scenario: Unknown status
+- **WHEN** a room's status is set to a value other than `lobby` or `playing`
+- **THEN** the database SHALL reject it with a check violation
 
 #### Scenario: Log entry round trip
 - **WHEN** a log entry is written and read back

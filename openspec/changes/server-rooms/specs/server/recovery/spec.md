@@ -55,7 +55,9 @@ error and SHALL create nothing.
 ### Requirement: Clean shutdown
 Shutdown SHALL stop accepting commands, let every already submitted command
 finish, cancel all timers, and write a snapshot for every live room. Commands
-submitted afterwards SHALL be rejected with `ROOM_UNAVAILABLE`.
+submitted after shutdown was requested SHALL be rejected with
+`ROOM_UNAVAILABLE`, and opening a room SHALL fail with a manager-closed error
+carrying that code.
 
 #### Scenario: Shutdown during a command
 - **WHEN** shutdown is requested while a command's insert is in flight

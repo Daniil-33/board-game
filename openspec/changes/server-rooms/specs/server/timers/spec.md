@@ -41,6 +41,16 @@ fires before its deadline SHALL be re-armed instead. The command id of each
 - **WHEN** a `Timeout` on an unrolled turn extends the same turn and the clock then reaches the new deadline
 - **THEN** a second `Timeout` for the same turn target SHALL be accepted
 
+### Requirement: A failed Timeout is retried
+When a `Timeout` issued by a timer does not resolve its deadline (its write
+or lookup failed, or it was otherwise not accepted) and that deadline is
+still pending, the room SHALL arm a timer for it again, due no earlier than
+1000 ms after the failure.
+
+#### Scenario: Insert fails, then works
+- **WHEN** the insert of a timer's `Timeout` fails and the clock then advances by 1000 ms with the database working
+- **THEN** no `Timeout` SHALL be in the log before those 1000 ms have passed, and one SHALL be accepted when they have
+
 ### Requirement: Stale timers are harmless
 A `Timeout` for a target that is no longer pending SHALL be rejected by the
 core and SHALL change neither the state, the log nor the armed timers.

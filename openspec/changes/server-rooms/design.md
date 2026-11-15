@@ -47,7 +47,10 @@ apps/server/
   src/rooms/manager.ts    RoomManager
   src/rooms/index.ts      public interface (proposal § "Published room interface")
   src/logger.ts           Logger, consoleLogger
-  src/__tests__/...       integration tests + helpers (test DB, fake clock, seeded entropy)
+  src/testing.ts          FakeClock, seededEntropy for other packages' tests
+  src/__tests__/*.test.ts      tests that need only Node (`pnpm test`)
+  src/__tests__/*.int.test.ts  Postgres tests (`pnpm test:integration`)
+  src/__tests__/helpers/       test DB, fake clock, seeded entropy, game driver
 ```
 
 `src/index.ts` re-exports `rooms`, `db` (types, `createDb`, `migrateToLatest`)
@@ -90,8 +93,9 @@ create table game_snapshots (
 );
 ```
 
-Exactly the columns of the Team Lead design; no column carries product data
-beyond it. `entry` is the core `LogEntry` verbatim. jsonb values are passed as
+(`rooms.status` is written as a named constraint, `rooms_status_check`, so a
+later migration can extend it.) Exactly the columns of the Team Lead design;
+no column carries product data beyond it. `entry` is the core `LogEntry` verbatim. jsonb values are passed as
 `JSON.stringify(...)` text cast to `jsonb` (pg would turn a top-level JS array
 into a Postgres array).
 
@@ -132,6 +136,17 @@ One job:
 6. Transaction failed (any error; SQLSTATE `23505` is logged as a conflict) →
    D5.
 
+Faults outside the listed steps never escape `submit`:
+
+- The lookup in step 2 throws: nothing was executed, so the session still
+  equals the DB. The command is `rejected PERSISTENCE_FAILED` without a
+  reload and timers are re-armed with the retry floor of D5.
+- The engine throws in step 3 (an invariant violation is a core bug): the
+  session did not advance. The command is `rejected ROOM_UNAVAILABLE`, the
+  error is logged, the room stays live.
+- A payload that is not plain data skips step 2 (it cannot be in the log) and
+  is rejected by the session with `INVALID_PAYLOAD`.
+
 The DB lookup in step 2 costs one indexed read per command and makes
 duplicate handling identical before and after a restart, with no in-memory
 index to rebuild. Alternative: load all command ids at restore; rejected, it
@@ -156,6 +171,12 @@ later commands are rejected with `ROOM_UNAVAILABLE`.
 
 To avoid a hot loop when a `Timeout` insert keeps failing while reloads
 succeed, timers armed by such a reload fire no earlier than 1000 ms later.
+
+A fired timer is consumed. If its `Timeout` then ends without resolving the
+deadline (rejected for any reason, or answered as a duplicate because a
+deterministic entropy source repeated an id) while that deadline is still
+pending and unarmed, the room arms it again with the same floor, so a
+transient fault delays a turn but never stalls the game.
 
 ### D6. Snapshots
 
@@ -205,11 +226,15 @@ error while listing rooms rejects `restoreAll` (boot fails loudly).
 
 `open(gameId)` for a room not in memory checks the `rooms` row, then loads the
 same way (empty log → genesis session). Concurrent `open` calls for one id
-share one load promise.
+share one load promise. A bad stored game gives a `failed` room, as at boot;
+a database error rejects `open` and registers nothing, so a later call can
+succeed. After `shutdown`, `open` and `restoreAll` reject with
+`RoomManagerClosedError` (code `ROOM_UNAVAILABLE`).
 
-`shutdown()`: mark the manager closed (new `open`/`submit` → `ROOM_UNAVAILABLE`),
-cancel timers, wait for every queue to drain, snapshot every live room, set
-rooms to `closed`. It does not destroy the Kysely instance; the owner of the
+`shutdown()`: mark the manager closed (new `open`/`submit` → `ROOM_UNAVAILABLE`,
+effective before the call returns), cancel timers, wait for every queue to
+drain, snapshot every live room, set rooms to `closed`. A failed shutdown
+snapshot is logged and does not fail shutdown: the log is complete without it. It does not destroy the Kysely instance; the owner of the
 pool does.
 
 ### D9. Context sources
@@ -224,17 +249,27 @@ interface EntropySource { next(): Entropy }
 Tests use a `FakeClock` that also implements `TimerScheduler`
 (`advance(ms)` fires due timers in time order) and a counter-based
 deterministic entropy source; both live under `src/__tests__/helpers` and are
-exported from a `testing` entry so the e2e task can reuse them.
+exported from a `testing` entry so the e2e task can reuse them. `Timeout`
+ids come from the entropy source, so a deterministic process restarting on an
+existing database must use a new seed.
 
 ### D10. Test harness and CI
 
-Tests read `TEST_DATABASE_URL`, default
+Two suites. `pnpm test` (`vitest.config.ts`, `*.test.ts` without
+`*.int.test.ts`) needs only Node: context sources, fake clock, scheduler.
+`pnpm test:integration` (`vitest.integration.config.ts`, `*.int.test.ts`) is
+everything that touches Postgres; the root script runs it in every package
+that defines it.
+
+Integration tests read `TEST_DATABASE_URL`, default
 `postgres://game:game@127.0.0.1:54329/postgres` (the `docker-compose.dev.yml`
-service, `postgres:16-alpine`, bound to localhost). Each test file creates its
-own database `test_<random>`, runs `migrateToLatest` on it (this is the
-"migrations up from an empty DB" check) and drops it afterwards, so files run
-in parallel. An unreachable database fails the suite with a message naming
-the compose command.
+service, `postgres:16-alpine`, bound to localhost, data on tmpfs). Each test
+file (each test in `recovery.int.test.ts`, where `restoreAll` loads every
+room) creates its own database `test_<random>`, runs `migrateToLatest` on it
+(this is the "migrations up from an empty DB" check) and drops it afterwards,
+so files run in parallel. An unreachable database fails the suite with a
+message naming the compose command. Local commands are in
+`apps/server/README.md`.
 
 The room reaches the DB only through a `GameStore` interface
 (`game-store.ts` is the Postgres implementation, the default). Tests wrap the
@@ -250,7 +285,8 @@ real store, never replace it:
   the manager) commits a command first; no wrapper involved.
 
 CI: the existing `ci` job gets a `postgres:16-alpine` service with a health
-check and `TEST_DATABASE_URL`; the job name stays `ci`.
+check and a step `pnpm test:integration` with `TEST_DATABASE_URL` after
+`pnpm test`; the job name stays `ci`.
 
 Alternative: testcontainers. Rejected: a second way to start Postgres, slower
 per file, and in agent sessions that predate the docker group change it would
@@ -259,8 +295,15 @@ require the whole test run under `sg docker`.
 ## Risks / Trade-offs
 
 - One extra indexed read per command (D4 step 2). Acceptable at stage 1 load.
-- Root `pnpm test` fails without Postgres. Intended: a skipped persistence
-  suite would hide regressions. The message tells how to start the database.
+- `pnpm test` alone does not exercise persistence; `pnpm test:integration`
+  does and fails (never skips) without Postgres. CI runs both.
+- The core session keeps every accepted result (with its state) in memory for
+  its own duplicate index, so a room's memory grows with the game until the
+  next restart. Fine for stage 1 game lengths; a core-side change if it ever
+  matters.
+- A room that became `failed` stays failed in this process, also when the
+  cause was a transient database outage during a reload; the next boot tries
+  it again.
 - A `Timeout` that cannot be persisted retries once per second while the DB
   accepts reads but not the write; the turn is late, never lost.
 - Two processes on one game are not coordinated; the unique indexes turn the

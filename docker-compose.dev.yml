@@ -1,0 +1,18 @@
+# Local Postgres for the server integration tests (`pnpm test:integration`).
+# Not the production stack: data lives in memory and is lost on `down`.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: game
+      POSTGRES_PASSWORD: game
+      POSTGRES_DB: postgres
+    ports:
+      - '127.0.0.1:54329:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U game -d postgres']
+      interval: 1s
+      timeout: 3s
+      retries: 30

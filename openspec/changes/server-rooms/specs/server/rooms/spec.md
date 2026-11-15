@@ -55,6 +55,17 @@ carrying the reloaded state. If the reload fails, the room SHALL become
 - **WHEN** another writer has committed revision N+1 for the game and the room, still at revision N, accepts a command
 - **THEN** the result SHALL be rejected with `PERSISTENCE_FAILED`, the room SHALL be at the other writer's revision N+1, subscribers SHALL receive a `resync` at N+1, and `game_log` SHALL hold exactly one entry at N+1
 
+### Requirement: Faults never escape or stall the room
+When the room cannot check a command against the log, the command SHALL be
+rejected with `PERSISTENCE_FAILED` without being executed and the room SHALL
+stay `live`. When the engine throws, the command SHALL be rejected with
+`ROOM_UNAVAILABLE`, the state SHALL be unchanged and the room SHALL stay
+`live`.
+
+#### Scenario: Lookup fails
+- **WHEN** the command id lookup throws
+- **THEN** the result SHALL be rejected with `PERSISTENCE_FAILED`, `game_log` SHALL be unchanged, no subscriber SHALL be notified, and the next command SHALL be executed normally
+
 ### Requirement: Duplicate delivery
 Resubmitting a `commandId` that is already in the game's log with the same
 type, actor, expectation and payload SHALL return the original accepted

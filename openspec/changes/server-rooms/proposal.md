@@ -38,8 +38,10 @@ Team Lead design `docs/efforts/stage-1-skeleton/design.md` § "Server".
   marked failed.
 - Injectable clock, timer scheduler and entropy source; production wiring uses
   the system clock and `crypto.randomBytes`.
-- Integration tests against a real Postgres, `docker-compose.dev.yml` for a
-  local test database, a Postgres service container in CI.
+- Integration tests against a real Postgres behind a separate script
+  (`pnpm test:integration`), `docker-compose.dev.yml` for a local test
+  database, a Postgres service container in CI. `pnpm test` stays runnable
+  without a database.
 
 ## Published room interface (for `TASK-s1-server-api`)
 
@@ -49,7 +51,7 @@ interface RoomManager {
   /** Boot: load every room with status 'lobby' or 'playing'. Never throws for one bad room. */
   restoreAll(): Promise<{ restored: string[]; failed: string[] }>;
   /** Get the live room, loading it from the DB on first use (a new room has an empty log). */
-  open(gameId: string): Promise<Room>;       // throws RoomNotFoundError when no `rooms` row exists
+  open(gameId: string): Promise<Room>;       // rejects: RoomNotFoundError (no `rooms` row), RoomManagerClosedError (after shutdown)
   get(gameId: string): Room | undefined;
   /** Stop intake, drain every queue, cancel timers, snapshot every live room. Does not close the DB. */
   shutdown(): Promise<void>;
@@ -58,7 +60,7 @@ interface RoomManager {
 interface Room {
   readonly gameId: string;
   readonly status: 'live' | 'failed' | 'closed';
-  /** Last persisted state. */
+  /** Last persisted state. Genesis for a room that failed while loading: check `status`. */
   readonly state: GameState;
   /** The caller (API layer) sets `actor`; the room adds time and entropy. Never throws. */
   submit(command: GameCommand): Promise<RoomResult>;
@@ -82,6 +84,7 @@ function createRoomManager(deps: {
   entropy?: EntropySource;       // { next(): Entropy }
   logger?: Logger;               // { info, warn, error }(message, fields?)
   engine?: GameEngine<GameState, GameCommand, GameEvent>;  // default gameEngine
+  store?: GameStore;             // default: Postgres store over `db`; tests wrap it
 }): RoomManager;
 ```
 
@@ -93,7 +96,12 @@ passed through, or one of the two room codes `PERSISTENCE_FAILED` and
 The API task creates a room by inserting the `rooms` row (status `lobby`),
 calling `open(id)` and submitting `CreateGame` / `AddPlayer` / `StartGame` as
 the system actor. `src/db` exports the `Database` types, `createDb(url)` and
-`migrateToLatest(db)`.
+`migrateToLatest(db)`. The package entry `@game/server/testing` exports
+`FakeClock` (clock and scheduler) and `seededEntropy` for the e2e task.
+
+`open` returns a room with status `failed` (it does not reject) when the
+stored game is bad (divergence, invariant violation, corrupt row); it rejects
+with the driver error, and caches nothing, when the database cannot be read.
 
 ## Capabilities
 
@@ -105,30 +113,35 @@ the system actor. `src/db` exports the `Database` types, `createDb(url)` and
 - `server/timers`: deadline timers and the system `Timeout`.
 - `server/recovery`: boot restore, divergence, shutdown.
 
-## Decisions for Team Lead confirmation
+## Decisions confirmed by the Team Lead
 
-All are inside the delegated set, listed because the API task depends on them.
-Rationale is in `design.md`.
+All five were approved on 2026-11-15 (decision 5 with a change, applied
+below). Rationale is in `design.md`.
 
 1. `rooms.status` has exactly `lobby` and `playing`. The room sets `playing`
    in the same transaction as the log entry that takes the core phase out of
    `lobby`, so status never disagrees with the log. The API task only inserts
-   the row. No `finished` value: the stage 1 core has no game end.
+   the row. No `finished` value: the stage 1 core has no game end. The
+   constraint is a named CHECK (`rooms_status_check`) so a later migration
+   (game end, room closing) can drop and re-add it with more values.
 2. "Marked failed" is in-memory (`Room.status = 'failed'`, error log). No
    status value is persisted, so the next boot tries the room again.
 3. `now` is sampled when `submit` is called, not when the command is dequeued,
    so DB latency of an earlier command never costs a player their deadline.
 4. Ids (`guests.id`, `rooms.id`, `game_id`) are `text`, matching the protocol's
    id strings; the API task chooses the generator. `game_id` is `rooms.id`.
-5. Tests use a Postgres reached through `TEST_DATABASE_URL` (default: the
-   `docker-compose.dev.yml` instance), not testcontainers; they fail, not
-   skip, when it is unreachable.
+5. Database tests use a Postgres reached through `TEST_DATABASE_URL`
+   (default: the `docker-compose.dev.yml` instance), not testcontainers. They
+   live behind `pnpm test:integration` (root and `apps/server`) and fail, not
+   skip, when the database is unreachable. Root `pnpm test` needs no
+   database. CI runs both.
 
 ## Impact
 
 - `apps/server/**`, `pnpm-lock.yaml`, `.github/workflows/ci.yml`,
   new `docker-compose.dev.yml`.
-- Root `pnpm test` now needs a reachable Postgres for `@game/server`.
+- New root script `pnpm test:integration`; it needs a reachable Postgres.
+  `pnpm test` is unchanged in what it needs.
 - No change to `packages/game-core`, `packages/protocol`, `apps/client`.
 
 ## Out of Scope
