@@ -2,6 +2,10 @@ import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import {
   CreateRoomResponseSchema,
+  AccessCodeSchema,
+  GetRoomResponseSchema,
+  LeaveRoomResponseSchema,
+  type CreateRoomResponse,
   GuestLoginResponseSchema,
   JoinRoomResponseSchema,
   ListRoomsResponseSchema,
@@ -30,9 +34,11 @@ export class LobbyRequestError extends Error {
 
 export interface LobbyApi {
   guestLogin(nickname: string): Promise<GuestLoginResponse>;
-  createRoom(token: string): Promise<RoomSummary>;
+  createRoom(token: string, accessCode?: string): Promise<CreateRoomResponse>;
+  getRoom(token: string, roomId: string): Promise<RoomSummary>;
+  leaveRoom(token: string, roomId: string): Promise<RoomSummary>;
   listRooms(token: string): Promise<RoomSummary[]>;
-  joinRoom(token: string, roomId: string): Promise<RoomSummary>;
+  joinRoom(token: string, roomId: string, accessCode?: string): Promise<RoomSummary>;
   startGame(token: string, roomId: string): Promise<RoomSummary>;
 }
 
@@ -79,17 +85,27 @@ async function request<S extends TSchema>(fetchFn: FetchLike, schema: S, options
   return payload;
 }
 
+function codeBody(accessCode?: string): { accessCode: string } | undefined {
+  if (accessCode === undefined || accessCode === '') return undefined;
+  if (!Value.Check(AccessCodeSchema, accessCode)) throw new LobbyRequestError('INVALID_REQUEST', 'Access code must have 4–32 letters, digits, underscores or hyphens');
+  return { accessCode };
+}
+
 /** Lobby requests over `fetch`; every response is checked against its protocol schema. */
 export function createLobbyApi(fetchFn: FetchLike): LobbyApi {
   return {
     guestLogin: (nickname) =>
       request(fetchFn, GuestLoginResponseSchema, { method: 'POST', path: ROUTES.guests, body: { nickname } }),
-    createRoom: async (token) =>
-      (await request(fetchFn, CreateRoomResponseSchema, { method: 'POST', path: ROUTES.rooms, token })).room,
+    createRoom: async (token, accessCode) =>
+      request(fetchFn, CreateRoomResponseSchema, { method: 'POST', path: ROUTES.rooms, token, body: codeBody(accessCode) }),
+    getRoom: async (token, roomId) =>
+      (await request(fetchFn, GetRoomResponseSchema, { method: 'GET', path: ROUTES.getRoom(roomId), token })).room,
+    leaveRoom: async (token, roomId) =>
+      (await request(fetchFn, LeaveRoomResponseSchema, { method: 'POST', path: ROUTES.leaveRoom(roomId), token })).room,
     listRooms: async (token) =>
       (await request(fetchFn, ListRoomsResponseSchema, { method: 'GET', path: ROUTES.rooms, token })).rooms,
-    joinRoom: async (token, roomId) =>
-      (await request(fetchFn, JoinRoomResponseSchema, { method: 'POST', path: ROUTES.joinRoom(roomId), token })).room,
+    joinRoom: async (token, roomId, accessCode) =>
+      (await request(fetchFn, JoinRoomResponseSchema, { method: 'POST', path: ROUTES.joinRoom(roomId), token, body: codeBody(accessCode) })).room,
     startGame: async (token, roomId) =>
       (await request(fetchFn, StartGameResponseSchema, { method: 'POST', path: ROUTES.startGame(roomId), token })).room,
   };

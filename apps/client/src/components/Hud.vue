@@ -4,6 +4,7 @@ import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { actionAvailability, activeDeadline, activePlayerId, turnOrder } from '../game/view';
 import type { HudMessage } from '../store/game';
+import ResignControl from './ResignControl.vue';
 import ActionButtons from './ActionButtons.vue';
 import TurnOrder from './TurnOrder.vue';
 import TurnTimer from './TurnTimer.vue';
@@ -46,7 +47,10 @@ const headline = computed(() => {
     <h2 data-test="headline">{{ headline }}</h2>
     <TurnTimer :deadline="activeDeadline(view)" :now="now" />
 
+    <p v-if="me && view?.eliminated.includes(me)" class="warn-box" data-test="spectator">You are out. Watching the game.</p>
     <ActionButtons :available="available" @command="(type) => emit('command', type)" />
+
+    <ResignControl :available="available.Resign" @confirm="emit('command', 'Resign')" />
 
     <h3>{{ view?.phase === 'setup' ? 'Order roll' : 'Turn order' }}</h3>
     <TurnOrder :entries="entries" :me="me" :name-of="nameOf" :color-of="colorOf" />

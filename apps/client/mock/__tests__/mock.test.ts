@@ -152,7 +152,7 @@ describe('mock socket', () => {
     expect(p.view().phase).toBe('setup');
     // A started room is no longer joinable.
     const listed = (mock.http('GET', '/api/rooms', auth, undefined).body as { rooms: { roomId: string }[] }).rooms;
-    expect(listed.map((r) => r.roomId)).not.toContain(room.roomId);
+    expect(listed.find((r) => r.roomId === room.roomId)).toMatchObject({ status: 'playing', joinable: false });
   });
 
   it('replays the scripted game: tie, move, doubles, jail, failed attempt, release', () => {
@@ -242,8 +242,8 @@ describe('mock socket', () => {
     expect(ended).toContain('timeout');
     // A new demo room replaced the started one.
     const listed = (mock.http('GET', '/api/rooms', auth, undefined).body as { rooms: { roomId: string }[] }).rooms;
-    expect(listed).toHaveLength(1);
-    expect(listed[0]!.roomId).not.toBe(demo.roomId);
+    expect(listed).toHaveLength(2);
+    expect(listed.find((r) => r.roomId === demo.roomId)).toMatchObject({ status: 'playing', joinable: false });
   });
 
   it('drops every socket on request and welcomes a reconnect with the current view', () => {
@@ -256,5 +256,80 @@ describe('mock socket', () => {
     const again = peer();
     mock.message(again.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token, gameId: room.roomId, lastRevision: 2 }));
     expect(again.frames[0]).toMatchObject({ t: 'Welcome', revision: again.view().revision });
+  });
+});
+
+describe('mock revision-3 lifecycle', () => {
+  it('locked create returns private details, get/list omit them, join checks codes, non-creator leave refreshes roster', () => {
+    const { mock, auth } = setup();
+    const created = mock.http('POST', '/api/rooms', auth, { accessCode: 'abcd' });
+    expect(Value.Check(CreateRoomResponseSchema, created.body)).toBe(true);
+    const { room } = created.body as { room: { roomId: string } };
+    const path = `/api/rooms/${room.roomId}`;
+    expect(created.body).toMatchObject({ accessCode: 'abcd', inviteLink: `/?room=${room.roomId}&code=abcd`, room: { locked: true, joinable: false } });
+    expect(mock.http('GET', path, auth, undefined).body).not.toHaveProperty('accessCode');
+    expect(mock.http('GET', '/api/rooms', auth, undefined).body).not.toHaveProperty('accessCode');
+    const bob = mock.http('POST', '/api/guests', undefined, { nickname: 'Bob' }).body as { token: string };
+    const bobAuth = `Bearer ${bob.token}`;
+    expect(mock.http('POST', `${path}/join`, bobAuth, undefined)).toMatchObject({ status: 403, body: { code: 'ACCESS_CODE_REQUIRED' } });
+    expect(mock.http('POST', `${path}/join`, bobAuth, { accessCode: 'wrong' })).toMatchObject({ status: 403, body: { code: 'ACCESS_CODE_INVALID' } });
+    expect(mock.http('POST', `${path}/join`, bobAuth, { accessCode: 'abcd' }).status).toBe(200);
+    expect(mock.http('POST', `${path}/leave`, bobAuth, undefined)).toMatchObject({ status: 200, body: { room: { status: 'lobby', members: [{ nickname: 'Alice' }] } } });
+    expect(mock.http('GET', path, bobAuth, undefined)).toMatchObject({ status: 403, body: { code: 'NOT_A_PARTICIPANT' } });
+  });
+
+  it('creator leave closes every peer and cancels later bot joins', () => {
+    const { mock, auth, timers, hello } = setup();
+    const { room } = mock.http('POST', '/api/rooms', auth, undefined).body as { room: { roomId: string } };
+    const a = peer(); hello(a, room.roomId);
+    const bob = mock.http('POST', '/api/guests', undefined, { nickname: 'Bob' }).body as { token: string };
+    mock.http('POST', `/api/rooms/${room.roomId}/join`, `Bearer ${bob.token}`, undefined);
+    const b = peer(); mock.message(b.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token: bob.token, gameId: room.roomId, lastRevision: null }));
+    mock.http('POST', `/api/rooms/${room.roomId}/leave`, auth, undefined);
+    expect(a.frames.at(-1)).toMatchObject({ t: 'Error', code: 'NOT_A_PARTICIPANT' });
+    expect(b.frames.at(-1)).toMatchObject({ t: 'Error', code: 'ROOM_CLOSED' });
+    expect(a.closed).toBe(true); expect(b.closed).toBe(true);
+    timers.advance(2000);
+    expect(mock.http('GET', `/api/rooms/${room.roomId}`, `Bearer ${bob.token}`, undefined).body).toMatchObject({ room: { status: 'closed', members: [{ nickname: 'Bob' }] } });
+  });
+
+  it('replacement closes only the old peer; transport drop does not eliminate anyone', () => {
+    const { mock, auth, hello } = setup();
+    const { room } = mock.http('POST', '/api/rooms', auth, undefined).body as { room: { roomId: string } };
+    const old = peer(); hello(old, room.roomId); const next = peer(); hello(next, room.roomId);
+    expect(old.frames.at(-1)).toMatchObject({ t: 'Error', code: 'CONNECTION_REPLACED' }); expect(old.closed).toBe(true);
+    mock.disconnect(old.mockPeer); expect(mock.dropAll()).toBe(1);
+    const again = peer(); hello(again, room.roomId); expect(again.view().eliminated).toEqual([]);
+  });
+
+  it.each(['setup', 'playing'] as const)('resignation in %s keeps a three-player spectator, then publishes the winner to everyone', (phase) => {
+    const { mock, auth, guestId, timers, hello, say, act } = setup();
+    const { room } = mock.http('POST', '/api/rooms', auth, undefined).body as { room: { roomId: string } };
+    const bob = mock.http('POST', '/api/guests', undefined, { nickname: 'Bob' }).body as { token: string; guestId: string };
+    mock.http('POST', `/api/rooms/${room.roomId}/join`, `Bearer ${bob.token}`, undefined);
+    timers.advance(2000); // third seat is bot Ada
+    const a = peer(); hello(a, room.roomId);
+    const b = peer(); mock.message(b.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token: bob.token, gameId: room.roomId, lastRevision: null }));
+    mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined);
+    if (phase === 'playing') for (let i = 0; i < 100 && a.view().phase !== 'playing'; i++) {
+      if (!act(a)) timers.advance(45001); // timeout Bob, bot Ada rolls itself
+    }
+    expect(a.view().phase).toBe(phase);
+    say(a, { t: 'Command', commandId: 'stale-resign', type: 'Resign', payload: null, expected: { kind: 'revision', revision: 0 } } as never);
+    expect(a.frames.at(-1)).toMatchObject({ outcome: 'rejected', error: { code: 'REVISION_MISMATCH' } });
+    say(a, { t: 'Command', commandId: 'resign-a', type: 'Resign', payload: null, expected: { kind: 'revision', revision: a.view().revision } } as never);
+    expect(a.view().eliminated).toEqual([guestId]); expect(a.closed).toBe(false); expect(a.view().phase).not.toBe('finished');
+    say(b, { t: 'Command', commandId: 'resign-b', type: 'Resign', payload: null, expected: { kind: 'revision', revision: b.view().revision } } as never);
+    for (const p of [a, b]) { expect(p.view().phase).toBe('finished'); expect(p.view().winner).not.toBeNull(); expect(p.eventTypes()).toContain('GameEnded'); }
+    expect(mock.http('GET', `/api/rooms/${room.roomId}`, auth, undefined).body).toMatchObject({ room: { status: 'finished', joinable: false } });
+  });
+
+  it('two-player setup resignation finishes immediately without needing positions', () => {
+    const { mock, auth, timers, hello, say } = setup();
+    const { room } = mock.http('POST', '/api/rooms', auth, undefined).body as { room: { roomId: string } };
+    timers.advance(2000); const p = peer(); hello(p, room.roomId);
+    mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined);
+    say(p, { t: 'Command', commandId: 'resign', type: 'Resign', payload: null, expected: { kind: 'revision', revision: p.view().revision } } as never);
+    expect(p.view()).toMatchObject({ phase: 'finished', positions: {}, setup: null, turn: null });
   });
 });

@@ -65,6 +65,40 @@ export class MockGame {
     return [{ type: 'PlayerAdded', payload: { playerId } }];
   }
 
+  leave(playerId: string): GameEvent[] {
+    this.state.players = this.state.players.filter((p) => p.id !== playerId);
+    return this.bumped([{ type: 'PlayerLeftLobby', payload: { playerId } }]);
+  }
+
+  private resign(playerId: PlayerId, expected: Expectation, now: number): MockResult {
+    if (this.state.phase !== 'setup' && this.state.phase !== 'playing') return reject('PHASE_NOT_ALLOWED', 'The game is not active');
+    if (expected.kind !== 'revision' || expected.revision !== this.revision) return reject('REVISION_MISMATCH', 'The game changed; try again');
+    if (this.state.eliminated.includes(playerId)) return reject('PLAYER_ELIMINATED', 'You are already out');
+    if (!this.state.players.some((p) => p.id === playerId)) return reject('NOT_A_PARTICIPANT', 'Unknown player');
+    this.state.eliminated = [...this.state.eliminated, playerId];
+    const events: GameEvent[] = [{ type: 'PlayerResigned', payload: { playerId } }];
+    const active = this.state.players.map((p) => p.id).filter((id) => !this.state.eliminated.includes(id));
+    const { [playerId]: _position, ...positions } = this.state.positions;
+    const { [playerId]: _jail, ...jail } = this.state.jail;
+    this.state.positions = positions;
+    this.state.jail = jail;
+    if (active.length === 1) {
+      this.state.phase = 'finished';
+      this.state.winner = active[0]!;
+      this.state.setup = null;
+      this.state.turn = null;
+      this.state.order = this.state.order?.filter((id) => id !== playerId) ?? null;
+      events.push({ type: 'GameEnded', payload: { winner: active[0]! } });
+    } else if (this.state.setup !== null) {
+      // Development script restarts active participants' order rolls after a resignation.
+      events.push(this.openRoll([active], { groupIndex: 0, pending: active, rolls: {} }, now));
+    } else {
+      this.state.order = this.state.order!.filter((id) => id !== playerId);
+      if (this.state.turn?.playerId === playerId) events.push(this.startTurn(this.state.order[0]!, false, 0, now));
+    }
+    return this.accept(events);
+  }
+
   start(now: number): GameEvent[] {
     const everyone = this.state.players.map((p) => p.id);
     this.state.phase = 'setup';
@@ -77,6 +111,8 @@ export class MockGame {
   /** A player's command: checks the target, whose turn it is and the deadline, then plays the script. */
   command(playerId: string, type: ClientCommandType, expected: Expectation, now: number): MockResult {
     const { setup, turn } = this.state;
+    if (type === 'Resign') return this.resign(playerId as PlayerId, expected, now);
+    if (this.state.eliminated.includes(playerId as PlayerId)) return reject('PLAYER_ELIMINATED', 'You are out');
     if (type === 'RollForOrder') {
       if (setup === null) return reject('PHASE_NOT_ALLOWED', `RollForOrder is not allowed in phase "${this.state.phase}"`);
       if (!matches(expected, SETUP_ROLL_TARGET_KIND, setup.setupRollId)) {

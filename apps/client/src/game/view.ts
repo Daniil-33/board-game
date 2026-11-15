@@ -35,7 +35,7 @@ export function activePlayerId(view: StateView | null): PlayerId | null {
 
 /** The target a command of `type` must name, read from the view; null when the view has none. */
 export function commandExpectation(view: StateView | null, type: ClientCommandType): Expectation | null {
-  if (view === null) return null;
+  if (view === null || type === 'Resign') return null;
   if (type === 'RollForOrder') {
     if (view.phase !== 'setup' || view.setup === null) return null;
     return { kind: 'target', target: { kind: SETUP_ROLL_TARGET_KIND, id: view.setup.setupRollId } };
@@ -54,11 +54,12 @@ export interface ActionContext {
   readonly now: number;
 }
 
-/** Commands with a turn button; `Resign` has no button yet (TASK-s1-client-lobby). */
+/** Commands presented by the turn-action buttons; resignation has its own confirmation. */
 export type TurnCommandType = Exclude<ClientCommandType, 'Resign'>;
-export type ActionAvailability = Readonly<Record<TurnCommandType, boolean>>;
+export type ActionAvailability = Readonly<Record<ClientCommandType, boolean>>;
 
 function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): boolean {
+  if (type === 'Resign') return view.phase === 'setup' || view.phase === 'playing';
   if (type === 'RollForOrder') return view.phase === 'setup' && view.setup?.playerId === me;
   if (view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
   return type === 'RollDice' ? !view.turn.rolled : view.turn.rolled;
@@ -68,8 +69,10 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
 export function canIssue(ctx: ActionContext, type: ClientCommandType): boolean {
   const { view, me } = ctx;
   if (view === null || me === null || !ctx.connected) return false;
+  if (!view.players.some((p) => p.id === me) || view.eliminated.includes(me)) return false;
   if (ctx.pending.includes(type)) return false;
   if (!allowedByView(view, me, type)) return false;
+  if (type === 'Resign') return true;
   const deadline = activeDeadline(view);
   return deadline !== null && ctx.now < deadline;
 }
@@ -79,12 +82,14 @@ export function actionAvailability(ctx: ActionContext): ActionAvailability {
     RollForOrder: canIssue(ctx, 'RollForOrder'),
     RollDice: canIssue(ctx, 'RollDice'),
     EndTurn: canIssue(ctx, 'EndTurn'),
+    Resign: canIssue(ctx, 'Resign'),
   };
 }
 
 export interface OrderEntry {
   readonly playerId: PlayerId;
   readonly active: boolean;
+  readonly eliminated: boolean;
   /** Setup only: the player shares an unresolved order-roll group. */
   readonly tied: boolean;
   /**
@@ -109,22 +114,24 @@ export function turnOrder(view: StateView | null): OrderEntry[] {
   const entry = (playerId: PlayerId, tied: boolean, roll: number | null, tieRolled = false): OrderEntry => ({
     playerId,
     active: playerId === active,
+    eliminated: view.eliminated.includes(playerId),
     tied,
     tieRolled,
     roll,
     jail: Object.hasOwn(view.jail, playerId) ? { attemptsUsed: view.jail[playerId]!.attemptsUsed } : null,
   });
 
+  const missing = (ids: readonly PlayerId[]): OrderEntry[] => view.players.filter((p) => !ids.includes(p.id)).map((p) => entry(p.id, false, null));
   if (view.phase === 'playing' && view.order !== null) {
-    return view.order.map((id) => entry(id, false, null));
+    return [...view.order.map((id) => entry(id, false, null)), ...missing(view.order)];
   }
   if (view.phase === 'setup' && view.setup !== null) {
     const { groups, round } = view.setup;
-    return groups.flatMap((group) =>
+    return [...groups.flatMap((group) =>
       group.map((id) =>
         entry(id, group.length > 1, Object.hasOwn(round.rolls, id) ? round.rolls[id]! : null, group.length > 1 && groups.length > 1),
       ),
-    );
+    ), ...missing(groups.flat())];
   }
   return view.players.map((p) => entry(p.id, false, null));
 }

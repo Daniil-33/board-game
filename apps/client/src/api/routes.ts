@@ -8,6 +8,8 @@ export const ROUTES = {
   guests: '/api/guests',
   /** POST: create room. GET: list joinable rooms. */
   rooms: '/api/rooms',
+  getRoom: (roomId: string): string => `/api/rooms/${encodeURIComponent(roomId)}`,
+  leaveRoom: (roomId: string): string => `/api/rooms/${encodeURIComponent(roomId)}/leave`,
   /** POST: join room. */
   joinRoom: (roomId: string): string => `/api/rooms/${encodeURIComponent(roomId)}/join`,
   /** POST: start game (creator only). */

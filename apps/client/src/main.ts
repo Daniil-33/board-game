@@ -12,6 +12,8 @@ const client = createClient({
   socketFactory: browserSocketFactory,
   socketUrl: socketUrl(window.location),
   now: () => Date.now(),
+  initialUrl: window.location.href,
+  replaceUrl: (url) => window.history.replaceState(null, '', url),
 });
 
 const mount: BoardMount = async (host) => {

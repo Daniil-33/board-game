@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useClient } from '../client';
 
 /** The Start button needs at least this many members (task handoff, criterion 2). */
 const MEMBERS_TO_START = 2;
 
 const client = useClient();
+const copied = ref<string | null>(null);
+async function copyInvite(): Promise<void> {
+  const link = client.lobby.creatorAccess?.inviteLink;
+  if (link === undefined) return;
+  try { await navigator.clipboard.writeText(link); copied.value = 'Invite copied.'; }
+  catch { copied.value = 'Copy unavailable. Select and copy the link above.'; }
+}
 const room = computed(() => client.session.state.room);
 
 /** Members by nickname: the live view's players once connected, the lobby summary before that. */
@@ -30,6 +37,13 @@ const canStart = computed(() => client.game.connected && members.value.length >=
         <button class="link" aria-label="Dismiss" @click="client.connection.dismissMessage(message.id)">×</button>
       </li>
     </ul>
+    <div v-if="isCreator && client.lobby.creatorAccess" class="warn-box" data-test="creator-access">
+      <p>Access code: <strong data-test="access-code">{{ client.lobby.creatorAccess.accessCode }}</strong></p>
+      <label>Invite link <input :value="client.lobby.creatorAccess.inviteLink" readonly data-test="invite-link" @focus="($event.target as HTMLInputElement).select()" /></label>
+      <button data-test="copy-invite" @click="copyInvite">Copy invite</button>
+      <p v-if="copied" role="status">{{ copied }}</p>
+    </div>
+    <button data-test="leave" :disabled="client.lobby.busy || !!client.game.fatal" @click="client.leaveRoom()">Leave room</button>
     <h3>Players</h3>
     <ul class="members">
       <li v-for="member in members" :key="member.id" data-test="member">
