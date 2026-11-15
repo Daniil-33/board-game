@@ -19,7 +19,7 @@
 
 ## 4. Integration verification and delivery
 
-- [ ] 4.1 Run pnpm build, pnpm test, OpenSpec validate engine-resignation --strict and git diff --check over the branch range; compare final diff against all nine handoff acceptance criteria and record command results with agentctl. Report cross-package integration failures without changing files outside the assigned scope.
+- [x] 4.1 Run pnpm build, pnpm test, OpenSpec validate engine-resignation --strict and git diff --check over the branch range; compare final diff against all nine handoff acceptance criteria and record command results with agentctl. Report cross-package integration failures without changing files outside the assigned scope.
 - [ ] 4.2 Rebase on current main and inspect the final scope, then commit/push feature branch and open PR through the agentctl external-operation intent/verify/confirm protocol; verify exact-head green CI and record SHA/PR/evidence, requesting independent review through the required Engineer-to-Reviewer handoff.
 - [ ] 4.3 Address supported review findings, rerun affected checks and obtain exact-head independent review and Team Lead acceptance; record remaining risks and evidence with agentctl.
 
