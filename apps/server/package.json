@@ -14,19 +14,26 @@
     }
   },
   "scripts": {
+    "start": "tsx src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@fastify/websocket": "^11",
     "@game/game-core": "workspace:*",
+    "@game/protocol": "workspace:*",
+    "fastify": "^5",
     "kysely": "^0.29.9",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/pg": "^8.23.1",
+    "@types/ws": "^8.5.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0"
+    "vitest": "^2.0.0",
+    "ws": "^8.18.0"
   }
 }

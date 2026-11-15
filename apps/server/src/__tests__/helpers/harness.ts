@@ -87,7 +87,7 @@ export function useHarness(options: { perTest?: boolean } = {}): Harness {
   };
 
   const context = (opts: ContextOptions): Context => {
-    const real = createGameStore(database().db);
+    const real = withGuests(database().db, createGameStore(database().db));
     return {
       clock: new FakeClock(opts.now ?? T0),
       entropy: seededEntropy(opts.seed ?? 1),
@@ -129,6 +129,27 @@ export function useHarness(options: { perTest?: boolean } = {}): Harness {
       });
       cleanups.push(() => room.close());
       return { ...ctx, room };
+    },
+  };
+}
+
+/**
+ * Room tests use bare player ids ('a', 'b'). `room_members` references
+ * `guests`, so before each write this store creates a guest for every player
+ * id the write would add (the lobby API only ever adds real guests).
+ */
+function withGuests(db: Kysely<Database>, store: GameStore): GameStore {
+  return {
+    ...store,
+    async appendEntry(gameId, entry, options) {
+      if (options.members !== null && options.members.length > 0) {
+        await db
+          .insertInto('guests')
+          .values(options.members.map((id) => ({ id, nickname: id, token_hash: `test-${id}` })))
+          .onConflict((oc) => oc.column('id').doNothing())
+          .execute();
+      }
+      return store.appendEntry(gameId, entry, options);
     },
   };
 }

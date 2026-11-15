@@ -1,6 +1,6 @@
 import { sql, type Kysely, type RawBuilder } from 'kysely';
 import type { GameState, LogEntry } from '@game/game-core';
-import type { Database } from './schema.js';
+import type { Database, RoomStatus } from './schema.js';
 
 /** What a room is rebuilt from: the latest snapshot (if any) and every later log entry, in order. */
 export interface LoadedGame {
@@ -9,8 +9,14 @@ export interface LoadedGame {
 }
 
 export interface AppendOptions {
-  /** Set `rooms.status` to `playing` in the same transaction. */
-  readonly markPlaying: boolean;
+  /** New `rooms.status` set in the same transaction, or null to keep it. */
+  readonly status: Exclude<RoomStatus, 'lobby'> | null;
+  /**
+   * The core player ids after the entry when they changed, or null. In the
+   * same transaction `room_members` becomes exactly this set; rows of ids
+   * that stay keep their `joined_at`.
+   */
+  readonly members: readonly string[] | null;
   /** State to snapshot at the entry's revision in the same transaction, or null. */
   readonly snapshot: GameState | null;
 }
@@ -26,12 +32,12 @@ export class CorruptGameDataError extends Error {
 /** Everything a room and its manager need from the database. */
 export interface GameStore {
   roomExists(gameId: string): Promise<boolean>;
-  /** Ids of rooms with status `lobby` or `playing`. */
+  /** Ids of rooms with status `lobby` or `playing` (finished rooms load on demand). */
   listActiveRoomIds(): Promise<string[]>;
   /** One consistent read of the latest snapshot and the log after it. */
   loadGame(gameId: string): Promise<LoadedGame>;
   findEntryByCommandId(gameId: string, commandId: string): Promise<LogEntry | undefined>;
-  /** One transaction: the log row, then the optional status update and snapshot. */
+  /** One transaction: the log row, then the optional status, member and snapshot updates. */
   appendEntry(gameId: string, entry: LogEntry, options: AppendOptions): Promise<void>;
   /** Idempotent: a snapshot that already exists for `state.revision` is kept. */
   writeSnapshot(gameId: string, state: GameState): Promise<void>;
@@ -134,8 +140,21 @@ export function createGameStore(db: Kysely<Database>): GameStore {
             entry: jsonb(entry),
           })
           .execute();
-        if (options.markPlaying) {
-          await trx.updateTable('rooms').set({ status: 'playing' }).where('id', '=', gameId).execute();
+        if (options.status !== null) {
+          await trx.updateTable('rooms').set({ status: options.status }).where('id', '=', gameId).execute();
+        }
+        if (options.members !== null) {
+          const members = [...options.members];
+          let remove = trx.deleteFrom('room_members').where('room_id', '=', gameId);
+          if (members.length > 0) remove = remove.where('guest_id', 'not in', members);
+          await remove.execute();
+          if (members.length > 0) {
+            await trx
+              .insertInto('room_members')
+              .values(members.map((guestId) => ({ room_id: gameId, guest_id: guestId })))
+              .onConflict((oc) => oc.columns(['room_id', 'guest_id']).doNothing())
+              .execute();
+          }
         }
         if (options.snapshot !== null) {
           await insertSnapshot(trx, gameId, options.snapshot);

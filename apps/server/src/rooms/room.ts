@@ -28,6 +28,7 @@ import {
   type RoomEvent,
   type RoomResult,
   type RoomStatus,
+  type SubmitOptions,
 } from './types.js';
 
 /** A snapshot is written at every accepted revision that is a multiple of this. */
@@ -70,6 +71,15 @@ function isTimeout(command: GameCommand): command is GameCommand & { expected: {
 }
 
 const timerKey = (d: PendingDeadline): string => `${d.target.kind}\u0000${d.target.id}\u0000${d.at}`;
+
+const playerIds = (state: GameState): string[] => state.players.map((p) => p.id);
+
+/** The player ids after a transition when they differ from before, otherwise null. */
+function changedMembers(previous: GameState, next: GameState): string[] | null {
+  const before = playerIds(previous);
+  const after = playerIds(next);
+  return before.length === after.length && before.every((id, i) => id === after[i]) ? null : after;
+}
 
 /**
  * Read the game and rebuild its session. A rejection of the read is the
@@ -153,7 +163,7 @@ export class GameRoom implements Room {
     };
   }
 
-  submit(command: GameCommand): Promise<RoomResult> {
+  submit(command: GameCommand, options: SubmitOptions = {}): Promise<RoomResult> {
     if (!this.accepting) return Promise.resolve(this.unavailable(command));
     let now: Timestamp;
     try {
@@ -163,7 +173,8 @@ export class GameRoom implements Room {
       this.deps.logger.error('room clock failed', { gameId: this.gameId, ...errorFields(error) });
       return Promise.resolve(this.reject(command, ROOM_UNAVAILABLE, 'The room could not run the command'));
     }
-    const run = this.tail.then(() => this.execute(command, now));
+    const closeRoom = options.closeRoom === true;
+    const run = this.tail.then(() => this.execute(command, now, closeRoom));
     this.tail = run.then(
       () => undefined,
       () => undefined,
@@ -204,9 +215,9 @@ export class GameRoom implements Room {
   // ---- Pipeline -------------------------------------------------------------
 
   /** One queued command. Never throws. */
-  private async execute(command: GameCommand, now: Timestamp): Promise<RoomResult> {
+  private async execute(command: GameCommand, now: Timestamp, closeRoom: boolean): Promise<RoomResult> {
     try {
-      return await this.run(command, now);
+      return await this.run(command, now, closeRoom);
     } catch (error) {
       this.deps.logger.error('room command failed unexpectedly', {
         gameId: this.gameId,
@@ -217,7 +228,7 @@ export class GameRoom implements Room {
     }
   }
 
-  private async run(command: GameCommand, now: Timestamp): Promise<RoomResult> {
+  private async run(command: GameCommand, now: Timestamp, closeRoom: boolean): Promise<RoomResult> {
     const session = this.session;
     if (this.currentStatus !== 'live' || session === null) return this.unavailable(command);
 
@@ -270,12 +281,17 @@ export class GameRoom implements Room {
       return this.recover(command, new Error('session result does not extend the persisted log'));
     }
 
-    // 3. Persist. Game start is observed from the phase; the room decides nothing.
+    // 3. Persist. Start and end are observed from the phase and membership
+    //    from the player list; the room decides nothing. Closing is the
+    //    caller's decision, carried by `closeRoom`.
     const started = previous.phase === 'lobby' && result.state.phase !== 'lobby';
-    const snapshotDue = started || result.revision % SNAPSHOT_INTERVAL === 0;
+    const finished = previous.phase !== 'finished' && result.state.phase === 'finished';
+    const status = closeRoom ? 'closed' : finished ? 'finished' : started ? 'playing' : null;
+    const snapshotDue = started || finished || result.revision % SNAPSHOT_INTERVAL === 0;
     try {
       await this.deps.store.appendEntry(this.gameId, entry, {
-        markPlaying: started,
+        status,
+        members: changedMembers(previous, result.state),
         snapshot: snapshotDue ? result.state : null,
       });
     } catch (error) {
@@ -285,7 +301,14 @@ export class GameRoom implements Room {
     // 4. Committed: expose the state, re-arm timers, notify, answer.
     this.committed = result.state;
     this.emittedRevision = result.revision;
-    this.armTimers();
+    if (closeRoom) {
+      // Stop before notifying, so a listener reacting to `closed` sees a closed room.
+      this.accepting = false;
+      this.currentStatus = 'closed';
+      this.cancelTimers();
+    } else {
+      this.armTimers();
+    }
     this.emit({
       kind: 'update',
       commandId: command.commandId,
@@ -293,6 +316,7 @@ export class GameRoom implements Room {
       state: result.state,
       events: result.events,
     });
+    if (closeRoom) this.emit({ kind: 'closed' });
     return {
       kind: 'accepted',
       commandId: command.commandId,

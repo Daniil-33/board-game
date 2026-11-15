@@ -37,7 +37,19 @@ export type RoomEvent =
     }
   /** The room reloaded from the database to a persisted state subscribers have not been given. */
   | { readonly kind: 'resync'; readonly revision: Revision; readonly state: GameState }
-  | { readonly kind: 'failed'; readonly reason: string };
+  | { readonly kind: 'failed'; readonly reason: string }
+  /** The room was closed by a command submitted with `closeRoom`; it follows that command's `update`. */
+  | { readonly kind: 'closed' };
+
+export interface SubmitOptions {
+  /**
+   * When the command is accepted (not a duplicate), set `rooms.status` to
+   * `closed` in the same transaction and stop the room: `update`, then
+   * `closed`, then every later submit is rejected with `ROOM_UNAVAILABLE`.
+   * No effect on a rejected or duplicate command.
+   */
+  readonly closeRoom?: boolean;
+}
 
 export interface Room {
   readonly gameId: string;
@@ -51,7 +63,7 @@ export interface Room {
    * Run one command. The caller sets `actor`; the room adds time and entropy.
    * Resolves in submission order; never throws or rejects.
    */
-  submit(command: GameCommand): Promise<RoomResult>;
+  submit(command: GameCommand, options?: SubmitOptions): Promise<RoomResult>;
   /** `listener` runs after commit, in revision order. Returns unsubscribe. */
   subscribe(listener: (event: RoomEvent) => void): () => void;
 }

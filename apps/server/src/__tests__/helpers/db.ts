@@ -38,13 +38,13 @@ async function admin<T>(run: (client: pg.Client) => Promise<T>): Promise<T> {
 }
 
 /** A new, migrated database of its own, so test files never share rows. */
-export async function createTestDatabase(): Promise<TestDatabase> {
+export async function createTestDatabase(options: { migrate?: boolean } = {}): Promise<TestDatabase> {
   const name = `test_${randomBytes(8).toString('hex')}`;
   await admin((client) => client.query(`create database ${name}`));
   const url = new URL(adminUrl());
   url.pathname = `/${name}`;
   const db = createDb(url.toString(), { max: 5 });
-  const migrations = await migrateToLatest(db);
+  const migrations = options.migrate === false ? [] : await migrateToLatest(db);
   return {
     db,
     migrations,
