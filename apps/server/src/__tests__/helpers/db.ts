@@ -9,6 +9,8 @@ const DEFAULT_URL = 'postgres://game:game@127.0.0.1:54329/postgres';
 
 export interface TestDatabase {
   readonly db: Kysely<Database>;
+  /** Connection string of this database. */
+  readonly url: string;
   /** Names of the migrations that ran when the database was created. */
   readonly migrations: readonly string[];
   drop(): Promise<void>;
@@ -38,15 +40,16 @@ async function admin<T>(run: (client: pg.Client) => Promise<T>): Promise<T> {
 }
 
 /** A new, migrated database of its own, so test files never share rows. */
-export async function createTestDatabase(): Promise<TestDatabase> {
+export async function createTestDatabase(options: { migrate?: boolean } = {}): Promise<TestDatabase> {
   const name = `test_${randomBytes(8).toString('hex')}`;
   await admin((client) => client.query(`create database ${name}`));
   const url = new URL(adminUrl());
   url.pathname = `/${name}`;
   const db = createDb(url.toString(), { max: 5 });
-  const migrations = await migrateToLatest(db);
+  const migrations = options.migrate === false ? [] : await migrateToLatest(db);
   return {
     db,
+    url: url.toString(),
     migrations,
     async drop() {
       await db.destroy();

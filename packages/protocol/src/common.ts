@@ -15,8 +15,16 @@ export const MAX_ERROR_CODE_LENGTH = 64;
 /** Closes an object schema: unknown properties are rejected. */
 export const closed = { additionalProperties: false } as const;
 
+/**
+ * Id strings Postgres can store in `text` and `jsonb`: no U+0000 and no lone
+ * surrogate; astral characters (valid surrogate pairs) are allowed. Written to
+ * behave the same with and without the regex `u` flag: TypeBox compiles
+ * patterns without it, Ajv (`unicodeRegExp`) with it.
+ */
+export const ID_PATTERN = '^(?:[^\\u0000\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$';
+
 const idString = (description: string) =>
-  Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, description });
+  Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, pattern: ID_PATTERN, description });
 
 export const CommandIdSchema = Type.Unsafe<CommandId>(idString('Client-generated command id, unique within the game.'));
 export const PlayerIdSchema = Type.Unsafe<PlayerId>(idString('Game-core player id.'));
@@ -44,8 +52,8 @@ export const TokenSchema = Type.String({
 export const TargetRefSchema = Type.Unsafe<TargetRef>(
   Type.Object(
     {
-      kind: Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH }),
-      id: Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH }),
+      kind: Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, pattern: ID_PATTERN }),
+      id: Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, pattern: ID_PATTERN }),
     },
     closed,
   ),
@@ -65,11 +73,22 @@ export const PROTOCOL_ERROR_CODES = [
   'NOT_A_PARTICIPANT',
   'MALFORMED_FRAME',
   'ROOM_UNAVAILABLE',
+  /** The room was closed (its creator left before the start). Final: do not reconnect. */
+  'ROOM_CLOSED',
+  /** A newer socket of the same guest took over this room. Final for this socket. */
+  'CONNECTION_REPLACED',
 ] as const;
 export type ProtocolErrorCode = (typeof PROTOCOL_ERROR_CODES)[number];
 
 /** Additional error codes used by the HTTP lobby. */
-export const LOBBY_ERROR_CODES = ['NOT_ROOM_CREATOR', 'INVALID_REQUEST'] as const;
+export const LOBBY_ERROR_CODES = [
+  'NOT_ROOM_CREATOR',
+  'INVALID_REQUEST',
+  /** The room is locked and the request carried no access code. */
+  'ACCESS_CODE_REQUIRED',
+  /** The room is locked and the access code is wrong. */
+  'ACCESS_CODE_INVALID',
+] as const;
 export type LobbyErrorCode = (typeof LOBBY_ERROR_CODES)[number];
 
 /**

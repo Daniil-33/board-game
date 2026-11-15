@@ -10,6 +10,7 @@ export const clientFrames: ClientFrame[] = [
   { t: 'Command', commandId: 'c1' as CommandId, type: 'RollForOrder', expected: { kind: 'revision', revision: rev(0) }, payload: null },
   { t: 'Command', commandId: 'c2' as CommandId, type: 'RollDice', expected: { kind: 'target', target: { kind: 'turn', id: 't-3' } }, payload: null },
   { t: 'Command', commandId: 'c3' as CommandId, type: 'EndTurn', expected: { kind: 'revision', revision: rev(12) }, payload: null },
+  { t: 'Command', commandId: 'c1' as CommandId, type: 'Resign', expected: { kind: 'revision', revision: rev(7) }, payload: null },
 ];
 
 export const serverFrames: ServerFrame[] = [
@@ -20,4 +21,6 @@ export const serverFrames: ServerFrame[] = [
   { t: 'Update', revision: rev(5), view, events: [] },
   { t: 'Error', code: 'PROTOCOL_VERSION_UNSUPPORTED', message: 'need 1' },
   { t: 'Error', code: 'NOT_A_PARTICIPANT', message: 'no' },
+  { t: 'Error', code: 'ROOM_CLOSED', message: 'closed' },
+  { t: 'Error', code: 'CONNECTION_REPLACED', message: 'replaced' },
 ];

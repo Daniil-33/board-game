@@ -7,10 +7,12 @@ export const NICKNAME_MAX_CODE_POINTS = 24;
 // separators. ZWNJ (U+200C) and ZWJ (U+200D) are format characters but are
 // allowed: emoji sequences and scripts such as Persian need them.
 const NON_PRINTABLE = /(?![\u200C\u200D])[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}]/u;
+const JOINER = /[\u200C\u200D]/;
 
 /**
  * Technical nickname rule: equal to its own trim, 1-24 Unicode code points,
- * printable code points only (ZWNJ and ZWJ allowed). No product rules.
+ * printable code points only (ZWNJ and ZWJ allowed inside, but not at either
+ * end and not alone). No product rules.
  */
 export function isValidNickname(value: unknown): value is string {
   if (typeof value !== 'string' || value !== value.trim()) return false;
@@ -18,7 +20,10 @@ export function isValidNickname(value: unknown): value is string {
   if (value.length > NICKNAME_MAX_CODE_POINTS * 2) return false;
   const codePoints = [...value].length;
   if (codePoints < NICKNAME_MIN_CODE_POINTS || codePoints > NICKNAME_MAX_CODE_POINTS) return false;
-  return !NON_PRINTABLE.test(value);
+  if (NON_PRINTABLE.test(value)) return false;
+  // Joiners are BMP code points, so one UTF-16 unit at either end is enough.
+  // A joiner-only nickname fails here too, as it starts with a joiner.
+  return !JOINER.test(value[0]!) && !JOINER.test(value[value.length - 1]!);
 }
 
 /** Trims `value` and returns it when it is a valid nickname, otherwise `null`. */

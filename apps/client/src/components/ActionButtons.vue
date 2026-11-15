@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { ClientCommandType } from '@game/protocol';
-import type { ActionAvailability } from '../game/view';
+import type { ActionAvailability, TurnCommandType } from '../game/view';
 
 defineProps<{ available: ActionAvailability }>();
 const emit = defineEmits<{ command: [type: ClientCommandType] }>();
 
-const BUTTONS: readonly { type: ClientCommandType; label: string }[] = [
+const BUTTONS: readonly { type: TurnCommandType; label: string }[] = [
   { type: 'RollForOrder', label: 'Roll for order' },
   { type: 'RollDice', label: 'Roll dice' },
   { type: 'EndTurn', label: 'End turn' },

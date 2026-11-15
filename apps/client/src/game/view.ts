@@ -54,7 +54,9 @@ export interface ActionContext {
   readonly now: number;
 }
 
-export type ActionAvailability = Readonly<Record<ClientCommandType, boolean>>;
+/** Commands with a turn button; `Resign` has no button yet (TASK-s1-client-lobby). */
+export type TurnCommandType = Exclude<ClientCommandType, 'Resign'>;
+export type ActionAvailability = Readonly<Record<TurnCommandType, boolean>>;
 
 function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): boolean {
   if (type === 'RollForOrder') return view.phase === 'setup' && view.setup?.playerId === me;

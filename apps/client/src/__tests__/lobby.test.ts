@@ -43,7 +43,7 @@ describe('lobby api', () => {
 
   it('rejects a response that does not match its schema', async () => {
     const malformed = [
-      { rooms: [{ ...ROOM, status: 'finished' }] },
+      { rooms: [{ ...ROOM, status: 'archived' }] },
       { rooms: [{ ...ROOM, extra: 1 }] },
       { rooms: 'none' },
       null,

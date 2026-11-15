@@ -13,11 +13,12 @@ import {
 } from './common.js';
 
 /**
- * Command types a client may send in stage 1.
- * STUB: final names and payloads are relayed from TASK-s1-core-turns and
- * confirmed by the Team Lead before merge. Every payload is `null` for now.
+ * Command types a client may send in stage 1, named as in game-core
+ * (`setupCommands`, `turnCommands`, resignation). Every payload is `null`.
+ * System commands (`CreateGame`, `AddPlayer`, `LeaveLobby`, `StartGame`,
+ * `Timeout`) are never accepted from a client.
  */
-export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn'] as const;
+export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign'] as const;
 export type ClientCommandType = (typeof CLIENT_COMMAND_TYPES)[number];
 
 // ---- Shared parts ----------------------------------------------------------

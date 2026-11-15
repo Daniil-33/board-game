@@ -1,5 +1,10 @@
 export * from './rooms/index.js';
 
+export type { ServerDeps } from './server.js';
+export { createServer } from './server.js';
+export type { ServiceConfig } from './main-config.js';
+export { readConfig } from './main-config.js';
+
 export type {
   Database,
   GuestsTable,

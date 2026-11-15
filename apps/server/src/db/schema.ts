@@ -4,7 +4,7 @@ import type { GameState, LogEntry } from '@game/game-core';
 /** Set by the database on insert, never updated. */
 type CreatedAt = ColumnType<Date, Date | undefined, never>;
 
-export type RoomStatus = 'lobby' | 'playing';
+export type RoomStatus = 'lobby' | 'playing' | 'finished' | 'closed';
 
 export interface GuestsTable {
   id: string;
@@ -17,6 +17,8 @@ export interface RoomsTable {
   id: string;
   creator_id: string;
   status: RoomStatus;
+  /** `scrypt$...` hash of the access code; null for an open room. */
+  access_code_hash: ColumnType<string | null, string | null | undefined, string | null>;
   created_at: CreatedAt;
 }
 
