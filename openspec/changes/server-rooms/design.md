@@ -230,7 +230,10 @@ invariant violation, corrupt row) is logged at error level with game id, tail
 index and reason, kept in the manager as `failed`, and does not stop the
 others. A room that could not be read (a database error on that load) is
 logged and listed in `failed` too, but is not registered, so a later `open`
-loads it (review RVW-002). A DB
+loads it (review RVW-002). The line between the two is where the error comes
+from: an error of the database read is "could not be read"; anything thrown
+while rebuilding the session from the rows that were read is a bad stored
+game, whatever its type (review RVW-003). A DB
 error while listing rooms rejects `restoreAll` (boot fails loudly).
 
 `open(gameId)` for a room not in memory checks the `rooms` row, then loads the

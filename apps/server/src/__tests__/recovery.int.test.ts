@@ -146,6 +146,27 @@ describe('recovery', () => {
     expect((await third.manager.open(gameId)).status).toBe('failed');
   });
 
+  // Review RVW-003: any stored game that cannot be rebuilt is a bad room, not an unreadable one.
+  it('a snapshot of the wrong shape fails the room instead of throwing on every open', async () => {
+    const first = h.manager();
+    const gameId = await seedRoom(h.db);
+    const room = await first.manager.open(gameId);
+    await lobby(room);
+    await startGame(room);
+    await sql`update game_snapshots set state = state - 'players' where game_id = ${gameId}`.execute(h.db);
+
+    const second = h.manager({ seed: 2 });
+    expect(await second.manager.restoreAll()).toEqual({ restored: [], failed: [gameId] });
+    expect(second.manager.get(gameId)?.status).toBe('failed');
+    expect(second.logger.lines.filter((l) => l.level === 'error')[0]).toMatchObject({
+      fields: { gameId, errorName: 'CorruptGameDataError' },
+    });
+    const third = h.manager({ seed: 3 });
+    const opened = await third.manager.open(gameId);
+    expect(opened.status).toBe('failed');
+    expect(await third.manager.open(gameId)).toBe(opened);
+  });
+
   it('opening an unknown room fails with RoomNotFoundError and creates nothing', async () => {
     const { manager } = h.manager();
     await expect(manager.open('no-such-room')).rejects.toBeInstanceOf(RoomNotFoundError);
