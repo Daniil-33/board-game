@@ -1,5 +1,7 @@
 import {
   canonicalJson,
+  InvariantViolationError,
+  ReplayDivergenceError,
   genesis,
   isPlainData,
   pendingDeadlines,
@@ -15,7 +17,7 @@ import {
 } from '@game/game-core';
 import type { Clock } from '../context/clock.js';
 import { entropyHex, type EntropySource } from '../context/entropy.js';
-import type { GameStore } from '../db/game-store.js';
+import { CorruptGameDataError, type GameStore } from '../db/game-store.js';
 import { errorFields, type Logger } from '../logger.js';
 import type { TimerScheduler } from '../timers/scheduler.js';
 import {
@@ -69,9 +71,23 @@ function isTimeout(command: GameCommand): command is GameCommand & { expected: {
 
 const timerKey = (d: PendingDeadline): string => `${d.target.kind}\u0000${d.target.id}\u0000${d.at}`;
 
+/**
+ * Read the game and rebuild its session. A rejection of the read is the
+ * store's own error (a driver error means "could not be read"). Whatever the
+ * rebuild throws means the stored game is bad: `ReplayDivergenceError` and
+ * `InvariantViolationError` pass through, anything else (for example a
+ * snapshot of the wrong shape) becomes a `CorruptGameDataError`.
+ */
 async function loadSession(gameId: string, deps: RoomDeps): Promise<Session> {
   const loaded = await deps.store.loadGame(gameId);
-  return restoreSession(deps.engine, loaded.snapshot ?? genesis(), loaded.tail);
+  try {
+    return restoreSession(deps.engine, loaded.snapshot ?? genesis(), loaded.tail);
+  } catch (error) {
+    if (error instanceof ReplayDivergenceError || error instanceof InvariantViolationError) throw error;
+    throw new CorruptGameDataError(gameId, `it cannot be rebuilt: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
+  }
 }
 
 /**

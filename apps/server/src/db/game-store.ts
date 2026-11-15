@@ -17,8 +17,8 @@ export interface AppendOptions {
 
 /** A stored row that cannot be a log entry or snapshot of its game. */
 export class CorruptGameDataError extends Error {
-  constructor(gameId: string, detail: string) {
-    super(`Stored data of game "${gameId}" is corrupt: ${detail}`);
+  constructor(gameId: string, detail: string, options?: { cause?: unknown }) {
+    super(`Stored data of game "${gameId}" is corrupt: ${detail}`, options);
     this.name = 'CorruptGameDataError';
   }
 }
