@@ -88,7 +88,7 @@ All paths are under `apps/server` unless noted. After each group:
   `pnpm test:integration`, local commands in `apps/server/README.md`.
   Verify: `pnpm test` passes with Postgres stopped; `pnpm test:integration`
   fails with the compose hint when `TEST_DATABASE_URL` is unreachable.
-- [ ] 7.1 `.github/workflows/ci.yml`: Postgres 16 service with health check;
+- [x] 7.1 `.github/workflows/ci.yml`: Postgres 16 service with health check;
   step `pnpm test:integration` with `TEST_DATABASE_URL` on the existing `ci`
   job. Verify: the PR's CI run shows the server integration tests executed
   and passing.
