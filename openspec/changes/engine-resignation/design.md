@@ -60,9 +60,9 @@ Extend seeded replay/property generation with LeaveLobby and Resign, retaining l
 
 ## Risks / Trade-offs
 
-- [Unsynced engine-turn-cycle deltas overlap lifecycle/invariant/projection requirements] → this change explicitly builds on them; Team Lead integration must sync turn-cycle before resignation. Do not archive either change during implementation.
+- [Unsynced engine-turn-cycle deltas overlap lifecycle/invariant/projection requirements] → this change explicitly builds on them; Team Lead integration must sync turn-cycle before resignation. Team Lead approved syncing/archiving engine-turn-cycle as the first Apply commit; engine-resignation remains active.
 - [Setup removal has several partial-round cases] → share advancement logic and pin seeded three-to-six-player cases rather than restarting rolls.
-- [core-3 affects parallel consumer fixtures] → publish names/version now; other tasks update their own packages. Report any resulting integration check failure without editing outside scope.
+- [core-3 affects parallel consumer fixtures] → publish names/version now; Team Lead approved current-version constant substitutions in the six named server/client test fixtures. Other consumer changes require Team Lead authorization.
 - [Revision guards can reject an otherwise timely resignation after unrelated progress] → retry with the current revision; no deadline restriction applies.
 
 ## Migration Plan

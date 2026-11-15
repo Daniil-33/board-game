@@ -1,3 +1,4 @@
+import { CURRENT_RULES_VERSION } from '@game/game-core';
 import type { CommandId, GameCommand, GameState, PlayerId, Revision, TargetRef } from '@game/game-core';
 import type { GameRoom } from '../../rooms/room.js';
 import type { Room, RoomResult } from '../../rooms/types.js';
@@ -45,7 +46,7 @@ export async function ok(room: Room, command: GameCommand): Promise<Accepted> {
 }
 
 export const createGame = (room: Room, seed = 42) =>
-  ok(room, sys('CreateGame', { seed, rulesVersion: 'core-2' }, room.state.revision));
+  ok(room, sys('CreateGame', { seed, rulesVersion: CURRENT_RULES_VERSION }, room.state.revision));
 export const addPlayer = (room: Room, id: string) => ok(room, sys('AddPlayer', { playerId: id }, room.state.revision));
 export const startGame = (room: Room) => ok(room, sys('StartGame', null, room.state.revision));
 

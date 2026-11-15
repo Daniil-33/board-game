@@ -4,9 +4,10 @@ import type { RngState } from './rng.js';
 /**
  * Game phases known to this rules version.
  * `uninitialized` -> `lobby` (CreateGame) -> `setup` (StartGame) -> `playing`
- * (the order roll that fixes the turn order).
+ * (the order roll that fixes the turn order); setup/playing -> finished when
+ * resignation leaves one active participant.
  */
-export type Phase = 'uninitialized' | 'lobby' | 'setup' | 'playing';
+export type Phase = 'uninitialized' | 'lobby' | 'setup' | 'playing' | 'finished';
 
 export interface PlayerState {
   readonly id: PlayerId;
@@ -67,6 +68,10 @@ export interface GameState {
   readonly phase: Phase;
   /** Players in join order. */
   readonly players: readonly PlayerState[];
+  /** Permanently eliminated participants, in resignation order. */
+  readonly eliminated: readonly PlayerId[];
+  /** Last active participant; non-null exactly in finished. */
+  readonly winner: PlayerId | null;
   /** Seeded RNG state; null before CreateGame. */
   readonly rng: RngState | null;
   /** Order-roll state; non-null exactly in phase `setup`. */
@@ -75,7 +80,7 @@ export interface GameState {
   readonly order: readonly PlayerId[] | null;
   /** Current turn; non-null exactly in phase `playing`. */
   readonly turn: TurnState | null;
-  /** Ring cell of every player, by player id; filled when play begins. */
+  /** Ring cell of each active player; the winner’s final cell is retained. */
   readonly positions: Readonly<Record<string, number>>;
   /** Players in jail, by player id (interim jail rule). */
   readonly jail: Readonly<Record<string, JailEntry>>;
@@ -91,6 +96,8 @@ export function genesis(): GameState {
     rulesVersion: null,
     phase: 'uninitialized',
     players: [],
+    eliminated: [],
+    winner: null,
     rng: null,
     setup: null,
     order: null,

@@ -3,6 +3,7 @@ import type { GameState } from './state.js';
 import type { GameEvent } from './engine.js';
 import type { LifecycleEvent } from './lifecycle.js';
 import type { SetupEvent } from './setup.js';
+import type { ResignationEvent } from './resignation.js';
 import type { TurnEvent } from './turns.js';
 
 /**
@@ -31,6 +32,8 @@ export const STATE_VISIBILITY = {
   turn: 'public',
   positions: 'public',
   jail: 'public',
+  eliminated: 'public',
+  winner: 'public',
 } as const satisfies Record<keyof GameState, Visibility>;
 
 type PublicStateKey = {
@@ -81,6 +84,9 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
 export const EVENT_VISIBILITY = {
   GameCreated: 'public',
   PlayerAdded: 'public',
+  PlayerLeftLobby: 'public',
+  PlayerResigned: 'public',
+  GameEnded: 'public',
   GameStarted: 'public',
   OrderRollStarted: 'public',
   OrderDieRolled: 'public',
@@ -97,7 +103,7 @@ export const EVENT_VISIBILITY = {
 } as const satisfies Record<CoreEvent['type'], Visibility>;
 
 /** Every event type this rules version emits. */
-export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent;
+export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

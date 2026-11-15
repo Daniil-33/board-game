@@ -1,3 +1,4 @@
+import { CURRENT_RULES_VERSION } from '@game/game-core';
 import { describe, expect, it } from 'vitest';
 import type { Revision } from '@game/game-core';
 import { SNAPSHOT_INTERVAL } from '../rooms/room.js';
@@ -52,7 +53,7 @@ describe('duplicate delivery', () => {
     const { manager } = h.manager();
     const gameId = await seedRoom(h.db);
     const room = await manager.open(gameId);
-    const create = sys('CreateGame', { seed: 42, rulesVersion: 'core-2' }, 0, 'create-once');
+    const create = sys('CreateGame', { seed: 42, rulesVersion: CURRENT_RULES_VERSION }, 0, 'create-once');
     const original = await ok(room, create);
     await ok(room, sys('AddPlayer', { playerId: 'a' }, 1));
     await ok(room, sys('AddPlayer', { playerId: 'b' }, 2));

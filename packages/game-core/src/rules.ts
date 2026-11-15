@@ -1,5 +1,6 @@
 import type { CommandRegistry } from './registry.js';
 import { createEngine, targetsGuard } from './registry.js';
+import { resignationCommands } from './resignation.js';
 import { lifecycleCommands } from './lifecycle.js';
 import { setupCommands, setupTimeout } from './setup.js';
 import { turnCommands, turnTimeout } from './turns.js';
@@ -23,6 +24,7 @@ const timeoutCommands: CommandRegistry = {
 /** Every command of this rules version. */
 export const gameCommands: CommandRegistry = Object.freeze({
   ...lifecycleCommands,
+  ...resignationCommands,
   ...setupCommands,
   ...turnCommands,
   ...timeoutCommands,

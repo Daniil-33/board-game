@@ -30,6 +30,8 @@ export class MockGame {
     rulesVersion: 'mock',
     phase: 'lobby',
     players: [],
+    eliminated: [],
+    winner: null,
     setup: null,
     order: null,
     turn: null,

@@ -1,3 +1,4 @@
+import { CURRENT_RULES_VERSION } from '@game/game-core';
 import { describe, expect, it } from 'vitest';
 import { genesis, SETUP_ROLL_DURATION_MS, TURN_DURATION_MS, type CommandId } from '@game/game-core';
 import { sql } from 'kysely';
@@ -221,7 +222,7 @@ describe('recovery', () => {
     const first = h.manager();
     const gameId = await seedRoom(h.db);
     const live = await first.manager.open(gameId);
-    const create = sys('CreateGame', { seed: 42, rulesVersion: 'core-2' }, 0, 'create-once');
+    const create = sys('CreateGame', { seed: 42, rulesVersion: CURRENT_RULES_VERSION }, 0, 'create-once');
     const createResult = await ok(live, create);
     await addPlayer(live, 'a');
     await addPlayer(live, 'b');
