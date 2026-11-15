@@ -5,6 +5,8 @@
  */
 import {
   PROTOCOL_VERSION,
+  CreateRoomRequestSchema,
+  JoinRoomRequestSchema,
   decodeClientFrame,
   normalizeNickname,
   type AckFrame,
@@ -12,6 +14,7 @@ import {
   type RoomSummary,
   type ServerFrame,
 } from '@game/protocol';
+import { Value } from '@sinclair/typebox/value';
 import type { GameEvent } from '@game/game-core';
 import { ROUTES } from '../src/api/routes';
 import { MockGame, type MockGameOptions } from './game';
@@ -47,6 +50,7 @@ interface Guest {
 
 interface Room {
   readonly summary: { roomId: string; creatorId: string; status: RoomSummary['status']; members: { guestId: string; nickname: string }[] };
+  readonly accessCode?: string;
   readonly game: MockGame;
   /** Connected peers and the guest each one said Hello as. */
   readonly peers: Map<MockPeer, string>;
@@ -83,25 +87,54 @@ export class MockServer {
     if (guest === null) return error(401, 'UNAUTHENTICATED', 'Missing or unknown guest token');
 
     if (path === ROUTES.rooms && method === 'GET') {
-      const rooms = [...this.rooms.values()].filter((r) => r.summary.status === 'lobby').map((r) => summaryOf(r));
+      const rooms = [...this.rooms.values()].filter((r) => r.summary.status === 'lobby' || r.summary.status === 'playing' || (r.summary.status === 'finished' && this.isMember(r, guest.guestId))).map((r) => summaryOf(r));
       return { status: 200, body: { rooms } };
     }
     if (path === ROUTES.rooms && method === 'POST') {
-      const room = this.createRoom(guest);
+      if (!Value.Check(CreateRoomRequestSchema, body ?? {})) return error(400, 'INVALID_REQUEST', 'Invalid create request');
+      const accessCode = (body as { accessCode?: string } | undefined)?.accessCode;
+      const room = this.createRoom(guest, accessCode);
       // Nobody else is here in a mock: a bot joins so the game can be started.
       this.options.timers.setTimeout(() => this.join(room, this.addGuest('Bot Ada', true)), LOBBY_BOT_DELAY_MS);
-      return { status: 200, body: { room: summaryOf(room) } };
+      return { status: 200, body: { room: summaryOf(room), ...(accessCode !== undefined && { accessCode, inviteLink: `/?room=${encodeURIComponent(room.summary.roomId)}&code=${encodeURIComponent(accessCode)}` }) } };
     }
 
-    const match = /^\/api\/rooms\/([^/]+)\/(join|start)$/.exec(path);
-    if (method !== 'POST' || match === null) return error(404, 'INVALID_REQUEST', `No route ${method} ${path}`);
+    const match = /^\/api\/rooms\/([^/]+)(?:\/(join|start|leave))?$/.exec(path);
+    if (match === null || (match[2] === undefined ? method !== 'GET' : method !== 'POST')) return error(404, 'INVALID_REQUEST', `No route ${method} ${path}`);
     const room = this.rooms.get(decodeURIComponent(match[1]!));
     if (room === undefined) return error(404, 'ROOM_UNAVAILABLE', 'No such room');
 
+    if (match[2] === undefined) {
+      if (!this.isMember(room, guest.guestId)) return error(403, 'NOT_A_PARTICIPANT', 'You are not a member');
+      return { status: 200, body: { room: summaryOf(room) } };
+    }
+    if (room.summary.status === 'closed') return error(409, 'ROOM_CLOSED', 'The room was closed');
+    if (match[2] === 'leave') {
+      if (room.summary.status !== 'lobby') return error(409, 'PHASE_NOT_ALLOWED', 'Only lobby members can leave');
+      if (!this.isMember(room, guest.guestId)) return error(403, 'NOT_A_PARTICIPANT', 'You are not a member');
+      const closing = room.summary.creatorId === guest.guestId;
+      room.summary.members = room.summary.members.filter((m) => m.guestId !== guest.guestId);
+      if (closing) room.summary.status = 'closed';
+      this.changed(room, room.game.leave(guest.guestId));
+      for (const [peer, id] of [...room.peers]) {
+        if (closing || id === guest.guestId) {
+          peer.send({ t: 'Error', code: closing && id !== guest.guestId ? 'ROOM_CLOSED' : 'NOT_A_PARTICIPANT', message: closing && id !== guest.guestId ? 'The host closed the room' : 'You left the room' });
+          this.disconnect(peer);
+          peer.close();
+        }
+      }
+      return { status: 200, body: { room: summaryOf(room) } };
+    }
     if (match[2] === 'join') {
+      if (!Value.Check(JoinRoomRequestSchema, body ?? {})) return error(400, 'INVALID_REQUEST', 'Invalid join request');
       if (!this.isMember(room, guest.guestId)) {
-        if (room.summary.status !== 'lobby') return error(409, 'ROOM_UNAVAILABLE', 'The game has already started');
+        if (room.summary.status !== 'lobby') return error(409, 'PHASE_NOT_ALLOWED', 'The game has already started');
         if (room.summary.members.length >= 6) return error(409, 'PLAYER_LIMIT_REACHED', 'The room is full');
+        if (room.accessCode !== undefined) {
+          const code = (body as { accessCode?: string } | undefined)?.accessCode;
+          if (code === undefined) return error(403, 'ACCESS_CODE_REQUIRED', 'An access code is required');
+          if (code !== room.accessCode) return error(403, 'ACCESS_CODE_INVALID', 'The access code is incorrect');
+        }
         this.join(room, guest);
         // A room hosted by a bot starts by itself shortly after a human sits down.
         if (this.guestById(room.summary.creatorId)?.bot) {
@@ -112,7 +145,7 @@ export class MockServer {
     }
 
     if (room.summary.creatorId !== guest.guestId) return error(403, 'NOT_ROOM_CREATOR', 'Only the room creator may start the game');
-    if (room.summary.status !== 'lobby') return error(409, 'ROOM_UNAVAILABLE', 'The game has already started');
+    if (room.summary.status !== 'lobby') return error(409, 'PHASE_NOT_ALLOWED', 'The game has already started');
     if (room.summary.members.length < 2) return error(409, 'NOT_ENOUGH_PLAYERS', 'At least 2 players are required');
     this.start(room);
     return { status: 200, body: { room: summaryOf(room) } };
@@ -134,10 +167,17 @@ export class MockServer {
       if (guest === null) return peer.send({ t: 'Error', code: 'UNAUTHENTICATED', message: 'Unknown guest token' });
       const room = this.rooms.get(frame.gameId);
       if (room === undefined) return peer.send({ t: 'Error', code: 'ROOM_UNAVAILABLE', message: 'No such room' });
+      if (room.summary.status === 'closed') return peer.send({ t: 'Error', code: 'ROOM_CLOSED', message: 'The room was closed' });
       if (!this.isMember(room, guest.guestId)) {
         return peer.send({ t: 'Error', code: 'NOT_A_PARTICIPANT', message: 'You are not a member of this room' });
       }
       this.disconnect(peer);
+      for (const [old, id] of [...room.peers]) {
+        if (id !== guest.guestId) continue;
+        old.send({ t: 'Error', code: 'CONNECTION_REPLACED', message: 'This room is open in another tab' });
+        this.disconnect(old);
+        old.close();
+      }
       room.peers.set(peer, guest.guestId);
       this.helloed.set(peer, room);
       // No delta replay in stage 1: always the full current view.
@@ -205,10 +245,11 @@ export class MockServer {
     return room.summary.members.some((m) => m.guestId === guestId);
   }
 
-  private createRoom(creator: Guest): Room {
+  private createRoom(creator: Guest, accessCode?: string): Room {
     const roomId = `r${this.nextId++}`;
     const room: Room = {
       summary: { roomId, creatorId: creator.guestId, status: 'lobby', members: [] },
+      ...(accessCode !== undefined && { accessCode }),
       game: new MockGame(this.options),
       peers: new Map(),
       acks: new Map(),
@@ -243,6 +284,7 @@ export class MockServer {
   /** The game moved on: tell every peer, then arm the deadline and the bot seat. */
   private changed(room: Room, events: readonly GameEvent[]): void {
     const view = room.game.view;
+    if (view.phase === 'finished') room.summary.status = 'finished';
     for (const peer of room.peers.keys()) peer.send({ t: 'Update', revision: view.revision, view, events: [...events] });
 
     const { timers } = this.options;
@@ -276,6 +318,5 @@ export class MockServer {
 
 function summaryOf(room: Room): RoomSummary {
   const { roomId, creatorId, status, members } = JSON.parse(JSON.stringify(room.summary)) as Room['summary'];
-  // The mock has no access codes: every room is unlocked.
-  return { roomId, creatorId, status, locked: false, joinable: status === 'lobby' && members.length < 6, members };
+  return { roomId, creatorId, status, locked: room.accessCode !== undefined, joinable: room.accessCode === undefined && status === 'lobby' && members.length < 6, members };
 }

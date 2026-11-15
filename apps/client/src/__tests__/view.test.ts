@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ClientCommandType } from '@game/protocol';
 import {
   actionAvailability,
   activeDeadline,
@@ -12,36 +13,37 @@ import {
 } from '../game/view';
 import { lobbyView, pid, playingView, setupView } from './helpers';
 
-const NONE = { RollForOrder: false, RollDice: false, EndTurn: false };
+const NONE = { RollForOrder: false, RollDice: false, EndTurn: false, Resign: false };
 
 function available(over: Partial<ActionContext>): ActionAvailability {
   return actionAvailability({ view: null, me: pid('a'), connected: true, pending: [], now: 50_000, ...over });
 }
 
 describe('action buttons follow the view', () => {
-  it('not my turn: everything disabled', () => {
-    expect(available({ view: playingView(['a', 'b'], { owner: 'b' }) })).toEqual(NONE);
-    expect(available({ view: playingView(['a', 'b'], { owner: 'b', rolled: true }) })).toEqual(NONE);
+  it('not my turn: only resignation available', () => {
+    expect(available({ view: playingView(['a', 'b'], { owner: 'b' }) })).toEqual({ ...NONE, Resign: true });
+    expect(available({ view: playingView(['a', 'b'], { owner: 'b', rolled: true }) })).toEqual({ ...NONE, Resign: true });
   });
 
   it('my turn before the roll: only RollDice', () => {
-    expect(available({ view: playingView(['a', 'b'], { owner: 'a' }) })).toEqual({ ...NONE, RollDice: true });
+    expect(available({ view: playingView(['a', 'b'], { owner: 'a' }) })).toEqual({ ...NONE, Resign: true, RollDice: true });
   });
 
   it('my turn after the roll: only EndTurn', () => {
-    expect(available({ view: playingView(['a', 'b'], { owner: 'a', rolled: true }) })).toEqual({ ...NONE, EndTurn: true });
+    expect(available({ view: playingView(['a', 'b'], { owner: 'a', rolled: true }) })).toEqual({ ...NONE, Resign: true, EndTurn: true });
   });
 
   it('my order roll: only RollForOrder', () => {
-    expect(available({ view: setupView(['a', 'b'], { roller: 'a' }) })).toEqual({ ...NONE, RollForOrder: true });
-    expect(available({ view: setupView(['a', 'b'], { roller: 'b' }) })).toEqual(NONE);
+    expect(available({ view: setupView(['a', 'b'], { roller: 'a' }) })).toEqual({ ...NONE, Resign: true, RollForOrder: true });
+    expect(available({ view: setupView(['a', 'b'], { roller: 'b' }) })).toEqual({ ...NONE, Resign: true });
   });
 
   it('a pending command of the type disables its button', () => {
-    expect(available({ view: playingView(['a', 'b'], { owner: 'a' }), pending: ['RollDice'] })).toEqual(NONE);
+    expect(available({ view: playingView(['a', 'b'], { owner: 'a' }), pending: ['RollDice'] })).toEqual({ ...NONE, Resign: true });
     // A pending command of another type does not.
     expect(available({ view: playingView(['a', 'b'], { owner: 'a', rolled: true }), pending: ['RollDice'] })).toEqual({
       ...NONE,
+      Resign: true,
       EndTurn: true,
     });
   });
@@ -58,7 +60,7 @@ describe('action buttons follow the view', () => {
     const view = playingView(['a', 'b'], { owner: 'a', deadline: 60_000 });
     expect(available({ view, now: 59_999 }).RollDice).toBe(true);
     expect(available({ view, now: 60_000 }).RollDice).toBe(false);
-    expect(available({ view: setupView(['a', 'b'], { roller: 'a', deadline: 60_000 }), now: 60_001 })).toEqual(NONE);
+    expect(available({ view: setupView(['a', 'b'], { roller: 'a', deadline: 60_000 }), now: 60_001 })).toEqual({ ...NONE, Resign: true });
   });
 });
 

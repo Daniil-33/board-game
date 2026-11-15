@@ -68,3 +68,15 @@ describe('board scene', () => {
     await scene.play({ kind: 'highlight', playerId: 'b' });
   });
 });
+
+describe('eliminated tokens', () => {
+  it('hides eliminated players and retains survivor token identity, color and slot', async () => {
+    const scene = new BoardScene(660, instant);
+    const before = playingView(['a', 'b', 'c']); scene.snap(before, 'a');
+    const survivor = token(scene, 'c'); const at = { x: survivor.x, y: survivor.y };
+    scene.snap({ ...before, eliminated: ['a' as never] }, 'b');
+    expect(token(scene, 'a').visible).toBe(false); expect(token(scene, 'c')).toBe(survivor);
+    expect({ x: survivor.x, y: survivor.y }).toEqual(at);
+    await scene.play({ kind: 'hop', playerId: 'a', cell: 3 }); expect(token(scene, 'a').visible).toBe(false);
+  });
+});

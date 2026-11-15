@@ -185,8 +185,14 @@ export function createConnection(options: ConnectionOptions): Connection {
         return;
       case 'NOT_A_PARTICIPANT':
       case 'ROOM_UNAVAILABLE':
+      case 'ROOM_CLOSED':
         disconnect();
         options.onRoomLost?.(frame);
+        return;
+      case 'CONNECTION_REPLACED':
+        state.fatal = 'This room is open in another tab.';
+        state.pending.splice(0);
+        stop();
         return;
       case 'PROTOCOL_VERSION_UNSUPPORTED':
         state.fatal = 'This page is out of date. Reload it to continue.';
@@ -221,7 +227,13 @@ export function createConnection(options: ConnectionOptions): Connection {
     disconnect,
     sendCommand(type) {
       if (state.pending.some((c) => c.type === type)) return false;
-      const expected = commandExpectation(state.view, type);
+      if (state.playerId !== null && state.view?.eliminated.includes(state.playerId)) return false;
+      if (type === 'Resign' && (!state.connected || state.view === null || state.playerId === null ||
+          !state.view.players.some((p) => p.id === state.playerId) || state.view.eliminated.includes(state.playerId) ||
+          !['setup', 'playing'].includes(state.view.phase))) return false;
+      const expected = type === 'Resign'
+        ? (heldRevision === null ? null : { kind: 'revision' as const, revision: heldRevision })
+        : commandExpectation(state.view, type);
       if (expected === null) return false;
       // Intent only: no actor, no outcome. The server sets the actor from the session.
       const frame: CommandFrame = {

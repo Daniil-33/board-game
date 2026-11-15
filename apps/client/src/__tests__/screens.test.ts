@@ -184,12 +184,12 @@ describe('RoomScreen', () => {
     expect(names(wrapper)).toEqual(['Alice']);
     expect(start(wrapper).exists()).toBe(true);
     expect(start(wrapper).attributes('disabled')).toBeDefined();
-    expect(wrapper.text()).not.toMatch(/leave/i);
+    expect(wrapper.find('[data-test="leave"]').exists()).toBe(true);
   });
 
-  it('a second member arrives on the socket: Start becomes enabled and the nickname is looked up once', async () => {
+  it('a second member arrives on the socket: Start becomes enabled and the roster is refreshed through get-room', async () => {
     const withBob = room([['a', 'Alice'], ['b', 'Bob']]);
-    const h = inRoom(ALICE_ROOM, () => ({ body: { rooms: [withBob] } }));
+    const h = inRoom(ALICE_ROOM, () => ({ body: { room: withBob } }));
     const wrapper = mount(RoomScreen, provide(h));
     h.sockets.last().receive(welcome(lobbyView(['a'], 2)));
     h.sockets.last().receive(update(lobbyView(['a', 'b'], 3), [{ type: 'PlayerAdded', payload: { playerId: 'b' } }]));
@@ -198,7 +198,7 @@ describe('RoomScreen', () => {
     expect(start(wrapper).attributes('disabled')).toBeUndefined();
     h.sockets.last().receive(update(lobbyView(['a', 'b'], 4)));
     await flushPromises();
-    expect(h.calls.filter((c) => c.method === 'GET')).toHaveLength(1);
+    expect(h.calls.filter((c) => c.method === 'GET').map((c) => c.path)).toEqual(['/api/rooms/r1', '/api/rooms/r1']);
   });
 
   it('shows a server error and a malformed-frame problem while in the room view', async () => {

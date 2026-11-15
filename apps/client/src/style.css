@@ -53,3 +53,12 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; flex: none; }
 .messages { margin-top: 16px; }
 .messages li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+
+.eliminated { opacity: .6; }
+.resign { margin-top: 1rem; }
+.room form { display: flex; align-items: center; gap: .5rem; }
+input[readonly] { width: 100%; }
+.room { flex-wrap: wrap; }
+.room > div { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
+.room form { flex: 1 1 220px; align-items: stretch; }
+.room form label { display: flex; flex-direction: column; gap: 6px; }

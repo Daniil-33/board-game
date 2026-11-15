@@ -54,6 +54,10 @@ Leave sends HTTP only in lobby; navigate on success. Socket ROOM_CLOSED and
 get-room status closed use the same cleanup. Guard late async responses by
 room identity and an entry generation so an old lookup cannot restore a room
 after leave or overwrite a later visit to the same room.
+An own-leave request tracks its room entry until completion: the server may
+send NOT_A_PARTICIPANT after removing the creator, before the HTTP response
+reports closed. This is a normal left-room notice, without an error banner;
+other members still handle ROOM_CLOSED as room closure.
 
 Replace resolveNames' listRooms lookup and permanent lookedUp set with
 get-room on entry/Welcome and PlayerAdded/PlayerLeftLobby updates. Serialize

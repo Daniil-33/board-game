@@ -47,7 +47,7 @@ const PIPS: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
 };
 
 /** The slice of the view the board draws. */
-export type BoardView = Pick<StateView, 'players' | 'positions' | 'jail'>;
+export type BoardView = Pick<StateView, 'players' | 'positions' | 'jail' | 'eliminated'>;
 
 export interface SceneClock {
   /** Run `frame(t)` with t from 0 to 1 over `ms`; resolves early (false) when `cancelled()` turns true. */
@@ -166,10 +166,11 @@ export class BoardScene {
     this.syncTokens(view);
     view.players.forEach((player, index) => {
       const token = this.tokenById.get(player.id)!;
+      token.visible = !view.eliminated.includes(player.id);
       const at = this.placeOf(view, player.id, index);
       token.position.set(at.x, at.y);
     });
-    this.setActive(activeId);
+    this.setActive(activeId !== null && view.eliminated.some((id) => id === activeId) ? null : activeId);
   }
 
   /** Play one animation step; resolves when it has finished or was cancelled by `snap`. */
@@ -195,7 +196,7 @@ export class BoardScene {
       case 'hop':
       case 'jump': {
         const token = this.tokenById.get(step.playerId);
-        if (token === undefined) return;
+        if (token === undefined || !token.visible) return;
         const slot = this.slotById.get(step.playerId) ?? 0;
         const rect = cellRect(step.cell, this.size);
         // A jump is only ever to jail, into the box; a walking token passes the jail cell as a visitor.
@@ -243,7 +244,7 @@ export class BoardScene {
   private setActive(playerId: string | null): void {
     this.activeId = playerId;
     const token = playerId === null ? undefined : this.tokenById.get(playerId);
-    this.activeRing.visible = token !== undefined;
+    this.activeRing.visible = token !== undefined && token.visible;
     if (token !== undefined) this.activeRing.position.copyFrom(token.position);
   }
 

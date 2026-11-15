@@ -1,3 +1,4 @@
+import { flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeClientFrame, type ServerFrame } from '@game/protocol';
 import { RECONNECT_DELAYS_MS } from '../net/connection';
@@ -365,5 +366,21 @@ describe('board follows the view', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(h.board.steps.map((s) => s.kind)).toEqual(['hop', 'hop', 'hop']);
     expect(h.board.snaps[h.board.snaps.length - 1]).toEqual({ positions: { a: 5, b: 0 }, activeId: 'a' });
+  });
+});
+
+describe('elimination cancels queued motion', () => {
+  it('snaps immediately even without resignation events and drops obsolete waiting steps', async () => {
+    const h = harness({ stored: storedSession(room([['a', 'Alice'], ['b', 'Bob'], ['c', 'Carol']])) });
+    h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(playingView(['a', 'b', 'c'], { revision: 20 })));
+    let release = () => {}; const played: string[] = [];
+    h.client.attachBoard({ ...h.board, play: (step) => { played.push(step.kind); return new Promise<void>((r) => { release = r; }); } });
+    h.sockets.last().receive(update(playingView(['a', 'b', 'c'], { revision: 21 }), [
+      { type: 'DiceRolled', payload: { playerId: 'a', dice: [3, 4] } },
+      { type: 'PlayerMoved', payload: { playerId: 'a', from: 0, steps: 7 } },
+    ]));
+    h.sockets.last().receive(update({ ...playingView(['a', 'b', 'c'], { revision: 22, owner: 'b' }), eliminated: ['a' as never], positions: { b: 0, c: 0 } }));
+    expect(h.board.snaps.at(-1)?.positions).toEqual({ b: 0, c: 0 }); release(); await flushPromises();
+    expect(played).toEqual(['dice']);
   });
 });

@@ -21,7 +21,7 @@ export interface GameState {
   messages: HudMessage[];
   /** A transient connection problem (malformed frame). */
   problem: string | null;
-  /** Set when the client must be reloaded; reconnecting has stopped. */
+  /** A terminal connection notice; reconnecting has stopped. */
   fatal: string | null;
 }
 
