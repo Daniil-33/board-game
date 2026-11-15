@@ -94,6 +94,9 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
     devDependencies:
+      '@sinclair/typebox':
+        specifier: ^0.34.0
+        version: 0.34.52
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.5

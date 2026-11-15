@@ -9,6 +9,8 @@ const DEFAULT_URL = 'postgres://game:game@127.0.0.1:54329/postgres';
 
 export interface TestDatabase {
   readonly db: Kysely<Database>;
+  /** Connection string of this database. */
+  readonly url: string;
   /** Names of the migrations that ran when the database was created. */
   readonly migrations: readonly string[];
   drop(): Promise<void>;
@@ -47,6 +49,7 @@ export async function createTestDatabase(options: { migrate?: boolean } = {}): P
   const migrations = options.migrate === false ? [] : await migrateToLatest(db);
   return {
     db,
+    url: url.toString(),
     migrations,
     async drop() {
       await db.destroy();

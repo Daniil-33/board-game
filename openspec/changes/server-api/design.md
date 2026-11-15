@@ -94,11 +94,14 @@ in the log transaction (D4) and only serves SQL listing.
 ### D4. Room-module change (status transitions only)
 
 `AppendOptions` becomes `{ status: 'playing' | 'finished' | 'closed' | null,
-members: { add: string[]; remove: string[] }, snapshot }`. The room computes
-it from the previous and new committed state: `playing` when leaving phase
-`lobby`, `finished` when entering `finished`, `closed` when the submit
-carried `closeRoom` (it wins over the others); member diff of
-`state.players` ids. The store applies everything in the existing
+members: string[] | null, snapshot }`. The room computes it from the
+previous and new committed state: `playing` when leaving phase `lobby`,
+`finished` when entering `finished`, `closed` when the submit carried
+`closeRoom` (it wins over the others); `members` is the new `state.players`
+id list when it changed, and the store makes `room_members` exactly that set
+(rows that stay keep `joined_at`). `room_members` references `guests`, so
+room tests that use bare player ids create those guests in the test store
+wrapper; the API only ever adds real guests. The store applies everything in the existing
 transaction. The room still reads no rule: phase names and the player list
 are state shape, like today's `markPlaying`.
 
@@ -185,8 +188,10 @@ Per socket: `awaitingHello` -> `ready` -> `closed`.
 
 ### D8. Protocol additions
 
-- `common.ts`: id pattern `^[^\u0000\p{Cs}]+$` (with the `u` flag in both
-  TypeBox and Ajv) on every id and command id; `LOBBY_ERROR_CODES` gains
+- `common.ts`: `ID_PATTERN` on every id and command id (and target ref
+  fields): no U+0000, surrogates only as valid pairs. TypeBox compiles
+  patterns without the `u` flag and Ajv with it, so the pattern is written
+  with explicit surrogate ranges that mean the same in both modes; `LOBBY_ERROR_CODES` gains
   `ACCESS_CODE_REQUIRED`, `ACCESS_CODE_INVALID`; `PROTOCOL_ERROR_CODES`
   gains `ROOM_CLOSED` and `CONNECTION_REPLACED`.
 - `lobby.ts`: `AccessCodeSchema`; `CreateRoomRequest { accessCode? }`;
