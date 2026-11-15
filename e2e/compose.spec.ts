@@ -17,22 +17,28 @@ test('three guests: setup, movement, reload, server restart and resignation to w
     await expect.poll(() => host.view?.revision).toBe(actor.view!.revision);
   }
   const current = await active(players), id = current.id, revision = current.view!.revision;
+  const welcomeCount = current.welcomes.length;
   await current.page.reload();
   await expect(current.page.locator('[data-screen="game"]')).toBeVisible();
   await expect.poll(() => current.view?.revision).toBe(revision);
-  expect(current.id).toBe(id);
+  await expect.poll(() => current.welcomes.length).toBeGreaterThan(welcomeCount);
+  expect(current.welcomes.at(-1)!.playerId).toBe(id);
   await expect(current.page.locator(sel('RollDice'))).toBeEnabled();
   await action(current, 'RollDice');
   await expect.poll(() => host.view?.revision).toBe(current.view!.revision);
   const saved = JSON.parse(JSON.stringify(host.view));
+  const welcomesBeforeRestart = players.map(p => p.welcomes.length);
   execFileSync('bash', ['-lc', process.env['E2E_RESTART_COMMAND'] ?? "sg docker -c 'docker compose -p s1-e2e restart server'"], { stdio: 'pipe' });
   for (const p of players) {
+    await expect.poll(() => p.welcomes.length).toBeGreaterThan(welcomesBeforeRestart[players.indexOf(p)]!);
+    expect(p.welcomes.at(-1)!.playerId).toBe(p.id);
     await expect(p.page.locator(sel('offline'))).toHaveCount(0);
     await expect.poll(() => p.view?.revision).toBe(saved.revision);
     expect(p.view!.players).toEqual(saved.players);
     expect(p.view!.positions).toEqual(saved.positions);
   }
-  await action(current, 'EndTurn');
+  const resumed = await active(players);
+  await action(resumed, resumed.view!.turn!.rolled ? 'EndTurn' : 'RollDice');
   await resign(players[2]!); await resign(players[1]!);
   for (const p of players) {
     await expect(p.page.getByRole('heading', { name: 'Game over', exact: true })).toBeVisible();

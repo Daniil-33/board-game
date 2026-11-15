@@ -10,6 +10,7 @@ export interface Actor {
   context: BrowserContext;
   id: string;
   view: StateView | null;
+  welcomes: { playerId: string; revision: number }[];
   events: { at: number; revision: number; event: GameEvent }[];
 }
 export const test = base.extend<{ actors: (count: number, invite?: string) => Promise<Actor[]> }>({
@@ -24,7 +25,7 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
         const context = await browser.newContext({ baseURL: baseURL! });
         await context.tracing.start({ screenshots: false, snapshots: true, sources: false });
         const page = await context.newPage();
-        const actor: Actor = { context, page, id: '', view: null, events: [] };
+        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [] };
         actors.push(actor); added.push(actor);
         page.on('response', async (response) => {
           if (response.url().endsWith('/api/guests') && response.status() === 201) {
@@ -36,6 +37,7 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
         });
         page.on('websocket', (ws) => ws.on('framereceived', ({ payload }) => {
           const frame = JSON.parse(payload.toString());
+          if (frame.t === 'Welcome') actor.welcomes.push({ playerId: frame.playerId, revision: frame.revision });
           if (frame.t === 'Welcome' || frame.t === 'Update') {
             actor.view = frame.view;
             log.push({ at: Date.now(), actor: actors.indexOf(actor), frame: frame.t, revision: frame.revision, phase: frame.view.phase });

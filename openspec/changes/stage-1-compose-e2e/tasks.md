@@ -9,7 +9,7 @@
 - [x] 2.1 Add server Dockerfile and build context exclusions for deployment/compose “Single command startup”; verify Node 22 image starts existing migration-first entry with workspace dependencies.
 - [x] 2.2 Add client multi-stage Dockerfile and nginx configuration for deployment/compose “Single command startup”; verify bundle, deep-link fallback and HTTP/WebSocket proxy through one origin.
 - [x] 2.3 Add production Compose with database health dependency, persistent volume and localhost-only web publication for deployment/compose requirements; verify resolved config has no test entropy setting and no public bindings.
-- [ ] 2.4 Add ignored env-file pattern, example and deploy README for deployment/compose requirements; execute documented command from clean checkout and verify migrated DB, browser login and volume-preserving restart.
+- [x] 2.4 Add ignored env-file pattern, example and deploy README for deployment/compose requirements; execute documented command from clean checkout and verify migrated DB, browser login and volume-preserving restart.
 
 ## 3. Deterministic test context
 
@@ -30,14 +30,32 @@
 
 - [x] 5.1 Correct protocol D5 (RVW-004) and resignation proposal scope (RVW-001); normalize pre-existing strict validation failures without semantic changes, verify each delta with CLI 2.0.0 and inspect diff against accepted contracts.
 - [x] 5.2 Read archive skill and archive prerequisite stage 1 changes using CLI 2.0.0 in design dependency order, including merged client-lobby; verify evidence for unchecked tasks and inspect each synced spec diff, then run openspec validate --all --strict.
-- [ ] 5.3 Add pinned OpenSpec strict validation and Compose Playwright CI job per handoff criteria 3/5a; verify CI executes scenarios and always uploads trace/report/short logs and Compose logs, with no secrets in artifacts.
+- [x] 5.3 Add pinned OpenSpec strict validation and Compose Playwright CI job per handoff criteria 3/5a; verify CI executes scenarios and always uploads trace/report/short logs and Compose logs, with no secrets in artifacts.
 - [x] 5.4 Add stage 1 delivery to ROADMAP “Сделано” only after evidence exists per handoff criterion 6; verify product text elsewhere is unchanged.
 
 ## 6. Integration acceptance
 
-- [ ] 6.1 Run clean-checkout production Compose, all browser scenarios, pnpm build, pnpm test, pnpm test:integration, openspec validate --all --strict and git diff --check; record exact commands, SHAs and artifact paths through agentctl.
+- [x] 6.1 Run clean-checkout production Compose, all browser scenarios, pnpm build, pnpm test, pnpm test:integration, openspec validate --all --strict and git diff --check; record exact commands, SHAs and artifact paths through agentctl.
 - [ ] 6.2 Inspect acceptance-to-diff mapping, record external intents/results through agentctl, push feature branch and open PR with CI strategy/evidence; obtain independent exact-head review and address valid findings without merging.
 
 ## Workflow follow-up
 
 - After accepted merge, archive this change using the archive skill/CLI and coordinate final main green CI evidence with Team Lead; no Engineer merge authority.
+
+## Verification evidence
+
+Node22.23.5/pnpm9.15.9: frozen install, build, unit1372, integration118,
+client bundle and browser typecheck pass. Installed/pinned-dlx OpenSpec2.0.0
+strict validation:24/24. Full-range diff check passes. Local Playwright1.58.2
+production3/3 and isolated seed1036 scenario1/1 pass, with sanitized traces and
+scenario logs at `/srv/agents/preview/board-game/evidence/TASK-s1-compose-e2e/`.
+Clean clone2f23dc9 on isolated project s1-clean/localhost8082 starts with the
+documented command, passes three-browser reload/restart/winner, and full down/up
+preserves rooms1/log20/snapshots3. Runtime operation `compose-e2e-clean-checkout`
+records this proof. PR22 carries the delivery; exact-head CI/review acceptance
+and final-main/post-merge archive remain tracked through agentctl.
+
+CI run43756623846 on03a64a6 passed both ci and compose-browser, including
+production and fresh seeded suites plus sanitized evidence upload. Reconnect
+proof additionally requires a new Welcome for the same identity after reload
+and restart; focused local Chromium rerun passes.
