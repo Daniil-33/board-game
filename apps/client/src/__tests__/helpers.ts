@@ -180,7 +180,14 @@ export function fakeFetch(route: Route): { fetchFn: FetchLike; calls: FetchCall[
 export const GUEST = { guestId: 'a', token: 'tok-a', nickname: 'Alice' };
 
 export function room(members: [string, string][], creatorId = members[0]![0], roomId = 'r1'): RoomSummary {
-  return { roomId, creatorId, status: 'lobby', members: members.map(([guestId, nickname]) => ({ guestId, nickname })) };
+  return {
+    roomId,
+    creatorId,
+    status: 'lobby',
+    locked: false,
+    joinable: members.length < 6,
+    members: members.map(([guestId, nickname]) => ({ guestId, nickname })),
+  };
 }
 
 export function storedSession(roomSummary?: RoomSummary): Record<string, string> {

@@ -23,14 +23,20 @@ describe('protocol version and codes', () => {
     expect(PROTOCOL_VERSION).toBe(1);
   });
 
-  it('lists the five protocol error codes', () => {
-    expect([...PROTOCOL_ERROR_CODES].sort()).toEqual(
-      ['MALFORMED_FRAME', 'NOT_A_PARTICIPANT', 'PROTOCOL_VERSION_UNSUPPORTED', 'ROOM_UNAVAILABLE', 'UNAUTHENTICATED'],
-    );
+  it('lists the seven protocol error codes', () => {
+    expect([...PROTOCOL_ERROR_CODES].sort()).toEqual([
+      'CONNECTION_REPLACED',
+      'MALFORMED_FRAME',
+      'NOT_A_PARTICIPANT',
+      'PROTOCOL_VERSION_UNSUPPORTED',
+      'ROOM_CLOSED',
+      'ROOM_UNAVAILABLE',
+      'UNAUTHENTICATED',
+    ]);
   });
 
-  it('command type stub is RollForOrder | RollDice | EndTurn', () => {
-    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn']);
+  it('client command types are RollForOrder | RollDice | EndTurn | Resign', () => {
+    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign']);
     expectTypeOf<CommandFrame['type']>().toEqualTypeOf<ClientCommandType>();
   });
 });
@@ -116,6 +122,16 @@ describe('field validation', () => {
   it.each([
     ['unknown command type', { ...command, type: 'Timeout' }],
     ['lifecycle command type', { ...command, type: 'StartGame' }],
+    ['LeaveLobby command type', { ...command, type: 'LeaveLobby' }],
+    ['AddPlayer command type', { ...command, type: 'AddPlayer' }],
+    ['commandId with NUL', { ...command, commandId: 'a\u0000b' }],
+    ['commandId with lone high surrogate', { ...command, commandId: 'a\ud800' }],
+    ['commandId with lone low surrogate', { ...command, commandId: '\udc00a' }],
+    ['commandId with reversed pair', { ...command, commandId: '\udc00\ud800' }],
+    ['gameId with NUL', { ...hello, gameId: '\u0000' }],
+    ['gameId with lone surrogate', { ...hello, gameId: 'room\udbff' }],
+    ['target id with NUL', { ...command, expected: { kind: 'target', target: { kind: 'turn', id: 't\u0000' } } }],
+    ['target kind with lone surrogate', { ...command, expected: { kind: 'target', target: { kind: '\ud800', id: 't' } } }],
     ['missing payload', (({ payload: _p, ...rest }) => rest)(command)],
     ['empty commandId', { ...command, commandId: '' }],
     ['commandId too long', { ...command, commandId: 'x'.repeat(129) }],
@@ -131,6 +147,16 @@ describe('field validation', () => {
     ['empty gameId', { ...hello, gameId: '' }],
   ])('client: %s', (_name, frame) => {
     expect(isMalformed(decodeClientFrame(enc(frame)))).toBe(true);
+  });
+
+  it('accepts astral characters in ids (valid surrogate pairs)', () => {
+    const f = { ...command, commandId: 'a😀', expected: { kind: 'target', target: { kind: 'turn', id: '𝒜' } } };
+    expect(decodeClientFrame(enc(f))).toEqual({ ok: true, frame: f });
+    expect(decodeClientFrame(enc({ ...hello, gameId: '😀' })).ok).toBe(true);
+  });
+
+  it('rejects a server frame whose player id holds NUL', () => {
+    expect(isMalformed(decodeServerFrame(enc({ t: 'Welcome', protocolVersion: 1, playerId: 'p\u0000', revision: 0, view })))).toBe(true);
   });
 
   it('accepts other protocol versions so the server can answer PROTOCOL_VERSION_UNSUPPORTED', () => {

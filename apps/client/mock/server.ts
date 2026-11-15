@@ -46,7 +46,7 @@ interface Guest {
 }
 
 interface Room {
-  readonly summary: { roomId: string; creatorId: string; status: 'lobby' | 'playing'; members: { guestId: string; nickname: string }[] };
+  readonly summary: { roomId: string; creatorId: string; status: RoomSummary['status']; members: { guestId: string; nickname: string }[] };
   readonly game: MockGame;
   /** Connected peers and the guest each one said Hello as. */
   readonly peers: Map<MockPeer, string>;
@@ -275,5 +275,7 @@ export class MockServer {
 }
 
 function summaryOf(room: Room): RoomSummary {
-  return JSON.parse(JSON.stringify(room.summary)) as RoomSummary;
+  const { roomId, creatorId, status, members } = JSON.parse(JSON.stringify(room.summary)) as Room['summary'];
+  // The mock has no access codes: every room is unlocked.
+  return { roomId, creatorId, status, locked: false, joinable: status === 'lobby' && members.length < 6, members };
 }

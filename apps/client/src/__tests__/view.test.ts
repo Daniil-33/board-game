@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { ClientCommandType } from '@game/protocol';
 import {
   actionAvailability,
   activeDeadline,
@@ -8,13 +7,14 @@ import {
   remainingMs,
   remainingSeconds,
   turnOrder,
+  type ActionAvailability,
   type ActionContext,
 } from '../game/view';
 import { lobbyView, pid, playingView, setupView } from './helpers';
 
 const NONE = { RollForOrder: false, RollDice: false, EndTurn: false };
 
-function available(over: Partial<ActionContext>): Record<ClientCommandType, boolean> {
+function available(over: Partial<ActionContext>): ActionAvailability {
   return actionAvailability({ view: null, me: pid('a'), connected: true, pending: [], now: 50_000, ...over });
 }
 
