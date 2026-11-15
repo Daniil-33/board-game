@@ -5,7 +5,7 @@ id: TASK-s1-compose-e2e
 revision: 1
 effort: EFF-stage-1-skeleton
 project: economic-board-game
-source_commit: main after TASK-s1-server-api and TASK-s1-client-lobby merge
+source_commit: 25fef63 # main with server-api (PR #20); Explore/Propose now, Apply after TASK-s1-client-lobby merges
 owner: team-lead
 status: proposed
 ```
@@ -84,7 +84,7 @@ example file. Production paths use CSPRNG entropy.
 
 ## Dependencies
 
-Starts after `TASK-s1-server-api` and `TASK-s1-client-lobby` merge. Docker runs
+Server-api is merged. Explore and Propose may start now; Apply starts after `TASK-s1-client-lobby` merges (the Team Lead confirms). Docker runs
 as `sg docker -c '<command>'` in sessions that predate the docker group change.
 
 ## Delegated decisions
