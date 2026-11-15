@@ -5,7 +5,7 @@ id: TASK-s1-core-resign
 revision: 1
 effort: EFF-stage-1-skeleton
 project: economic-board-game
-source_commit: main after handoff revision 3 (PR #13) merges
+source_commit: e30d40a # main with handoff revision 3
 owner: team-lead
 status: proposed
 ```
