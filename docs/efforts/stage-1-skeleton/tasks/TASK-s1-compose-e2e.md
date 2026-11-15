@@ -51,7 +51,12 @@ Technical proof:
    `engine-resignation`, the server-api and client-lobby changes. Fix while
    archiving: protocol design D5 wording (protocol review RVW-004),
    engine-resignation proposal scope sentence (core-resign review RVW-001),
-   and the repository-wide `openspec validate --all --strict` failures.
+   and the repository-wide `openspec validate --all --strict` failures
+   (4 pre-existing hand-written changes as of 2026-11-15). Use the installed
+   OpenSpec CLI 2.0.0 (`~/.local/bin/openspec`, `openspec archive`) per the
+   repo skills, not hand edits.
+5a. CI runs `openspec validate --all --strict` as a required step once it
+   passes.
 6. `ROADMAP.md` "Сделано" lists stage 1 as delivered (skeleton through all
    layers) without changing product text.
 7. Final `main` CI green.
