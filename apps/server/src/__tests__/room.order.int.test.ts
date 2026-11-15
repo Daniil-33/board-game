@@ -1,3 +1,4 @@
+import { CURRENT_RULES_VERSION } from '@game/game-core';
 import { describe, expect, it } from 'vitest';
 import { gameEngine, type GameCommand, type Revision } from '@game/game-core';
 import type { Engine, RoomResult } from '../rooms/types.js';
@@ -74,7 +75,7 @@ describe('room execution', () => {
       const { manager, clock } = h.manager({ seed: 7 });
       const gameId = await seedRoom(h.db);
       const room = await manager.open(gameId);
-      await ok(room, sys('CreateGame', { seed: 5, rulesVersion: 'core-2' }, 0, 'd-create'));
+      await ok(room, sys('CreateGame', { seed: 5, rulesVersion: CURRENT_RULES_VERSION }, 0, 'd-create'));
       await ok(room, sys('AddPlayer', { playerId: 'a' }, 1, 'd-a'));
       clock.advance(250);
       await ok(room, sys('AddPlayer', { playerId: 'b' }, 2, 'd-b'));

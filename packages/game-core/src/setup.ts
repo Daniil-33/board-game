@@ -68,7 +68,7 @@ function rollForOrder(state: GameState, now: Timestamp, auto: boolean): HandlerR
   const [value, rng] = rollDie(state.rng!);
   const playerId = setup.playerId;
   const events: (SetupEvent | TurnEvent)[] = [{ type: 'OrderDieRolled', payload: { playerId, value, auto } }];
-  let next: GameState = { ...state, rng };
+  const next: GameState = { ...state, rng };
 
   const rolls = { ...setup.round.rolls, [playerId]: value };
   const pending = setup.round.pending.slice(1);
@@ -78,32 +78,67 @@ function rollForOrder(state: GameState, now: Timestamp, auto: boolean): HandlerR
     return ok(opened.state, events);
   }
 
+  return completeRound(next, setup.groups, { ...setup.round, pending, rolls }, now, events);
+}
+
+/** Rank a completed round using the same stable buckets for rolls and removals. */
+function completeRound(
+  state: GameState, groups: SetupState['groups'], round: SetupState['round'], now: Timestamp,
+  events: (SetupEvent | TurnEvent)[] = [],
+): HandlerResult {
   // The group has rolled: split it by value, descending, keeping stored order within a value.
-  const group = setup.groups[setup.round.groupIndex]!;
-  const values = [...new Set(group.map((p) => rolls[p]!))].sort((a, b) => b - a);
-  const buckets = values.map((v) => group.filter((p) => rolls[p] === v));
+  const group = groups[round.groupIndex]!;
+  const values = [...new Set(group.map((p) => round.rolls[p]!))].sort((a, b) => b - a);
+  const buckets = values.map((v) => group.filter((p) => round.rolls[p] === v));
   buckets.forEach((bucket, i) => {
     if (bucket.length > 1) events.push({ type: 'OrderTied', payload: { playerIds: bucket, value: values[i]! } });
   });
-  const groups = [
-    ...setup.groups.slice(0, setup.round.groupIndex),
+  const ranked = [
+    ...groups.slice(0, round.groupIndex),
     ...buckets,
-    ...setup.groups.slice(setup.round.groupIndex + 1),
+    ...groups.slice(round.groupIndex + 1),
   ];
 
+  return advanceGroups(state, ranked, now, events);
+}
+
+function advanceGroups(
+  state: GameState, groups: SetupState['groups'], now: Timestamp,
+  events: (SetupEvent | TurnEvent)[] = [],
+): HandlerResult {
   const groupIndex = firstUnresolved(groups);
   if (groupIndex >= 0) {
     const members = groups[groupIndex]!;
-    const opened = openRoll(next, groups, { groupIndex, pending: members, rolls: {} }, now);
+    const opened = openRoll(state, groups, { groupIndex, pending: members, rolls: {} }, now);
     events.push(opened.event);
     return ok(opened.state, events);
   }
 
   const order = groups.map((g) => g[0]!);
   events.push({ type: 'TurnOrderDetermined', payload: { order } });
-  next = { ...next, setup: null };
+  const next = { ...state, setup: null };
   const started = startPlay(next, order, now);
   return ok(started.state, [...events, ...started.events]);
+}
+
+/** Remove an active participant without discarding surviving round progress. */
+export function removeSetupPlayer(state: GameState, playerId: PlayerId, now: Timestamp): HandlerResult {
+  const setup = state.setup!;
+  const oldIndex = setup.round.groupIndex;
+  const filtered = setup.groups.map((g) => g.filter((p) => p !== playerId));
+  const groupIndex = filtered.slice(0, oldIndex).filter((g) => g.length > 0).length;
+  const current = filtered[oldIndex]!;
+  const groups = filtered.filter((g) => g.length > 0);
+  if (current.length <= 1) return advanceGroups(state, groups, now);
+  const pending = setup.round.pending.filter((p) => p !== playerId);
+  const rolls = Object.fromEntries(Object.entries(setup.round.rolls).filter(([p]) => p !== playerId));
+  const round = { groupIndex, pending, rolls };
+  if (pending.length === 0) return completeRound(state, groups, round, now);
+  if (pending[0] === setup.playerId) {
+    return ok({ ...state, setup: { ...setup, groups, round } }, []);
+  }
+  const opened = openRoll(state, groups, round, now);
+  return ok(opened.state, [opened.event]);
 }
 
 // ---- Handlers ---------------------------------------------------------------

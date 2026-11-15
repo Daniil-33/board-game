@@ -40,6 +40,8 @@ describe('projectState', () => {
       turn: s.turn,
       positions: s.positions,
       jail: s.jail,
+      eliminated: s.eliminated,
+      winner: s.winner,
     });
   });
 
@@ -59,6 +61,8 @@ describe('projectState', () => {
       turn: s.turn,
       positions: s.positions,
       jail: s.jail,
+      eliminated: s.eliminated,
+      winner: s.winner,
     });
     expect(view).not.toHaveProperty('rng');
   });

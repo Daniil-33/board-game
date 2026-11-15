@@ -1,3 +1,4 @@
+import { CURRENT_RULES_VERSION } from '@game/game-core';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson, createSession, gameEngine, restoreSession, type GameState } from '@game/game-core';
 import { CorruptGameDataError, createGameStore } from '../db/game-store.js';
@@ -20,7 +21,7 @@ function played(revision: number) {
     if (result.kind !== 'accepted') throw new Error(result.error.code);
     states.set(result.revision, result.state);
   };
-  run(sys('CreateGame', { seed: 9, rulesVersion: 'core-2' }, 0));
+  run(sys('CreateGame', { seed: 9, rulesVersion: CURRENT_RULES_VERSION }, 0));
   run(sys('AddPlayer', { playerId: 'a' }, 1));
   run(sys('AddPlayer', { playerId: '__proto__' }, 2));
   run(sys('StartGame', null, 3));

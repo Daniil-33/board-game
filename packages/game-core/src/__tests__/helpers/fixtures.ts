@@ -43,7 +43,7 @@ export function lobbyState(rev = 3): GameState {
   return {
     ...genesis(),
     revision: rev as Revision,
-    rulesVersion: 'core-2',
+    rulesVersion: 'core-3',
     phase: 'lobby',
     players: [{ id: pid('a') }, { id: pid('b') }],
     rng: seedRng(99),

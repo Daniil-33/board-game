@@ -46,6 +46,9 @@ export type {
   AddPlayerPayload,
   CreateGameCommand,
   AddPlayerCommand,
+  LeaveLobbyPayload,
+  LeaveLobbyCommand,
+  PlayerLeftLobbyEvent,
   StartGameCommand,
   LifecycleCommand,
   GameCreatedEvent,
@@ -53,7 +56,7 @@ export type {
   GameStartedEvent,
   LifecycleEvent,
 } from './lifecycle.js';
-export { SUPPORTED_RULES_VERSIONS, lifecycleCommands } from './lifecycle.js';
+export { CURRENT_RULES_VERSION, SUPPORTED_RULES_VERSIONS, lifecycleCommands } from './lifecycle.js';
 
 export type { PlaceholderRing, PlaceholderCell, PlaceholderCellKind, PlayerMovedEvent } from './board.js';
 export { PLACEHOLDER_RING } from './board.js';
@@ -111,3 +114,6 @@ export {
 
 export type { LogEntry, Session, SessionErrorCode } from './session.js';
 export { createSession, replay, restoreSession, ReplayDivergenceError } from './session.js';
+
+/** Voluntary elimination and last-active-player victory contracts. */
+export type { ResignCommand, ResignationErrorCode, PlayerResignedEvent, GameEndedEvent, ResignationEvent } from './resignation.js';

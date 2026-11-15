@@ -30,7 +30,7 @@ export type TurnErrorCode =
   | 'ALREADY_ROLLED'
   | 'ROLL_REQUIRED';
 
-export type TurnEndReason = 'end-turn' | 'timeout' | 'sent-to-jail';
+export type TurnEndReason = 'end-turn' | 'timeout' | 'sent-to-jail' | 'resigned';
 
 export type TurnStartedEvent = GameEvent<
   { readonly turnId: string; readonly playerId: PlayerId; readonly deadline: Timestamp; readonly bonus: boolean },
@@ -103,8 +103,11 @@ function settleMandatory(state: GameState): Step {
   return { state, events: [] };
 }
 
-/** Close the current turn and start the next one (a bonus turn, or the next player's). */
-function closeTurn(state: GameState, reason: TurnEndReason, now: Timestamp): Step {
+/** Close a turn through settlement; resignation selects a survivor or terminal closure. */
+export function closeTurn(
+  state: GameState, reason: TurnEndReason, now: Timestamp,
+  resignation?: { readonly nextPlayer: PlayerId | null },
+): Step {
   const settled = settleMandatory(state);
   const turn = settled.state.turn!;
   const events: TurnEvent[] = [
@@ -112,7 +115,10 @@ function closeTurn(state: GameState, reason: TurnEndReason, now: Timestamp): Ste
     { type: 'TurnEnded', payload: { turnId: turn.turnId, playerId: turn.playerId, reason } },
   ];
   let next: Step;
-  if (turn.pendingBonus) {
+  if (resignation !== undefined) {
+    if (resignation.nextPlayer === null) return { state: { ...settled.state, turn: null }, events };
+    next = startTurn(settled.state, resignation.nextPlayer, false, 0, now);
+  } else if (turn.pendingBonus) {
     next = startTurn(settled.state, turn.playerId, true, turn.doublesStreak, now);
   } else {
     const order = settled.state.order!;

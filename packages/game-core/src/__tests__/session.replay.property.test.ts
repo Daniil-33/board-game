@@ -73,7 +73,7 @@ function lifecycleCommand(g: Gen, state: GameState, history: GameCommand[], seq:
     phase === 'uninitialized' ? g.pick([0, 0, 0, 1, 4]) : phase === 'lobby' ? g.pick([1, 1, 1, 2, 2, 3, 4, 0]) : g.int(0, 4);
   switch (choice) {
     case 0:
-      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-2' }, opts);
+      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-3' }, opts);
     case 1:
       return cmd('AddPlayer', { playerId: g.pick(PLAYER_IDS) }, opts);
     case 2:
@@ -95,7 +95,7 @@ function gameCommand(g: Gen, state: GameState, seen: Seen, seq: number): GameCom
   return cmd(type, payload, { id, expected, actor: randomActor(g, state) });
 }
 
-function randomCommand(g: Gen, state: GameState, history: GameCommand[], seen: Seen, seq: number): GameCommand {
+function randomCommand(g: Gen, state: GameState, history: GameCommand[], seen: Seen, seq: number, allowResignation: boolean): GameCommand {
   const roll = g.int(0, 99);
   // ~6%: resend an earlier command verbatim (duplicate delivery).
   if (roll < 6 && history.length > 0) return g.pick(history);
@@ -104,6 +104,12 @@ function randomCommand(g: Gen, state: GameState, history: GameCommand[], seen: S
     const prior = g.pick(history);
     return cmd('AddPlayer', { playerId: `conflict-${seq}` }, { id: prior.commandId, rev: state.revision });
   }
+  if (allowResignation && roll >= 90) {
+    if (state.phase === 'lobby') return cmd('LeaveLobby', { playerId: g.pick(PLAYER_IDS) }, { id: `c${seq}`, rev: state.revision });
+    const active = state.players.filter((p) => !state.eliminated.includes(p.id));
+    if (active.length > 0) return cmd('Resign', null, { id: `c${seq}`, rev: state.revision, actor: player(g.pick(active).id) });
+  }
+  if (state.phase === 'finished') return gameCommand(g, state, seen, seq);
   if (state.phase === 'setup' || state.phase === 'playing') {
     // ~5%: a lifecycle command in a game phase.
     return roll < 14 ? lifecycleCommand(g, state, history, seq) : gameCommand(g, state, seen, seq);
@@ -132,6 +138,11 @@ function randomTime(g: Gen, t: number, state: GameState): number {
 describe('property: any command sequence replays and restores to the identical session', () => {
   const g = new Gen(seedRng(20261114));
   const stats = {
+    leaves: 0,
+    resignations: 0,
+    setupVictories: 0,
+    playingVictories: 0,
+    finishedRejections: 0,
     reachedSetup: 0,
     reachedPlaying: 0,
     accepted: 0,
@@ -150,7 +161,7 @@ describe('property: any command sequence replays and restores to the identical s
     releasedExhausted: 0,
   };
 
-  for (let run = 0; run < 200; run++) {
+  for (let run = 0; run < 400; run++) {
     const length = g.int(1, 400);
     const commands: GameCommand[] = [];
     const times: number[] = [];
@@ -163,7 +174,8 @@ describe('property: any command sequence replays and restores to the identical s
     const live = createSession(gameEngine);
     let t = 1_767_225_600_000;
     for (let i = 0; i < length; i++) {
-      const c = randomCommand(g, live.state, commands, seen, i);
+      const c = randomCommand(g, live.state, commands, seen, i, run >= 200);
+      const phaseBefore = live.state.phase;
       const at = randomTime(g, t, live.state);
       const e = entropy([g.int(0, 2 ** 32 - 1), g.int(0, 2 ** 32 - 1), g.int(0, 2 ** 32 - 1), g.int(0, 2 ** 32 - 1)]);
       commands.push(c);
@@ -178,6 +190,12 @@ describe('property: any command sequence replays and restores to the identical s
           continue;
         }
         stats.accepted += 1;
+        if (c.type === 'LeaveLobby') stats.leaves += 1;
+        if (c.type === 'Resign') stats.resignations += 1;
+        if (live.state.phase === 'finished') {
+          if (phaseBefore === 'setup') stats.setupVictories += 1;
+          if (phaseBefore === 'playing') stats.playingVictories += 1;
+        }
         t = Math.max(t, at);
         states.push(live.state);
         for (const ev of r.events) {
@@ -192,6 +210,7 @@ describe('property: any command sequence replays and restores to the identical s
           }
         }
       } else {
+        if (phaseBefore === 'finished') stats.finishedRejections += 1;
         const code = r.error.code;
         if (code === 'COMMAND_ID_CONFLICT') stats.conflicts += 1;
         else {
@@ -222,6 +241,7 @@ describe('property: any command sequence replays and restores to the identical s
       expect(states[split]!.revision).toBe(split);
       const restored = restoreSession(gameEngine, states[split]!, s.log.slice(split));
       expect(restored.state).toEqual(s.state);
+      expect(pendingDeadlines(restored.state)).toEqual(pendingDeadlines(s.state));
 
       const view = projectState(s.state, { kind: 'spectator' });
       expect(view).not.toHaveProperty('rng');
@@ -229,6 +249,11 @@ describe('property: any command sequence replays and restores to the identical s
   }
 
   it('generator covers the interesting paths', () => {
+    expect(stats.leaves).toBeGreaterThan(0);
+    expect(stats.resignations).toBeGreaterThan(0);
+    expect(stats.setupVictories).toBeGreaterThan(0);
+    expect(stats.playingVictories).toBeGreaterThan(0);
+    expect(stats.finishedRejections).toBeGreaterThan(0);
     expect(stats.reachedSetup).toBeGreaterThan(50);
     expect(stats.reachedPlaying).toBeGreaterThan(30);
     expect(stats.accepted).toBeGreaterThan(2_000);

@@ -1,3 +1,4 @@
+import { CURRENT_RULES_VERSION } from '@game/game-core';
 import type { PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientFrame, RoomSummary, ServerFrame } from '@game/protocol';
 import type { FetchLike } from '../api/lobby';
@@ -11,9 +12,11 @@ const ts = (n: number): Timestamp => n as Timestamp;
 
 const BASE: StateView = {
   revision: rev(1),
-  rulesVersion: 'core-2',
+  rulesVersion: CURRENT_RULES_VERSION,
   phase: 'lobby',
   players: [],
+  eliminated: [],
+  winner: null,
   setup: null,
   order: null,
   turn: null,
