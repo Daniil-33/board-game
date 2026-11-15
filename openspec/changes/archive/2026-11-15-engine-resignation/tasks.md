@@ -31,3 +31,10 @@
 ## Delivery evidence reconciled for archive
 
 TASK-s1-core-resign history: PR #18 head 6baca9d, REV-s1-core-resign-2 PASS, CI 43744816295; TL accepted and merged.
+
+Post-merge archive correction (REV-s1-compose-e2e-2 RVW-002): copied the accepted
+post-sync requirement normalizations verbatim from main specs into the archived
+MODIFIED blocks. This preserves semantics and makes archive replay reproduce the
+normalized main specs. Engine-resignation covers Invariant enforcement and Game
+phases; server-api covers Lobby authentication and errors and Technical nickname
+rules. RVW-003 (rewriting generic scenarios) remains deferred by Team Lead.

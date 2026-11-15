@@ -32,6 +32,12 @@ LeaveLobby SHALL be revision-guarded, system-only and lobby-only, with payload {
 ## MODIFIED Requirements
 
 ### Requirement: Game phases
+The game state SHALL be in exactly one phase: `uninitialized`, `lobby`, `setup`, `playing` or `finished`.
+
+#### Scenario: Detailed Game phases contract
+- **WHEN** this requirement is exercised
+- **THEN** the following constraints SHALL hold:
+
 The game state SHALL be in exactly one phase: `uninitialized`, `lobby`, `setup`, `playing` or `finished`. The only transitions SHALL be `uninitialized` to `lobby` (by `CreateGame`), `lobby` to `setup` (by `StartGame`), `setup` to `playing` (by the order roll that fixes the turn order), and `setup` or `playing` to `finished` (by resignation leaving one active participant). Phase `setup` SHALL accept only `RollForOrder`, `Timeout` and `Resign`; phase `playing` SHALL accept only `RollDice`, `EndTurn`, `Timeout` and `Resign`.
 
 #### Scenario: Command in setup phase

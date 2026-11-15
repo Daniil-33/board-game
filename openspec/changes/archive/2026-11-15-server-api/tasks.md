@@ -94,3 +94,10 @@ first. After each group: `pnpm build`, `pnpm test`, and for server groups
 ## Delivery evidence reconciled for archive
 
 TASK-s1-server-api history: README and range diff checked; PR #20 head 3a97f27, REV-s1-server-api-1 PASS, CI 43753621012; merged 25fef63.
+
+Post-merge archive correction (REV-s1-compose-e2e-2 RVW-002): copied the accepted
+post-sync requirement normalizations verbatim from main specs into the archived
+MODIFIED blocks. This preserves semantics and makes archive replay reproduce the
+normalized main specs. Engine-resignation covers Invariant enforcement and Game
+phases; server-api covers Lobby authentication and errors and Technical nickname
+rules. RVW-003 (rewriting generic scenarios) remains deferred by Team Lead.

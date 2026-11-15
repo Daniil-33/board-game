@@ -94,6 +94,7 @@ jobs:
         run: pnpm test:e2e --output=test-results/production
         env:
           E2E_RESTART_COMMAND: docker compose -p s1-e2e restart server
+          E2E_WEB_LOGS_COMMAND: docker compose -p s1-e2e logs --no-color web
       - name: Preserve production report
         if: always()
         run: |
