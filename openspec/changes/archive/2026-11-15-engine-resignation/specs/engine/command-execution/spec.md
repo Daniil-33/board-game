@@ -3,6 +3,12 @@
 ## MODIFIED Requirements
 
 ### Requirement: Invariant enforcement
+After every accepted transition, the engine SHALL check state invariants. Violations SHALL raise an engine defect, return no state and never become command rejections.
+
+#### Scenario: Detailed Invariant enforcement contract
+- **WHEN** this requirement is exercised
+- **THEN** the following constraints SHALL hold:
+
 After every accepted transition, the engine SHALL check the state invariants: revision is a non-negative integer, player ids are unique, the player count matches what the phase allows, the RNG state is well-formed, the phase-specific state is present exactly in its phase (order-roll state only in `setup`; order, current turn and a position for every active player in `playing`; no eliminated positions or jail entries; finished has no setup, order or turn), and every position is a cell of the 40-cell ring. A violation SHALL be raised as an engine defect, not returned as a rejection, and no state SHALL be returned for it.
 
 #### Scenario: Handler produces an invalid state

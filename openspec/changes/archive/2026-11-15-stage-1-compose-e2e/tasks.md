@@ -36,7 +36,7 @@
 ## 6. Integration acceptance
 
 - [x] 6.1 Run clean-checkout production Compose, all browser scenarios, pnpm build, pnpm test, pnpm test:integration, openspec validate --all --strict and git diff --check; record exact commands, SHAs and artifact paths through agentctl.
-- [ ] 6.2 Inspect acceptance-to-diff mapping, record external intents/results through agentctl, push feature branch and open PR with CI strategy/evidence; obtain independent exact-head review and address valid findings without merging.
+- [x] 6.2 Inspect acceptance-to-diff mapping, record external intents/results through agentctl, push feature branch and open PR with CI strategy/evidence; obtain independent exact-head review and address valid findings without merging.
 
 ## Workflow follow-up
 
@@ -59,3 +59,35 @@ CI run43756623846 on03a64a6 passed both ci and compose-browser, including
 production and fresh seeded suites plus sanitized evidence upload. Reconnect
 proof additionally requires a new Welcome for the same identity after reload
 and restart; focused local Chromium rerun passes.
+
+## Post-merge archive and review evidence
+
+PR #22 was merged by the owner at f2386acc88e2b72e234035cd2972a3f516b68fb0
+on 2026-11-15. Exact-head CI 43757016257 and main CI 43765659307 (merge),
+43765709055 (d604eba) passed both ci and compose-browser. Post-merge independent
+review REV-s1-compose-e2e-2 reviewed a5b9558..1622f5e and returned
+DECISION_REQUIRED. Team Lead dispositions on 2026-11-15 authorize this follow-up:
+RVW-001 query/Referer-free nginx logs with raw pre-sanitization invite check;
+RVW-004 one-hour WebSocket read/send timeouts; RVW-005 initial45s deadline
+assertion; RVW-002 normalization parity in archived MODIFIED blocks. RVW-003
+(real-scenario spec hygiene) is explicitly deferred. Follow-up exact-head CI
+and independent review are recorded separately through agentctl; this archive
+records the merged delivery and does not claim follow-up merge acceptance.
+
+Archive replay correction RVW-002: four post-sync main-spec normalizations were
+copied verbatim into the engine-resignation and server-api archived MODIFIED
+blocks (Invariant enforcement, Game phases, Lobby authentication and errors,
+Technical nickname rules), preserving all normative text and scenario names.
+
+Follow-up local verification: Node22.23.5/pnpm9.15.9 build, unit1372,
+integration118 and browser typecheck pass. CLI strict validation25/25 passes.
+Replay proof: extract git archive994ab40, restore all seven final archived
+changes as active, run CLI2.0.0 archive --yes in design dependency order;
+all25 resulting main specs are byte-identical to the checked-in main-spec tree.
+Log: /tmp/s1-followup-replay.log (also copied to durable task evidence).
+Local production recovery/winner and AFK scenarios pass; invite passes with
+raw web-log query check. The initial nonempty-log assertion was adjusted for
+nginx's internal SPA rewrite to /index.html. Raw new-stack logs contain zero
+code= markers before sanitization; original-stack logs contain three, proving
+the detector distinguishes the pre-fix configuration. Evidence:
+/srv/agents/preview/board-game/evidence/TASK-s1-compose-e2e/followup/.

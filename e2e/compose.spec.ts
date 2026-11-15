@@ -63,6 +63,11 @@ test('locked code and invite, participant leave and creator closes room', async 
   await expect(third!.page.locator('[data-screen="lobby"]')).toBeVisible();
   await third!.page.locator(sel('refresh')).click();
   await expect(third!.page.locator(sel('room')).filter({ hasText: room })).toHaveCount(0);
+  // Read Docker's raw runtime logs before the artifact sanitizer can redact them.
+  const rawWebLogs = execFileSync('bash', ['-lc', process.env['E2E_WEB_LOGS_COMMAND']
+    ?? "sg docker -c 'docker compose -p s1-e2e logs --no-color web'"], { encoding: 'utf8' });
+  expect(/"GET \/(?:index\.html)? HTTP\//.test(rawWebLogs), 'raw web logs contain page requests').toBe(true);
+  expect(rawWebLogs.includes('code='), 'raw web logs must omit invite query and Referer credentials').toBe(false);
 });
 
 test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ actors }) => {
@@ -71,6 +76,10 @@ test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ 
   const room = await createRoom(host); await join(players[1]!, room);
   await start(players); await setup(players);
   const original = structuredClone(host.view!.turn!);
+  const started = host.events.find(({ event }) => event.type === 'TurnStarted'
+    && (event.payload as { turnId: string }).turnId === original.turnId)!;
+  // Frame receipt is slightly later than server transition time; allow 1s transport delay.
+  expect(Math.abs(original.deadline - started.at - 45_000)).toBeLessThanOrEqual(1_000);
   await expect.poll(() => host.view?.turn?.continuation, { timeout: 50_000 }).toBe(true);
   const continued = host.view!.turn!;
   expect(continued.turnId).toBe(original.turnId);

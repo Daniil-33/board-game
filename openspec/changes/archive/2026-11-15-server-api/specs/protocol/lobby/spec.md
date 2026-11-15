@@ -51,6 +51,14 @@ the request header schema, which only requires its own field.
 ### Requirement: Lobby authentication and errors
 Create, list, get, join, leave and start SHALL be authenticated by an
 `authorization: Bearer <token>` request header, where `<token>` is the token
+from guest login (1-512 visible ASCII characters).
+
+#### Scenario: Detailed Lobby authentication and errors contract
+- **WHEN** this requirement is exercised
+- **THEN** the following constraints SHALL hold:
+
+Create, list, get, join, leave and start SHALL be authenticated by an
+`authorization: Bearer <token>` request header, where `<token>` is the token
 from guest login (1-512 visible ASCII characters). Every lobby error response
 body SHALL be `{ code, message }`. Lobby codes SHALL be `NOT_ROOM_CREATOR`,
 `INVALID_REQUEST`, `ACCESS_CODE_REQUIRED` and `ACCESS_CODE_INVALID`, alongside
@@ -74,6 +82,15 @@ and `ROOM_CLOSED`; engine error codes SHALL pass through unchanged.
 - **THEN** the schema check SHALL fail
 
 ### Requirement: Technical nickname rules
+A nickname SHALL be 1 to 24 Unicode code points, SHALL equal its own trim,
+and SHALL contain only printable code points (no control, format,
+surrogate, private-use, unassigned, line- or paragraph-separator code
+points), except that U+200C ZWNJ and U+200D ZWJ SHALL be allowed inside it.
+
+#### Scenario: Detailed Technical nickname rules contract
+- **WHEN** this requirement is exercised
+- **THEN** the following constraints SHALL hold:
+
 A nickname SHALL be 1 to 24 Unicode code points, SHALL equal its own trim,
 and SHALL contain only printable code points (no control, format,
 surrogate, private-use, unassigned, line- or paragraph-separator code
