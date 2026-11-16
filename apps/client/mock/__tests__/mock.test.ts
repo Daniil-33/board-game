@@ -148,7 +148,7 @@ describe('mock socket', () => {
     expect(p.eventTypes()).toEqual(['PlayerAdded']);
     expect(p.view().players).toHaveLength(2);
     expect(mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined).status).toBe(200);
-    expect(p.eventTypes()).toEqual(['PlayerAdded', 'GameStarted', 'OrderRollStarted']);
+    expect(p.eventTypes()).toEqual(['PlayerAdded', 'GameStarted', 'BalanceChanged', 'BalanceChanged', 'OrderRollStarted']);
     expect(p.view().phase).toBe('setup');
     // A started room is no longer joinable.
     const listed = (mock.http('GET', '/api/rooms', auth, undefined).body as { rooms: { roomId: string }[] }).rooms;
@@ -331,5 +331,35 @@ describe('mock revision-3 lifecycle', () => {
     mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined);
     say(p, { t: 'Command', commandId: 'resign', type: 'Resign', payload: null, expected: { kind: 'revision', revision: p.view().revision } } as never);
     expect(p.view()).toMatchObject({ phase: 'finished', positions: {}, setup: null, turn: null });
+  });
+});
+
+describe('stage 2 mock economy', () => {
+  it('projects generated cells and capital, then credits lap rewards in event order', async () => {
+    const { MockGame } = await import('../game');
+    const { startingCapital, lapReward } = await import('@game/game-core');
+    const game = new MockGame({ turnMs: 45000, continuationMs: 20000 });
+    game.addPlayer('a'); game.addPlayer('b');
+    const started = game.start(0);
+    expect(game.view.board?.cells).toHaveLength(40);
+    expect(game.view.balances).toEqual({ a: startingCapital(2), b: startingCapital(2) });
+    expect(started.filter(e => e.type === 'BalanceChanged')).toHaveLength(2);
+    let sawLap = false;
+    for (let n = 0; n < 400 && !sawLap; n++) {
+      const view = game.view;
+      const player = view.setup?.playerId ?? view.turn!.playerId;
+      const type = view.setup ? 'RollForOrder' : view.turn!.rolled ? 'EndTurn' : 'RollDice';
+      const id = view.setup?.setupRollId ?? view.turn!.turnId;
+      const result = game.command(player, type, { kind: 'target', target: { kind: view.setup ? 'setupRoll' : 'turn', id } }, 1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) break;
+      for (const [i, event] of result.events.entries()) if (event.type === 'BalanceChanged') {
+        const payload = event.payload as { playerId: string; balance: number; delta: number; reason: string };
+        expect(payload.reason).toBe('lap-reward'); expect(payload.delta).toBe(lapReward(startingCapital(2)));
+        expect(result.events[i - 1]?.type).toBe('PlayerMoved');
+        expect(game.view.balances[payload.playerId]).toBe(payload.balance); sawLap = true;
+      }
+    }
+    expect(sawLap).toBe(true);
   });
 });

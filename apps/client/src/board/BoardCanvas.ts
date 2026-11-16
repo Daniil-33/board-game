@@ -1,8 +1,9 @@
 /**
- * PixiJS scene of the stage 1 board: the placeholder ring, tokens and dice.
+ * PixiJS scene of the generated board: cells, tokens and dice.
  * It draws what it is told (the server view, animation steps) and keeps no
  * game state of its own. Vue reactivity does not reach in here.
  */
+import { cellDisplay } from './display';
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { CLASSIC_40 } from '@game/game-core';
 import type { StateView } from '@game/game-core';
@@ -10,7 +11,6 @@ import type { AnimationStep } from '../game/animation';
 import { cellRect, jailBox, jailVisitorSlot, tokenSlot, type Point } from './layout';
 
 export const BOARD_SIZE = 660;
-export const PLACEHOLDER_CAPTION = 'PLACEHOLDER BOARD (stage 2 replaces it)';
 
 /** Token colours by index in `view.players` (at most six players). */
 export const TOKEN_COLORS = [0xe4572e, 0x29a3a3, 0xf3a712, 0x7d5ba6, 0x5aa02c, 0xd6589f] as const;
@@ -47,7 +47,7 @@ const PIPS: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
 };
 
 /** The slice of the view the board draws. */
-export type BoardView = Pick<StateView, 'players' | 'positions' | 'jail' | 'eliminated'>;
+export type BoardView = Pick<StateView, 'board' | 'players' | 'positions' | 'jail' | 'eliminated'>;
 
 export interface SceneClock {
   /** Run `frame(t)` with t from 0 to 1 over `ms`; resolves early (false) when `cancelled()` turns true. */
@@ -84,7 +84,8 @@ export class BoardScene {
   readonly cells = new Container();
   /** One child per player. */
   readonly tokens = new Container();
-  readonly caption: Text;
+  private boardData: BoardView['board'] = null;
+  private selectAsset: ((index: number) => void) | null = null;
   /** The marker of the jail cell's "in jail" box. */
   readonly jailMarker = new Graphics();
 
@@ -106,22 +107,6 @@ export class BoardScene {
     const ring = CLASSIC_40;
     this.root.addChild(new Graphics().rect(0, 0, size, size).fill(COLORS.board));
 
-    for (const cell of ring.cells) {
-      const r = cellRect(cell.index, size);
-      const box = new Container();
-      box.label = `cell-${cell.index}`;
-      const fill = cell.kind === 'start' ? COLORS.start : cell.kind === 'jail' ? COLORS.jail : COLORS.cell;
-      box.addChild(
-        new Graphics().rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2).fill(fill).stroke({ width: 1, color: COLORS.cellEdge }),
-      );
-      const title = cell.kind === 'start' ? 'START' : cell.kind === 'jail' ? 'JAIL' : String(cell.index);
-      const text = label(title, 10, cell.kind !== 'start' && cell.kind !== 'jail' ? COLORS.muted : COLORS.text, cell.kind === 'start' || cell.kind === 'jail');
-      // The jail cell's title sits under the "in jail" box, clear of it.
-      if (cell.kind === 'jail') text.position.set(r.x + 4, r.y + r.height * 0.5);
-      else text.position.set(r.x + 4, r.y + 3);
-      box.addChild(text);
-      this.cells.addChild(box);
-    }
     this.root.addChild(this.cells);
 
     const jb = jailBox(cellRect(ring.jailCell, size));
@@ -130,11 +115,6 @@ export class BoardScene {
     this.root.addChild(this.jailMarker);
 
     const centre = size / 2;
-    this.caption = label(PLACEHOLDER_CAPTION, 18, COLORS.muted, true);
-    this.caption.anchor.set(0.5);
-    this.caption.position.set(centre, centre - 150);
-    this.root.addChild(this.caption);
-
     this.dice[0].position.set(centre - DIE_SIZE - 8, centre - DIE_SIZE / 2);
     this.dice[1].position.set(centre + 8, centre - DIE_SIZE / 2);
     this.dice[0].visible = false;
@@ -151,6 +131,42 @@ export class BoardScene {
     this.root.addChild(this.tokens, this.activeRing);
   }
 
+  setAssetSelection(callback: ((index: number) => void) | null): void {
+    this.selectAsset = callback;
+  }
+
+  private renderBoard(board: BoardView['board']): void {
+    if (this.boardData === board) return;
+    this.boardData = board;
+    for (const child of this.cells.removeChildren()) child.destroy({ children: true });
+    for (const cell of board?.cells ?? []) {
+      const r = cellRect(cell.index, this.size);
+      const box = new Container();
+      box.label = `cell-${cell.index}`;
+      const display = cellDisplay(cell);
+      box.addChild(new Graphics().rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2)
+        .fill(cell.kind === 'start' ? COLORS.start : COLORS.cell).stroke({ width: 1, color: COLORS.cellEdge }));
+      if (display.color !== null) {
+        box.addChild(new Graphics().rect(r.x + 2, r.y + 2, r.width - 4, 11).fill(display.color));
+        const group = label(display.group!, 8, 0x101820, true);
+        group.anchor.set(0.5, 0); group.position.set(r.x + r.width / 2, r.y + 2);
+        box.addChild(group);
+      }
+      const title = label(display.name.length > 22 ? display.name.slice(0, 21) + '…' : display.name, 9, COLORS.text);
+      title.style.wordWrap = true; title.style.breakWords = true; title.style.wordWrapWidth = r.width - 8;
+      title.anchor.set(0.5, 0); title.position.set(r.x + r.width / 2, r.y + (cell.kind === 'jail' ? 33 : 15));
+      box.addChild(title);
+      if (display.price !== null) {
+        const price = label(display.price, 9, COLORS.text, true);
+        price.anchor.set(0.5, 0); price.position.set(r.x + r.width / 2, r.y + r.height - 13);
+        box.addChild(price);
+        box.eventMode = 'static'; box.cursor = 'pointer';
+        box.on('pointertap', () => this.selectAsset?.(cell.index));
+      }
+      this.cells.addChild(box);
+    }
+  }
+
   /** How player ids are shown in dice captions and banners. */
   setNames(nameOf: (playerId: string) => string): void {
     this.nameOf = nameOf;
@@ -161,6 +177,7 @@ export class BoardScene {
    * flight, so the canvas can never drift from the server.
    */
   snap(view: BoardView, activeId: string | null): void {
+    this.renderBoard(view.board);
     this.epoch++;
     this.banner.visible = false;
     this.syncTokens(view);

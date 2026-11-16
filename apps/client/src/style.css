@@ -62,3 +62,15 @@ input[readonly] { width: 100%; }
 .room > div { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
 .room form { flex: 1 1 220px; align-items: stretch; }
 .room form label { display: flex; flex-direction: column; gap: 6px; }
+
+.game-panel { min-width: 260px; max-width: 420px; }
+.player-panel, .asset-card { padding: 1rem; margin-bottom: 1rem; background: #22384a; border-radius: 8px; }
+.player-panel ul, .asset-card ul { list-style: none; padding: 0; }
+.player-panel li { display: flex; gap: .6rem; flex-wrap: wrap; padding: .4rem 0; }
+.player-panel li strong { flex: 1; }
+.asset-card button { float: right; }
+.asset-card h2 { overflow-wrap: anywhere; }
+.asset-card dl { display: grid; grid-template-columns: 80px 1fr; gap: .3rem; }
+.asset-card dd { margin: 0; }
+.asset-card li { margin: .5rem 0; }
+.game-panel { flex: 1 1 280px; }

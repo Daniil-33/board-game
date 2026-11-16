@@ -4,7 +4,7 @@
  * the shapes game-core defines, enough to demo every screen. The real server
  * runs `@game/game-core`; nothing here ships in the client bundle.
  */
-import { CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
+import { generateBoard, seedRng, startingCapital, lapReward, creditBalance, CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
 import type { Expectation, GameEvent, PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientCommandType, ErrorBody } from '@game/protocol';
 import { ORDER_DICE, TURN_DICE } from './script';
@@ -29,9 +29,9 @@ export class MockGame {
     revision: 1 as Revision,
     rulesVersion: 'mock',
     phase: 'lobby',
-  board: null,
-  economy: null,
-  balances: {},
+    board: generateBoard(seedRng(42)).board,
+    economy: null,
+    balances: {},
     players: [],
     eliminated: [],
     winner: null,
@@ -105,7 +105,10 @@ export class MockGame {
   start(now: number): GameEvent[] {
     const everyone = this.state.players.map((p) => p.id);
     this.state.phase = 'setup';
+    const capital = startingCapital(everyone.length);
+    this.state.economy = { startingCapital: capital, lapReward: lapReward(capital) };
     const events: GameEvent[] = [{ type: 'GameStarted', payload: { playerIds: everyone } }];
+    for (const id of everyone) events.push(this.credit(id, capital, 'starting-capital'));
     events.push(this.openRoll([everyone], { groupIndex: 0, pending: everyone, rolls: {} }, now));
     this.bump();
     return events;
@@ -247,11 +250,19 @@ export class MockGame {
     return [ended, this.startTurn(next, false, 0, now)];
   }
 
-  private move(playerId: PlayerId, steps: number): GameEvent {
+  private credit(playerId: PlayerId, delta: Parameters<typeof creditBalance>[2], reason: Parameters<typeof creditBalance>[3]): GameEvent {
+    const result = creditBalance(this.state.balances, playerId, delta, reason);
+    this.state.balances = result.balances;
+    return result.event;
+  }
+
+  private move(playerId: PlayerId, steps: number): GameEvent[] {
     const from = this.state.positions[playerId]!;
     const to = (from + steps) % CLASSIC_40.size;
     this.state.positions = { ...this.state.positions, [playerId]: to };
-    return { type: 'PlayerMoved', payload: { playerId, from, to, steps } };
+    const events: GameEvent[] = [{ type: 'PlayerMoved', payload: { playerId, from, to, steps } }];
+    if (from + steps >= CLASSIC_40.size) events.push(this.credit(playerId, this.state.economy!.lapReward, 'lap-reward'));
+    return events;
   }
 
   private roll(now: number, auto: boolean): { events: GameEvent[]; closed: boolean } {
@@ -271,7 +282,7 @@ export class MockGame {
         const { [playerId]: _released, ...jail } = this.state.jail;
         this.state.jail = jail;
         events.push({ type: 'InterimJailReleased', payload: { playerId, reason: double ? 'double' : 'attempts-exhausted' } });
-        events.push(this.move(playerId, dice[0] + dice[1]));
+        events.push(...this.move(playerId, dice[0] + dice[1]));
       }
       this.state.turn = rolled;
       return { events, closed: false };
@@ -288,7 +299,7 @@ export class MockGame {
       return { events, closed: true };
     }
 
-    events.push(this.move(playerId, dice[0] + dice[1]));
+    events.push(...this.move(playerId, dice[0] + dice[1]));
     this.state.turn = { ...rolled, doublesStreak: double ? turn.doublesStreak + 1 : 0, pendingBonus: double };
     return { events, closed: false };
   }
