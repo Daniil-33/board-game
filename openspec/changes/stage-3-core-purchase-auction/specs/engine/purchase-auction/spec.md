@@ -73,7 +73,7 @@ When no non-passed opponent remains, the leader SHALL pay leadingBid and own the
 - **THEN** session deduplication SHALL return its original result without another debit, and a fresh command against its expired target SHALL reject
 
 ### Requirement: Ownership invariants
-Owner keys SHALL name board asset ids and values SHALL name participants. Purchase SHALL exist only during playing for the active turn owner at their current free asset. Auction SHALL exist only during playing for a free asset with an active eligible responder and an affordable leader bid. Balances SHALL remain non-negative integer quanta. Bid history SHALL contain accepted positive quantum amounts and participant ids; leader and leadingBid SHALL equal the latest surviving bid selected by leaderAfterResignation.
+Owner keys SHALL name board asset ids and values SHALL name participants. Purchase SHALL exist only during playing for the active turn owner at their current free asset. Auction SHALL exist only during playing for a free asset with an active eligible responder and an affordable leader bid. Balances SHALL remain non-negative integer quanta.
 
 #### Scenario: Corrupt acquisition state
 - **WHEN** invariant checking encounters an unknown owner asset, conflicting decision and auction, ineligible responder or unaffordable leader
@@ -85,3 +85,10 @@ Identical ordered inputs SHALL reproduce acquisition state, events and RNG exact
 #### Scenario: Mid-auction restoration
 - **WHEN** a snapshot after a bid is restored with passes, timeouts and settlement in its tail
 - **THEN** restored state, events and pending deadlines SHALL equal live execution
+
+### Requirement: Bid history consistency
+Auction bids SHALL be append-only accepted positive quantum amounts with participant ids. The leader and leadingBid SHALL equal the latest surviving bid selected by leaderAfterResignation.
+
+#### Scenario: Mismatched history
+- **WHEN** restored auction leadership differs from the latest surviving bid in its history
+- **THEN** invariant checking SHALL raise an invariant violation

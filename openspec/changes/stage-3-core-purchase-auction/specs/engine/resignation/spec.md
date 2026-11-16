@@ -47,7 +47,7 @@ After any accepted resignation leaving exactly one active player, the game SHALL
 ## ADDED Requirements
 
 ### Requirement: Provisional auction resignation policy
-Resigning non-leaders SHALL count as passed and no longer respond; a resigning leader SHALL restore the latest accepted bid whose bidder is still active by scanning the append-only bids backwards. A restored passed bidder SHALL remain passed and may win (provisional b1 default). With no surviving bid, leader and leadingBid SHALL be null and the next bid SHALL be startBid. The resigning leader SHALL pay nothing. Response order SHALL continue from the current slot, skipping the restored leader if necessary. A resigning decision holder SHALL drop the decision without auction. A resigning auction turn owner SHALL defer resigned closure while any auction remains. Auction completion SHALL choose the next surviving player in pre-resignation cyclic order and cancel bonus entitlement.
+Resigning non-leaders SHALL count as passed and no longer respond. A resigning decision holder SHALL drop the decision without auction (provisional c default). A resigning auction turn owner SHALL defer resigned closure while any auction remains. Auction completion SHALL choose the next surviving player in pre-resignation cyclic order and cancel bonus entitlement.
 
 #### Scenario: Non-leader responder resigns
 - **WHEN** the current responder resigns without ending the game
@@ -76,6 +76,9 @@ Resigning non-leaders SHALL count as passed and no longer respond; a resigning l
 #### Scenario: Immediate victory overrides auction
 - **WHEN** a resignation during a decision or auction leaves one active player
 - **THEN** the game SHALL finish immediately, clear decision and auction, and leave no pending deadlines
+
+### Requirement: Restore leadership after resignation
+A resigning leader SHALL pay nothing. leaderAfterResignation SHALL scan bids backwards to restore the latest active bidder and its amount. With no surviving bid, leader and leadingBid SHALL be null and the next bid SHALL be startBid. The current response slot SHALL survive unless it belongs to the restored leader or settlement is due; advancement SHALL continue cyclically from that position.
 
 #### Scenario: Restored passed bidder
 - **WHEN** the selected earlier active bidder has already passed
