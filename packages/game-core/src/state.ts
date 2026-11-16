@@ -33,7 +33,7 @@ export interface SetupState {
   };
 }
 
-/** Remaining per-turn quotas. Nothing consumes them in stage 1. */
+/** Remaining full-turn build and per-turn offer quotas. */
 export interface TurnQuotas {
   readonly builds: number;
   readonly offers: number;
@@ -87,7 +87,19 @@ export interface AuctionState {
   readonly responseDeadline: Timestamp;
 }
 
+export interface RentSettlement {
+  readonly payerId: PlayerId;
+  readonly ownerId: PlayerId;
+  readonly assetId: AssetId;
+  readonly cell: number;
+  readonly kind: 'regular' | 'logistics' | 'energy';
+  readonly amount: Money;
+  readonly diceSum: number | null;
+}
+
 export interface GameState {
+  readonly houses: Readonly<Record<string, number>>;
+  readonly rent: RentSettlement | null;
   readonly owners: Readonly<Record<string, PlayerId>>;
   readonly purchase: PurchaseDecision | null;
   readonly auction: AuctionState | null;
@@ -124,7 +136,7 @@ export const MAX_PLAYERS = 6;
 /** The state every game starts from. */
 export function genesis(): GameState {
   return {
-    owners: {}, purchase: null, auction: null,
+    owners: {}, purchase: null, auction: null, houses: {}, rent: null,
     revision: 0 as Revision,
     board: null, economy: null, balances: {},
     rulesVersion: null,

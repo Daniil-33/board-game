@@ -1,3 +1,4 @@
+import { offerRent, settleRent } from './rent.js';
 import { offerPurchase, openAuction, type PurchaseAuctionEvent, type FinishAuction } from './purchase-auction.js';
 import type { BalanceChanged } from './money.js';
 import type { PlayerId, Timestamp } from './types.js';
@@ -83,7 +84,7 @@ function startTurn(state: GameState, playerId: PlayerId, bonus: boolean, doubles
     continuation: false,
     doublesStreak,
     pendingBonus: false,
-    quotas: TURN_QUOTAS,
+    quotas: bonus ? { ...TURN_QUOTAS, builds: state.turn!.quotas.builds } : TURN_QUOTAS,
   };
   return {
     state: { ...state, turn },
@@ -99,11 +100,10 @@ export function startPlay(state: GameState, order: readonly PlayerId[], now: Tim
 }
 
 /**
- * Mandatory settlement before a turn closes. Stage 1 has nothing to settle;
- * later stages (debts, forced decisions) hook in here.
+ * Mandatory settlement before every turn closure; stage 5 adds debt handling here.
  */
 function settleMandatory(state: GameState): Step {
-  return { state, events: [] };
+  return settleRent(state, true);
 }
 
 /** Close a turn through settlement; resignation selects a survivor or terminal closure. */
@@ -150,7 +150,9 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
     const attempt = resolveJailAttempt(next, playerId, dice);
     events.push(...attempt.events);
     next = { ...attempt.state, turn: { ...turn, rolled: true, doublesStreak: 0, pendingBonus: false } };
-    const offered = offerPurchase(next);
+    const purchase = offerPurchase(next);
+    const rent = Object.hasOwn(purchase.state.jail, playerId) ? { state: purchase.state, events: [] } : offerRent(purchase.state, dice[0] + dice[1]);
+    const offered = { state: rent.state, events: [...purchase.events, ...rent.events] };
     return { state: offered.state, events: [...events, ...offered.events], closed: false };
   }
 
@@ -174,7 +176,9 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
     ...moved.state,
     turn: { ...turn, rolled: true, doublesStreak: double ? turn.doublesStreak + 1 : 0, pendingBonus: double },
   };
-  const offered = offerPurchase(next);
+  const purchase = offerPurchase(next);
+  const rent = offerRent(purchase.state, dice[0] + dice[1]);
+  const offered = { state: rent.state, events: [...purchase.events, ...rent.events] };
   return { state: offered.state, events: [...events, ...offered.events], closed: false };
 }
 

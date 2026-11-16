@@ -23,7 +23,7 @@ function play(): Session {
     if (r.kind !== 'accepted') throw new Error(`command ${i} (${c.type}) rejected: ${r.error.code}`);
     t = Math.max(t, at);
   };
-  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-5' }, { id: 'g0', rev: 0 }), t);
+  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-6' }, { id: 'g0', rev: 0 }), t);
   for (const p of ['a', 'b', 'c', 'd']) submit(cmd('AddPlayer', { playerId: p }, { id: `add-${p}`, rev: s.state.revision }), t);
   submit(cmd('StartGame', null, { id: 'start', rev: s.state.revision }), t);
 
@@ -73,10 +73,10 @@ describe('seeded multi-turn game', () => {
     expect(summary(s)).toMatchInlineSnapshot(`
       {
         "balances": {
-          "a": 20920,
-          "b": 10960,
-          "c": 6860,
-          "d": 10780,
+          "a": 19710,
+          "b": 12330,
+          "c": 7220,
+          "d": 10260,
         },
         "boardAssets": [
           "fuel-3",
@@ -110,7 +110,7 @@ describe('seeded multi-turn game', () => {
         ],
         "bonusTurns": 20,
         "continuations": 22,
-        "eventCount": 640,
+        "eventCount": 780,
         "jail": {},
         "jailReleases": 0,
         "jailSends": 0,

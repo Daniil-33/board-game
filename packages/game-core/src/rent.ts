@@ -1,0 +1,83 @@
+import type { AssetId, Money, PlayerId } from './types.js';
+import type { GameState, RentSettlement } from './state.js';
+import type { GameCommand, GameEvent } from './engine.js';
+import { creditBalance, debitBalance } from './money.js';
+import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
+
+/** Stage 5 replaces this hook; all rent and building callers share it. */
+export function isMortgaged(_state: GameState, _assetId: AssetId): boolean { return false; }
+export type RentQuote = { readonly kind: 'fixed'; readonly amount: Money } |
+  { readonly kind: 'energy'; readonly sumPrices: Money; readonly groupSize: number; readonly holdings: number };
+export const quantumRatio = (numerator: number, denominator: number): Money => 10 * Math.floor(numerator / (10 * denominator)) as Money;
+export function energyRentFor(quote: Extract<RentQuote, { kind: 'energy' }>, diceSum: number): Money {
+  return quantumRatio(quote.sumPrices * diceSum * quote.holdings, 200 * quote.groupSize);
+}
+function quoteFor(state: GameState, assetId: AssetId): RentQuote {
+  const cell = state.board?.cells.find(c => c.asset?.assetId === assetId);
+  const owner = Object.hasOwn(state.owners, assetId) ? state.owners[assetId] : undefined;
+  const zero: RentQuote = { kind: 'fixed', amount: 0 as Money };
+  if (!cell?.asset || !owner || state.eliminated.includes(owner) || isMortgaged(state, assetId)) return zero;
+  const group = state.board!.cells.filter(c => c.asset?.groupId === cell.asset!.groupId);
+  const holdings = group.filter(c => state.owners[c.asset!.assetId] === owner && !isMortgaged(state, c.asset!.assetId)).length;
+  if (cell.kind === 'energy') return { kind: 'energy', sumPrices: group.reduce((n,c) => n + c.asset!.price, 0) as Money, groupSize: group.length, holdings };
+  if (cell.kind === 'logistics') return { kind: 'fixed', amount: quantumRatio(cell.asset.price * [0,5,10,20,40][holdings]!, 100) };
+  const houses = state.houses[assetId] ?? 0;
+  const base = quantumRatio(cell.asset.price * [5,15,35,65,100][houses]!, 100);
+  const complete = group.every(c => state.owners[c.asset!.assetId] === owner);
+  return { kind: 'fixed', amount: (base * (houses === 0 && complete ? 2 : 1)) as Money };
+}
+export function rentFor(state: GameState, assetId: AssetId, diceSum: number | null): Money {
+  const quote = quoteFor(state, assetId);
+  return quote.kind === 'fixed' ? quote.amount : diceSum === null ? 0 as Money : energyRentFor(quote, diceSum);
+}
+export function rentQuotes(state: GameState): Readonly<Record<string, RentQuote>> {
+  return Object.fromEntries(Object.keys(state.owners).map(id => [id, quoteFor(state, id as AssetId)]));
+}
+export type RentDue = GameEvent<Omit<RentSettlement, 'cell'>, 'RentDue'>;
+export type RentPaid = GameEvent<Pick<RentSettlement, 'payerId' | 'ownerId' | 'assetId' | 'amount'> & { readonly paid: Money; readonly shortfall: Money; readonly auto: boolean }, 'RentPaid'>;
+export type RentEvent = RentDue | RentPaid;
+export type PayRentCommand = GameCommand<null, 'PayRent'>;
+export function offerRent(state: GameState, diceSum: number): { state: GameState; events: GameEvent[] } {
+  const payerId = state.turn!.playerId;
+  const cell = state.board!.cells[state.positions[payerId]!]!;
+  if (!cell.asset || state.purchase || state.auction || state.rent) return { state, events: [] };
+  const ownerId = state.owners[cell.asset.assetId];
+  const amount = rentFor(state, cell.asset.assetId, diceSum);
+  if (!ownerId || ownerId === payerId || amount === 0) return { state, events: [] };
+  const rent: RentSettlement = { payerId, ownerId, assetId: cell.asset.assetId, cell: cell.index, kind: cell.kind === 'monopoly' ? 'regular' : cell.kind as 'energy' | 'logistics', amount, diceSum: cell.kind === 'energy' ? diceSum : null };
+  const { cell: _cell, ...payload } = rent;
+  return { state: { ...state, rent }, events: [{ type: 'RentDue', payload } satisfies RentDue] };
+}
+export function settleRent(state: GameState, auto: boolean): { state: GameState; events: GameEvent[] } {
+  if (!state.rent) return { state, events: [] };
+  const { payerId, ownerId, assetId, amount } = state.rent;
+  const paid = Math.min(amount, state.balances[payerId]!) as Money;
+  let balances = state.balances;
+  const events: GameEvent[] = [];
+  if (paid > 0) {
+    const debit = debitBalance(balances, payerId, paid, 'rent');
+    const credit = creditBalance(debit.balances, ownerId, paid, 'rent');
+    balances = credit.balances;
+    events.push(debit.event, credit.event);
+  }
+  events.push({ type: 'RentPaid', payload: { payerId, ownerId, assetId, amount, paid, shortfall: amount - paid as Money, auto } } satisfies RentPaid);
+  return { state: { ...state, balances, rent: null }, events };
+}
+/** Provisional R1/R2; ROADMAP decision is a merge gate. */
+export function resignDuringRent(state: GameState, playerId: PlayerId, terminal: boolean): GameState {
+  return state.rent && (terminal || state.rent.payerId === playerId || state.rent.ownerId === playerId) ? { ...state, rent: null } : state;
+}
+export const rentCommands: CommandRegistry = {
+  PayRent: {
+    guard: targetGuard('turn', s => s.turn?.turnId ?? null), allowedActors: ['player'], allowedPhases: ['playing'],
+    handle(state, command, context) {
+      if (command.payload !== null) return fail('INVALID_PAYLOAD', 'PayRent requires null');
+      if (state.auction) return fail('AUCTION_IN_PROGRESS', 'Turn paused');
+      if (command.actor.kind !== 'player' || command.actor.id !== state.turn!.playerId) return fail('NOT_ACTIVE_PLAYER', 'Not your turn');
+      if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
+      if (!state.rent) return fail('NO_RENT', 'No pending rent');
+      const result = settleRent(state, false);
+      return ok(result.state, result.events);
+    },
+  },
+};

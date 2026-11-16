@@ -1,3 +1,5 @@
+import { rentCommands } from './rent.js';
+import { houseCommands } from './houses.js';
 import { purchaseAuctionCommands, auctionTimeout } from './purchase-auction.js';
 import type { CommandRegistry } from './registry.js';
 import { createEngine, targetsGuard } from './registry.js';
@@ -25,6 +27,8 @@ const timeoutCommands: CommandRegistry = {
 /** Every command of this rules version. */
 export const gameCommands: CommandRegistry = Object.freeze({
   ...lifecycleCommands,
+  ...rentCommands,
+  ...houseCommands,
   ...resignationCommands,
   ...setupCommands,
   ...turnCommands,

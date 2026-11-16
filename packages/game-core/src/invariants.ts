@@ -11,7 +11,7 @@ export type InvariantName =
   | 'player-count-for-phase'
   | 'rng-well-formed'
   | 'phase-state-shape'
-  | 'acquisition'
+  | 'acquisition' | 'rent-building'
   | 'ring-position' | 'board-shape' | 'balances';
 
 /**
@@ -67,6 +67,7 @@ export function checkInvariants(state: GameState): void {
   checkBalances(state);
   checkPhaseShape(state);
   checkAcquisition(state);
+  checkRentBuilding(state);
 }
 
 function shape(detail: string): never {
@@ -197,5 +198,27 @@ function checkAcquisition(state: GameState): void {
     const restored = leaderAfterResignation(a, state);
     if (restored.leader !== a.leader || restored.leadingBid !== a.leadingBid) bad('Leader must equal latest surviving bid');
     if (!a.auctionId || !a.responseId || !Number.isSafeInteger(a.responseDeadline) || a.responseDeadline < 0) bad('Invalid response target');
+  }
+}
+
+function checkRentBuilding(state: GameState): void {
+  const bad = (detail: string): never => { throw new InvariantViolationError('rent-building', detail); };
+  if (!state.houses || typeof state.houses !== 'object' || Array.isArray(state.houses)) bad('Invalid houses record');
+  for (const [id, count] of Object.entries(state.houses)) {
+    const cell = state.board?.cells.find(c => c.asset?.assetId === id);
+    if (!cell?.asset || cell.kind !== 'monopoly' || !Object.hasOwn(state.owners, id) || !Number.isInteger(count) || count < 1 || count > 4) return bad('Invalid house entry');
+    const group = state.board!.cells.filter(c => c.asset?.groupId === cell.asset!.groupId);
+    if (group.some(c => state.owners[c.asset!.assetId] !== state.owners[id])) bad('Houses without whole group');
+    const counts = group.map(c => state.houses[c.asset!.assetId] ?? 0);
+    if (Math.max(...counts) - Math.min(...counts) > 1) bad('Uneven houses');
+  }
+  if (state.turn && (!Number.isInteger(state.turn.quotas.builds) || state.turn.quotas.builds < 0 || state.turn.quotas.builds > 1)) bad('Invalid build quota');
+  const r = state.rent;
+  if (r !== null) {
+    if (state.phase !== 'playing' || !state.turn || r.payerId !== state.turn.playerId || !state.turn.rolled || state.purchase !== null || state.auction !== null) bad('Invalid rent phase or exclusivity');
+    const cell = state.board?.cells[r.cell];
+    if (!cell?.asset || cell.asset.assetId !== r.assetId || state.positions[r.payerId] !== r.cell || state.owners[r.assetId] !== r.ownerId || r.ownerId === r.payerId || state.eliminated.includes(r.ownerId) || state.eliminated.includes(r.payerId)) bad('Invalid rent participants or asset');
+    if (!Number.isSafeInteger(r.amount) || r.amount <= 0 || r.amount % 10 !== 0) bad('Invalid rent amount');
+    if (r.kind !== (cell!.kind === 'monopoly' ? 'regular' : cell!.kind) || (r.kind === 'energy' ? !Number.isInteger(r.diceSum) || r.diceSum! < 2 || r.diceSum! > 12 : r.diceSum !== null)) bad('Invalid rent kind or dice');
   }
 }
