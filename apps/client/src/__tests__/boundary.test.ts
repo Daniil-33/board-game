@@ -16,7 +16,7 @@ function sources(dir: string): string[] {
 const FILES = sources(srcDir).map((file) => ({ name: relative(srcDir, file), text: readFileSync(file, 'utf8') }));
 
 /** The pure constants the client may take from game-core. Everything else must be `import type`. */
-const ALLOWED_VALUES = ['PLACEHOLDER_RING', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIND'];
+const ALLOWED_VALUES = ['CLASSIC_40', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIND'];
 
 describe('client boundary', () => {
   it('finds the client sources', () => {
@@ -41,7 +41,7 @@ describe('client boundary', () => {
         /import\(\s*'@game\/game-core'|\*\s+as\s+\w+\s+from\s+'@game\/game-core'|require\('@game\/game-core'/,
       );
     }
-    expect(imported).toContain('PLACEHOLDER_RING');
+    expect(imported).toContain('CLASSIC_40');
   });
 
   it('never names an actor, and has no local turn length', () => {

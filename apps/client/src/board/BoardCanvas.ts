@@ -4,7 +4,7 @@
  * game state of its own. Vue reactivity does not reach in here.
  */
 import { Application, Container, Graphics, Text } from 'pixi.js';
-import { PLACEHOLDER_RING } from '@game/game-core';
+import { CLASSIC_40 } from '@game/game-core';
 import type { StateView } from '@game/game-core';
 import type { AnimationStep } from '../game/animation';
 import { cellRect, jailBox, jailVisitorSlot, tokenSlot, type Point } from './layout';
@@ -103,7 +103,7 @@ export class BoardScene {
     private readonly size: number = BOARD_SIZE,
     private readonly clock: SceneClock = frameClock,
   ) {
-    const ring = PLACEHOLDER_RING;
+    const ring = CLASSIC_40;
     this.root.addChild(new Graphics().rect(0, 0, size, size).fill(COLORS.board));
 
     for (const cell of ring.cells) {
@@ -115,7 +115,7 @@ export class BoardScene {
         new Graphics().rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2).fill(fill).stroke({ width: 1, color: COLORS.cellEdge }),
       );
       const title = cell.kind === 'start' ? 'START' : cell.kind === 'jail' ? 'JAIL' : String(cell.index);
-      const text = label(title, 10, cell.kind === 'blank' ? COLORS.muted : COLORS.text, cell.kind !== 'blank');
+      const text = label(title, 10, cell.kind !== 'start' && cell.kind !== 'jail' ? COLORS.muted : COLORS.text, cell.kind === 'start' || cell.kind === 'jail');
       // The jail cell's title sits under the "in jail" box, clear of it.
       if (cell.kind === 'jail') text.position.set(r.x + 4, r.y + r.height * 0.5);
       else text.position.set(r.x + 4, r.y + 3);
@@ -203,7 +203,7 @@ export class BoardScene {
         const to =
           step.kind === 'jump'
             ? tokenSlot(jailBox(rect), slot)
-            : step.cell === PLACEHOLDER_RING.jailCell
+            : step.cell === CLASSIC_40.jailCell
               ? jailVisitorSlot(rect, slot)
               : tokenSlot(rect, slot);
         const from = { x: token.x, y: token.y };
@@ -278,9 +278,9 @@ export class BoardScene {
     }
     const cell = view.positions[playerId]!;
     // The view is not schema-checked on the wire; a cell off the ring is parked, not drawn.
-    if (!Number.isInteger(cell) || cell < 0 || cell >= PLACEHOLDER_RING.size) return { x: this.size / 2, y: this.size / 2 - 100 };
+    if (!Number.isInteger(cell) || cell < 0 || cell >= CLASSIC_40.size) return { x: this.size / 2, y: this.size / 2 - 100 };
     const rect = cellRect(cell, this.size);
-    if (cell !== PLACEHOLDER_RING.jailCell) return tokenSlot(rect, index);
+    if (cell !== CLASSIC_40.jailCell) return tokenSlot(rect, index);
     return Object.hasOwn(view.jail, playerId) ? tokenSlot(jailBox(rect), index) : jailVisitorSlot(rect, index);
   }
 }

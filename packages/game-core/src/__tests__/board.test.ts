@@ -1,27 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { PLACEHOLDER_RING, advance } from '../board.js';
+import { CLASSIC_40, advance } from '../board.js';
 
-// spec: engine/turn-cycle "Movement on the placeholder ring"
-describe('PLACEHOLDER_RING', () => {
-  it('is a 40-cell ring explicitly marked as a stage 2 placeholder', () => {
-    expect(PLACEHOLDER_RING.placeholder).toBe(true);
-    expect(PLACEHOLDER_RING.replacedInStage).toBe(2);
-    expect(PLACEHOLDER_RING.size).toBe(40);
-    expect(PLACEHOLDER_RING.cells).toHaveLength(40);
-    PLACEHOLDER_RING.cells.forEach((c, i) => expect(c.index).toBe(i));
+// spec: engine/turn-cycle "Movement on the CLASSIC_40"
+describe('CLASSIC_40', () => {
+  it('is the fixed 40-cell classic layout', () => {
+    expect(CLASSIC_40.size).toBe(40);
+    expect(CLASSIC_40.cells).toHaveLength(40);
+    CLASSIC_40.cells.forEach((c, i) => expect(c.index).toBe(i));
   });
 
   it('starts on cell 0 and has exactly one jail cell', () => {
-    expect(PLACEHOLDER_RING.startCell).toBe(0);
-    expect(PLACEHOLDER_RING.cells[0]!.kind).toBe('start');
-    const jails = PLACEHOLDER_RING.cells.filter((c) => c.kind === 'jail');
+    expect(CLASSIC_40.startCell).toBe(0);
+    expect(CLASSIC_40.cells[0]!.kind).toBe('start');
+    const jails = CLASSIC_40.cells.filter((c) => c.kind === 'jail');
     expect(jails).toHaveLength(1);
-    expect(jails[0]!.index).toBe(PLACEHOLDER_RING.jailCell);
+    expect(jails[0]!.index).toBe(CLASSIC_40.jailCell);
   });
 
   it('is frozen', () => {
-    expect(Object.isFrozen(PLACEHOLDER_RING)).toBe(true);
-    expect(Object.isFrozen(PLACEHOLDER_RING.cells)).toBe(true);
+    expect(Object.isFrozen(CLASSIC_40)).toBe(true);
+    expect(Object.isFrozen(CLASSIC_40.cells)).toBe(true);
   });
 
   it('advance wraps around the ring', () => {

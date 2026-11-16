@@ -4,7 +4,7 @@
  * the shapes game-core defines, enough to demo every screen. The real server
  * runs `@game/game-core`; nothing here ships in the client bundle.
  */
-import { PLACEHOLDER_RING, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
+import { CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
 import type { Expectation, GameEvent, PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientCommandType, ErrorBody } from '@game/protocol';
 import { ORDER_DICE, TURN_DICE } from './script';
@@ -29,6 +29,9 @@ export class MockGame {
     revision: 1 as Revision,
     rulesVersion: 'mock',
     phase: 'lobby',
+  board: null,
+  economy: null,
+  balances: {},
     players: [],
     eliminated: [],
     winner: null,
@@ -212,7 +215,7 @@ export class MockGame {
     this.state.setup = null;
     this.state.phase = 'playing';
     this.state.order = order;
-    this.state.positions = Object.fromEntries(order.map((p) => [p, PLACEHOLDER_RING.startCell]));
+    this.state.positions = Object.fromEntries(order.map((p) => [p, CLASSIC_40.startCell]));
     this.state.jail = {};
     events.push(this.startTurn(order[0]!, false, 0, now));
     return events;
@@ -246,7 +249,7 @@ export class MockGame {
 
   private move(playerId: PlayerId, steps: number): GameEvent {
     const from = this.state.positions[playerId]!;
-    const to = (from + steps) % PLACEHOLDER_RING.size;
+    const to = (from + steps) % CLASSIC_40.size;
     this.state.positions = { ...this.state.positions, [playerId]: to };
     return { type: 'PlayerMoved', payload: { playerId, from, to, steps } };
   }
@@ -276,7 +279,7 @@ export class MockGame {
 
     if (double && turn.doublesStreak + 1 === 3) {
       const from = this.state.positions[playerId]!;
-      const to = PLACEHOLDER_RING.jailCell;
+      const to = CLASSIC_40.jailCell;
       events.push({ type: 'SentToJail', payload: { playerId, from, to } });
       this.state.positions = { ...this.state.positions, [playerId]: to };
       this.state.jail = { ...this.state.jail, [playerId]: { attemptsUsed: 0 } };

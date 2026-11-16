@@ -1,12 +1,14 @@
+import { generateBoard, type BoardGenerated } from './board/generate.js';
+import { startingCapital, lapReward, creditBalance, type BalanceChanged } from './money.js';
 import type { PlayerId, Timestamp } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
 import { fail, ok, revisionGuard, type CommandRegistry } from './registry.js';
-import { isValidSeed, seedRng } from './rng.js';
+import { absorbEntropy, isValidSeed, seedRng } from './rng.js';
 import { MAX_PLAYERS, MIN_PLAYERS } from './state.js';
 import { beginOrderRoll } from './setup.js';
 
 /** Rules versions this engine can run. Bump when transitions or the RNG stream change. */
-export const CURRENT_RULES_VERSION = 'core-3';
+export const CURRENT_RULES_VERSION = 'core-4';
 export const SUPPORTED_RULES_VERSIONS: readonly string[] = [CURRENT_RULES_VERSION];
 
 export type LifecycleErrorCode =
@@ -41,7 +43,7 @@ export type GameCreatedEvent = GameEvent<{ readonly rulesVersion: string; readon
 export type PlayerAddedEvent = GameEvent<{ readonly playerId: PlayerId }, 'PlayerAdded'>;
 export type GameStartedEvent = GameEvent<{ readonly playerIds: readonly PlayerId[] }, 'GameStarted'>;
 export type PlayerLeftLobbyEvent = GameEvent<{ readonly playerId: PlayerId }, 'PlayerLeftLobby'>;
-export type LifecycleEvent = GameCreatedEvent | PlayerAddedEvent | GameStartedEvent | PlayerLeftLobbyEvent;
+export type LifecycleEvent = BoardGenerated | BalanceChanged | GameCreatedEvent | PlayerAddedEvent | GameStartedEvent | PlayerLeftLobbyEvent;
 
 // ---- Payload helpers --------------------------------------------------------
 
@@ -71,7 +73,9 @@ export const lifecycleCommands: CommandRegistry = {
         type: 'GameCreated',
         payload: { rulesVersion: p.rulesVersion, createdAt: context.now },
       };
-      return ok({ ...state, phase: 'lobby', rulesVersion: p.rulesVersion, rng: seedRng(p.seed) }, [event]);
+      const generated = generateBoard(absorbEntropy(seedRng(p.seed), context.entropy));
+      const {cells: _cells, ...metadata} = generated.board;
+      return ok({ ...state, phase: 'lobby', rulesVersion: p.rulesVersion, ...generated }, [event, {type: 'BoardGenerated', payload: metadata}]);
     },
   },
 
@@ -124,8 +128,15 @@ export const lifecycleCommands: CommandRegistry = {
         type: 'GameStarted',
         payload: { playerIds: state.players.map((pl) => pl.id) },
       };
-      const opened = beginOrderRoll({ ...state, phase: 'setup' }, context.now);
-      return ok(opened.state, [event, ...opened.events]);
+      const capital = startingCapital(state.players.length);
+      let balances = state.balances;
+      const credits: BalanceChanged[] = [];
+      for (const player of state.players) {
+        const credited = creditBalance(balances, player.id, capital, 'starting-capital');
+        balances = credited.balances; credits.push(credited.event);
+      }
+      const opened = beginOrderRoll({ ...state, phase: 'setup', balances, economy: {startingCapital: capital, lapReward: lapReward(capital)} }, context.now);
+      return ok(opened.state, [event, ...credits, ...opened.events]);
     },
   },
 };

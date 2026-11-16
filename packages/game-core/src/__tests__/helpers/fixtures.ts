@@ -1,3 +1,4 @@
+import { generateBoard } from '../../board/generate.js';
 import type { Actor, Expectation, GameCommand, TargetRef } from '../../engine.js';
 import type { TransitionContext } from '../../context.js';
 import type { CommandId, Entropy, PlayerId, Revision } from '../../types.js';
@@ -43,10 +44,10 @@ export function lobbyState(rev = 3): GameState {
   return {
     ...genesis(),
     revision: rev as Revision,
-    rulesVersion: 'core-3',
+    rulesVersion: 'core-4',
     phase: 'lobby',
     players: [{ id: pid('a') }, { id: pid('b') }],
-    rng: seedRng(99),
+    ...generateBoard(seedRng(99)),
   };
 }
 

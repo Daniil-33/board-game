@@ -1,0 +1,337 @@
+{
+  "version": "ua-1",
+  "categories": [
+    {
+      "id": "banks",
+      "name": "Банки",
+      "companies": [
+        {
+          "id": "banks-1",
+          "name": "ПриватБанк"
+        },
+        {
+          "id": "banks-2",
+          "name": "Ощадбанк"
+        },
+        {
+          "id": "banks-3",
+          "name": "monobank"
+        },
+        {
+          "id": "banks-4",
+          "name": "ПУМБ"
+        },
+        {
+          "id": "banks-5",
+          "name": "Укргазбанк"
+        },
+        {
+          "id": "banks-6",
+          "name": "Райффайзен Банк"
+        },
+        {
+          "id": "banks-7",
+          "name": "Sense Bank"
+        },
+        {
+          "id": "banks-8",
+          "name": "А-Банк"
+        }
+      ]
+    },
+    {
+      "id": "insurance",
+      "name": "Страхование",
+      "companies": [
+        {
+          "id": "insurance-1",
+          "name": "ARX"
+        },
+        {
+          "id": "insurance-2",
+          "name": "ТАС"
+        },
+        {
+          "id": "insurance-3",
+          "name": "Оранта"
+        },
+        {
+          "id": "insurance-4",
+          "name": "Universalna"
+        },
+        {
+          "id": "insurance-5",
+          "name": "ІНГО"
+        },
+        {
+          "id": "insurance-6",
+          "name": "USG"
+        }
+      ]
+    },
+    {
+      "id": "microfinance",
+      "name": "Микрофинансы",
+      "companies": [
+        {
+          "id": "microfinance-1",
+          "name": "Moneyveo"
+        },
+        {
+          "id": "microfinance-2",
+          "name": "CreditPlus"
+        },
+        {
+          "id": "microfinance-3",
+          "name": "ШвидкоГроші"
+        },
+        {
+          "id": "microfinance-4",
+          "name": "Миттєві Гроші"
+        },
+        {
+          "id": "microfinance-5",
+          "name": "Credit7"
+        },
+        {
+          "id": "microfinance-6",
+          "name": "Miloan"
+        }
+      ]
+    },
+    {
+      "id": "technology",
+      "name": "Технологии",
+      "companies": [
+        {
+          "id": "technology-1",
+          "name": "SoftServe"
+        },
+        {
+          "id": "technology-2",
+          "name": "GlobalLogic"
+        },
+        {
+          "id": "technology-3",
+          "name": "Grammarly"
+        },
+        {
+          "id": "technology-4",
+          "name": "MacPaw"
+        },
+        {
+          "id": "technology-5",
+          "name": "Readdle"
+        },
+        {
+          "id": "technology-6",
+          "name": "Ajax Systems"
+        },
+        {
+          "id": "technology-7",
+          "name": "Preply"
+        },
+        {
+          "id": "technology-8",
+          "name": "Genesis"
+        }
+      ]
+    },
+    {
+      "id": "telecom",
+      "name": "Связь",
+      "companies": [
+        {
+          "id": "telecom-1",
+          "name": "Київстар"
+        },
+        {
+          "id": "telecom-2",
+          "name": "Vodafone Україна"
+        },
+        {
+          "id": "telecom-3",
+          "name": "lifecell"
+        },
+        {
+          "id": "telecom-4",
+          "name": "Укртелеком"
+        },
+        {
+          "id": "telecom-5",
+          "name": "Datagroup-Volia"
+        }
+      ]
+    },
+    {
+      "id": "mobility",
+      "name": "Такси и мобильность",
+      "companies": [
+        {
+          "id": "mobility-1",
+          "name": "Uklon"
+        },
+        {
+          "id": "mobility-2",
+          "name": "OnTaxi"
+        },
+        {
+          "id": "mobility-3",
+          "name": "Bolt Україна"
+        },
+        {
+          "id": "mobility-4",
+          "name": "Uber Україна"
+        }
+      ]
+    },
+    {
+      "id": "commerce",
+      "name": "E-commerce",
+      "companies": [
+        {
+          "id": "commerce-1",
+          "name": "Rozetka"
+        },
+        {
+          "id": "commerce-2",
+          "name": "Prom.ua"
+        },
+        {
+          "id": "commerce-3",
+          "name": "OLX Україна"
+        },
+        {
+          "id": "commerce-4",
+          "name": "Епіцентр"
+        },
+        {
+          "id": "commerce-5",
+          "name": "Comfy"
+        },
+        {
+          "id": "commerce-6",
+          "name": "Фокстрот"
+        }
+      ]
+    },
+    {
+      "id": "groceries",
+      "name": "Продуктовый ритейл",
+      "companies": [
+        {
+          "id": "groceries-1",
+          "name": "АТБ"
+        },
+        {
+          "id": "groceries-2",
+          "name": "Сільпо"
+        },
+        {
+          "id": "groceries-3",
+          "name": "Novus"
+        },
+        {
+          "id": "groceries-4",
+          "name": "Varus"
+        },
+        {
+          "id": "groceries-5",
+          "name": "Фора"
+        }
+      ]
+    },
+    {
+      "id": "fuel",
+      "name": "Топливо и АЗС",
+      "companies": [
+        {
+          "id": "fuel-1",
+          "name": "WOG"
+        },
+        {
+          "id": "fuel-2",
+          "name": "ОККО"
+        },
+        {
+          "id": "fuel-3",
+          "name": "UPG"
+        },
+        {
+          "id": "fuel-4",
+          "name": "БРСМ-Нафта"
+        },
+        {
+          "id": "fuel-5",
+          "name": "SOCAR Україна"
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "Медиа и развлечения",
+      "companies": [
+        {
+          "id": "media-1",
+          "name": "Megogo"
+        },
+        {
+          "id": "media-2",
+          "name": "Sweet.tv"
+        },
+        {
+          "id": "media-3",
+          "name": "1+1 Media"
+        },
+        {
+          "id": "media-4",
+          "name": "StarLightMedia"
+        }
+      ]
+    }
+  ],
+  "logistics": [
+    {
+      "id": "logistics-1",
+      "name": "Нова пошта"
+    },
+    {
+      "id": "logistics-2",
+      "name": "Укрпошта"
+    },
+    {
+      "id": "logistics-3",
+      "name": "Meest"
+    },
+    {
+      "id": "logistics-4",
+      "name": "Укрзалізниця"
+    },
+    {
+      "id": "logistics-5",
+      "name": "Delivery"
+    },
+    {
+      "id": "logistics-6",
+      "name": "САТ"
+    }
+  ],
+  "energy": [
+    {
+      "id": "energy-1",
+      "name": "ДТЕК"
+    },
+    {
+      "id": "energy-2",
+      "name": "Укренерго"
+    },
+    {
+      "id": "energy-3",
+      "name": "Нафтогаз"
+    },
+    {
+      "id": "energy-4",
+      "name": "Укргідроенерго"
+    }
+  ]
+}

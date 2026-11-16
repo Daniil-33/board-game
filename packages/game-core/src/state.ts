@@ -1,4 +1,5 @@
-import type { PlayerId, Revision, Timestamp } from './types.js';
+import type { GeneratedBoard } from './board/generate.js';
+import type { Money, PlayerId, Revision, Timestamp } from './types.js';
 import type { RngState } from './rng.js';
 
 /**
@@ -62,6 +63,9 @@ export interface JailEntry {
 }
 
 export interface GameState {
+  readonly board: GeneratedBoard | null;
+  readonly economy: { readonly startingCapital: Money; readonly lapReward: Money } | null;
+  readonly balances: Readonly<Record<string, Money>>;
   readonly revision: Revision;
   /** Rules version the game was created under; null before CreateGame. */
   readonly rulesVersion: string | null;
@@ -93,6 +97,7 @@ export const MAX_PLAYERS = 6;
 export function genesis(): GameState {
   return {
     revision: 0 as Revision,
+    board: null, economy: null, balances: {},
     rulesVersion: null,
     phase: 'uninitialized',
     players: [],

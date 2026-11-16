@@ -79,7 +79,7 @@ export class Game {
 /** CreateGame, AddPlayer for each id, StartGame: a game in phase `setup`. */
 export function setupGame(ids: readonly string[], seed = 42): Game {
   const g = new Game();
-  g.ok(cmd('CreateGame', { seed, rulesVersion: 'core-3' }, { rev: 0 }));
+  g.ok(cmd('CreateGame', { seed, rulesVersion: 'core-4' }, { rev: 0 }));
   for (const id of ids) g.ok(cmd('AddPlayer', { playerId: id }, { rev: g.state.revision }));
   g.ok(cmd('StartGame', null, { rev: g.state.revision }));
   return g;

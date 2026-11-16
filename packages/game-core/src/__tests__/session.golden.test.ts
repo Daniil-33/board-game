@@ -23,7 +23,7 @@ function play(): Session {
     if (r.kind !== 'accepted') throw new Error(`command ${i} (${c.type}) rejected: ${r.error.code}`);
     t = Math.max(t, at);
   };
-  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-3' }, { id: 'g0', rev: 0 }), t);
+  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-4' }, { id: 'g0', rev: 0 }), t);
   for (const p of ['a', 'b', 'c', 'd']) submit(cmd('AddPlayer', { playerId: p }, { id: `add-${p}`, rev: s.state.revision }), t);
   submit(cmd('StartGame', null, { id: 'start', rev: s.state.revision }), t);
 
@@ -50,6 +50,8 @@ function summary(s: Session) {
   const count = (type: string) => events.filter((e) => e.type === type).length;
   return {
     revision: s.state.revision,
+    boardAssets: s.state.board!.cells.filter(c => c.asset).map(c => c.asset!.assetId),
+    balances: s.state.balances,
     order: s.state.order,
     positions: s.state.positions,
     jail: s.state.jail,
@@ -68,30 +70,66 @@ describe('seeded multi-turn game', () => {
     const s = play();
     expect(summary(s)).toMatchInlineSnapshot(`
       {
-        "bonusTurns": 19,
-        "continuations": 29,
-        "eventCount": 626,
+        "balances": {
+          "a": 28880,
+          "b": 26890,
+          "c": 24900,
+          "d": 26890,
+        },
+        "boardAssets": [
+          "fuel-3",
+          "fuel-2",
+          "logistics-5",
+          "mobility-4",
+          "mobility-1",
+          "mobility-3",
+          "insurance-4",
+          "energy-1",
+          "insurance-2",
+          "insurance-6",
+          "logistics-1",
+          "commerce-6",
+          "commerce-5",
+          "commerce-1",
+          "groceries-2",
+          "groceries-5",
+          "groceries-1",
+          "logistics-6",
+          "telecom-3",
+          "telecom-2",
+          "energy-3",
+          "telecom-1",
+          "banks-1",
+          "banks-6",
+          "banks-8",
+          "logistics-4",
+          "technology-1",
+          "technology-3",
+        ],
+        "bonusTurns": 27,
+        "continuations": 30,
+        "eventCount": 658,
         "jail": {},
-        "jailReleases": 0,
-        "jailSends": 0,
+        "jailReleases": 1,
+        "jailSends": 1,
         "order": [
-          "c",
           "d",
+          "c",
           "b",
           "a",
         ],
         "positions": {
-          "a": 33,
-          "b": 18,
-          "c": 29,
-          "d": 20,
+          "a": 20,
+          "b": 12,
+          "c": 20,
+          "d": 17,
         },
         "revision": 300,
         "turn": {
-          "playerId": "c",
+          "playerId": "b",
           "turnId": "t299",
         },
-        "turnsStarted": 144,
+        "turnsStarted": 146,
       }
     `);
   });

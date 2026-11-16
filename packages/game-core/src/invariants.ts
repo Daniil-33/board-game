@@ -1,6 +1,8 @@
+import { CATALOG } from './catalog.js';
+import { cellPrice } from './board/prices.js';
 import { isWellFormedRng } from './rng.js';
 import { MAX_PLAYERS, MIN_PLAYERS, type GameState } from './state.js';
-import { PLACEHOLDER_RING } from './board.js';
+import { CLASSIC_40 } from './board.js';
 
 export type InvariantName =
   | 'revision-non-negative-integer'
@@ -8,7 +10,7 @@ export type InvariantName =
   | 'player-count-for-phase'
   | 'rng-well-formed'
   | 'phase-state-shape'
-  | 'ring-position';
+  | 'ring-position' | 'board-shape' | 'balances';
 
 /**
  * Raised when an accepted transition produced a state that breaks an invariant.
@@ -59,6 +61,8 @@ export function checkInvariants(state: GameState): void {
     throw new InvariantViolationError('rng-well-formed', `phase ${state.phase} requires a well-formed rng`);
   }
 
+  checkBoard(state);
+  checkBalances(state);
   checkPhaseShape(state);
 }
 
@@ -114,8 +118,47 @@ function checkPhaseShape(state: GameState): void {
   }
 
   for (const [p, cell] of Object.entries(state.positions)) {
-    if (!Number.isInteger(cell) || cell < 0 || cell >= PLACEHOLDER_RING.size) {
+    if (!Number.isInteger(cell) || cell < 0 || cell >= CLASSIC_40.size) {
       throw new InvariantViolationError('ring-position', `player ${p} on cell ${cell}`);
     }
   }
+}
+
+function checkBoard(state: GameState): void {
+  const bad = (detail: string): never => { throw new InvariantViolationError('board-shape', detail); };
+  if (state.phase === 'uninitialized') { if (state.board !== null) bad('Board before creation'); return; }
+  const board = state.board;
+  if (!board || board.layout !== 'CLASSIC_40' || board.catalogVersion !== 'ua-1' || board.priceTableVersion !== 'prices-1' || board.generatorVersion !== 'gen-1' || !Array.isArray(board.cells) || board.cells.length !== 40) return bad('Board metadata');
+  const ids = new Set<string>(); const categories = new Map<number, string>();
+  for (const layout of CLASSIC_40.cells) {
+    const c = board.cells[layout.index];
+    if (!c || c.index !== layout.index || c.kind !== layout.kind) return bad('Cell geometry');
+    const assetCell = ['monopoly','logistics','energy'].includes(c.kind);
+    if (!assetCell) { if (c.asset !== null) bad('Unexpected asset'); continue; }
+    const a = c.asset;
+    if (!a || ids.has(a.assetId)) return bad('Missing or duplicate asset');
+    ids.add(a.assetId);
+    const rank = layout.rank;
+    const position = CLASSIC_40.cells.filter(x => x.rank === rank && x.index < c.index).length;
+    if (a.rank !== rank || a.groupId !== (rank === null ? c.kind : `M${rank}`) || a.price !== cellPrice(c.kind, rank, position)) bad('Asset rank/group/price');
+    const category = rank === null ? null : CATALOG.categories.find(x => x.id === a.categoryId);
+    const pool = category?.companies ?? (c.kind === 'logistics' ? CATALOG.logistics : c.kind === 'energy' ? CATALOG.energy : []);
+    if (!pool.some(x => x.id === a.assetId && x.name === a.name) || a.categoryName !== (category?.name ?? (c.kind === 'logistics' ? 'Логистика' : 'Энергетика')) || (rank === null && a.categoryId !== c.kind)) bad('Asset category/company');
+    if (rank !== null) {
+      if (!category) bad('Unknown category');
+      if (categories.has(rank) && categories.get(rank) !== a.categoryId) bad('Mixed category');
+      categories.set(rank, a.categoryId);
+    }
+  }
+  if (new Set(categories.values()).size !== 8) bad('Repeated category');
+}
+function checkBalances(state: GameState): void {
+  const bad = (): never => { throw new InvariantViolationError('balances', 'Invalid balances/economy'); };
+  const started = ['setup','playing','finished'].includes(state.phase);
+  if (!state.balances || typeof state.balances !== 'object' || Array.isArray(state.balances)) bad();
+  const keys = Object.keys(state.balances);
+  if (!started) { if (keys.length || state.economy !== null) bad(); return; }
+  if (!state.economy || keys.length !== state.players.length || state.players.some(p => !Object.hasOwn(state.balances, p.id))) bad();
+  const values = [...Object.values(state.balances), state.economy!.startingCapital, state.economy!.lapReward];
+  if (values.some(v => !Number.isSafeInteger(v) || v < 0 || v % 10 !== 0)) bad();
 }
