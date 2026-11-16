@@ -5,7 +5,7 @@ id: TASK-s2-client
 revision: 1
 effort: EFF-stage-2-field-money
 project: economic-board-game
-source_commit: <main after TASK-s2-core merges; set at delivery>
+source_commit: b92ebb7af7c9a5f04c69bd39b12853029ee702a0 # main after TASK-s2-core (PR #26)
 owner: team-lead
 status: proposed
 ```

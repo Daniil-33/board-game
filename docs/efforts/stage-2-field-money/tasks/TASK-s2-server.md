@@ -5,7 +5,7 @@ id: TASK-s2-server
 revision: 1
 effort: EFF-stage-2-field-money
 project: economic-board-game
-source_commit: <main after TASK-s2-core merges; set at delivery>
+source_commit: b92ebb7af7c9a5f04c69bd39b12853029ee702a0 # main after TASK-s2-core (PR #26)
 owner: team-lead
 status: proposed
 ```
@@ -42,8 +42,9 @@ Technical proof:
    credits the reward in every guest's `Update`; restart mid-game preserves
    board/economy/balances; migration `0003` on a DB holding stage 1 rooms
    closes them and a `core-3` log loads as a failed room.
-6. Existing server suites updated for `core-4` (including any stage 1 seeded
-   expectations that change with the new RNG stream).
+6. Existing server suites pass under `core-4`. TASK-s2-core already re-pinned
+   the shared Compose seed (4491) in `compose-fixture.test.ts`,
+   `docker-compose.e2e.yml` and `e2e/compose.spec.ts`; do not change it.
 
 ## Scope and non-goals
 

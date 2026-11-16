@@ -27,8 +27,9 @@ Product (effort handoff "Completion evidence"):
 4. A seeded third double sends the player to jail and credits nothing.
 5. Server restart mid-game and tab reload keep board and balances.
 6. The asset card opens from a board click in a real browser.
-7. Stage 1 Compose scenarios still pass; `E2E_TEST_SEED` values are re-chosen
-   for the `core-4` RNG stream and documented in the spec file.
+7. Stage 1 Compose scenarios still pass (TASK-s2-core re-pinned the shared
+   seed to 4491 for `core-4`); any additional seeds needed for stage 2
+   scenarios are chosen and documented in the spec file.
 8. `ROADMAP.md` "Сделано" lists stage 2 with links to the merged PRs.
 
 Technical proof:
