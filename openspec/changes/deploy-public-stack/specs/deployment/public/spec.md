@@ -19,6 +19,13 @@ The public deployment SHALL publish only edge ports 80 and 443 and serve only fo
 - **WHEN** an environment has no running app containers but its certificates exist
 - **THEN** the edge starts and serves TLS with a 502 or maintenance response for that environment
 
+### Requirement: Independent edge revision
+The shared edge SHALL run from a dedicated checkout pinned to a main SHA and updated only by a recorded operation. App deployments SHALL never change its configuration.
+
+#### Scenario: App deploy or rollback
+- **WHEN** staging or production deploys or rolls back to another SHA
+- **THEN** the dedicated edge checkout and its mounted configuration remain at the separately recorded revision
+
 ### Requirement: Certificate lifecycle
 The edge SHALL bootstrap HTTP before certificates exist. Certificate issuance SHALL support a staging-CA dry run before live issuance, with one SAN certificate per environment. Staging-CA state SHALL be disposable and isolated from live certificates; no-email registration SHALL be documented. Renewal SHALL run every 12 hours and nginx SHALL reload every 6 hours without manual intervention.
 
@@ -53,7 +60,7 @@ The gate SHALL accept only `deploy (staging|production) <40 lowercase hex>` via 
 - **THEN** the gate refuses with exit 2 and one line without attempting deployment
 
 ### Requirement: Deployment health and audit
-Deploy SHALL build with GIT_SHA, converge services with wait and remove-orphans, then verify public HTTPS API health and client version equal the target SHA, allowed-Origin WebSocket upgrade returns 101, and foreign-Origin upgrade is refused. Success SHALL append UTC time and SHA to deployed.log. Failure SHALL exit nonzero with a clear message and recent server logs without printing secrets. Repeating a SHA SHALL be safe.
+Deploy SHALL build with GIT_SHA, converge services with wait and remove-orphans, then verify public HTTPS API health and client version equal the target SHA, allowed-Origin WebSocket upgrade returns 101, and foreign-Origin upgrade is refused with HTTP 403 before upgrade. Success SHALL append UTC time and SHA to deployed.log. Failure SHALL exit nonzero with a clear message and recent server logs without printing secrets. Repeating a SHA SHALL be safe.
 
 #### Scenario: Healthy deployment
 - **WHEN** services converge and every public check passes

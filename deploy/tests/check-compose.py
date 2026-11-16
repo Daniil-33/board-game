@@ -29,4 +29,7 @@ edge = json.loads(subprocess.check_output(['docker', 'compose', '-p', 'edge', '-
 assert {p['published'] for p in edge['services']['nginx']['ports']} == {'80', '443'}
 assert all(p['host_ip'] == '0.0.0.0' for p in edge['services']['nginx']['ports'])
 assert not edge['services']['certbot'].get('ports')
+for service in ('nginx', 'certbot'):
+    mount = next(v for v in edge['services'][service]['volumes'] if v['target'] == '/edge')
+    assert mount['source'] == '/srv/game/edge/src/deploy/edge' and mount['read_only']
 print('Compose: both isolated app environments and edge contracts verified')

@@ -71,6 +71,7 @@ class GateTests(unittest.TestCase):
         code, message = self.run_gate(f'deploy staging {SHA}')
         self.assertEqual(code, 2)
         self.assertEqual(len(message.splitlines()), 1)
+        self.assertIn('target checkout lacks executable deploy/deploy.sh', message)
         self.exec.assert_not_called()
 
     def test_non_main_sha_refused(self):
@@ -82,7 +83,9 @@ class GateTests(unittest.TestCase):
         log = self.root / 'staging/deployed.log'
         for content in ('', f'date {SHA}extra\n', f'date {SHA} third\n'):
             log.write_text(content)
-            self.assertEqual(self.run_gate(f'deploy production {SHA}')[0], 2)
+            code, message = self.run_gate(f'deploy production {SHA}')
+            self.assertEqual(code, 2)
+            self.assertIn('production SHA has no successful staging deployment', message)
         self.exec.assert_not_called()
         log.write_text(f'2026-11-16T00:00:00Z {SHA}\n')
         self.assertEqual(self.run_gate(f'deploy production {SHA}')[0], 0)
@@ -120,6 +123,21 @@ class GateTests(unittest.TestCase):
         execute.assert_called_once_with('sg', ['sg', 'docker', '-c', '/srv/game/bin/deploy-gate'])
         self.git.assert_not_called()
 
+    def test_operational_exception_text_is_omitted(self):
+        for error in (OSError('secret-path'), KeyError('secret-key')):
+            with patch.object(gate, 'deploy', side_effect=error):
+                code, message = self.run_gate(f'deploy staging {SHA}')
+            self.assertEqual(code, 2)
+            self.assertEqual(len(message.splitlines()), 1)
+            self.assertNotIn('secret', message)
+
+    def test_app_deployment_never_references_edge_checkout(self):
+        for file in ('deploy-gate', 'deploy.sh'):
+            source = (DEPLOY / file).read_text()
+            self.assertNotIn('/srv/game/edge', source)
+            self.assertNotIn('deploy/edge', source)
+            self.assertNotIn('EDGE_SOURCE_DIR', source)
+
 
 class HealthTests(unittest.TestCase):
     def test_versions_and_origins(self):
@@ -149,6 +167,7 @@ class HealthTests(unittest.TestCase):
         for allowed, response, succeeds in ((True, valid, True), (True, valid.replace(accept.encode(), b'bad'), False),
                                            (True, b'HTTP/1.1 403 Forbidden\r\n\r\n', False),
                                            (False, b'HTTP/1.1 403 Forbidden\r\n\r\n', True),
+                                           (False, b'HTTP/1.1 401 Unauthorized\r\n\r\n', False),
                                            (False, valid, False), (False, b'HTTP/1.1 502 Bad Gateway\r\n\r\n', False)):
             with self.subTest(allowed=allowed, response=response):
                 tls = MagicMock()

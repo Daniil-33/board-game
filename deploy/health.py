@@ -45,7 +45,7 @@ def websocket(host, origin, allowed):
             response = http.client.HTTPResponse(tls)
             response.begin()
             if not allowed:
-                if response.status not in (401, 403):
+                if response.status != 403:
                     raise Unhealthy('foreign Origin was not explicitly refused')
                 return
             expected = base64.b64encode(hashlib.sha1(

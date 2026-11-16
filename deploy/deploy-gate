@@ -20,7 +20,10 @@ def git(src, *args):
     result = subprocess.run(['git', '-C', str(src), *args], stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, check=False)
     if result.returncode:
-        raise Refused('git admission or checkout failed')
+        reasons = {'fetch': 'fetch origin/main failed',
+                   'merge-base': 'target SHA is not reachable from origin/main',
+                   'checkout': 'target checkout failed'}
+        raise Refused(reasons.get(args[0], 'git operation failed'))
 
 
 def docker_group():
@@ -59,7 +62,11 @@ def deploy(command):
 def main():
     try:
         deploy(os.environ.get('SSH_ORIGINAL_COMMAND', ''))
-    except (Refused, OSError, KeyError):
+    except Refused as error:
+        # Refused reasons are constant strings; never include command data.
+        print(f'deploy-gate: refused: {error}', file=sys.stderr)
+        return 2
+    except (OSError, KeyError):
         # Deliberately omit exception text: it may contain untrusted input/secrets.
         print('deploy-gate: refused (invalid command, unavailable checkout or admission failed)', file=sys.stderr)
         return 2

@@ -36,3 +36,7 @@ After approval implement and verify locally, open a PR, start independent review
 ## Apply notes from Team Lead approval
 
 The gate cleanly refuses a target without executable deploy/deploy.sh (exit 2, one line), covered offline. Initial provisioning uses check-hairpin.sh before live ACME: a temporary locally trusted test certificate proves direct VPS-to-public-IP HTTPS and cleanup restores HTTP-only mode; failure escalates to the Team Lead without root or /etc/hosts changes. The isolated staging-CA run remains mandatory before live issuance; no-email registration is documented. The edge owns nginx.conf to avoid the stock image combined access log running alongside the path-only log.
+
+## Review dispositions (TL rulings)
+
+RVW-001: edge mounts default to the dedicated /srv/game/edge/src/deploy/edge checkout, pinned to a main SHA and updated only through a recorded validate/recreate operation. App gates/deploy scripts never reference this directory (offline regression check). RVW-002: the config contract fixes foreign-Origin refusal to HTTP 403 before upgrade; health requires exactly 403. RVW-003: the container test now starts entrypoint.sh with no certificates, adds test certificates and invokes reload.sh before asserting TLS. Gate Refused messages expose only their specific constant reason; OSError/KeyError details remain hidden.

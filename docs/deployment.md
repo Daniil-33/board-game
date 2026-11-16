@@ -47,12 +47,14 @@ separately (including certificate issuance and first staging deploy).
    owner `preview` (127.0.0.1:5173), speech service and Engineer stacks are
    preserved. Docker commands on this VPS run through `sg docker -c '…'`.
    Do not publish any additional port.
-2. Create `/srv/game/{bin,staging,production}` as `agents`. Clone the public
-   repository into each `/srv/game/<env>/src` using
+2. Create `/srv/game/{bin,edge,staging,production}` as `agents`. Clone the public
+   repository into `/srv/game/edge/src` and each `/srv/game/<env>/src` using
    `git clone https://github.com/Daniil-33/board-game.git <path>` and fetch
    `origin/main`. These checkouts store no Git credentials; use only public
    HTTPS fetches and do not configure push credentials. Check out merged main
-   detached. Verify remote URL and SHA without dumping configuration secrets.
+   detached. Pin the edge checkout to a chosen full merged main SHA and record
+   it in the setup operation; never use a staging checkout for edge mounts.
+   Verify remote URL and SHA without dumping configuration secrets.
 3. Generate each env file once, never overwrite an existing one blindly. Use
    this Python snippet as `agents`; it creates files with exclusive mode 600
    and prints no password. The hex password is safe in the database URL.
@@ -83,7 +85,7 @@ separately (including certificate issuance and first staging deploy).
    with one line. Key creation and `authorized_keys` changes belong to
    TASK-dep-pipeline, not this setup.
 5. Create networks `edge-staging` and `edge-production` after inspecting
-   whether they already exist. From `/srv/game/staging/src/deploy/edge`, start
+   whether they already exist. From `/srv/game/edge/src/deploy/edge`, start
    `sg docker -c 'docker compose -p edge -f compose.yml up -d'`. With no
    certificates, nginx starts HTTP only. Verify a temporary public challenge
    file for all four hosts and remove it after testing. Inspect edge logs and
@@ -151,7 +153,7 @@ Deploy validates env ownership and mode, exports `GIT_SHA` / `DEPLOY_ENV`, build
 and runs `up -d --wait --wait-timeout 180 --remove-orphans`. Server migrations
 run before readiness. Public health uses the system TLS trust store for
 `/api/health` (`status: ok`, target sha), `/version.txt` (target sha), a complete
-101 WebSocket handshake with the environment's origin, and explicit 401/403
+101 WebSocket handshake with the environment's origin, and explicit HTTP 403 before-upgrade
 refusal of a foreign origin. It retries six times with five-second pauses.
 No success is logged until every check passes. A failure returns nonzero and
 prints at most 80 recent server log lines; it does not print the env file.
@@ -163,6 +165,40 @@ forward-only: rollback across an incompatible migration is unsupported.** No
 automatic DB rollback or restoration is provided. A failed health check does
 not roll back containers automatically; inspect diagnostics and choose a
 schema-compatible SHA.
+
+## Deliberate edge updates
+
+The shared edge is independent of both app deployments. Its scripts and nginx
+configuration are mounted from `/srv/game/edge/src/deploy/edge`, at the pinned
+main SHA recorded by setup. Staging and production gates never touch that
+checkout, so deploying or rolling back either app cannot change edge config.
+`EDGE_SOURCE_DIR` defaults to that dedicated directory; an override is for
+isolated testing or a deliberately recorded copied directory only, never an
+app checkout.
+
+To update shared infrastructure, record a separate operation naming the old
+and proposed full main SHAs. In `/srv/game/edge/src`, fetch origin/main, verify
+`git merge-base --is-ancestor <new-sha> origin/main`, and review the edge diff.
+Validate a separate candidate checkout first: render Compose with
+`EDGE_SOURCE_DIR=<candidate>/deploy/edge docker compose -p edge -f
+<candidate>/deploy/edge/compose.yml config --quiet`, and run its isolated
+`deploy/tests/check-edge.sh` (no public ports). Also validate against the live
+certificates with a disposable nginx container: mount the candidate edge at
+`/edge`, its nginx.conf at `/etc/nginx/nginx.conf`, and `edge_certificates`
+read-only at `/etc/letsencrypt`; render `/edge/render.sh` to
+`/etc/nginx/conf.d/default.conf` and run `nginx -t`. Do not start a second public
+edge or alter live certificate volumes.
+
+After candidate checks pass, check out that exact SHA detached in the dedicated
+edge checkout. From `/srv/game/edge/src/deploy/edge`, run
+`sg docker -c 'docker compose -p edge -f compose.yml up -d --force-recreate'`.
+Recreation is required to pick up file bind mounts and supervisor scripts.
+Verify normal system-trusted HTTPS, redirects, HSTS and both environments'
+routing on all four names, plus container status and preservation of preview
+and test stacks. Confirm the operation with the new pinned SHA and evidence.
+On failure, reconcile state and deliberately restore the recorded previous
+edge SHA and recreate; never use an app rollback to update shared edge state.
+Do not edit or deploy the production app as part of an edge update.
 
 ## Renewal and secrets
 
