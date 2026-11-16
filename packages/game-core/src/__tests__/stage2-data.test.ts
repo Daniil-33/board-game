@@ -80,7 +80,7 @@ describe('gen-1 deterministic proof', () => {
     const categories = new Set<string>();
     for (let seed = 0; seed < 500; seed++) {
       const generated = generateBoard(seedRng(seed));
-      checkInvariants({ ...genesis(), phase: 'lobby', rulesVersion: 'core-4', ...generated });
+      checkInvariants({ ...genesis(), phase: 'lobby', rulesVersion: 'core-5', ...generated });
       for (const c of generated.board.cells)
         if (c.asset) {
           seen.add(c.asset.assetId);

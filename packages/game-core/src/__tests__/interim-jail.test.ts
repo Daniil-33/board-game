@@ -51,7 +51,7 @@ describe('release by a double', () => {
   it('releases and moves by the sum with no bonus turn', () => {
     const g = prisonerUp();
     const events = g.roll(2, 2);
-    expect(types(events)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved']);
+    expect(types(events)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', 'PurchaseOffered']);
     expect(events[0]!.payload).toMatchObject({ double: true, auto: false });
     expect(events[1]!.payload).toEqual({ playerId: 'a', reason: 'double' });
     expect(events[2]!.payload).toEqual({ playerId: 'a', from: JAIL, to: JAIL + 4, steps: 4 });
@@ -79,7 +79,7 @@ describe('failed attempts', () => {
     otherTurn(g);
 
     const third = g.roll(5, 1);
-    expect(types(third)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved']);
+    expect(types(third)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', 'PurchaseOffered']);
     expect(third[1]!.payload).toEqual({ playerId: 'a', reason: 'attempts-exhausted' });
     expect(third[2]!.payload).toEqual({ playerId: 'a', from: JAIL, to: JAIL + 6, steps: 6 });
     expect(g.state.jail).toEqual({});

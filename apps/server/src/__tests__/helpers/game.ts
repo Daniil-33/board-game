@@ -63,6 +63,8 @@ export function nextMove(state: GameState): GameCommand {
   }
   if (state.phase === 'playing' && state.turn !== null) {
     const turn = state.turn;
+    if (state.auction) return byPlayer('PassAuction', state.auction.responder, { kind: 'auctionResponse', id: state.auction.responseId });
+    if (state.purchase) return byPlayer('StartAuction', turn.playerId, { kind: 'turn', id: turn.turnId });
     return byPlayer(turn.rolled ? 'EndTurn' : 'RollDice', turn.playerId, { kind: 'turn', id: turn.turnId });
   }
   throw new Error(`no move in phase ${state.phase}`);

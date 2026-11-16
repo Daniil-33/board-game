@@ -125,9 +125,9 @@ describe('Timeout before the roll continues the turn', () => {
     const turn = g.state.turn!;
     const T = turn.deadline + 1_234;
     const events = g.timeout({ at: T, dice: [2, 3] });
-    expect(types(events)).toEqual(['DiceRolled', 'PlayerMoved', 'TurnContinued']);
+    expect(types(events)).toEqual(['DiceRolled', 'PlayerMoved', 'PurchaseOffered', 'TurnContinued']);
     expect(events[0]!.payload).toMatchObject({ turnId: turn.turnId, dice: [2, 3], double: false, auto: true });
-    expect(events[2]!.payload).toEqual({ turnId: turn.turnId, deadline: T + CONTINUATION_MS });
+    expect(events[3]!.payload).toEqual({ turnId: turn.turnId, deadline: T + CONTINUATION_MS });
     expect(g.state.turn).toMatchObject({ turnId: turn.turnId, rolled: true, continuation: true, deadline: T + CONTINUATION_MS });
     expect(g.state.turn!.quotas).toEqual(turn.quotas);
   });
@@ -144,7 +144,7 @@ describe('Timeout before the roll continues the turn', () => {
 describe('Timeout after the roll closes the turn', () => {
   it('idle after rolling: TurnEnded(timeout) then TurnStarted for the next player at T + 45 s', () => {
     const g = playingGame(['a', 'b']);
-    g.roll(1, 2);
+    g.roll(1, 3); // non-asset landing keeps this a plain timeout closure
     const T = g.deadline + 7;
     const events = g.timeout({ at: T });
     expect(types(events)).toEqual(['TurnEnded', 'TurnStarted']);
@@ -154,7 +154,7 @@ describe('Timeout after the roll closes the turn', () => {
 
   it('a continued turn closes on its second Timeout', () => {
     const g = playingGame(['a', 'b']);
-    g.timeout({ dice: [2, 3] });
+    g.timeout({ dice: [1, 3] }); // no pending purchase
     const events = g.timeout();
     expect(types(events)).toEqual(['TurnEnded', 'TurnStarted']);
     expect(g.state.turn!.playerId).toBe('b');

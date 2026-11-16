@@ -31,6 +31,7 @@ describe('projectState', () => {
   it('carries every public field unchanged', () => {
     const s = deepFreeze(lobbyState(7));
     expect(projectState(s, PLAYER)).toEqual({
+      owners: s.owners, purchase: s.purchase, auction: s.auction,
       board: s.board, economy: s.economy, balances: s.balances,
       revision: s.revision,
       rulesVersion: s.rulesVersion,
@@ -53,6 +54,7 @@ describe('projectState', () => {
     const s = deepFreeze(make());
     const view = projectState(s, SPECTATOR);
     expect(view).toEqual({
+      owners: s.owners, purchase: s.purchase, auction: s.auction,
       board: s.board, economy: s.economy, balances: s.balances,
       revision: s.revision,
       rulesVersion: s.rulesVersion,

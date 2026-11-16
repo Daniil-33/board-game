@@ -59,8 +59,8 @@ describe('LeaveLobby', () => {
     g.ok(cmd('StartGame', null, { rev: g.state.revision }));
     expect(g.state.phase).toBe('setup');
   });
-  it('supports core-4 only', () => {
-    expect(SUPPORTED_RULES_VERSIONS).toEqual(['core-4']);
+  it('supports core-5 only', () => {
+    expect(SUPPORTED_RULES_VERSIONS).toEqual(['core-5']);
     for (const rulesVersion of ['core-1', 'core-2', 'unknown']) {
       const r = gameEngine.execute(genesis(), cmd('CreateGame', { seed: 1, rulesVersion }), ctx());
       expect(r.kind === 'rejected' && r.error.code).toBe('UNSUPPORTED_RULES_VERSION');
@@ -230,6 +230,7 @@ describe('resignation during play', () => {
     g.ok(timeout, { at: turn.deadline, dice: [1, 2] });
     if (mode === 'double') { g.roll(1, 2); g.endTurn(); }
     else if (g.state.turn!.playerId !== 'c') g.timeout();
+    while (g.state.auction !== null) g.timeout();
     expect(g.state.turn!.playerId).toBe('c');
   });
 });

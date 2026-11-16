@@ -29,6 +29,7 @@ export class MockGame {
     revision: 1 as Revision,
     rulesVersion: 'mock',
     phase: 'lobby',
+    owners: {}, purchase: null, auction: null,
     board: generateBoard(seedRng(42)).board,
     economy: null,
     balances: {},
@@ -228,6 +229,7 @@ export class MockGame {
     const turnId = this.nextId('t');
     const deadline = (now + this.options.turnMs) as Timestamp;
     this.state.turn = {
+      pausedRemainingMs: null,
       turnId,
       playerId,
       deadline,

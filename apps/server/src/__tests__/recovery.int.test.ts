@@ -23,7 +23,7 @@ describe('recovery', () => {
     const first = h.manager();
     const gameId = await seedRoom(h.db);
     const live = await first.manager.open(gameId);
-    await playingGame(live, ['a', 'b', 'c']);
+    await playingGame(live, ['a', 'b', 'c'], 8); // Preserve a plain-turn snapshot-tail boundary under core-5.
     await playTo(live, SNAPSHOT_INTERVAL + 7);
     expect(await snapshotRevisions(h.db, gameId)).toEqual([5, SNAPSHOT_INTERVAL]);
 

@@ -15,6 +15,7 @@ const BASE: StateView = {
   revision: rev(1),
   rulesVersion: CURRENT_RULES_VERSION,
   phase: 'lobby',
+  owners: {}, purchase: null, auction: null,
   board: generateBoard(seedRng(42)).board,
   economy: null,
   balances: {},
@@ -78,6 +79,7 @@ export function playingView(order: string[], o: PlayingOptions = {}): StateView 
     balances: Object.fromEntries(order.map(id => [id, startingCapital(order.length)])),
     order: order.map(pid),
     turn: {
+      pausedRemainingMs: null,
       turnId: o.turnId ?? 't7',
       playerId: pid(o.owner ?? order[0]!),
       deadline: ts(o.deadline ?? 100_000),

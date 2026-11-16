@@ -3,7 +3,8 @@ import type { PlayerId } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
 import { fail, ok, revisionGuard, type CommandRegistry } from './registry.js';
 import { removeSetupPlayer } from './setup.js';
-import { closeTurn } from './turns.js';
+import { resignDuringPurchase } from './purchase-auction.js';
+import { closeTurn, finishAuction } from './turns.js';
 
 /** Any active player may resign, independent of target ownership or deadline. */
 export type ResignCommand = GameCommand<null, 'Resign'>;
@@ -34,8 +35,13 @@ export const resignationCommands: CommandRegistry = {
       const events: GameEvent[] = [{ type: 'PlayerResigned', payload: { playerId } } satisfies PlayerResignedEvent];
       if (state.phase === 'playing') {
         const order = state.order!;
-        next = { ...next, order: order.filter((p) => p !== playerId) };
-        if (state.turn!.playerId === playerId) {
+        next = { ...next, order: order.filter((p) => p !== playerId), turn: state.turn!.playerId === playerId ? { ...state.turn!, pendingBonus: false } : state.turn };
+        if (winner === null) {
+          const acquisition = resignDuringPurchase(next, playerId, context.now, finishAuction);
+          next = acquisition.state;
+          events.push(...acquisition.events);
+        }
+        if (state.turn!.playerId === playerId && (winner !== null || (state.auction === null && next.auction === null))) {
           const nextPlayer = winner === null ? order[(order.indexOf(playerId) + 1) % order.length]! : null;
           const closed = closeTurn(next, 'resigned', context.now, { nextPlayer });
           next = closed.state;
@@ -44,7 +50,7 @@ export const resignationCommands: CommandRegistry = {
       }
       if (winner !== null) {
         events.push({ type: 'GameEnded', payload: { winner } } satisfies GameEndedEvent);
-        return ok({ ...next, phase: 'finished', winner, setup: null, order: null, turn: null }, events);
+        return ok({ ...next, phase: 'finished', winner, setup: null, order: null, turn: null, purchase: null, auction: null }, events);
       }
       if (state.phase === 'setup') {
         const removed = removeSetupPlayer(next, playerId, context.now);

@@ -1,3 +1,4 @@
+import { offerPurchase, openAuction, type PurchaseAuctionEvent, type FinishAuction } from './purchase-auction.js';
 import type { BalanceChanged } from './money.js';
 import type { PlayerId, Timestamp } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
@@ -57,7 +58,7 @@ export type SentToJailEvent = GameEvent<
   'SentToJail'
 >;
 export type { PlayerMovedEvent };
-export type TurnEvent = BalanceChanged
+export type TurnEvent = PurchaseAuctionEvent | BalanceChanged
   | TurnStartedEvent
   | DiceRolledEvent
   | PlayerMovedEvent
@@ -66,7 +67,7 @@ export type TurnEvent = BalanceChanged
   | SentToJailEvent
   | InterimJailEvent;
 
-type Step = { state: GameState; events: TurnEvent[] };
+type Step = { state: GameState; events: GameEvent[] };
 
 // ---- Turn mechanics ---------------------------------------------------------
 
@@ -76,6 +77,7 @@ function startTurn(state: GameState, playerId: PlayerId, bonus: boolean, doubles
     turnId: `t${state.revision + 1}`,
     playerId,
     deadline: after(now, TURN_DURATION_MS),
+    pausedRemainingMs: null,
     bonus,
     rolled: false,
     continuation: false,
@@ -109,9 +111,9 @@ export function closeTurn(
   state: GameState, reason: TurnEndReason, now: Timestamp,
   resignation?: { readonly nextPlayer: PlayerId | null },
 ): Step {
-  const settled = settleMandatory(state);
+  const settled = settleMandatory({ ...state, purchase: null });
   const turn = settled.state.turn!;
-  const events: TurnEvent[] = [
+  const events: GameEvent[] = [
     ...settled.events,
     { type: 'TurnEnded', payload: { turnId: turn.turnId, playerId: turn.playerId, reason } },
   ];
@@ -138,7 +140,7 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
   const playerId = turn.playerId;
   const [dice, rng] = rollTwoDice(state.rng!);
   const double = dice[0] === dice[1];
-  const events: TurnEvent[] = [
+  const events: GameEvent[] = [
     { type: 'DiceRolled', payload: { turnId: turn.turnId, playerId, dice, double, auto } },
   ];
   let next: GameState = { ...state, rng };
@@ -148,7 +150,8 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
     const attempt = resolveJailAttempt(next, playerId, dice);
     events.push(...attempt.events);
     next = { ...attempt.state, turn: { ...turn, rolled: true, doublesStreak: 0, pendingBonus: false } };
-    return { state: next, events, closed: false };
+    const offered = offerPurchase(next);
+    return { state: offered.state, events: [...events, ...offered.events], closed: false };
   }
 
   if (double && turn.doublesStreak + 1 === DOUBLES_TO_JAIL) {
@@ -171,12 +174,14 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
     ...moved.state,
     turn: { ...turn, rolled: true, doublesStreak: double ? turn.doublesStreak + 1 : 0, pendingBonus: double },
   };
-  return { state: next, events, closed: false };
+  const offered = offerPurchase(next);
+  return { state: offered.state, events: [...events, ...offered.events], closed: false };
 }
 
 /** Checks shared by the owner's turn commands, in the documented order after the payload. */
 function checkOwnerInTime(state: GameState, command: GameCommand, now: Timestamp): HandlerResult | null {
   const turn = state.turn!;
+  if (state.auction !== null) return fail('AUCTION_IN_PROGRESS', 'Turn is paused for auction');
   if (command.actor.kind !== 'player' || command.actor.id !== turn.playerId) {
     return fail('NOT_ACTIVE_PLAYER', `Turn ${turn.turnId} belongs to ${turn.playerId}`);
   }
@@ -199,7 +204,7 @@ export function turnTimeout(state: GameState, command: GameCommand, context: Tra
     return fail('DEADLINE_NOT_REACHED', `Turn ${turn.turnId} is due at ${turn.deadline}`);
   }
   if (turn.rolled) {
-    const closed = closeTurn(state, 'timeout', context.now);
+    const closed = state.purchase !== null ? openAuction(state, 'timeout', context.now) : closeTurn(state, 'timeout', context.now);
     return ok(closed.state, closed.events);
   }
   const rolled = applyRoll(state, context.now, true);
@@ -235,8 +240,24 @@ export const turnCommands: CommandRegistry = {
       const rejected = checkOwnerInTime(state, command, context.now);
       if (rejected !== null) return rejected;
       if (!state.turn!.rolled) return fail('ROLL_REQUIRED', `Turn ${state.turn!.turnId} must roll before ending`);
-      const closed = closeTurn(state, 'end-turn', context.now);
+      const closed = state.purchase !== null ? openAuction(state, 'end-turn', context.now) : closeTurn(state, 'end-turn', context.now);
       return ok(closed.state, closed.events);
     },
   },
+};
+
+/** Complete every auction through the existing turn closure path. */
+export const finishAuction: FinishAuction = (state, auction, now) => {
+  const turn = state.turn!;
+  if (state.eliminated.includes(turn.playerId)) {
+    const index = auction.order.indexOf(turn.playerId);
+    const cyclic = [...auction.order.slice(index + 1), ...auction.order.slice(0, index)];
+    const nextPlayer = cyclic.find(p => state.order!.includes(p))!;
+    return closeTurn(state, 'resigned', now, { nextPlayer });
+  }
+  if (auction.reason !== 'choice') return closeTurn(state, auction.reason, now);
+  const deadline = after(now, turn.pausedRemainingMs!);
+  return { state: { ...state, turn: { ...turn, deadline, pausedRemainingMs: null } }, events: [
+    { type: 'TurnResumed', payload: { turnId: turn.turnId, deadline } },
+  ] };
 };
