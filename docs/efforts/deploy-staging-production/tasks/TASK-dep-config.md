@@ -5,7 +5,7 @@ id: TASK-dep-config
 revision: 1
 effort: EFF-deploy-staging-production
 project: economic-board-game
-source_commit: 78478c6 # main with the effort handoff
+source_commit: f08fefc # main after the stage 3 e2e fix (PR #40)
 owner: team-lead
 status: proposed
 ```
