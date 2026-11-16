@@ -2,7 +2,7 @@ import { Type, type Static } from '@sinclair/typebox';
 import type { GameEvent, StateView } from '@game/game-core';
 import {
   CommandIdSchema,
-  RoomIdSchema as AssetIdSchema,
+  AssetIdSchema,
   ErrorBodySchema,
   ErrorCodeSchema,
   ExpectationSchema,

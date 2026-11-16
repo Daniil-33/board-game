@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { checkInvariants, projectState } from '@game/game-core';
+import { checkInvariants, pendingDeadlines, projectState } from '@game/game-core';
 import { PROTOCOL_VERSION } from '@game/protocol';
 import { sql } from 'kysely';
 import { useHarness } from './helpers/harness.js';
@@ -153,4 +153,22 @@ it('snapshot write failure rolls back room and membership atomically', async () 
   } })).status).toBe(500);
   expect(await h.db.selectFrom('rooms').selectAll().execute()).toEqual(before.rooms);
   expect(await h.db.selectFrom('room_members').selectAll().execute()).toEqual(before.members);
+});
+
+// RVW-002: exercise the real loader genesis through boot recovery and all reconnects.
+it('restarts an HTTP fixture-created open settlement with exact state and guest projections', async () => {
+  const g = await fixture('open-rent');
+  const before = g.room.state;
+  expect(before.rent).not.toBeNull();
+  const persisted = await g.server.store.loadGame(g.id);
+  await g.server.stop();
+  const restarted = await startServer(h, { restore: true, now: g.server.clock.now() });
+  expect(restarted.manager.get(g.id)!.state).toEqual(before);
+  expect(restarted.clock.pending).toEqual(pendingDeadlines(before).map(d => d.at));
+  expect(await restarted.store.loadGame(g.id)).toEqual(persisted);
+  for (const guest of g.guests) {
+    const client = await connect(restarted, guest, g.id, before.revision);
+    expect(client.welcome.revision).toBe(before.revision);
+    expect(client.welcome.view).toEqual(projectState(before, { kind: 'player', id: guest.guestId as never }));
+  }
 });

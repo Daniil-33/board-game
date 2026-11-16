@@ -27,6 +27,7 @@ const idString = (description: string) =>
   Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, pattern: ID_PATTERN, description });
 
 export const CommandIdSchema = Type.Unsafe<CommandId>(idString('Client-generated command id, unique within the game.'));
+export const AssetIdSchema = idString('Game-core asset id.');
 export const PlayerIdSchema = Type.Unsafe<PlayerId>(idString('Game-core player id.'));
 export const RevisionSchema = Type.Unsafe<Revision>(
   Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER, description: 'Game revision.' }),
