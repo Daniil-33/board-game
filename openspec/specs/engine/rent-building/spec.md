@@ -53,10 +53,14 @@ BuildHouse {assetId} SHALL require playing, the player's turn, no purchase/aucti
 - **THEN** its specific rejection code SHALL be returned with unchanged state, revision and RNG
 
 ### Requirement: House command deadlines and display legality
-Pure buildLegality and saleLegality SHALL ignore time. After payload and actor-kind validation, the server SHALL check the turn deadline before calling either helper; at or after the deadline it SHALL reject with DEADLINE_PASSED.
+Pure buildLegality and saleLegality SHALL ignore time. After envelope and payload validation, the server SHALL check auction pause (AUCTION_IN_PROGRESS), turn ownership (NOT_ACTIVE_PLAYER), then deadline (DEADLINE_PASSED) before calling either helper.
+
+#### Scenario: Auction pause outlasts the original deadline
+- **WHEN** BuildHouse or SellHouse is sent during an auction at the original turn deadline plus 5000 ms
+- **THEN** the server SHALL reject with AUCTION_IN_PROGRESS before checking ownership, deadline or asset legality
 
 #### Scenario: Expired illegal construction or sale
-- **WHEN** BuildHouse or SellHouse names an illegal asset at or after the turn deadline
+- **WHEN** BuildHouse or SellHouse names an illegal asset at or after the turn deadline without an auction pause and is issued by the turn owner
 - **THEN** the server SHALL reject with DEADLINE_PASSED before checking asset legality, while the pure display helper SHALL continue to report the asset condition without considering time
 
 ### Requirement: House sale legality

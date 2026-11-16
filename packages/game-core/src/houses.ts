@@ -49,7 +49,8 @@ export const houseCommands: CommandRegistry = Object.fromEntries(['BuildHouse', 
     const payload = command.payload;
     if (!payload || typeof payload !== 'object' || Array.isArray(payload) || Object.keys(payload).length !== 1 || !Object.hasOwn(payload, 'assetId') || typeof (payload as {assetId: unknown}).assetId !== 'string') return fail('INVALID_PAYLOAD', 'Expected {assetId}');
     const assetId = (payload as {assetId: AssetId}).assetId;
-    if (command.actor.kind !== 'player') return fail('NOT_ACTIVE_PLAYER', 'Player required');
+    if (state.auction !== null) return fail('AUCTION_IN_PROGRESS', 'Turn is paused for auction');
+    if (command.actor.kind !== 'player' || command.actor.id !== state.turn!.playerId) return fail('NOT_ACTIVE_PLAYER', `Turn ${state.turn!.turnId} belongs to ${state.turn!.playerId}`);
     const playerId = command.actor.id;
     if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
     const error = (type === 'BuildHouse' ? buildLegality : saleLegality)(state, playerId, assetId);

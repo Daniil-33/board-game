@@ -234,3 +234,21 @@ it.each(['BuildHouse', 'SellHouse'])('%s checks the deadline before asset legali
     expect(legality(s, pid('a'), assetId)).toBe('NOT_A_BUILDABLE_ASSET');
   }
 });
+
+
+it.each(['BuildHouse', 'SellHouse'])('%s checks auction pause, actor, then deadline (RVW-003)', type => {
+  let s = owned();
+  const assetId = group(s)[0]!.assetId;
+  // An unpaused non-owner is rejected before checking the expired deadline.
+  reject(s, command(s, type, { assetId }, pid('b')), 'NOT_ACTIVE_PLAYER', s.turn!.deadline + 5000);
+  s = accept(s, command(s, 'RollDice'), undefined, [1, 5]).state;
+  expect(s.purchase).not.toBeNull();
+  const originalDeadline = s.turn!.deadline;
+  s = accept(s, command(s, 'StartAuction'), originalDeadline - 1000).state;
+  expect(s.turn!.pausedRemainingMs).toBe(1000);
+  for (const by of [pid('a'), pid('b')]) {
+    for (const at of [originalDeadline - 1, originalDeadline + 5000]) {
+      reject(s, command(s, type, { assetId }, by), 'AUCTION_IN_PROGRESS', at);
+    }
+  }
+});
