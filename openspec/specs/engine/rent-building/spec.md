@@ -1,7 +1,9 @@
+# engine/rent-building Specification
+
 ## Purpose
 Defines deterministic asset rent, mandatory settlement and even house construction and sale for the stage 4 economy.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Regular rent
 Regular rent SHALL be zero on mortgaged assets; otherwise zero-house rent SHALL be Q(5×price/100), doubled as 2×Q(5×price/100) for a wholly owned group, counting mortgaged group assets. Rent for 1/2/3/4 houses SHALL be Q(15/35/65/100×price/100).
@@ -40,7 +42,7 @@ PayRent SHALL require payload null, a turn target, the turn owner, an unexpired 
 - **THEN** mandatory payment SHALL happen before closure with auto true and no separate rent deadline
 
 ### Requirement: Building legality
-BuildHouse {assetId} SHALL require playing, the player's turn, no purchase/auction/rent, a monopoly asset owned by the player, complete group, no group mortgage, fewer than four houses, a group-minimum house count, positive build quota and sufficient funds. Exported pure buildLegality SHALL return the same specific condition code used by the handler.
+BuildHouse {assetId} SHALL require playing, the player's turn, no purchase/auction/rent, a monopoly asset owned by the player, complete group, no group mortgage, fewer than four houses, a group-minimum house count, positive build quota and sufficient funds. Exported pure buildLegality SHALL return the same specific condition code used by the handler for an unexpired command.
 
 #### Scenario: Build and rejection
 - **WHEN** a legal build is accepted
@@ -49,6 +51,13 @@ BuildHouse {assetId} SHALL require playing, the player's turn, no purchase/aucti
 #### Scenario: Every failed condition
 - **WHEN** any build condition fails
 - **THEN** its specific rejection code SHALL be returned with unchanged state, revision and RNG
+
+### Requirement: House command deadlines and display legality
+Pure buildLegality and saleLegality SHALL ignore time. After payload and actor-kind validation, the server SHALL check the turn deadline before calling either helper; at or after the deadline it SHALL reject with DEADLINE_PASSED.
+
+#### Scenario: Expired illegal construction or sale
+- **WHEN** BuildHouse or SellHouse names an illegal asset at or after the turn deadline
+- **THEN** the server SHALL reject with DEADLINE_PASSED before checking asset legality, while the pure display helper SHALL continue to report the asset condition without considering time
 
 ### Requirement: House sale legality
 SellHouse {assetId} SHALL require playing, the player's turn, no purchase/auction/rent, an owned monopoly asset, at least one house and a group-maximum house count. Sales SHALL have no quota. Exported pure saleLegality SHALL share the handler's condition codes.

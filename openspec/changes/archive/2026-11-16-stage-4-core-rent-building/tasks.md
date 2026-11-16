@@ -31,3 +31,5 @@
 
 - Team Lead accepts this proposal and starts Apply in a fresh Engineer context before product code changes.
 - Archive the OpenSpec change in the PR after independent review passes; verify resulting specs and CI for the final head. Engineer does not merge.
+
+Archive checkpoint: REV-s4-core-1 PASS on 5a485aa. TL authorized archive after RVW-001 deadline-precedence fix; RVW-002 deferred to the stage 5 test plan. Task 5.3 remains open for final-head CI and REV-s4-core-2. Runtime evidence is recorded through agentctl. ROADMAP R remains a merge gate.

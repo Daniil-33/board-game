@@ -51,9 +51,9 @@ export const houseCommands: CommandRegistry = Object.fromEntries(['BuildHouse', 
     const assetId = (payload as {assetId: AssetId}).assetId;
     if (command.actor.kind !== 'player') return fail('NOT_ACTIVE_PLAYER', 'Player required');
     const playerId = command.actor.id;
+    if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
     const error = (type === 'BuildHouse' ? buildLegality : saleLegality)(state, playerId, assetId);
     if (error) return fail(error, error);
-    if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
     const asset = state.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!;
     const cost = quantumRatio(asset.price, 2);
     const build = type === 'BuildHouse';

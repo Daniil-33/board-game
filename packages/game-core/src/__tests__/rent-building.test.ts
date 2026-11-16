@@ -220,3 +220,17 @@ it('carries consumed quota through timeout continuation, bonus and auction closu
   while(s.auction){const a=s.auction;s=accept(s,cmd('PassAuction',null,{actor:player(a.responder),target:{kind:'auctionResponse',id:a.responseId}}),now).state;}
   expect(s.turn!.bonus).toBe(true);expect(s.turn!.quotas.builds).toBe(0);
 });
+
+
+it.each(['BuildHouse', 'SellHouse'])('%s checks the deadline before asset legality (RVW-001)', type => {
+  const s = owned();
+  const assetId = 'unknown' as AssetId;
+  const legality = type === 'BuildHouse' ? buildLegality : saleLegality;
+  expect(legality(s, pid('a'), assetId)).toBe('NOT_A_BUILDABLE_ASSET');
+  const c = command(s, type, { assetId });
+  reject(s, c, 'NOT_A_BUILDABLE_ASSET', s.turn!.deadline - 1);
+  for (const at of [s.turn!.deadline, s.turn!.deadline + 1]) {
+    reject(s, c, 'DEADLINE_PASSED', at);
+    expect(legality(s, pid('a'), assetId)).toBe('NOT_A_BUILDABLE_ASSET');
+  }
+});
