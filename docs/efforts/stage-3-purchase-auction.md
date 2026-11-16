@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-stage-3-purchase-auction
-revision: 1
+revision: 2
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-16T07:00:00Z
@@ -34,9 +34,9 @@ Agreed with the owner. Sources: ROADMAP.md stage 3, GAME-BREAKDOWN.md
    auction starts automatically; after it the mandatory settlement completes
    and the turn closes.
 4. Auction amounts: start bid `Q(60% × price)`, step `Q(5% × price)`; both are
-   positive; the first bid may equal the start bid. Each later bid is at least
-   the current leading bid plus the step (see open decision D1 for whether a
-   bid may exceed that).
+   positive. The first bid equals the start bid; every later bid is exactly
+   the current leading bid plus the step (owner decision D1, 2026-11-16): a
+   bid is a single "raise" action, a participant cannot choose the amount.
 5. Auction order is cyclic in turn order, starting with the landing player.
    On their move a participant bids or passes. A pass is irreversible. The
    leader does not respond to their own bid (is skipped). A participant who
@@ -102,12 +102,8 @@ Team Lead decides: state and event shapes, target ids, command names, how the
 timer pause is represented, protocol shapes, handling of stored stage 2 games,
 task order, test strategy.
 
-Open owner decision (CTO is collecting the answer; design so it is a single
-rule, and do not merge the bid rule before it is recorded in ROADMAP):
-
-- D1. Bid amount: exactly current + step (one "raise" action), or any amount
-  of at least current + step. CTO recommendation: any amount of at least
-  current + step.
+Resolved owner decision: D1 (2026-11-16) bid amount is exactly current +
+step, see criterion 4.
 
 Escalate to the CTO: a participant resigning during an auction (including the
 leader); any other case where these rules do not determine the result.
@@ -141,6 +137,8 @@ with ordering, integration plan, evidence plan, focused escalations.
 ## Revision history
 
 - 1: initial handoff.
+- 2: owner resolved D1: a bid is exactly the leading bid plus the step
+  (criterion 4); no other change.
 
 ## Acceptance
 
