@@ -73,7 +73,7 @@ describe('TurnOrder', () => {
 
 describe('ActionButtons', () => {
   it('disables per availability and emits the command type', async () => {
-    const wrapper = mount(ActionButtons, { props: { available: { RollForOrder: false, RollDice: true, EndTurn: false, Resign: false } } });
+    const wrapper = mount(ActionButtons, { props: { available: { RollForOrder: false, RollDice: true, EndTurn: false, Resign: false, BuyAsset: false, StartAuction: false, Bid: false, PassAuction: false } } });
     const disabled = (type: string): boolean => wrapper.find(`[data-test="${type}"]`).attributes('disabled') !== undefined;
     expect([disabled('RollForOrder'), disabled('RollDice'), disabled('EndTurn')]).toEqual([true, false, true]);
     await wrapper.find('[data-test="RollDice"]').trigger('click');

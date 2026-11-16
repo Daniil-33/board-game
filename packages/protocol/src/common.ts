@@ -2,7 +2,7 @@ import { Type, type Static } from '@sinclair/typebox';
 import type { CommandId, Expectation, PlayerId, Revision, TargetRef } from '@game/game-core';
 
 /** Wire protocol version carried by `Hello` and `Welcome`. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** Upper bound, in UTF-16 code units, on the text of one WebSocket frame. */
 export const MAX_FRAME_LENGTH = 1 << 20;

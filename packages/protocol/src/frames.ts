@@ -13,12 +13,12 @@ import {
 } from './common.js';
 
 /**
- * Command types a client may send in stage 1, named as in game-core
+ * Command types a client may send through stage 3, named as in game-core
  * (`setupCommands`, `turnCommands`, resignation). Every payload is `null`.
  * System commands (`CreateGame`, `AddPlayer`, `LeaveLobby`, `StartGame`,
  * `Timeout`) are never accepted from a client.
  */
-export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign'] as const;
+export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction'] as const;
 export type ClientCommandType = (typeof CLIENT_COMMAND_TYPES)[number];
 
 // ---- Shared parts ----------------------------------------------------------
@@ -30,7 +30,7 @@ export const StateViewSchema = Type.Unsafe<StateView>(
       additionalProperties: true,
       description:
         'Public projection of the game state (game-core StateView), checked only as a JSON object. ' +
-        'Includes the public generated board, economy and balances. ' +
+        'Includes the public generated board, economy, balances, asset owners, purchase decision and auction state. ' +
         'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
     },
   ),
