@@ -23,7 +23,7 @@ function play(): Session {
     if (r.kind !== 'accepted') throw new Error(`command ${i} (${c.type}) rejected: ${r.error.code}`);
     t = Math.max(t, at);
   };
-  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-3' }, { id: 'g0', rev: 0 }), t);
+  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-4' }, { id: 'g0', rev: 0 }), t);
   for (const p of ['a', 'b', 'c', 'd']) submit(cmd('AddPlayer', { playerId: p }, { id: `add-${p}`, rev: s.state.revision }), t);
   submit(cmd('StartGame', null, { id: 'start', rev: s.state.revision }), t);
 
@@ -68,30 +68,30 @@ describe('seeded multi-turn game', () => {
     const s = play();
     expect(summary(s)).toMatchInlineSnapshot(`
       {
-        "bonusTurns": 19,
-        "continuations": 29,
-        "eventCount": 626,
+        "bonusTurns": 27,
+        "continuations": 30,
+        "eventCount": 658,
         "jail": {},
-        "jailReleases": 0,
-        "jailSends": 0,
+        "jailReleases": 1,
+        "jailSends": 1,
         "order": [
-          "c",
           "d",
+          "c",
           "b",
           "a",
         ],
         "positions": {
-          "a": 33,
-          "b": 18,
-          "c": 29,
-          "d": 20,
+          "a": 20,
+          "b": 12,
+          "c": 20,
+          "d": 17,
         },
         "revision": 300,
         "turn": {
-          "playerId": "c",
+          "playerId": "b",
           "turnId": "t299",
         },
-        "turnsStarted": 144,
+        "turnsStarted": 146,
       }
     `);
   });

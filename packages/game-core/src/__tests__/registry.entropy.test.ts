@@ -44,12 +44,13 @@ describe('entropy absorption in the engine', () => {
     expect(r1.state.rng).not.toEqual(s.rng);
   });
 
-  it('CreateGame ignores entropy: the rng derives from the seed alone', () => {
-    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-3' }, { rev: 0 });
+  it('CreateGame absorbs entropy before generating the board', () => {
+    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-4' }, { rev: 0 });
     const r1 = gameEngine.execute(genesis(), c, ctx(undefined, E1));
     const r2 = gameEngine.execute(genesis(), c, ctx(undefined, E2));
     expect(r1.kind).toBe('accepted');
-    expect(r1.state.rng).toEqual(r2.state.rng);
+    expect(r1.state.rng).not.toEqual(r2.state.rng);
+    expect(r1.state.board).not.toEqual(r2.state.board);
   });
 
   it('a handler that draws from the mixed state and rejects returns the input state', () => {

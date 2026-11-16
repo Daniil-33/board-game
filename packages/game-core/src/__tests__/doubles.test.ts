@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { playingGame, types } from './helpers/game.js';
-import { PLACEHOLDER_RING } from '../board.js';
+import { CLASSIC_40 } from '../board.js';
 import { CONTINUATION_MS, TURN_DURATION_MS } from '../deadlines.js';
 import { TURN_QUOTAS } from '../turns.js';
 
@@ -87,10 +87,10 @@ describe('third consecutive double sends to jail', () => {
     const turnId = g.state.turn!.turnId;
     const events = g.roll(4, 4);
     expect(types(events)).toEqual(['DiceRolled', 'SentToJail', 'TurnEnded', 'TurnStarted']);
-    expect(events[1]!.payload).toEqual({ playerId: 'a', from, to: PLACEHOLDER_RING.jailCell });
+    expect(events[1]!.payload).toEqual({ playerId: 'a', from, to: CLASSIC_40.jailCell });
     expect(events[2]!.payload).toEqual({ turnId, playerId: 'a', reason: 'sent-to-jail' });
     expect(events[3]!.payload).toMatchObject({ playerId: 'b', bonus: false });
-    expect(g.state.positions['a']).toBe(PLACEHOLDER_RING.jailCell);
+    expect(g.state.positions['a']).toBe(CLASSIC_40.jailCell);
     expect(g.state.jail).toEqual({ a: { attemptsUsed: 0 } });
     expect(g.state.turn!.doublesStreak).toBe(0);
   });

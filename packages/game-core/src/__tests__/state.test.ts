@@ -1,3 +1,4 @@
+import { generateBoard } from '../board/generate.js';
 import { describe, it, expect } from 'vitest';
 import { genesis, type GameState } from '../state.js';
 import { checkInvariants, InvariantViolationError, type InvariantName } from '../invariants.js';
@@ -25,10 +26,10 @@ describe('genesis', () => {
 const lobby: GameState = {
   ...genesis(),
   revision: 3 as Revision,
-  rulesVersion: 'core-3',
+  rulesVersion: 'core-4',
   phase: 'lobby',
   players: [{ id: pid('a') }, { id: pid('b') }],
-  rng: seedRng(1),
+  ...generateBoard(seedRng(1)),
 };
 
 function expectViolation(state: GameState, invariant: InvariantName) {

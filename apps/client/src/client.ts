@@ -4,7 +4,7 @@
  * tests run the whole client against fakes.
  */
 import { inject, reactive, type InjectionKey } from 'vue';
-import { PLACEHOLDER_RING } from '@game/game-core';
+import { CLASSIC_40 } from '@game/game-core';
 import { AccessCodeSchema, RoomIdSchema, type ClientCommandType, type RoomSummary } from '@game/protocol';
 import { Value } from '@sinclair/typebox/value';
 import { LobbyRequestError, createLobbyApi, type FetchLike, type LobbyApi } from './api/lobby';
@@ -85,7 +85,7 @@ export function createClient(deps: ClientDeps): Client {
   }
 
   const queue = new AnimationQueue(
-    PLACEHOLDER_RING.size,
+    CLASSIC_40.size,
     (step, speed) => (board === null ? Promise.resolve() : board.play(step, speed)),
     // Whenever nothing is animating, tokens stand where the view says.
     snapBoard,

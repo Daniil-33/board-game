@@ -1,10 +1,11 @@
+import type { BalanceChanged } from './money.js';
 import type { PlayerId, Timestamp } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
 import type { TransitionContext } from './context.js';
 import type { GameState, TurnQuotas, TurnState } from './state.js';
 import { fail, ok, targetGuard, type CommandRegistry, type HandlerResult } from './registry.js';
 import { isNullPayload, rollTwoDice } from './dice.js';
-import { movePlayer, PLACEHOLDER_RING, type PlayerMovedEvent } from './board.js';
+import { movePlayer, CLASSIC_40, type PlayerMovedEvent } from './board.js';
 import { after, CONTINUATION_MS, TURN_DURATION_MS, TURN_TARGET_KIND } from './deadlines.js';
 import { resolveJailAttempt, type InterimJailEvent } from './interim-jail.js';
 
@@ -56,7 +57,7 @@ export type SentToJailEvent = GameEvent<
   'SentToJail'
 >;
 export type { PlayerMovedEvent };
-export type TurnEvent =
+export type TurnEvent = BalanceChanged
   | TurnStartedEvent
   | DiceRolledEvent
   | PlayerMovedEvent
@@ -91,7 +92,7 @@ function startTurn(state: GameState, playerId: PlayerId, bonus: boolean, doubles
 /** Enter phase `playing`: everyone on the start cell, the first in `order` to move. */
 export function startPlay(state: GameState, order: readonly PlayerId[], now: Timestamp): Step {
   // Object.fromEntries defines own keys, so any player id (even "__proto__") is safe.
-  const positions: Record<string, number> = Object.fromEntries(order.map((p) => [p, PLACEHOLDER_RING.startCell]));
+  const positions: Record<string, number> = Object.fromEntries(order.map((p) => [p, CLASSIC_40.startCell]));
   return startTurn({ ...state, phase: 'playing', order, positions, jail: {} }, order[0]!, false, 0, now);
 }
 
@@ -152,7 +153,7 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
 
   if (double && turn.doublesStreak + 1 === DOUBLES_TO_JAIL) {
     const from = next.positions[playerId]!;
-    const to = PLACEHOLDER_RING.jailCell;
+    const to = CLASSIC_40.jailCell;
     events.push({ type: 'SentToJail', payload: { playerId, from, to } });
     next = {
       ...next,
@@ -165,7 +166,7 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
   }
 
   const moved = movePlayer(next, playerId, dice[0] + dice[1]);
-  events.push(moved.event);
+  events.push(...moved.events);
   next = {
     ...moved.state,
     turn: { ...turn, rolled: true, doublesStreak: double ? turn.doublesStreak + 1 : 0, pendingBonus: double },

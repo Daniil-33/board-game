@@ -91,7 +91,7 @@ describe('roll the dice once per turn', () => {
   });
 });
 
-describe('movement on the placeholder ring', () => {
+describe('movement on the CLASSIC_40', () => {
   it('wraps around: from 36 by 3 + 4 to 3', () => {
     const g = playingGame(['a', 'b']);
     for (const [d1, d2] of [

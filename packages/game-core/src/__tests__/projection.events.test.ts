@@ -11,7 +11,7 @@ const SPECTATOR: Viewer = { kind: 'spectator' };
 function lifecycleEvents(): GameEvent[] {
   const s = createSession(gameEngine);
   const results = [
-    s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-3' }, { rev: 0 }), ctx()),
+    s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-4' }, { rev: 0 }), ctx()),
     s.submit(cmd('AddPlayer', { playerId: 'a' }, { rev: 1 }), ctx()),
     s.submit(cmd('AddPlayer', { playerId: 'b' }, { rev: 2 }), ctx()),
     s.submit(cmd('StartGame', null, { rev: 3 }), ctx()),
@@ -23,7 +23,7 @@ function lifecycleEvents(): GameEvent[] {
 describe('projectEvents', () => {
   it('passes every lifecycle event to a spectator unchanged and in order', () => {
     const events = deepFreeze(lifecycleEvents());
-    expect(events.map((e) => e.type)).toEqual(['GameCreated', 'PlayerAdded', 'PlayerAdded', 'GameStarted', 'OrderRollStarted']);
+    expect(events.map((e) => e.type)).toEqual(['GameCreated', 'BoardGenerated', 'PlayerAdded', 'PlayerAdded', 'GameStarted', 'BalanceChanged', 'BalanceChanged', 'OrderRollStarted']);
     expect(projectEvents(events, SPECTATOR)).toEqual(events);
     expect(projectEvents(events, { kind: 'player', id: pid('a') })).toEqual(events);
   });

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { replay, restoreSession } from '../session.js';
 import { gameEngine } from '../rules.js';
 import { projectState } from '../projection.js';
-import { PLACEHOLDER_RING } from '../board.js';
+import { CLASSIC_40 } from '../board.js';
 import { playingGame, setupGame } from './helpers/game.js';
 
 // Regression (REV-s1-core-turns-1 RVW-002): every id AddPlayer accepts must be playable,
@@ -35,14 +35,14 @@ describe('player ids that name Object.prototype members', () => {
     g.endTurn();
     g.roll(3, 3);
     expect(Object.hasOwn(g.state.jail, '__proto__')).toBe(true);
-    expect(g.state.positions['__proto__']).toBe(PLACEHOLDER_RING.jailCell);
+    expect(g.state.positions['__proto__']).toBe(CLASSIC_40.jailCell);
     g.roll(1, 2); // constructor
     g.endTurn();
     g.roll(2, 3); // toString
     g.endTurn();
     g.roll(5, 5); // __proto__ released by a double, no bonus
     expect(Object.hasOwn(g.state.jail, '__proto__')).toBe(false);
-    expect(g.state.positions['__proto__']).toBe(PLACEHOLDER_RING.jailCell + 10);
+    expect(g.state.positions['__proto__']).toBe(CLASSIC_40.jailCell + 10);
     g.endTurn();
     expect(g.state.turn!.playerId).toBe('constructor');
 

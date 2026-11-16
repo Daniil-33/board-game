@@ -1,5 +1,6 @@
+import type { BalanceChanged } from './money.js';
 /**
- * TEMPORARY: the interim stage 1 jail rule (no money exists yet).
+ * TEMPORARY: the interim stage 1 jail rule (release attempts without fees).
  *
  * On each of up to three own turns the prisoner rolls. A double releases them
  * and they move by its sum, with no bonus turn. After the third failed roll
@@ -35,7 +36,7 @@ export function resolveJailAttempt(
   state: GameState,
   playerId: PlayerId,
   dice: readonly [number, number],
-): { state: GameState; events: readonly (InterimJailEvent | PlayerMovedEvent)[] } {
+): { state: GameState; events: readonly (InterimJailEvent | PlayerMovedEvent | BalanceChanged)[] } {
   const attemptsUsed = state.jail[playerId]!.attemptsUsed + 1;
   const isDouble = dice[0] === dice[1];
   if (!isDouble && attemptsUsed < INTERIM_JAIL_RULE.maxAttempts) {
@@ -50,5 +51,5 @@ export function resolveJailAttempt(
     payload: { playerId, reason: isDouble ? 'double' : 'attempts-exhausted' },
   };
   const moved = movePlayer({ ...state, jail }, playerId, dice[0] + dice[1]);
-  return { state: moved.state, events: [released, moved.event] };
+  return { state: moved.state, events: [released, ...moved.events] };
 }

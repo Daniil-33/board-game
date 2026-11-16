@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLACEHOLDER_RING } from '@game/game-core';
+import { CLASSIC_40 } from '@game/game-core';
 import { BoardScene, PLACEHOLDER_CAPTION, type SceneClock } from '../board/BoardCanvas';
 import { cellRect, jailBox } from '../board/layout';
 import { playingView, setupView } from './helpers';
@@ -22,7 +22,7 @@ describe('board scene', () => {
   it('holds 40 cells, a jail marker, the placeholder caption and one token per player', () => {
     const scene = new BoardScene(660, instant);
     scene.snap(playingView(['a', 'b', 'c']), 'a');
-    expect(scene.cells.children).toHaveLength(PLACEHOLDER_RING.size);
+    expect(scene.cells.children).toHaveLength(CLASSIC_40.size);
     expect(scene.jailMarker.label).toBe('jail-box');
     expect(scene.caption.text).toBe(PLACEHOLDER_CAPTION);
     expect(scene.caption.text).toMatch(/PLACEHOLDER/);

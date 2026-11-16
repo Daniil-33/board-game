@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLACEHOLDER_RING } from '@game/game-core';
+import { CLASSIC_40 } from '@game/game-core';
 import { RING_CELLS, cellRect, jailBox, jailVisitorSlot, tokenSlot, type Rect } from '../board/layout';
 
 const SIZE = 660;
@@ -9,7 +9,7 @@ const overlap = (a: Rect, b: Rect): boolean =>
 
 describe('ring layout', () => {
   it('has one cell per cell of the game-core placeholder ring', () => {
-    expect(RING_CELLS).toBe(PLACEHOLDER_RING.size);
+    expect(RING_CELLS).toBe(CLASSIC_40.size);
     expect(rects).toHaveLength(40);
   });
 

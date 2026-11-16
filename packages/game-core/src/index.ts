@@ -58,8 +58,8 @@ export type {
 } from './lifecycle.js';
 export { CURRENT_RULES_VERSION, SUPPORTED_RULES_VERSIONS, lifecycleCommands } from './lifecycle.js';
 
-export type { PlaceholderRing, PlaceholderCell, PlaceholderCellKind, PlayerMovedEvent } from './board.js';
-export { PLACEHOLDER_RING } from './board.js';
+export type { GeneratedBoard, BoardCell, BoardAsset, BoardGenerated, BoardGeneratedEvent, CellKind, LayoutCell, PlayerMovedEvent } from './board.js';
+export { CLASSIC_40 } from './board.js';
 
 export type { PendingDeadline } from './deadlines.js';
 export {
@@ -117,3 +117,8 @@ export { createSession, replay, restoreSession, ReplayDivergenceError } from './
 
 /** Voluntary elimination and last-active-player victory contracts. */
 export type { ResignCommand, ResignationErrorCode, PlayerResignedEvent, GameEndedEvent, ResignationEvent } from './resignation.js';
+
+export { startingCapital, lapReward, creditBalance } from './money.js';
+export type { BalanceChanged, BalanceChangedEvent } from './money.js';
+export { PRICE_TABLE } from './board/prices.js';
+export { generateBoard } from './board/generate.js';

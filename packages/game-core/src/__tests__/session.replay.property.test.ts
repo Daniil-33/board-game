@@ -73,7 +73,7 @@ function lifecycleCommand(g: Gen, state: GameState, history: GameCommand[], seq:
     phase === 'uninitialized' ? g.pick([0, 0, 0, 1, 4]) : phase === 'lobby' ? g.pick([1, 1, 1, 2, 2, 3, 4, 0]) : g.int(0, 4);
   switch (choice) {
     case 0:
-      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-3' }, opts);
+      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-4' }, opts);
     case 1:
       return cmd('AddPlayer', { playerId: g.pick(PLAYER_IDS) }, opts);
     case 2:
@@ -136,7 +136,7 @@ function randomTime(g: Gen, t: number, state: GameState): number {
 }
 
 describe('property: any command sequence replays and restores to the identical session', () => {
-  const g = new Gen(seedRng(20261114));
+  const g = new Gen(seedRng(20261116));
   const stats = {
     leaves: 0,
     resignations: 0,

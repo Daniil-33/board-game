@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { playingGame, types, type Game } from './helpers/game.js';
-import { PLACEHOLDER_RING } from '../board.js';
+import { CLASSIC_40 } from '../board.js';
 import { INTERIM_JAIL_RULE } from '../interim-jail.js';
 
 // spec: engine/interim-jail
-const JAIL = PLACEHOLDER_RING.jailCell;
+const JAIL = CLASSIC_40.jailCell;
 
 /** a goes to jail by three doubles; b then plays a plain turn; a's turn is next. */
 function prisonerUp(): Game {
