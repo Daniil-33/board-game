@@ -8,6 +8,7 @@ import {
   ListRoomsResponseSchema,
   decodeServerFrame,
   type ClientFrame,
+  type ClientCommandType,
   type ServerFrame,
 } from '@game/protocol';
 import type { StateView } from '@game/game-core';
@@ -70,9 +71,9 @@ function peer() {
   };
 }
 
-function setup(turnMs = 45_000) {
+function setup(turnMs = 45_000, automateSeats = true) {
   const timers = fakeTimers();
-  const mock = new MockServer({ turnMs, continuationMs: Math.min(20_000, turnMs), timers });
+  const mock = new MockServer({ turnMs, continuationMs: Math.min(20_000, turnMs), timers, automateSeats });
   const login = mock.http('POST', '/api/guests', undefined, { nickname: 'Alice' });
   if (!Value.Check(GuestLoginResponseSchema, login.body)) throw new Error('bad login response');
   const { guestId, token } = login.body;
@@ -90,7 +91,7 @@ function setup(turnMs = 45_000) {
       return true;
     }
     if (view.turn?.playerId === guestId) {
-      const type = view.turn.rolled ? 'EndTurn' : 'RollDice';
+      const type = view.purchase ? 'BuyAsset' : view.turn.rolled ? 'EndTurn' : 'RollDice';
       say(p, { ...base, type, expected: { kind: 'target', target: { kind: 'turn', id: view.turn.turnId } } });
       return true;
     }
@@ -349,12 +350,12 @@ describe('stage 2 mock economy', () => {
     for (let n = 0; n < 400 && !sawLap; n++) {
       const view = game.view;
       const player = view.setup?.playerId ?? view.turn!.playerId;
-      const type = view.setup ? 'RollForOrder' : view.turn!.rolled ? 'EndTurn' : 'RollDice';
+      const type = view.purchase ? 'BuyAsset' : view.setup ? 'RollForOrder' : view.turn!.rolled ? 'EndTurn' : 'RollDice';
       const id = view.setup?.setupRollId ?? view.turn!.turnId;
       const result = game.command(player, type, { kind: 'target', target: { kind: view.setup ? 'setupRoll' : 'turn', id } }, 1);
       expect(result.ok).toBe(true);
       if (!result.ok) break;
-      for (const [i, event] of result.events.entries()) if (event.type === 'BalanceChanged') {
+      for (const [i, event] of result.events.entries()) if (event.type === 'BalanceChanged' && (event.payload as { reason: string }).reason === 'lap-reward') {
         const payload = event.payload as { playerId: string; balance: number; delta: number; reason: string };
         expect(payload.reason).toBe('lap-reward'); expect(payload.delta).toBe(lapReward(startingCapital(2)));
         expect(result.events[i - 1]?.type).toBe('PlayerMoved');
@@ -362,5 +363,48 @@ describe('stage 2 mock economy', () => {
       }
     }
     expect(sawLap).toBe(true);
+  });
+});
+
+describe('decoded stage 3 mock socket script', () => {
+  it('broadcasts purchase, outbid, pass, timeout and unsold views with the shown next amount', async () => {
+    const { nextBidAmount } = await import('@game/game-core');
+    const { mock, auth, guestId, token, timers } = setup(45_000, false);
+    const created = mock.http('POST', '/api/rooms', auth, {});
+    if (!Value.Check(CreateRoomResponseSchema, created.body)) throw Error('bad create');
+    const roomId = created.body.room.roomId;
+    const seats = [{ guestId, token, p: peer() }];
+    for (const nickname of ['Bob', 'Charlie']) {
+      const login = mock.http('POST', '/api/guests', undefined, { nickname });
+      if (!Value.Check(GuestLoginResponseSchema, login.body)) throw Error('bad login');
+      mock.http('POST', `/api/rooms/${roomId}/join`, `Bearer ${login.body.token}`, {});
+      seats.push({ ...login.body, p: peer() });
+    }
+    for (const seat of seats) mock.message(seat.p.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: seat.token, gameId: roomId, lastRevision: null }));
+    mock.http('POST', `/api/rooms/${roomId}/start`, auth, {});
+    let id = 0;
+    function send(type: ClientCommandType) {
+      const v = seats[0]!.p.view(); const a = v.auction; const s = v.setup; const t = v.turn!;
+      const seat = seats.find(seat => seat.guestId === (a?.responder ?? s?.playerId ?? t.playerId))!;
+      mock.message(seat.p.mockPeer, JSON.stringify({ t: 'Command', commandId: `stage3-${++id}`, type, payload: null, expected: { kind: 'target', target: a ? { kind: 'auctionResponse', id: a.responseId } : s ? { kind: 'setupRoll', id: s.setupRollId } : { kind: 'turn', id: t.turnId } } }));
+      expect(seat.p.frames.at(-2)?.t === 'Ack' ? seat.p.frames.at(-2) : seat.p.frames.at(-1)).toMatchObject({ outcome: 'accepted' });
+    }
+    while (seats[0]!.p.view().setup) send('RollForOrder');
+    send('RollDice'); expect(seats[0]!.p.view().purchase).not.toBeNull(); send('StartAuction');
+    const initial = seats[0]!.p.view().auction!;
+    expect(nextBidAmount(initial)).toBe(initial.startBid); send('Bid');
+    expect(nextBidAmount(seats[0]!.p.view().auction!)).toBe(initial.startBid + initial.step); send('Bid'); send('PassAuction');
+    // Invoke the response deadline through the mock scheduler (no local outcome).
+    timers.advance(10_000);
+    expect(seats[0]!.p.eventTypes()).toContain('AuctionWon');
+    expect(seats[0]!.p.view().auction).toBeNull();
+    // Seek the next free asset, pass every response and observe unsold settlement.
+    for (let n = 0; n < 60 && seats[0]!.p.view().purchase === null; n++) {
+      send(seats[0]!.p.view().turn!.rolled ? 'EndTurn' : 'RollDice');
+    }
+    expect(seats[0]!.p.view().purchase).not.toBeNull(); send('StartAuction');
+    const assetId = seats[0]!.p.view().auction!.assetId;
+    while (seats[0]!.p.view().auction) send('PassAuction');
+    expect(seats[0]!.p.eventTypes()).toContain('AuctionEndedUnsold'); expect(seats[0]!.p.view().owners[assetId]).toBeUndefined();
   });
 });

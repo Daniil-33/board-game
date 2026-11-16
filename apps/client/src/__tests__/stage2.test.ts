@@ -87,9 +87,10 @@ describe('stage 2 display', () => {
     await wrapper.find('[aria-label="Close asset card"]').trigger('click'); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
     await click(1); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
     await click(1);
-    h.sockets.last().receive(update({ ...playingView(['a', 'b']), revision: 10 as never, balances: { a: 98760 as never, b: 120 as never } }));
+    h.sockets.last().receive(update({ ...playingView(['a', 'b']), revision: 10 as never, balances: { a: 98760 as never, b: 120 as never }, owners: { [board.cells[1]!.asset!.assetId]: pid('b') } }));
     await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="player-balance"]').text()).toContain('98760');
+    expect(wrapper.get('[data-test="asset-owner"]').text()).toBe('Bob');
     h.client.game.view = { ...h.client.game.view!, board: generateBoard(seedRng(43)).board }; await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
     wrapper.unmount(); expect(select).toBeNull(); h.client.returnToLobby();
   });

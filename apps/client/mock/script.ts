@@ -10,7 +10,7 @@ export const ORDER_DICE: readonly number[] = [4, 4, 2, 6, 3, 5, 1];
 
 /** Turn dice, consumed one pair per roll, by whoever rolls. */
 export const TURN_DICE: readonly (readonly [number, number])[] = [
-  [3, 4], // first player: a normal move
+  [1, 2], // first player: a normal move onto a free asset (purchase decision)
   [2, 2], // second player: a double, bonus turn
   [5, 5], // second double, another bonus turn
   [1, 1], // third double: jail

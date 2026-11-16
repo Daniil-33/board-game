@@ -47,7 +47,7 @@ const PIPS: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
 };
 
 /** The slice of the view the board draws. */
-export type BoardView = Pick<StateView, 'board' | 'players' | 'positions' | 'jail' | 'eliminated'>;
+export type BoardView = Pick<StateView, 'owners' | 'board' | 'players' | 'positions' | 'jail' | 'eliminated'>;
 
 export interface SceneClock {
   /** Run `frame(t)` with t from 0 to 1 over `ms`; resolves early (false) when `cancelled()` turns true. */
@@ -84,6 +84,7 @@ export class BoardScene {
   readonly cells = new Container();
   /** One child per player. */
   readonly tokens = new Container();
+  readonly ownership = new Container();
   private boardKey = '';
   private selectAsset: ((index: number) => void) | null = null;
   /** The marker of the jail cell's "in jail" box. */
@@ -107,7 +108,7 @@ export class BoardScene {
     const ring = CLASSIC_40;
     this.root.addChild(new Graphics().rect(0, 0, size, size).fill(COLORS.board));
 
-    this.root.addChild(this.cells);
+    this.root.addChild(this.cells, this.ownership);
 
     const jb = jailBox(cellRect(ring.jailCell, size));
     this.jailMarker.rect(jb.x, jb.y, jb.width, jb.height).fill(COLORS.jailBox).stroke({ width: 1, color: COLORS.cellEdge });
@@ -129,6 +130,22 @@ export class BoardScene {
     this.activeRing.circle(0, 0, TOKEN_RADIUS + 4).stroke({ width: 2, color: COLORS.active });
     this.activeRing.visible = false;
     this.root.addChild(this.tokens, this.activeRing);
+  }
+
+  refreshOwnership(view: BoardView): void {
+    for (const child of this.ownership.removeChildren()) child.destroy();
+    for (const cell of view.board?.cells ?? []) {
+      if (cell.asset === null) continue;
+      const owner = view.owners[cell.asset.assetId];
+      const index = view.players.findIndex(p => p.id === owner);
+      if (index < 0) continue;
+      const r = cellRect(cell.index, this.size);
+      const marker = new Graphics().roundRect(r.x + r.width - 14, r.y + r.height - 14, 10, 10, 2)
+        .fill(0xffffff).stroke({ width: 1, color: 0xffffff });
+      marker.tint = TOKEN_COLORS[index % TOKEN_COLORS.length]!;
+      marker.label = `owner-${cell.index}-${owner}`;
+      this.ownership.addChild(marker);
+    }
   }
 
   setAssetSelection(callback: ((index: number) => void) | null): void {
@@ -179,6 +196,7 @@ export class BoardScene {
    */
   snap(view: BoardView, activeId: string | null): void {
     this.renderBoard(view.board);
+    this.refreshOwnership(view);
     this.epoch++;
     this.banner.visible = false;
     this.syncTokens(view);

@@ -3,7 +3,7 @@
  * which buttons are enabled; they never change the view and never compute a
  * game outcome. The server's `Ack` stays the only source of acceptance.
  */
-import { SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
+import { AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
 import type { Expectation, PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 
@@ -40,6 +40,9 @@ export function commandExpectation(view: StateView | null, type: ClientCommandTy
     if (view.phase !== 'setup' || view.setup === null) return null;
     return { kind: 'target', target: { kind: SETUP_ROLL_TARGET_KIND, id: view.setup.setupRollId } };
   }
+  if (type === 'Bid' || type === 'PassAuction') {
+    return view.auction === null ? null : { kind: 'target', target: { kind: AUCTION_RESPONSE_TARGET_KIND, id: view.auction.responseId } };
+  }
   if (view.phase !== 'playing' || view.turn === null) return null;
   return { kind: 'target', target: { kind: TURN_TARGET_KIND, id: view.turn.turnId } };
 }
@@ -55,13 +58,18 @@ export interface ActionContext {
 }
 
 /** Commands presented by the turn-action buttons; resignation has its own confirmation. */
-export type TurnCommandType = Exclude<ClientCommandType, 'Resign'>;
-export type ActionAvailability = Readonly<Record<ClientCommandType, boolean>>;
+export type TurnCommandType = 'RollForOrder' | 'RollDice' | 'EndTurn';
+export type ActionAvailability = Readonly<Record<TurnCommandType | 'Resign', boolean>>;
 
 function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): boolean {
   if (type === 'Resign') return view.phase === 'setup' || view.phase === 'playing';
   if (type === 'RollForOrder') return view.phase === 'setup' && view.setup?.playerId === me;
-  if (view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
+  if (type === 'Bid' || type === 'PassAuction') return view.auction?.responder === me && (type !== 'Bid' || nextBidAmount(view.auction) <= (view.balances[me] ?? 0));
+  if (view.auction !== null || view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
+  if (type === 'BuyAsset' || type === 'StartAuction') {
+    const asset = view.board?.cells.find(c => c.asset?.assetId === view.purchase?.assetId)?.asset;
+    return view.purchase?.playerId === me && (type !== 'BuyAsset' || (asset !== undefined && asset !== null && (view.balances[me] ?? 0) >= asset.price));
+  }
   return type === 'RollDice' ? !view.turn.rolled : view.turn.rolled;
 }
 
@@ -73,7 +81,7 @@ export function canIssue(ctx: ActionContext, type: ClientCommandType): boolean {
   if (ctx.pending.includes(type)) return false;
   if (!allowedByView(view, me, type)) return false;
   if (type === 'Resign') return true;
-  const deadline = activeDeadline(view);
+  const deadline = type === 'Bid' || type === 'PassAuction' ? view.auction?.responseDeadline ?? null : activeDeadline(view);
   return deadline !== null && ctx.now < deadline;
 }
 

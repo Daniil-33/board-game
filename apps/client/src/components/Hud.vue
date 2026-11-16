@@ -45,7 +45,7 @@ const headline = computed(() => {
     <p v-if="problem" class="warn-box" data-test="problem">{{ problem }}</p>
 
     <h2 data-test="headline">{{ headline }}</h2>
-    <TurnTimer :deadline="activeDeadline(view)" :now="now" />
+    <TurnTimer :paused="view?.turn?.pausedRemainingMs != null" :deadline="activeDeadline(view)" :now="now" />
 
     <p v-if="me && view?.eliminated.includes(me)" class="warn-box" data-test="spectator">You are out. Watching the game.</p>
     <ActionButtons :available="available" @command="(type) => emit('command', type)" />

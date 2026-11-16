@@ -11,14 +11,16 @@ const props = defineProps<{
   deadline: number | null;
   /** Current time (ms since the epoch). */
   now: number;
+  paused?: boolean;
 }>();
 
-const seconds = computed(() => (props.deadline === null ? null : remainingSeconds(props.deadline, props.now)));
+const seconds = computed(() => (props.paused || props.deadline === null ? null : remainingSeconds(props.deadline, props.now)));
 </script>
 
 <template>
   <div class="timer" :class="{ low: seconds !== null && seconds <= 10 }" data-test="timer">
-    <template v-if="seconds !== null">{{ seconds }} s</template>
+    <template v-if="paused">paused</template>
+    <template v-else-if="seconds !== null">{{ seconds }} s</template>
     <template v-else>–</template>
   </div>
 </template>
