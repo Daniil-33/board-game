@@ -129,3 +129,9 @@ export { generateBoard } from './board/generate.js';
 export { nextBidAmount } from './purchase-auction.js';
 export type { BuyAssetCommand, StartAuctionCommand, BidCommand, PassAuctionCommand, PurchaseOfferedEvent, AssetPurchasedEvent, AuctionStartedEvent, AuctionBidEvent, AuctionPassedEvent, AuctionWonEvent, AuctionEndedUnsoldEvent, TurnPausedEvent, TurnResumedEvent, PurchaseAuctionEvent } from './purchase-auction.js';
 export { debitBalance } from './money.js';
+
+export type { RentSettlement } from './state.js';
+export { rentFor, rentQuotes, energyRentFor, isMortgaged } from './rent.js';
+export type { RentQuote, RentEvent, RentDue, RentPaid, PayRentCommand } from './rent.js';
+export { buildLegality, saleLegality } from './houses.js';
+export type { HouseErrorCode, HouseEvent, HouseBuilt, HouseSold, BuildHouseCommand, SellHouseCommand } from './houses.js';

@@ -29,7 +29,7 @@ An actual move onto another active player's positive-rent asset SHALL create ren
 - **THEN** no new landing settlement SHALL open
 
 ### Requirement: Mandatory payment
-PayRent SHALL require payload null, a turn target, the turn owner, an unexpired turn and an open settlement. Payment SHALL transfer min(amount,balance) and clear rent. RentPaid SHALL record payerId, ownerId, assetId, amount, paid, shortfall and auto. BalanceChanged reason rent SHALL debit the payer (including zero) and credit the owner only for positive paid.
+PayRent SHALL require payload null, a turn target, the turn owner, an unexpired turn and an open settlement. Payment SHALL transfer min(amount,balance) and clear rent. RentPaid SHALL record payerId, ownerId, assetId, amount, paid, shortfall and auto. BalanceChanged reason rent SHALL debit the payer and credit the owner only for positive paid.
 
 #### Scenario: Interim shortfall
 - **WHEN** an explicit rent payment exceeds the payer balance

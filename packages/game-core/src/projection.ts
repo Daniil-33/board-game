@@ -1,3 +1,5 @@
+import { rentQuotes, type RentQuote, type RentEvent } from './rent.js';
+import type { HouseEvent } from './houses.js';
 import type { PlayerId } from './types.js';
 import type { GameState } from './state.js';
 import type { GameEvent } from './engine.js';
@@ -22,7 +24,7 @@ export type Visibility = 'public' | 'secret';
  * makes adding a state field without classifying it a compile error.
  */
 export const STATE_VISIBILITY = {
-  owners: 'public', purchase: 'public', auction: 'public',
+  houses: 'public', rent: 'public', owners: 'public', purchase: 'public', auction: 'public',
   board: 'public', economy: 'public', balances: 'public',
   revision: 'public',
   rulesVersion: 'public',
@@ -43,7 +45,7 @@ type PublicStateKey = {
 }[keyof GameState];
 
 /** What a client may see of the game state. */
-export type StateView = { readonly [K in PublicStateKey]: GameState[K] };
+export type StateView = { readonly [K in PublicStateKey]: GameState[K] } & { readonly rentQuotes: Readonly<Record<string, RentQuote>> };
 
 const PUBLIC_STATE_KEYS = (Object.keys(STATE_VISIBILITY) as (keyof GameState)[]).filter(
   (k) => STATE_VISIBILITY[k] === 'public',
@@ -73,7 +75,7 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
   for (const key of PUBLIC_STATE_KEYS) {
     view[key] = copy(state[key]);
   }
-  return view as StateView;
+  return { ...view, rentQuotes: rentQuotes(state) } as StateView;
 }
 
 // ---- Events -----------------------------------------------------------------
@@ -84,6 +86,7 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
  * type missing at runtime fails closed in `projectEvents`.
  */
 export const EVENT_VISIBILITY = {
+  RentDue: 'public', RentPaid: 'public', HouseBuilt: 'public', HouseSold: 'public',
   PurchaseOffered: 'public', AssetPurchased: 'public', AuctionStarted: 'public',
   AuctionBid: 'public', AuctionPassed: 'public', AuctionWon: 'public', AuctionEndedUnsold: 'public',
   TurnPaused: 'public', TurnResumed: 'public',
@@ -109,7 +112,7 @@ export const EVENT_VISIBILITY = {
 } as const satisfies Record<CoreEvent['type'], Visibility>;
 
 /** Every event type this rules version emits. */
-export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent;
+export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | HouseEvent;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

@@ -31,7 +31,7 @@ describe('starting economy', () => {
   });
   it('uses membership after a lobby departure and leaves rejected starts untouched', () => {
     const g = new Game();
-    g.ok(cmd('CreateGame', { seed: 1, rulesVersion: 'core-5' }));
+    g.ok(cmd('CreateGame', { seed: 1, rulesVersion: 'core-6' }));
     for (const id of ['a', 'b', 'c'])
       g.ok(cmd('AddPlayer', { playerId: id }, { rev: g.state.revision }));
     g.ok(cmd('LeaveLobby', { playerId: 'c' }, { rev: g.state.revision }));

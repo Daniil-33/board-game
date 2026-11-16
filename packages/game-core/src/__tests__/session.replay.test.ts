@@ -5,7 +5,7 @@ import { cmd, ctx } from './helpers/fixtures.js';
 
 function playedSession() {
   const s = createSession(gameEngine);
-  s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-5' }, { id: 'c1', rev: 0 }), ctx(1000));
+  s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-6' }, { id: 'c1', rev: 0 }), ctx(1000));
   s.submit(cmd('AddPlayer', { playerId: 'a' }, { id: 'c2', rev: 1 }), ctx(2000));
   s.submit(cmd('AddPlayer', { playerId: 'a' }, { id: 'c2b', rev: 2 }), ctx(2500)); // DUPLICATE_PLAYER, not logged
   s.submit(cmd('AddPlayer', { playerId: 'b' }, { id: 'c3', rev: 2 }), ctx(3000));
