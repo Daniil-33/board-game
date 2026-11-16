@@ -48,7 +48,7 @@ it('boot persists an overdue response pass without advancing time, then arms the
   const response = before.auction!;
   const now = response.responseDeadline + 1;
   // Keep the first manager alive to avoid a shutdown snapshot; its fake clock never advances.
-  const second = h.manager({ now });
+  const second = h.manager({ now, seed: 2 });
   expect(await second.manager.restoreAll()).toEqual({ restored: [id], failed: [] });
   const restored = second.manager.get(id)!;
   await whenIdle(restored);
