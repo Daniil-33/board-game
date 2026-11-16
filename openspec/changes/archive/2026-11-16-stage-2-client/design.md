@@ -22,9 +22,9 @@ Non-goals: change network/view contracts, implement asset actions, calculate mon
 
 - Narrow cells and long catalog names → bounded text wrapping/truncation plus actual browser screenshot review at the standard canvas size; full names remain available in asset cards.
 - Board selection listener lifetime → test mounting/unmounting and clear callback on teardown.
-- Server protocol bump runs in parallel → do not edit packages/protocol; rebase onto server work when available and verify matching protocol on the final PR head.
+- Server protocol bump runs in parallel → do not edit packages/protocol. Production and fixtures follow PROTOCOL_VERSION. Per the Team Lead client-first decision (2026-11-16), this PR merges first; TASK-s2-server rebases onto main after it and runs the client tests against v2. This supersedes the earlier server-first Apply dependency gate.
 - Mock differs from authoritative engine → use core-generated data and focused fixture assertions; end-to-end authoritative scenarios remain TASK-s2-e2e.
 
 ## Migration Plan
 
-No persisted-data migration. Rebase onto current main before PR, run all required checks, and submit only client and OpenSpec changes. Rollback is reverting the client PR. Archive the delta in the PR after independent review passes, as the task requires.
+No persisted-data migration. Reconcile current main before the final PR head (rebase only if it moved from b92ebb7), run all required checks, and submit only client and OpenSpec changes. Rollback is reverting the client PR. Archive the delta in the PR after independent review passes, as the task requires.

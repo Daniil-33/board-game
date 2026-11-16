@@ -19,7 +19,7 @@
 ## 4. Integration verification
 
 - [x] 4.1 Run pnpm build, pnpm test, client vite build, openspec validate --all --strict and git diff --check; compare final diff against all seven handoff criteria and record exact results.
-- [ ] 4.2 Reconcile current main and the server protocol version dependency before PR; verify final branch scope is apps/client plus OpenSpec, rerun affected checks after rebase and record screenshot evidence in the task report.
+- [x] 4.2 Reconcile with current main (fetched b92ebb7; no rebase needed). Per the superseding Team Lead client-first decision, fixtures follow PROTOCOL_VERSION for v1/v2 and TASK-s2-server rebases onto main after PR #27 and runs these tests against v2. Verify final scope is apps/client plus OpenSpec; record screenshot evidence in the task report.
 
 ## Workflow follow-up
 
