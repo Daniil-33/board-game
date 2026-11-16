@@ -1,3 +1,4 @@
+import { leaderAfterResignation } from './auction-leader.js';
 import { CATALOG } from './catalog.js';
 import { cellPrice } from './board/prices.js';
 import { isWellFormedRng } from './rng.js';
@@ -191,7 +192,10 @@ function checkAcquisition(state: GameState): void {
     if (new Set(a.passed).size !== a.passed.length || a.passed.some(p => !a.order.includes(p))) bad('Invalid passes');
     if (!state.order!.includes(a.responder) || a.passed.includes(a.responder) || a.responder === a.leader) bad('Ineligible responder');
     if ((a.leader === null) !== (a.leadingBid === null)) bad('Leader/bid mismatch');
-    if (a.leader !== null && (!state.order!.includes(a.leader) || a.passed.includes(a.leader) || !validMoney(a.leadingBid!) || a.leadingBid! < a.startBid || (a.leadingBid! - a.startBid) % a.step !== 0 || a.leadingBid! > state.balances[a.leader]!)) bad('Invalid leader bid');
+    if (a.leader !== null && (!state.order!.includes(a.leader) || !validMoney(a.leadingBid!) || a.leadingBid! < a.startBid || (a.leadingBid! - a.startBid) % a.step !== 0 || a.leadingBid! > state.balances[a.leader]!)) bad('Invalid leader bid');
+    if (!Array.isArray(a.bids) || a.bids.some(b => !a.order.includes(b.playerId) || !validMoney(b.amount) || b.amount < a.startBid || (b.amount - a.startBid) % a.step !== 0)) bad('Invalid bid history');
+    const restored = leaderAfterResignation(a, state);
+    if (restored.leader !== a.leader || restored.leadingBid !== a.leadingBid) bad('Leader must equal latest surviving bid');
     if (!a.auctionId || !a.responseId || !Number.isSafeInteger(a.responseDeadline) || a.responseDeadline < 0) bad('Invalid response target');
   }
 }

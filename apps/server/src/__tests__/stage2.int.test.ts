@@ -1,14 +1,21 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { createSession, gameEngine, projectState, type GameEvent, type StateView } from '@game/game-core';
+import { createSession, gameEngine, projectState, type GameEvent, type StateView, type GameState } from '@game/game-core';
 import { logEntries, seedRoom } from './helpers/db.js';
 import { useHarness } from './helpers/harness.js';
-import { lobby, nextMove, startGame, step } from './helpers/game.js';
+import { lobby, nextMove, startGame, step, byPlayer, timeoutFor, whenIdle } from './helpers/game.js';
 import { connect, expectStatus, http, login, startServer, stopServers, type TestGuest, type TestServer } from './helpers/server.js';
 import { seededEntropy } from './helpers/seeded-entropy.js';
 
 const h = useHarness({ perTest: true });
 afterEach(stopServers);
 const money = (v: StateView) => ({ board: v.board, economy: v.economy, balances: v.balances });
+
+/** Only old protocol commands on sockets; pending auctions use system timers. */
+function networkMove(state: GameState) {
+  if (state.auction) return timeoutFor({ kind: 'auctionResponse', id: state.auction.responseId });
+  if (state.purchase) return byPlayer('EndTurn', state.turn!.playerId, { kind: 'turn', id: state.turn!.turnId });
+  return nextMove(state);
+}
 
 async function create(s: TestServer, guests: TestGuest[]) {
   const { room } = expectStatus(await http(s, 'POST', '/api/rooms', { token: guests[0]!.token }), 201);
@@ -55,7 +62,11 @@ describe('stage 2 network state', () => {
     }
     let count = 0;
     for (; count < 200; count++) {
-      const result = session.submit(nextMove(session.state), { now: server.clock.now(), entropy: entropy.next() });
+      const command = networkMove(session.state);
+      // Room timers draw command-id entropy before the transition's entropy.
+      if (session.state.auction) entropy.next();
+      const now = session.state.auction?.responseDeadline ?? session.log.at(-1)!.now;
+      const result = session.submit(command, { now, entropy: entropy.next() });
       expect(result.kind).toBe('accepted');
       if (reward(result.events)) break;
     }
@@ -64,13 +75,20 @@ describe('stage 2 network state', () => {
     let last = clients[0]!.welcome.view;
     let crossing: GameEvent | undefined;
     for (let i = 0; i <= count; i++) {
-      const command = nextMove(room.state);
-      if (command.actor.kind !== 'player') throw new Error('expected player command');
-      const actorId = command.actor.id;
-      const index = guests.findIndex(g => g.guestId === actorId);
-      clients[index]!.socket.send({ t: 'Command', commandId: `cross-${i}`, type: command.type, expected: command.expected, payload: null });
+      const command = networkMove(room.state);
+      let actorIndex: number | undefined;
+      if (room.state.auction) {
+        server.clock.advance(room.state.auction.responseDeadline - server.clock.now());
+        await whenIdle(room);
+      } else {
+        if (command.actor.kind !== 'player') throw new Error('expected player command');
+        const actorId = command.actor.id;
+        const index = guests.findIndex(g => g.guestId === actorId);
+        actorIndex = index;
+        clients[index]!.socket.send({ t: 'Command', commandId: `cross-${i}`, type: command.type, expected: command.expected, payload: null });
+      }
       const updates = await Promise.all(clients.map(c => c.socket.nextOf('Update')));
-      expect(await clients[index]!.socket.nextOf('Ack')).toMatchObject({ outcome: 'accepted' });
+      if (actorIndex !== undefined) expect(await clients[actorIndex]!.socket.nextOf('Ack')).toMatchObject({ outcome: 'accepted' });
       const persisted = (await logEntries(h.db, id)).at(-1)!;
       for (const u of updates) {
         expect(u.events).toEqual(persisted.events);

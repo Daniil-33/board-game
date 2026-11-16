@@ -1,3 +1,4 @@
+import { leaderAfterResignation } from '../auction-leader.js';
 import { describe, it, expect } from 'vitest';
 import { gameEngine, nextBidAmount, checkInvariants, projectState, projectEvents, replay, restoreSession, pendingDeadlines, timestamp, type GameState, type Money, type GameCommand } from '../index.js';
 import { playingGame, types, type Game } from './helpers/game.js';
@@ -197,18 +198,65 @@ describe('isolated provisional E1 policy',()=>{
     const g=offered();const events=resign(g,'a');expect(g.state.purchase).toBeNull();expect(g.state.auction).toBeNull();expect(g.state.turn!.playerId).toBe('b');expect(types(events)).toEqual(['PlayerResigned','TurnEnded','TurnStarted']);
   });
   it('non-responder passes without changing response target or deadline',()=>{
-    const g=auction(['a','b','c','d']);const a=g.state.auction!;resign(g,'c');expect(g.state.auction).toEqual({...a,passed:['c']});
+    const g=auction(['a','b','c','d']);const a=g.state.auction!;const events=resign(g,'c');expect(g.state.auction).toEqual({...a,passed:['c']});expect(types(events)).toEqual(['PlayerResigned']);
   });
   it('responder departure advances; eliminated owner closes only at resolution',()=>{
     const g=auction(['a','b','c','d']);resign(g,'a');expect(g.state.turn).toMatchObject({playerId:'a',pendingBonus:false});expect(g.state.auction!.responder).toBe('b');
     resign(g,'b');expect(g.state.auction!.responder).toBe('c');const events=allPass(g);
     expect(events.at(-2)!.payload).toMatchObject({reason:'resigned',playerId:'a'});expect(g.state.turn).toMatchObject({playerId:'c',bonus:false});
   });
-  it.each([true,false])('leader departure voids without debit; leader is owner=%s',owner=>{
+  it.each([true,false])('leader with no surviving earlier bid departs; owner=%s',owner=>{
     const g=auction(['a','b','c','d']); if(!owner)g.ok(response(g));g.ok(response(g,'Bid'));
-    const leader=g.state.auction!.leader!;const balances=g.state.balances;const events=resign(g,leader);
-    expect(g.state.auction).toBeNull();expect(g.state.owners).toEqual({});expect(g.state.balances).toEqual(balances);expect(types(events)).toContain('AuctionEndedUnsold');
-    expect(g.state.turn!.playerId).toBe(owner?'b':'a');
+    const leader=g.state.auction!.leader!;const balances=g.state.balances;const bid=g.state.auction!.startBid;
+    resign(g,leader);
+    expect(g.state.auction).toMatchObject({leader:null,leadingBid:null});
+    expect(nextBidAmount(g.state.auction!)).toBe(bid);
+    expect(g.state.owners).toEqual({});expect(g.state.balances).toEqual(balances);
+    allPass(g);expect(g.state.turn!.playerId).toBe(owner?'b':'a');
+  });
+  it('restores the latest active bid, keeps the current slot and charges only the restored winner',()=>{
+    const g=auction(['a','b','c','d']);const balances=g.state.balances;
+    g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));
+    const before=g.state.auction!;
+    resign(g,'c');
+    expect(g.state.auction).toMatchObject({leader:'b',leadingBid:before.startBid+before.step,responder:'d',responseId:before.responseId,responseDeadline:before.responseDeadline});
+    expect(g.state.auction!.bids.map(b=>b.playerId)).toEqual(['a','b','c']);
+    allPass(g);expect(g.state.owners[before.assetId]).toBe('b');
+    expect(g.state.balances.b).toBe(balances.b!-before.startBid-before.step);
+    expect(g.state.balances.c).toBe(balances.c);
+  });
+  it('skips eliminated historical bidders and raises from the restored amount',()=>{
+    const g=auction(['a','b','c','d']);
+    g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));
+    const initial=g.state.auction!;resign(g,'b');resign(g,'c');
+    expect(g.state.auction).toMatchObject({leader:'a',leadingBid:initial.startBid,responder:'d'});
+    expect(nextBidAmount(g.state.auction!)).toBe(initial.startBid+initial.step);
+    g.ok(response(g,'Bid'));expect(g.state.auction!.bids.at(-1)).toEqual({playerId:'d',amount:initial.startBid+initial.step});
+    allPass(g);expect(g.state.owners[initial.assetId]).toBe('d');
+  });
+  it('restored leader skips its current response slot and departed historical bidders',()=>{
+    const g=auction(['a','b','c','d']);
+    g.ok(response(g,'Bid'));g.ok(response(g,'Bid')); // c responds; b leads
+    resign(g,'a');g.ok(response(g,'Bid')); // c leads; d responds
+    g.ok(response(g)); // b is the current responder
+    const before=g.state.auction!;resign(g,'c');
+    expect(g.state.auction).toBeNull(); // b restored; a/c eliminated and d passed
+    expect(g.state.owners[before.assetId]).toBe('b');
+    expect(g.state.turn).toMatchObject({playerId:'b',bonus:false});
+  });
+  it('b1 default restores a passed bidder who stays passed and can win; alternate reading excludes them',()=>{
+    const g=auction(['a','b','c','d']);g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));
+    const auctionState={...g.state.auction!,passed:[pid('a')]};
+    // Pin both readings directly so the pending owner decision changes one predicate.
+    const afterElimination={...g.state,eliminated:[pid('b')]};
+    expect(leaderAfterResignation(auctionState,afterElimination)).toEqual({leader:'a',leadingBid:auctionState.startBid});
+    expect(leaderAfterResignation(auctionState,afterElimination,false)).toEqual({leader:null,leadingBid:null});
+    const restored=restoreSession(gameEngine,{...g.state,auction:auctionState},[]);
+    const r=restored.submit(cmd('Resign',null,{actor:player('b'),rev:restored.state.revision}),ctx(g.now));
+    expect(r.kind).toBe('accepted');
+    expect(restored.state.auction).toMatchObject({leader:'a',passed:['a','b'],responder:'c'});
+    while(restored.state.auction){const a=restored.state.auction;expect(restored.submit(cmd('PassAuction',null,{actor:player(a.responder),target:{kind:'auctionResponse',id:a.responseId}}),ctx(g.now)).kind).toBe('accepted');}
+    expect(restored.state.owners[auctionState.assetId]).toBe('a');
   });
   it('resigning the last opponent resolves a standing bid',()=>{
     const g=auction();g.ok(response(g,'Bid'));g.ok(response(g));const a=g.state.auction!;resign(g,'c');expect(g.state.owners[a.assetId]).toBe('a');expect(g.state.auction).toBeNull();
@@ -233,6 +281,19 @@ describe('invariants, projection and replay',()=>{
       const view=projectState(g.state,viewer);expect(view).not.toHaveProperty('rng');expect(view.auction).toEqual(g.state.auction);expect(view.auction).not.toBe(g.state.auction);expect(view.auction!.order).not.toBe(g.state.auction!.order);expect(view.owners).not.toBe(g.state.owners);
       expect(projectEvents(g.session.log.flatMap(e=>e.events),viewer)).toEqual(g.session.log.flatMap(e=>e.events));
     }
+  });
+  it('replays bid fallback and restores both the history and response deadline',()=>{
+    const g=auction(['a','b','c','d']);
+    g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));g.ok(response(g,'Bid'));
+    const snapshot=JSON.parse(JSON.stringify(g.state)) as GameState;
+    const revision=g.state.revision;resign(g,'c');
+    const restored=restoreSession(gameEngine,snapshot,g.session.log.slice(revision));
+    expect(restored.state).toEqual(g.state);expect(pendingDeadlines(restored.state)).toEqual(pendingDeadlines(g.state));
+    expect(g.state.auction!.leader).toBe('b');expect(g.state.auction!.bids).toHaveLength(3);
+    expect(()=>checkInvariants({...g.state,auction:{...g.state.auction!,leadingBid:g.state.auction!.startBid}})).toThrow();
+    expect(()=>checkInvariants({...g.state,auction:{...g.state.auction!,bids:[]}})).toThrow();
+    allPass(g);expect(replay(gameEngine,g.session.log).state).toEqual(g.state);
+    expect(restoreSession(gameEngine,snapshot,g.session.log.slice(revision)).state).toEqual(g.state);
   });
   it('JSON snapshots at decision, bid and deferred resignation restore exact tail and deadlines',()=>{
     const g=offered(['a','b','c','d']);const snapshots=[JSON.parse(JSON.stringify(g.state)) as GameState];

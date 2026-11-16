@@ -14,7 +14,7 @@
 
 ## 3. Resignation, invariants and public view
 
-- [x] 3.1 Implement provisional resignDuringPurchase policy and deferred resigned resolution (engine/resignation: modified requirements and Provisional auction resignation policy). Verify cases (a)-(d), leader-owner void, non-responder departure preserving response deadline, successor also departing, bonus cancellation, immediate victory and no remaining deadlines.
+- [x] 3.1 Implement revision-3 bid history, leaderAfterResignation with both b1 predicate tests, provisional resignDuringPurchase policy and deferred resigned resolution (engine/resignation: modified requirements and Provisional auction resignation policy). Verify cases (a)-(d), leader-owner restoration, non-responder departure preserving response deadline, successor also departing, bonus cancellation, immediate victory and no remaining deadlines.
 - [x] 3.2 Extend acquisition and phase invariants (engine/purchase-auction: Ownership invariants; engine/resignation: Permanent elimination). Verify invalid owners, mutual exclusion, position mismatch, ineligible responder, unaffordable leader and pause mismatch are rejected; only the approved eliminated-owner-with-paused-auction exception is accepted.
 - [x] 3.3 Classify/export new public state and events (engine/projection: State projection hides secrets, Event projection fails closed, Public acquisition data is detached). Verify all viewer classes, detached JSON data, no RNG leaks and complete event visibility with typecheck and projection tests.
 
@@ -25,8 +25,8 @@
 
 ## Workflow follow-up
 
-- Team Lead approves this proposal; Apply starts in a fresh Engineer context with acknowledged task revision 2 and these artifacts.
+- Team Lead approves this proposal; Apply starts in a fresh Engineer context with acknowledged task revision 2 and these artifacts; revision 3 subsequently updates bid history and E1(b).
 - Commit on agent/task-s3-core; use agentctl intent/perform/verify/confirm records for push and PR, and never push to main.
 - Open PR and request independent review through the prescribed reviewer handoff; collect both CI jobs on the exact head and address findings.
 - After review passes, archive this OpenSpec change in the PR, rerun checks and refresh exact-head review/CI evidence as needed.
-- E1 must be recorded in an effort handoff revision or ROADMAP before merge; report any policy adjustment and await Team Lead technical acceptance. Engineer does not merge.
+- E1 b1/c must be recorded in ROADMAP before merge; report any policy adjustment and await Team Lead technical acceptance. Engineer does not merge.

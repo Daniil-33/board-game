@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { TURN_DURATION_MS, type GameState } from '@game/game-core';
 import type { UpdateFrame } from '@game/protocol';
 import { roomStatus, snapshotRevisions } from './helpers/db.js';
-import { nextMove } from './helpers/game.js';
+import { nextMove, byPlayer, whenIdle } from './helpers/game.js';
 import { useHarness } from './helpers/harness.js';
 import {
   connect,
@@ -43,7 +43,19 @@ const stateOf = (s: TestServer, roomId: string): GameState => s.manager.get(room
 
 /** The player to move sends the next move over their socket; resolves with its Ack. */
 async function move(s: TestServer, roomId: string, players: Player[]) {
-  const command = nextMove(stateOf(s, roomId));
+  const room = s.manager.get(roomId)!;
+  const state = room.state;
+  if (state.auction) {
+    const before = state.revision;
+    s.clock.advance(state.auction.responseDeadline - s.clock.now());
+    await whenIdle(room);
+    expect(room.state.revision).toBe(before + 1);
+    await everyoneAt(players, room.state.revision);
+    return;
+  }
+  const command = state.purchase
+    ? byPlayer('EndTurn', state.turn!.playerId, { kind: 'turn', id: state.turn!.turnId })
+    : nextMove(state);
   const mover = players.find((p) => command.actor.kind === 'player' && p.guest.guestId === command.actor.id)!;
   const commandId = `m-${++seq}`;
   mover.socket.send({ t: 'Command', commandId, type: command.type, expected: command.expected, payload: null });

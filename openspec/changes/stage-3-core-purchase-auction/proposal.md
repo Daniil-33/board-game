@@ -11,7 +11,7 @@ Stage 2 movement and balances do not let players acquire assets. Stage 3 needs a
 - Add null-payload `BuyAsset`, `StartAuction`, `Bid`, `PassAuction`; compute fixed raises with `nextBidAmount` per D1 and reject unaffordable actions atomically.
 - Run cyclic auctions with fresh `auctionResponse` targets, 10 s response deadlines, irreversible passes and derived leader reservation.
 - Pause/resume turn time and defer end-turn/timeout closure until auction settlement; preserve existing bonus rules.
-- Localize provisional E1 resignation behavior in `resignDuringPurchase` and resolution, including the Team Lead-approved temporary eliminated paused-turn owner exception.
+- Localize provisional E1 resignation behavior in `resignDuringPurchase` and resolution, with revision-3 bid history and previous-active-bid restoration, including the Team Lead-approved temporary eliminated paused-turn owner exception.
 
 ## Capabilities
 
@@ -32,4 +32,4 @@ Stage 2 movement and balances do not let players acquire assets. Stage 3 needs a
 
 Implementation is confined to game-core, its tests and engine OpenSpec deltas. Mechanical external fixture updates are allowed only for changed-type build failures and must be reported. No new dependencies. Protocol bump, migrations, UI, rent, construction, mortgage, debt, bankruptcy, trades, casino, chance and final jail rules are out of scope.
 
-Sources: ROADMAP.md stage 3; GAME-BREAKDOWN.md sections «Покупка и аукцион», «Начальная настройка и деньги»; effort revision 2; TASK-s3-core revision 2 and TL design at PR #33 head `3605b2a`; Team Lead response approving E1 representation. E1 remains a CTO decision and merge gate, not a proposal gate. Approval and a fresh Apply context are required before product code changes.
+Sources: ROADMAP.md stage 3; GAME-BREAKDOWN.md sections «Покупка и аукцион», «Начальная настройка и деньги»; effort revision 2; TASK-s3-core revision 3 and TL design at PR #33 revision-3 head `b8d2e61`; Team Lead response approving E1 representation. E1 b1/c remain pending and gated on ROADMAP before merge. Approval and a fresh Apply context are required before product code changes.

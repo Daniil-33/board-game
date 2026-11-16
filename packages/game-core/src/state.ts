@@ -81,6 +81,7 @@ export interface AuctionState {
   readonly passed: readonly PlayerId[];
   readonly leader: PlayerId | null;
   readonly leadingBid: Money | null;
+  readonly bids: readonly { readonly playerId: PlayerId; readonly amount: Money }[];
   readonly responder: PlayerId;
   readonly responseId: string;
   readonly responseDeadline: Timestamp;

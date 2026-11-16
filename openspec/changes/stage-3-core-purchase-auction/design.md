@@ -40,9 +40,9 @@ Keep Timeout's target guard derived from pendingDeadlines: a stale paused-turn T
 
 ### Provisional E1 and invariant exception
 
-`resignDuringPurchase` handles decision cancellation, non-leader pass, leader void and deferred owner departure. Existing resignation records elimination and removes order/position/jail; a game-ending resignation clears purchase/auction immediately before further auction work.
+`resignDuringPurchase` handles decision cancellation, non-leader pass, previous-bid restoration and deferred owner departure. Existing resignation records elimination and removes order/position/jail; a game-ending resignation clears purchase/auction immediately before further auction work.
 
-For continuing owner resignation, retain the paused turn temporarily with its eliminated playerId. Permit that exception only when auction is present and pausedRemainingMs non-null; order and positions still contain survivors only. Detect deferred resignation from eliminated.includes(turn.playerId), not a new flag. At resolve or void, scan retained auction.order after that owner for the first player still in state.order; call closeTurn with reason resigned and that nextPlayer, overriding origin and bonus. This also handles multiple departures and snapshot restoration. If the owner is leader, void and close immediately. CTO approval remains necessary before merge; future E1 changes stay localized in this helper, resolution and their tests.
+For continuing owner resignation, retain the paused turn temporarily with its eliminated playerId. Permit that exception only when auction is present and pausedRemainingMs non-null; order and positions still contain survivors only. Detect deferred resignation from eliminated.includes(turn.playerId), not a new flag. At resolve, scan retained auction.order after that owner for the first player still in state.order; call closeTurn with reason resigned and that nextPlayer, overriding origin and bonus. This also handles multiple departures and snapshot restoration. If the owner is leader, restore leadership from bid history and defer closure until auction settlement. E1 b1/c must be recorded in ROADMAP before merge; future E1 changes stay localized in this helper, resolution and their tests.
 
 ### Projection and invariants
 
@@ -61,7 +61,7 @@ Core supports only core-5. Server migration and protocol version 3 belong to the
 
 ## Acceptance evidence plan
 
-Task criteria 1–3: landing classes, lap reward ordering, owned assets, affordable/unaffordable buy, voluntary/EndTurn/timeout auction origins. Criteria 4–7 and 9: null payload, exact raises, all prices and 2..6 players, cyclic order, leader skipping, all-pass, single-winner, insufficient balance, deadline boundaries, wrong actor/target/phase, stale and duplicate response, AFK. Criterion 8: pause arithmetic, rejected conflicting commands and Timeout, continuation, bonus closure. Criteria 10–11: detached public projections and all E1 cases including immediate victory, leader-owner void, later successor departure. Criteria 12–14: focused tests, golden/property coverage with nonzero acquisition statistics, replay and mid-auction snapshot-tail equality. Run pnpm build, pnpm test, openspec validate --all --strict and git diff --check; require both CI jobs and independent review on the exact PR head before technical acceptance.
+Task criteria 1–3: landing classes, lap reward ordering, owned assets, affordable/unaffordable buy, voluntary/EndTurn/timeout auction origins. Criteria 4–7 and 9: null payload, exact raises, all prices and 2..6 players, cyclic order, leader skipping, all-pass, single-winner, insufficient balance, deadline boundaries, wrong actor/target/phase, stale and duplicate response, AFK. Criterion 8: pause arithmetic, rejected conflicting commands and Timeout, continuation, bonus closure. Criteria 10–11: detached public projections and all E1 cases including immediate victory, leader-owner restoration, later successor departure. Criteria 12–14: focused tests, golden/property coverage with nonzero acquisition statistics, replay and mid-auction snapshot-tail equality. Run pnpm build, pnpm test, openspec validate --all --strict and git diff --check; require both CI jobs and independent review on the exact PR head before technical acceptance.
 
 ### Approved compatibility scope during Apply
 
@@ -74,3 +74,28 @@ All movement, jail, AFK, recovery and victory assertions retain their meaning.
 The shared seed is re-pinned from 4491 to 6689: four setup rolls followed by
 [1,1], [4,4], [6,6] preserve the three-double jail scenario without an intervening
 purchase. Client mock/test fixture fields are mechanical type compatibility only.
+
+### Revision 3: bid history and E1(b)
+
+TASK-s3-core revision 3 supersedes the proposal's original provisional leader-void
+policy. AuctionState gains bids, an append-only list of every accepted bid.
+leaderAfterResignation scans it backwards, selecting the last non-eliminated
+bidder. Its single eligibility predicate provisionally allows passed bidders to
+lead again and win while remaining passed; tests pin both b1 readings. A leader
+resignation never debits the departing participant and preserves the current
+response slot unless it now belongs to the restored leader or settlement is due.
+Without a surviving earlier bid the auction continues from startBid. The leader
+and amount must agree with the surviving bid history invariant. E1(a)/(d) are
+accepted; b1 and c remain gated on ROADMAP.
+
+Resignation passes emit PlayerResigned and update public passed state, without
+an AuctionPassed event. AuctionPassed describes explicit PassAuction or response
+Timeout only; consumers must use the projected state for resignation departures.
+
+The Team Lead additionally approved integration-test-only compatibility in the
+shared core/room nextMove driver, timer fixtures, socket test drivers and minimal
+snapshot boundary fixtures. Direct core/room drivers use StartAuction/PassAuction;
+socket flows use old protocol commands plus fake-clock system timeouts, preserving
+all persistence/recovery/dedup/timer/money assertions. No protocol or server feature
+code changes. The plain recovery fixture uses a core-5 seed preserving its turn
+boundary; a separate timer test asserts paused-turn response timers explicitly.

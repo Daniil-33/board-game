@@ -12,7 +12,7 @@ Acceptance SHALL retain the participant in `players`, append their id once to pu
 - **THEN** it SHALL reject with PLAYER_ELIMINATED and no state or RNG changes
 
 ### Requirement: Resignation closes an owned turn
-In playing, resigning on one's own turn SHALL drop any purchase decision and close it with `TurnEnded` reason `resigned`, cancel all bonus entitlement, and run mandatory settlement. During a running auction this closure SHALL be deferred until resolution or voiding; the paused turn SHALL retain the eliminated owner, with no bonus entitlement. Unless the game ends, the next surviving player in the previous cyclic order SHALL start a regular turn with fresh quotas, a fresh target and deadline `now + 45000`.
+In playing, resigning on one's own turn SHALL drop any purchase decision and close it with `TurnEnded` reason `resigned`, cancel all bonus entitlement, and run mandatory settlement. During a running auction this closure SHALL be deferred until resolution; the paused turn SHALL retain the eliminated owner, with no bonus entitlement. Unless the game ends, the next surviving player in the previous cyclic order SHALL start a regular turn with fresh quotas, a fresh target and deadline `now + 45000`.
 
 #### Scenario: Pending bonus canceled
 - **WHEN** the owner resigns after rolling a double while at least two other players remain
@@ -23,7 +23,7 @@ In playing, resigning on one's own turn SHALL drop any purchase decision and clo
 - **THEN** the turn SHALL close without a dice roll or bonus turn
 
 ### Requirement: Other player's turn survives
-In playing, resignation by a participant other than the turn owner SHALL remove the participant from the order without changing the current turn, its target, deadline, quotas or pending bonus, unless the game ends or auction departure requires advancing, resolving or voiding the auction. Auction completion SHALL apply its ordinary resume or close behavior unless the owner has resigned.
+In playing, resignation by a participant other than the turn owner SHALL remove the participant from the order without changing the current turn, its target, deadline, quotas or pending bonus, unless the game ends or auction departure requires advancing or resolving the auction. Auction completion SHALL apply its ordinary resume or close behavior unless the owner has resigned.
 
 #### Scenario: Remove the next participant
 - **WHEN** b resigns during a's turn in order [a, b, c]
@@ -47,7 +47,7 @@ After any accepted resignation leaving exactly one active player, the game SHALL
 ## ADDED Requirements
 
 ### Requirement: Provisional auction resignation policy
-Resigning non-leaders SHALL count as passed and no longer respond; a resigning leader SHALL void the auction without sale. A resigning decision holder SHALL drop the decision without auction. A resigning auction turn owner SHALL defer resigned closure while any auction remains. Auction completion SHALL choose the next surviving player in pre-resignation cyclic order and cancel bonus entitlement.
+Resigning non-leaders SHALL count as passed and no longer respond; a resigning leader SHALL restore the latest accepted bid whose bidder is still active by scanning the append-only bids backwards. A restored passed bidder SHALL remain passed and may win (provisional b1 default). With no surviving bid, leader and leadingBid SHALL be null and the next bid SHALL be startBid. The resigning leader SHALL pay nothing. Response order SHALL continue from the current slot, skipping the restored leader if necessary. A resigning decision holder SHALL drop the decision without auction. A resigning auction turn owner SHALL defer resigned closure while any auction remains. Auction completion SHALL choose the next surviving player in pre-resignation cyclic order and cancel bonus entitlement.
 
 #### Scenario: Non-leader responder resigns
 - **WHEN** the current responder resigns without ending the game
@@ -59,7 +59,7 @@ Resigning non-leaders SHALL count as passed and no longer respond; a resigning l
 
 #### Scenario: Leader resigns
 - **WHEN** the leader resigns without ending the game
-- **THEN** no payment SHALL occur and the asset SHALL remain free; the turn SHALL resume or close according to its origin or deferred resignation
+- **THEN** the resigning leader SHALL pay nothing, the latest surviving bid SHALL lead again, and the current response target SHALL survive unless its responder is now the leader or settlement is due
 
 #### Scenario: Decision holder resigns
 - **WHEN** the purchase decision holder resigns
@@ -76,3 +76,11 @@ Resigning non-leaders SHALL count as passed and no longer respond; a resigning l
 #### Scenario: Immediate victory overrides auction
 - **WHEN** a resignation during a decision or auction leaves one active player
 - **THEN** the game SHALL finish immediately, clear decision and auction, and leave no pending deadlines
+
+#### Scenario: Restored passed bidder
+- **WHEN** the selected earlier active bidder has already passed
+- **THEN** the b1 default SHALL allow that bid to lead and win without removing the bidder from passed or granting another response
+
+#### Scenario: No surviving earlier bid
+- **WHEN** every recorded bidder is eliminated
+- **THEN** the auction SHALL continue with no leader and the next bid SHALL be startBid

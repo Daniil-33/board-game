@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTINUATION_MS, SETUP_ROLL_DURATION_MS, TURN_DURATION_MS, pendingDeadlines, type CommandId } from '@game/game-core';
+import { AUCTION_RESPONSE_MS, CONTINUATION_MS, SETUP_ROLL_DURATION_MS, TURN_DURATION_MS, pendingDeadlines, type CommandId } from '@game/game-core';
 import { RETRY_FLOOR_MS } from '../rooms/room.js';
 import { logEntries, seedRoom } from './helpers/db.js';
 import { lobby, nextMove, playingGame, startGame, step, T0, timeoutFor, whenIdle } from './helpers/game.js';
@@ -16,7 +16,7 @@ describe('deadline timers', () => {
     const gameId = await seedRoom(h.db);
     const room = await manager.open(gameId);
     expect(clock.pending).toEqual([]);
-    await lobby(room);
+    await lobby(room, ['a', 'b'], 8); // Inert landing keeps this test about turn timer replacement.
     expect(clock.pending).toEqual([]);
 
     await startGame(room);
@@ -75,7 +75,7 @@ describe('deadline timers', () => {
     const { manager, clock } = h.manager();
     const gameId = await seedRoom(h.db);
     const room = await manager.open(gameId);
-    await playingGame(room);
+    await playingGame(room, ['a', 'b'], 8); // Both turn timeouts stay free of acquisition.
     const turn = room.state.turn!;
     expect(turn.rolled).toBe(false);
 
@@ -95,6 +95,45 @@ describe('deadline timers', () => {
     ]);
     expect(log[0]!.command.commandId).not.toBe(log[1]!.command.commandId);
     expect(log.map((e) => e.now)).toEqual([T0 + TURN_DURATION_MS, T0 + TURN_DURATION_MS + CONTINUATION_MS]);
+  });
+
+  it('replaces the paused turn timer with response timers and closes only after automatic passes', async () => {
+    const { manager, clock } = h.manager();
+    const gameId = await seedRoom(h.db);
+    const room = await manager.open(gameId);
+    await playingGame(room); // seed42: automatic roll lands on a free asset
+    const turnId = room.state.turn!.turnId;
+    clock.advance(TURN_DURATION_MS);
+    await whenIdle(room);
+    expect(room.state.purchase).not.toBeNull();
+    clock.advance(CONTINUATION_MS);
+    await whenIdle(room);
+    const auction = room.state.auction!;
+    expect(auction).not.toBeNull();
+    expect(room.state.turn).toMatchObject({ turnId, pausedRemainingMs: 0 });
+    const responseIds: string[] = [];
+    while (room.state.auction) {
+      const response = room.state.auction;
+      responseIds.push(response.responseId);
+      expect(clock.pending).toEqual([clock.now() + AUCTION_RESPONSE_MS]);
+      expect(pendingDeadlines(room.state)[0]!.target.kind).toBe('auctionResponse');
+      const revision = room.state.revision;
+      clock.advance(AUCTION_RESPONSE_MS - 1);
+      await whenIdle(room);
+      expect(room.state.revision).toBe(revision);
+      clock.advance(1);
+      await whenIdle(room);
+      expect(room.state.revision).toBe(revision + 1);
+    }
+    expect(new Set(responseIds).size).toBe(room.state.players.length);
+    const log = await timeouts(gameId);
+    expect(log).toHaveLength(2 + responseIds.length);
+    expect(log.slice(2).map(e => e.command.expected)).toEqual(responseIds.map(id => ({ kind: 'target', target: { kind: 'auctionResponse', id } })));
+    expect(log.slice(2).flatMap(e => e.events).filter(e => e.type === 'AuctionPassed')).toHaveLength(responseIds.length);
+    for (const e of log.slice(2)) expect(e.events[0]).toMatchObject({ type: 'AuctionPassed', payload: { auto: true } });
+    expect(log.at(-1)!.events.map(e => e.type)).toEqual(['AuctionPassed','AuctionEndedUnsold','TurnEnded','TurnStarted']);
+    expect(room.state.turn!.turnId).not.toBe(turnId);
+    expect(clock.pending).toEqual([clock.now() + TURN_DURATION_MS]);
   });
 
   it('keeps a game moving with no player at all', async () => {

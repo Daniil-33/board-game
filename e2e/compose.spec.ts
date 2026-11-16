@@ -87,6 +87,7 @@ test('locked code and invite, participant leave and creator closes room', async 
 });
 
 test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ actors }) => {
+  test.setTimeout(playwrightConfig.timeout! + 2 * AUCTION_RESPONSE_MS);
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Separate fresh deterministic fixture');
   const players = await actors(2), host = players[0]!;
   const room = await createRoom(host); await join(players[1]!, room);

@@ -36,7 +36,7 @@ Opening an auction SHALL clear purchase, rotate active turn order to the landing
 - **THEN** every active player SHALL appear once in cyclic order and both amounts SHALL be positive integer quanta
 
 ### Requirement: Fixed raise and reservation
-Bid SHALL carry null payload and compute exactly startBid with no leader, otherwise leadingBid + step. A computed amount exceeding the responder's balance SHALL reject unchanged. An accepted bid SHALL replace the leader and leadingBid; that bid SHALL be the leader's derived reservation until outbid or settlement.
+Bid SHALL carry null payload and compute exactly startBid with no leader, otherwise leadingBid + step. A computed amount exceeding the responder's balance SHALL reject unchanged. An accepted bid SHALL append {playerId, amount} to auction.bids in order and replace the leader and leadingBid; that bid SHALL be the leader's derived reservation until outbid or settlement.
 
 #### Scenario: First and subsequent bids
 - **WHEN** successive responders bid
@@ -73,7 +73,7 @@ When no non-passed opponent remains, the leader SHALL pay leadingBid and own the
 - **THEN** session deduplication SHALL return its original result without another debit, and a fresh command against its expired target SHALL reject
 
 ### Requirement: Ownership invariants
-Owner keys SHALL name board asset ids and values SHALL name participants. Purchase SHALL exist only during playing for the active turn owner at their current free asset. Auction SHALL exist only during playing for a free asset with an active eligible responder and an affordable leader bid. Balances SHALL remain non-negative integer quanta.
+Owner keys SHALL name board asset ids and values SHALL name participants. Purchase SHALL exist only during playing for the active turn owner at their current free asset. Auction SHALL exist only during playing for a free asset with an active eligible responder and an affordable leader bid. Balances SHALL remain non-negative integer quanta. Bid history SHALL contain accepted positive quantum amounts and participant ids; leader and leadingBid SHALL equal the latest surviving bid selected by leaderAfterResignation.
 
 #### Scenario: Corrupt acquisition state
 - **WHEN** invariant checking encounters an unknown owner asset, conflicting decision and auction, ineligible responder or unaffordable leader

@@ -2,6 +2,7 @@ import type { AssetId, Money, PlayerId, Timestamp } from './types.js';
 import type { GameCommand, GameEvent } from './engine.js';
 import type { AuctionState, GameState, PurchaseDecision } from './state.js';
 import type { TransitionContext } from './context.js';
+import { leaderAfterResignation } from './auction-leader.js';
 import { debitBalance } from './money.js';
 import { after, AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, TURN_TARGET_KIND } from './deadlines.js';
 import { fail, ok, targetGuard, type CommandRegistry, type HandlerResult } from './registry.js';
@@ -47,7 +48,7 @@ export function openAuction(state: GameState, reason: AuctionState['reason'], no
     auctionId: `a${state.revision + 1}`, assetId: purchase.assetId, cell: purchase.cell, price,
     startBid: (10 * Math.floor(60 * price / 1000)) as Money,
     step: (10 * Math.floor(5 * price / 1000)) as Money,
-    reason, order, passed: [], leader: null, leadingBid: null,
+    reason, order, passed: [], leader: null, leadingBid: null, bids: [],
     responder: order[0]!, responseId: `ar${state.revision + 1}`, responseDeadline: after(now, AUCTION_RESPONSE_MS),
   };
   const pausedRemainingMs = Math.max(0, state.turn!.deadline - now);
@@ -79,11 +80,11 @@ function advance(state: GameState, now: Timestamp, finish: FinishAuction, preser
   throw new Error('Auction has no eligible responder');
 }
 
-function resolve(state: GameState, now: Timestamp, finish: FinishAuction, voided = false): AcquisitionStep {
+function resolve(state: GameState, now: Timestamp, finish: FinishAuction): AcquisitionStep {
   const a = state.auction!;
   let next = { ...state, auction: null };
   const events: GameEvent[] = [];
-  if (!voided && a.leader !== null) {
+  if (a.leader !== null) {
     const debit = debitBalance(state.balances, a.leader, a.leadingBid!, 'auction');
     next = { ...next, balances: debit.balances, owners: { ...state.owners, [a.assetId]: a.leader } };
     events.push(debit.event, { type: 'AuctionWon', payload: { auctionId: a.auctionId, playerId: a.leader, assetId: a.assetId, amount: a.leadingBid! } } satisfies AuctionWonEvent);
@@ -97,8 +98,9 @@ export function resignDuringPurchase(state: GameState, playerId: PlayerId, now: 
   let next = state.purchase?.playerId === playerId ? { ...state, purchase: null } : state;
   const a = next.auction;
   if (a === null) return { state: next, events: [] };
-  if (a.leader === playerId) return resolve(next, now, finish, true);
-  if (!a.passed.includes(playerId)) next = { ...next, auction: { ...a, passed: [...a.passed, playerId] } };
+  const passed = a.passed.includes(playerId) ? a.passed : [...a.passed, playerId];
+  const leadership = a.leader === playerId ? leaderAfterResignation(a, next) : { leader: a.leader, leadingBid: a.leadingBid };
+  next = { ...next, auction: { ...a, passed, ...leadership } };
   return advance(next, now, finish, true);
 }
 
@@ -139,7 +141,7 @@ export function purchaseAuctionCommands(finish: FinishAuction): CommandRegistry 
     if (!bid) { const step = pass(state, context.now, false, finish); return ok(step.state, step.events); }
     const amount = nextBidAmount(a);
     if (!Number.isSafeInteger(amount) || amount > state.balances[a.responder]!) return fail('INSUFFICIENT_FUNDS', 'Bid exceeds balance');
-    const step = advance({ ...state, auction: { ...a, leader: a.responder, leadingBid: amount } }, context.now, finish);
+    const step = advance({ ...state, auction: { ...a, leader: a.responder, leadingBid: amount, bids: [...a.bids, { playerId: a.responder, amount }] } }, context.now, finish);
     return ok(step.state, [{ type: 'AuctionBid', payload: { auctionId: a.auctionId, playerId: a.responder, amount } } satisfies AuctionBidEvent, ...step.events]);
   };
   return {
