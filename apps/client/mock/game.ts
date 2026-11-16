@@ -261,6 +261,7 @@ export class MockGame {
     const to = (from + steps) % CLASSIC_40.size;
     this.state.positions = { ...this.state.positions, [playerId]: to };
     const events: GameEvent[] = [{ type: 'PlayerMoved', payload: { playerId, from, to, steps } }];
+    // Mirrors core board.ts movePlayer: reaching/passing Start pays once, including jail release.
     if (from + steps >= CLASSIC_40.size) events.push(this.credit(playerId, this.state.economy!.lapReward, 'lap-reward'));
     return events;
   }

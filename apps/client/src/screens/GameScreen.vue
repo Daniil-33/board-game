@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { boardDisplayKey } from '../board/display';
 import { TOKEN_COLORS } from '../board/BoardCanvas';
 import { BOARD_MOUNT_KEY, useClient } from '../client';
 import PlayerPanel from '../components/PlayerPanel.vue';
@@ -18,7 +19,7 @@ const now = ref(client.now());
 
 const selectedIndex = ref<number | null>(null);
 const selectedCell = computed(() => client.game.view?.board?.cells.find(c => c.index === selectedIndex.value && c.asset !== null) ?? null);
-watch(() => client.game.view?.board, () => { selectedIndex.value = null; });
+watch(() => boardDisplayKey(client.game.view?.board), () => { selectedIndex.value = null; });
 let mountedBoard: Board | null = null;
 let ticker: ReturnType<typeof setInterval> | undefined;
 let destroyBoard: (() => void) | null = null;

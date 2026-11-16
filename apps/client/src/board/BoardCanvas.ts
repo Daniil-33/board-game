@@ -3,7 +3,7 @@
  * It draws what it is told (the server view, animation steps) and keeps no
  * game state of its own. Vue reactivity does not reach in here.
  */
-import { cellDisplay } from './display';
+import { boardDisplayKey, cellDisplay } from './display';
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { CLASSIC_40 } from '@game/game-core';
 import type { StateView } from '@game/game-core';
@@ -84,7 +84,7 @@ export class BoardScene {
   readonly cells = new Container();
   /** One child per player. */
   readonly tokens = new Container();
-  private boardData: BoardView['board'] = null;
+  private boardKey = '';
   private selectAsset: ((index: number) => void) | null = null;
   /** The marker of the jail cell's "in jail" box. */
   readonly jailMarker = new Graphics();
@@ -136,8 +136,9 @@ export class BoardScene {
   }
 
   private renderBoard(board: BoardView['board']): void {
-    if (this.boardData === board) return;
-    this.boardData = board;
+    const key = boardDisplayKey(board);
+    if (this.boardKey === key) return;
+    this.boardKey = key;
     for (const child of this.cells.removeChildren()) child.destroy({ children: true });
     for (const cell of board?.cells ?? []) {
       const r = cellRect(cell.index, this.size);

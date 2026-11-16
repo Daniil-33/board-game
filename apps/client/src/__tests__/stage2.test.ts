@@ -31,6 +31,11 @@ describe('stage 2 display', () => {
         box.emit('pointertap', {} as never); expect(select).toHaveBeenLastCalledWith(cell.index);
       } else { select.mockClear(); box.emit('pointertap', {} as never); expect(select).not.toHaveBeenCalled(); }
     }
+    const firstCell = scene.cells.children[1];
+    scene.snap({ ...playingView(['a', 'b']), board: JSON.parse(JSON.stringify(board)) }, 'a');
+    expect(scene.cells.children[1]).toBe(firstCell);
+    scene.snap({ ...playingView(['a', 'b']), board: generateBoard(seedRng(43)).board }, 'a');
+    expect(scene.cells.children[1]).not.toBe(firstCell);
     scene.setAssetSelection(null); select.mockClear(); scene.cells.children[1]!.emit('pointertap', {} as never); expect(select).not.toHaveBeenCalled();
   });
   it('refreshes balances, names and active/out marks for every participant', async () => {
@@ -70,7 +75,8 @@ describe('stage 2 display', () => {
     wrapper.unmount(); h.client.returnToLobby();
   });
   it('wires selection, dismisses on close/Escape/replacement and clears callback on unmount', async () => {
-    const h = harness(); h.client.game.view = playingView(['a', 'b']);
+    const h = harness({ stored: storedSession(room([['a', 'Alice'], ['b', 'Bob']])) });
+    h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(playingView(['a', 'b'])));
     let select: ((index: number) => void) | null = null;
     h.board.setAssetSelection = cb => { select = cb; };
     const wrapper = mount(GameScreen, { global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
@@ -80,7 +86,11 @@ describe('stage 2 display', () => {
     await click(1); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(true);
     await wrapper.find('[aria-label="Close asset card"]').trigger('click'); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
     await click(1); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
-    await click(1); h.client.game.view = { ...h.client.game.view!, board: generateBoard(seedRng(43)).board }; await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
-    wrapper.unmount(); expect(select).toBeNull();
+    await click(1);
+    h.sockets.last().receive(update({ ...playingView(['a', 'b']), revision: 10 as never, balances: { a: 98760 as never, b: 120 as never } }));
+    await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="player-balance"]').text()).toContain('98760');
+    h.client.game.view = { ...h.client.game.view!, board: generateBoard(seedRng(43)).board }; await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
+    wrapper.unmount(); expect(select).toBeNull(); h.client.returnToLobby();
   });
 });

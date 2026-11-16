@@ -1,4 +1,4 @@
-import type { BoardCell } from '@game/game-core';
+import type { BoardCell, GeneratedBoard } from '@game/game-core';
 
 export const GROUP_COLORS: Readonly<Record<string, number>> = {
   M1: 0xb88657, M2: 0x6ac5ed, M3: 0xd979bd, M4: 0xf5a742,
@@ -12,4 +12,9 @@ export function cellDisplay(cell: BoardCell): { name: string; group: string | nu
     color: GROUP_COLORS[cell.asset.groupId] ?? null, price: String(cell.asset.price),
   };
   return { name: SPECIAL_NAMES[cell.kind as keyof typeof SPECIAL_NAMES] ?? '', group: null, color: null, price: null };
+}
+
+/** Frames contain fresh objects even when the projected board is unchanged. */
+export function boardDisplayKey(board: GeneratedBoard | null | undefined): string {
+  return board == null ? '' : JSON.stringify(board);
 }
