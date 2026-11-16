@@ -5,7 +5,7 @@ id: TASK-s4-client
 revision: 1
 effort: EFF-stage-4-rent-building
 project: economic-board-game
-source_commit: TBD # main after TASK-s4-core merges; set on delivery
+source_commit: 7f5f174 # main after TASK-s4-core (PR #51)
 owner: team-lead
 status: proposed
 ```

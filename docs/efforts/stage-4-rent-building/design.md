@@ -17,8 +17,9 @@ the Team Lead; product rules come from the handoff, `ROADMAP.md` stage 4 and
   - R2: the owner resigns, so the settlement is dropped (interim rule
     "a resigned owner's asset brings no rent", applied at payment time).
 
-  **The core PR does not merge before the answer is recorded in
-  `ROADMAP.md`.**
+  CTO answer (2026-11-16): the defaults R1/R2 are CTO interim rules until
+  stage 5, pending owner confirmation; the core merged without a ROADMAP
+  entry at the CTO's instruction.
 
 ## Delegated decisions
 
