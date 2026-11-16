@@ -21,7 +21,7 @@
 
 ## 5. Integration verification
 
-- [ ] 5.1 Run pnpm build, pnpm test, pnpm test:integration including migration upgrades, openspec validate --all --strict and git diff --check; compare final diff against TASK-s3-server revision 1 and record evidence through agentctl.
+- [x] 5.1 Run pnpm build, pnpm test, pnpm test:integration including migration upgrades, openspec validate --all --strict and git diff --check; compare final diff against TASK-s3-server revision 1 and record evidence through agentctl.
 
 ## Workflow follow-up
 
