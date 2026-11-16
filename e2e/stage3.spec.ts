@@ -59,14 +59,15 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(bidder.page.locator(sel('bid'))).toHaveText(`Bid ${won.startBid}`);
   await respond(players, 'bid');
   await respond(players, 'pass');
+  // A chosen auction resumes the same turn. Read at settlement: the resumed
+  // turn's deadline keeps running during the slow balance and owner checks below.
+  expect(players[0]!.view!.turn!.turnId).toBe(turnId);
+  expect(players[0]!.view!.turn!.pausedRemainingMs).toBeNull();
   const wonEvents = eventsOf(players[0]!, won.auctionId);
   expect(wonEvents.find(e => e.type === 'AuctionWon')!.payload).toEqual({ auctionId: won.auctionId, playerId: bidder.id, assetId: won.assetId, amount: won.startBid });
   expect(bidder.id).not.toBe(actor.id);
   await expectBalances(players, { ...beforeWon, [bidder.id]: beforeWon[bidder.id]! - won.startBid });
   await expectOwner(players, declined.cell, bidder);
-  // A chosen auction resumes the same turn.
-  expect(players[0]!.view!.turn!.turnId).toBe(turnId);
-  expect(players[0]!.view!.turn!.pausedRemainingMs).toBeNull();
   await shoot(players, info, 'auction-won');
 
   // 3. Unsold auction; the second participant is AFK and passes after the real 10 s.
