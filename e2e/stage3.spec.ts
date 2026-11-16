@@ -122,18 +122,28 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   expect(amount).toBeGreaterThan(saved.balances[poor.id]!);
   await expect(poor.page.locator(sel('bid'))).toBeDisabled();
   await expect(poor.page.locator(sel('pass'))).toBeEnabled();
+  // Everything up to the Pass below runs inside the poor responder's 10 s window;
+  // fail as a timing problem, not as "the rejected Bid changed state".
+  const marginMs = () => saved.auction!.responseDeadline - Date.now();
+  expect(marginMs(), 'response window left before the over-balance Bid (ms)').toBeGreaterThan(5_000);
   const ack = await socketCommand(players, poor, 'Bid', saved.auction!.responseId, 'rejected');
   expect(ack).toMatchObject({ revision: saved.revision, error: { code: 'INSUFFICIENT_FUNDS' } });
   // Give a wrongly accepted command time to surface before checking that nothing changed.
   await poor.page.waitForTimeout(1_000);
+  expect(marginMs(), 'response window still open for the unchanged-state checks (ms)').toBeGreaterThan(1_000);
   for (const p of players) {
     expect(p.view!.revision).toBe(saved.revision);
     expect(p.view!.auction).toEqual(saved.auction);
     expect(p.view!.balances).toEqual(saved.balances);
   }
-  await shoot(players, info, 'over-balance-rejected');
+  const panel = info.outputPath('over-balance-rejected-panel.png');
+  await poor.page.locator(sel('auction')).screenshot({ path: panel });
+  await info.attach('over-balance-rejected-panel', { path: panel, contentType: 'image/png' });
   const leader = byId(players, saved.auction!.leader!);
+  expect(marginMs(), 'response window still open for the Pass (ms)').toBeGreaterThan(0);
   await respond(players, 'pass');
+  // Full-page screenshots only after the Pass, outside the response window.
+  await shoot(players, info, 'over-balance-settled');
   const contestEvents = eventsOf(players[0]!, saved.auction!.auctionId);
   expect(contestEvents.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: leader.id, amount: saved.auction!.leadingBid });
   await expectBalances(players, { ...saved.balances, [leader.id]: saved.balances[leader.id]! - saved.auction!.leadingBid! });
@@ -173,6 +183,8 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
 
   // Restart the server while the next response is due.
   const saved = structuredClone(host.view!);
+  // The auction runs inside the turn that reached its deadline.
+  expect(saved.turn!.turnId).toBe(turn.turnId);
   const welcomesBeforeRestart = players.map(p => p.welcomes.length);
   const restartAt = Date.now();
   execFileSync('bash', ['-lc', restartCommand], { stdio: 'pipe' });
@@ -200,8 +212,13 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   expect(events.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: reloaded.id, amount: saved.auction!.leadingBid });
   await expectOwner(players, offer.cell, reloaded);
   // An auction opened by the deadline closes the turn after settlement.
-  expect(host.events.some(e => e.event.type === 'TurnEnded' && (e.event.payload as { turnId: string; reason: string }).turnId === turn.turnId
-    && (e.event.payload as { reason: string }).reason === 'timeout')).toBe(true);
+  const settledAt = host.events.findIndex(e => (e.event.type === 'AuctionWon' || e.event.type === 'AuctionEndedUnsold')
+    && (e.event.payload as { auctionId: string }).auctionId === auction.auctionId);
+  const endedAt = host.events.findIndex(e => e.event.type === 'TurnEnded'
+    && (e.event.payload as { turnId: string }).turnId === turn.turnId);
+  expect(settledAt, 'auction settled').toBeGreaterThanOrEqual(0);
+  expect(endedAt, 'deadline turn ended').toBeGreaterThan(settledAt);
+  expect(host.events[endedAt]!.event.payload).toMatchObject({ turnId: turn.turnId, reason: 'timeout' });
   expect(host.view!.turn!.turnId).not.toBe(turn.turnId);
 });
 
