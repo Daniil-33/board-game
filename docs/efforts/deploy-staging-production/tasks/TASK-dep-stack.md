@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-dep-stack
-revision: 1
+revision: 2
 effort: EFF-deploy-staging-production
 project: economic-board-game
 source_commit: 78478c6 # main with the effort handoff
@@ -157,6 +157,13 @@ head; operation records confirmed for 10-12.
 
 Ports 80/443 unavailable; certificate issuance failing; Docker access not
 working in the forced-command context; any need for root.
+
+## Revision history
+
+- 1: initial.
+- 2: deploy root moved from `/srv/game` to `/srv/agents/game` (the agents
+  user cannot create directories in root-owned `/srv`); layout below it
+  unchanged.
 
 ## Deliverables
 
