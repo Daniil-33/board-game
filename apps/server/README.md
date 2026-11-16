@@ -92,12 +92,22 @@ server (`lobby`, `game-socket`, `e2e`) and the service process itself
 In agent sessions that predate the docker group change, wrap the compose
 commands: `sg docker -c 'docker compose -f docker-compose.dev.yml up -d --wait'`.
 
-## Stage 2 compatibility
+## Stage 3 compatibility
 
-The server speaks protocol 2 and runs core-4 games. Welcome and Update expose
-the generated board, economy and balances; core events pass through unchanged.
-Migration 0003 closes existing lobby/playing rooms once, preserving logs,
+The server speaks protocol 3 and runs core-5 games. Welcome and Update expose
+board, economy, balances, owners, purchase decisions and auction state; public
+core events pass through unchanged. BuyAsset, StartAuction, Bid and PassAuction
+carry null payloads; the authenticated guest supplies the actor. A duplicate
+command id returns the original Ack, while a new id with a stale response
+target is rejected with TARGET_MISMATCH.
+
+Timers follow pendingDeadlines, including the 10 second auction response and
+paused/resumed turn deadlines. Purchase and auction states recover from the
+snapshot and ordered log tail; overdue response deadlines fire on boot.
+
+Migration 0004 closes existing lobby/playing rooms once, preserving logs,
 snapshots and membership. Closed rows answer ROOM_CLOSED at Hello before game
-loading. Unsupported core-3 data actually opened (including a finished room at
-Hello or a closed room through the manager) uses the failed-room path with
-ROOM_UNAVAILABLE; active boot recovery reports that room and continues.
+loading. Unsupported core-3 or core-4 data actually opened (including a finished
+room at Hello or a closed room through the manager) uses the failed-room path
+with ROOM_UNAVAILABLE; active boot recovery reports that room and continues.
+Protocol 1 and 2 Hello frames are refused before authentication.

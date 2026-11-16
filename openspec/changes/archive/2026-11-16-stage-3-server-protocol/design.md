@@ -37,3 +37,5 @@ Run tracked migration 0004 once before serving protocol v3. New rooms use the al
 The Command union expansion forces two mechanical client edits in this PR: `actionAvailability` in `apps/client/src/game/view.ts` and the availability fixture in `apps/client/src/__tests__/components.test.ts` each gain `BuyAsset`, `StartAuction`, `Bid` and `PassAuction` set to `false`. These are type-forced placeholders, replaced by TASK-s3-client. No other client changes are authorized; the server PR still merges first.
 
 Team Lead additionally authorized the same four false keys in `apps/client/src/__tests__/view.test.ts` (`NONE`), and any exhaustive per-command map requiring only those false keys. All three locations are type-forced placeholders, replaced by TASK-s3-client.
+
+Migration 0004 applies to every active room regardless of stored rules version, including core-5 rooms created after PR #34 with protocol v2. The accepted retirement criterion is status-based; no rules-version filter or automatic reopening is applied.

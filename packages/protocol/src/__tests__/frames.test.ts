@@ -49,8 +49,10 @@ describe('static types come from game-core', () => {
     expectTypeOf<UpdateFrame['revision']>().toEqualTypeOf<Revision>();
   });
 
-  it('view schema marks interim jail as temporary', () => {
-    expect(StateViewSchema.description).toContain(
+  it('view schema documents the stage 3 public projection and temporary jail rule', () => {
+    expect(StateViewSchema.description).toEqual(
+      'Public projection of the game state (game-core StateView), checked only as a JSON object. ' +
+      'Includes the public generated board, economy, balances, asset owners, purchase decision and auction state. ' +
       'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
     );
   });
