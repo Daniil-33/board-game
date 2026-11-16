@@ -245,10 +245,13 @@ describe('reconnect', () => {
     expect(h.sockets.last().sent.map((f) => f.t)).toEqual(['Hello']);
   });
 
-  it('backs off 0.5, 1, 2, 4 then 5 s, and starts over after a Welcome', () => {
+  it('retries after 0.5 s, then every 1 s up to 19.5 s, then 2 s and 5 s, and starts over after a Welcome', () => {
     const h = joined();
     h.sockets.last().drop();
-    for (const [i, delay] of [500, 1000, 2000, 4000, 5000, 5000].entries()) {
+    const schedule = [500, ...Array<number>(19).fill(1000), 2000, 5000, 5000];
+    // No gap above 1 s during the first 20 s after the drop.
+    expect(schedule.slice(0, 20).reduce((sum, d) => sum + d, 0)).toBe(19_500);
+    for (const [i, delay] of schedule.entries()) {
       vi.advanceTimersByTime(delay - 1);
       expect(h.sockets.sockets).toHaveLength(1 + i);
       vi.advanceTimersByTime(1);
