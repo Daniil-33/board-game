@@ -66,6 +66,22 @@ class GateTests(unittest.TestCase):
         self.group.assert_not_called()
         self.exec.assert_not_called()
 
+    def test_restrictive_caller_umask_does_not_make_checkout_private(self):
+        previous = os.umask(0o077)
+        try:
+            def checkout(src, *args):
+                if args[0] == 'checkout':
+                    target = src / 'container-readable'
+                    target.mkdir()
+                    (target / 'config.js').write_text('public config')
+            self.git.side_effect = checkout
+            self.assertEqual(self.run_gate(f'deploy staging {SHA}')[0], 0)
+            target = self.root / 'staging/src/container-readable'
+            self.assertEqual(target.stat().st_mode & 0o777, 0o755)
+            self.assertEqual((target / 'config.js').stat().st_mode & 0o777, 0o644)
+        finally:
+            os.umask(previous)
+
     def test_missing_target_script_cleanly_refused(self):
         (self.root / 'staging/src/deploy/deploy.sh').unlink()
         code, message = self.run_gate(f'deploy staging {SHA}')
@@ -214,6 +230,7 @@ class ScriptTests(unittest.TestCase):
         self.fake = self.bin / 'docker'
         self.fake.write_text('''#!/bin/sh
 printf '%s\\n' "$*" >> "$CALLS"
+(umask) >> "$CALLS.masks"
 case " $* " in
   *" build "*) test "${FAIL:-}" != build ;;
   *" up "*) test "${FAIL:-}" != up ;;
@@ -239,9 +256,19 @@ esac
                 self.assertIn('logs --no-color --tail 80 server', self.calls.read_text())
 
     def test_success_repeated_sha_is_safe(self):
-        for _ in range(2):
-            result = self.deploy()
-            self.assertEqual(result.returncode, 0, result.stderr)
+        previous = os.umask(0o077)
+        try:
+            for _ in range(2):
+                result = self.deploy()
+                self.assertEqual(result.returncode, 0, result.stderr)
+        finally:
+            os.umask(previous)
+        masks = Path(str(self.calls) + '.masks').read_text().splitlines()
+        self.assertTrue(masks)
+        self.assertTrue(all(int(mask, 8) == 0o022 for mask in masks))
+        builds = [line for line in self.calls.read_text().splitlines() if ' build ' in line]
+        self.assertEqual(len(builds), 2)
+        self.assertTrue(all('build --provenance=false --sbom=false' in line for line in builds))
         lines = (self.root / 'staging/deployed.log').read_text().splitlines()
         self.assertEqual(len(lines), 2)
         self.assertTrue(all(line.endswith(' ' + SHA) for line in lines))

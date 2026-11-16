@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StateView } from '@game/game-core';
 import App from '../App.vue';
 import { CLIENT_KEY, BOARD_MOUNT_KEY, createClient } from '../client';
+import { runtimeApi } from '../api/runtime';
 import { createLobbyApi } from '../api/lobby';
 import { canIssue, turnOrder } from '../game/view';
 import { fakeFetch, fakeSockets, fakeStorage, harness, room, storedSession, lobbyView, playingView, setupView, welcome, update, pid } from './helpers';
@@ -53,6 +54,15 @@ describe('checked lobby API additions', () => {
 });
 
 describe('invites and creator secrets', () => {
+  it('creates invites on the client origin with a distinct runtime API host', async () => {
+    const { fetchFn, calls } = fakeFetch(() => ({ body: { room: TWO, accessCode: 'abcd', inviteLink: '/?room=r1&code=abcd' } }));
+    const api = runtimeApi({ protocol: 'https:', host: 'stage.focusima.space' }, 'https://stage-api.focusima.space');
+    const h = clientWithFetch(api.fetch(fetchFn), 'https://stage.focusima.space/');
+    await h.client.createRoom('abcd');
+    expect(calls[0]!.path).toBe('https://stage-api.focusima.space/api/rooms');
+    expect(h.client.lobby.creatorAccess?.inviteLink).toBe('https://stage.focusima.space/?room=r1&code=abcd');
+  });
+
   it('consumes invite query, continues after login, and never stores codes', async () => {
     const { fetchFn, calls } = fakeFetch((c) => c.path === '/api/guests' ? { body: { guestId: 'a', token: 'tok-a' } } : { body: { room: TWO } });
     const h = clientWithFetch(fetchFn, 'http://test/?room=r1&code=abcd&keep=yes#section', {});

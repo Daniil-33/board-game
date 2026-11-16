@@ -55,15 +55,18 @@ describe('service process', () => {
     expect(proc.lines().join('\n')).not.toContain('server listening');
   }, 30_000);
 
-  it('Default bind: migrates, listens on 127.0.0.1 only, exits 0 on SIGTERM', async () => {
+  it.each([undefined, 'abc123'])('migrates before health is reachable, binds locally, exits cleanly (SHA %j)', async (sha) => {
     const test = await createTestDatabase({ migrate: false });
     try {
-      const proc = run({ DATABASE_URL: test.url, PORT: '0' });
+      const proc = run({ DATABASE_URL: test.url, PORT: '0', ...(sha ? { GIT_SHA: sha } : {}) });
       const listening = JSON.parse(await proc.waitFor(/server listening/)) as { address: string };
       expect(listening.address).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
       expect(proc.lines().join('\n')).toContain('0002_lobby');
-      const health = await fetch(`${listening.address}/api/rooms`);
-      expect(health.status).toBe(401);
+      expect(proc.lines().findIndex((line) => line.includes('database migrated'))).toBeLessThan(proc.lines().findIndex((line) => line.includes('server listening')));
+      const health = await fetch(`${listening.address}/api/health`);
+      expect(health.status).toBe(200);
+      expect(await health.json()).toEqual({ status: 'ok', sha: sha ?? 'unknown' });
+      expect((await fetch(`${listening.address}/api/rooms`)).status).toBe(401);
       proc.kill('SIGTERM');
       expect(await proc.exit).toBe(0);
     } finally {

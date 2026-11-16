@@ -149,6 +149,10 @@ from before deployment tooling exists is cleanly refused. A successful staging
 log entry means a previously verified SHA; it does not assert it is the latest
 staging SHA. Production still requires the owner's workflow approval.
 
+The gate resets the caller umask to 022 before checkout; deploy.sh also sets
+umask 022 so checked-out and generated public files remain container-readable.
+Compose build disables provenance and SBOM attestations so repeated cached builds
+of the same SHA retain stable image identity and do not recreate containers.
 Deploy validates env ownership and mode, exports `GIT_SHA` / `DEPLOY_ENV`, builds
 and runs `up -d --wait --wait-timeout 180 --remove-orphans`. Server migrations
 run before readiness. Public health uses the system TLS trust store for
@@ -261,3 +265,83 @@ git diff --check
 Container checks use disposable nginx containers without published ports or
 live networks/volumes. The self-signed certificate bypass in that isolated test
 is never used by deployment health or live verification.
+
+
+## GitHub deployment pipeline
+
+`deploy-staging.yml` waits for the entire `CI` workflow to succeed for a push
+to main and deploys that run's exact head SHA. Pull request runs and failures
+cannot trigger deployment. Manual rollback/redeploy uses the main workflow ref:
+
+```sh
+gh workflow run deploy-staging.yml --ref main -f sha=<full-main-sha>
+gh workflow run deploy-production.yml --ref main
+# Explicit production rollback candidate (must have passed staging):
+gh workflow run deploy-production.yml --ref main -f sha=<full-main-sha>
+```
+
+Production resolves and validates the input SHA (or staging `/api/health`
+default) in a preceding job with no environment. That job records the exact
+commit in the run summary and passes it as a job output. The owner sees that
+SHA in the waiting deploy job's name before approving; the gated job deploys
+exactly that output even if staging changes while approval is pending.
+The gate also checks successful staging history.
+The production environment requires reviewer Daniil-33, prevents self-review,
+and permits main only. Agents may dispatch once to demonstrate waiting, but
+never approve or cancel production deployments. The staging environment permits
+main only without reviewers. Each environment serializes deployments without
+cancelling an in-progress run. Workflow permissions are empty; no checkout or
+repository token is needed. Gate and health failures propagate to job failure
+with gate diagnostics; failed checks never silently mark a deployment healthy.
+
+Before configuring GitHub or SSH credentials, obtain TL confirmation that the
+first stack staging deploy succeeded. Provision and verify both environments
+(including production owner protection), keys, secrets and SSH refusal tests
+**before PR #47 merges**. Production protection must exist before any workflow using that environment runs on main. After green exact-head CI and independent review,
+the TL merges; the merge's own successful CI completion then triggers the
+automatic staging deploy. Record each external mutation with
+`agentctl operation intend` and confirm only after read-only verification.
+Use `gh api` to create/update environments and deployment branch policies;
+verify the production protection response explicitly. If this plan cannot
+provide required owner protection, stop and escalate rather than weakening it.
+
+For each environment, generate an ed25519 key in a private temporary directory
+on the VPS with `umask 077`. Back up `~/.ssh/authorized_keys` before editing;
+preserve all existing entries and append only this key with:
+
+```text
+restrict,command="/srv/agents/game/bin/deploy-gate" ssh-ed25519 <public-part> deploy-<env>
+```
+
+Upload the private part using `gh secret set DEPLOY_SSH_KEY --env <env> < <key-file>`.
+Set `DEPLOY_KNOWN_HOSTS` from the VPS's verified host public key, with host
+identity `149.5.209.208`; do not trust an unverified network key scan. Verify
+secret names and environment scope without reading values. Before deleting the
+local private key, verify `ssh -T ... id` and a no-command interactive attempt
+are refused by the forced gate. Never print key files or put them in evidence.
+Delete private files after upload and verification, including on failure.
+Workflow key and known-hosts files have mode 600 in RUNNER_TEMP and are removed
+by an always step. Rotation follows the same recorded sequence: add replacement,
+upload its secret, verify restriction/deploy, remove the old public entry, and
+delete temporary private files. Retain the authorized_keys backup securely.
+
+CI has independent `compose-browser` (production entropy/recovery) and
+`compose-browser-seeded` (deterministic fixture) jobs, each limited to 35 minutes.
+Both cache Playwright browsers by OS, architecture and lockfile; system browser
+dependencies are still installed. Each job sanitizes evidence before its own
+artifact upload and removes only its disposable Compose stack. Measure each
+job's elapsed time and report `35 minutes - elapsed` headroom on the final PR.
+
+The public two-browser staging smoke is opt-in and is never selected by normal
+CI. It creates guests and a room, completes setup and a turn, verifies WSS to
+stage-api, captures screenshots and sanitized traces, and resigns the guest.
+Run locally from the repository, then sanitize all artifacts before copying:
+
+```sh
+pnpm exec playwright test --config playwright.staging.config.ts
+python3 scripts/sanitize-artifacts.py test-results playwright-report
+```
+
+Only copy artifacts after successful sanitization to the task evidence directory.
+Store run URLs, exact SHAs, pending-production API output, refusal results and
+CI durations there; never store private keys, tokens or unsanitized traces.

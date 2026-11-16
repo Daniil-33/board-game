@@ -1,0 +1,68 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full main SHA to deploy (defaults to staging health)
+        required: false
+        type: string
+permissions: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+    steps:
+      - name: Validate deployment SHA
+        id: target
+        shell: bash
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if [[ -z "$SHA" ]]; then
+            SHA=$(curl --fail --silent --show-error --max-time 30 https://stage-api.focusima.space/api/health | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["status"] == "ok"; print(h["sha"])')
+          fi
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected a lowercase full 40-hex SHA' >&2; exit 2; }
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          printf 'Production deployment candidate: `%s`\n' "$SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: deploy production ${{ needs.resolve.outputs.sha }}
+    needs: resolve
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: production
+    steps:
+      - name: Prepare pinned SSH credentials
+        shell: bash
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          [[ -n $DEPLOY_SSH_KEY && -n $DEPLOY_KNOWN_HOSTS ]] || { echo 'deploy secrets missing' >&2; exit 2; }
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy-key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-known-hosts"
+          chmod 600 "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-known-hosts"
+      - name: Deploy and verify public health
+        shell: bash
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          ssh -T -i "$RUNNER_TEMP/deploy-key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy-known-hosts" \
+            -o GlobalKnownHostsFile=/dev/null -o ConnectTimeout=30 \
+            agents@149.5.209.208 "deploy production $SHA"
+      - name: Remove SSH credentials
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-known-hosts"

@@ -8,3 +8,6 @@ RUN pnpm install --frozen-lockfile && pnpm --filter @game/client build:bundle
 FROM nginx:1.28-alpine
 COPY apps/client/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/client/dist /usr/share/nginx/html
+ARG GIT_SHA=unknown
+RUN printf '%s\n' "$GIT_SHA" > /usr/share/nginx/html/version.txt
+COPY apps/client/docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
