@@ -5,7 +5,7 @@ id: TASK-dep-pipeline
 revision: 1
 effort: EFF-deploy-staging-production
 project: economic-board-game
-source_commit: TBD # main after TASK-dep-config and TASK-dep-stack merge; set on delivery
+source_commit: 7634003 # main after TASK-dep-config (PR #45) and TASK-dep-stack (PR #42)
 owner: team-lead
 status: proposed
 ```
@@ -53,10 +53,9 @@ the deploy key can do nothing but deploy; CI has headroom for stages 4-8.
    no key material in Git, logs, evidence or checkpoints.
 7. Runbook (`docs/deployment.md`) updated with the workflows, approval flow,
    rollback via dispatch, key rotation, CI job layout.
-   Also close REV-dep-stack-2 RVW-004: the edge update procedure must not
-   expose new scripts to the running edge before the recreate (per-SHA edge
-   directories switched at recreate time, or checkout and recreate as one
-   back-to-back command), documented in the runbook.
+   REV-dep-stack-2 RVW-004 (edge update window) was addressed in PR #42's
+   runbook (checkout and recreate as one back-to-back command); keep it
+   consistent with any runbook changes.
 
 Evidence:
 
