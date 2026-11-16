@@ -231,6 +231,7 @@ class ScriptTests(unittest.TestCase):
         self.fake.write_text('''#!/bin/sh
 printf '%s\\n' "$*" >> "$CALLS"
 (umask) >> "$CALLS.masks"
+printf '%s %s\\n' "${BUILDX_NO_DEFAULT_ATTESTATIONS:-unset}" "$*" >> "$CALLS.attestations"
 case " $* " in
   *" build "*) test "${FAIL:-}" != build ;;
   *" up "*) test "${FAIL:-}" != up ;;
@@ -266,9 +267,14 @@ esac
         masks = Path(str(self.calls) + '.masks').read_text().splitlines()
         self.assertTrue(masks)
         self.assertTrue(all(int(mask, 8) == 0o022 for mask in masks))
-        builds = [line for line in self.calls.read_text().splitlines() if ' build ' in line]
+        builds = [line for line in self.calls.read_text().splitlines() if 'build' in line.split()]
         self.assertEqual(len(builds), 2)
-        self.assertTrue(all('build --provenance=false --sbom=false' in line for line in builds))
+        self.assertTrue(all(line.endswith(' build') for line in builds))
+        attestations = Path(str(self.calls) + '.attestations').read_text().splitlines()
+        build_envs = [line for line in attestations if 'build' in line.split()]
+        self.assertEqual(len(build_envs), 2)
+        self.assertTrue(all(line.startswith('1 compose ') for line in build_envs))
+        self.assertTrue(all(line.startswith('unset compose ') for line in attestations if ' up ' in line))
         lines = (self.root / 'staging/deployed.log').read_text().splitlines()
         self.assertEqual(len(lines), 2)
         self.assertTrue(all(line.endswith(' ' + SHA) for line in lines))

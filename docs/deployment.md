@@ -151,7 +151,9 @@ staging SHA. Production still requires the owner's workflow approval.
 
 The gate resets the caller umask to 022 before checkout; deploy.sh also sets
 umask 022 so checked-out and generated public files remain container-readable.
-Compose build disables provenance and SBOM attestations so repeated cached builds
+Compose build sets `BUILDX_NO_DEFAULT_ATTESTATIONS=1` without explicit
+attestation flags: `--provenance=false --sbom=false` still requested attestation
+output with the VPS Compose builder. With defaults disabled, repeated cached builds
 of the same SHA retain stable image identity and do not recreate containers.
 Deploy validates env ownership and mode, exports `GIT_SHA` / `DEPLOY_ENV`, builds
 and runs `up -d --wait --wait-timeout 180 --remove-orphans`. Server migrations

@@ -35,7 +35,7 @@ fail() {
   compose logs --no-color --tail 80 server >&2 || true
   exit 1
 }
-compose build --provenance=false --sbom=false || fail build
+BUILDX_NO_DEFAULT_ATTESTATIONS=1 compose build || fail build
 compose up -d --wait --wait-timeout 180 --remove-orphans || fail startup
 python3 deploy/health.py "$env" "$GIT_SHA" || fail 'public health verification'
 printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$GIT_SHA" >> "$root/$env/deployed.log"
