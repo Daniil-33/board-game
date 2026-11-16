@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-stage-4-rent-building
-revision: 1
+revision: 2
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-16T20:40:00Z
@@ -60,8 +60,8 @@ boundary, with integer or exact rational arithmetic.
      than one;
    - a player builds only during their own turn, with no pending decision,
      auction or settlement;
-   - at most one new house per full turn of the player. A double's bonus turn
-     belongs to the same full turn (CTO interpretation of "за полный ход");
+   - at most one new house per turn. A double's bonus turn is a new turn and
+     allows one more house (owner decision 2026-11-16);
    - building is only allowed when the balance covers the cost.
 8. Selling houses back to the bank:
    - a sale returns `Q(50% × the house's build cost)` to the player;
@@ -90,6 +90,11 @@ boundary, with integer or exact rational arithmetic.
   the shortfall so stage 5 can replace this rule. Balances never go negative.
 - **Resigned owner.** An asset whose owner has resigned brings no rent.
   Stage 5 returns such assets to the bank.
+- **Resignation during an open rent settlement.** If the payer or the owner
+  resigns before the rent is paid, the settlement is dropped and nothing is
+  paid.
+
+The owner confirmed these interim rules on 2026-11-16.
 
 ## Scope and non-goals
 
@@ -178,6 +183,9 @@ the interim rule above covers.
 ## Revision history
 
 - 1: initial handoff.
+- 2: owner decisions 2026-11-16: a double's bonus turn allows one more
+  house (criterion 7); interim rules confirmed, resignation during an open
+  rent settlement added.
 
 ## Acceptance
 
