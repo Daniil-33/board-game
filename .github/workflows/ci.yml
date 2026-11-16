@@ -63,6 +63,13 @@ jobs:
       - name: Strict OpenSpec validation
         run: pnpm dlx @fission-ai/openspec@2.0.0 validate --all --strict
 
+      - name: Deployment scripts and isolated edge checks
+        run: |
+          python3 -m unittest discover -s deploy/tests -v
+          shellcheck deploy/edge/*.sh deploy/deploy.sh deploy/tests/check-edge.sh
+          python3 deploy/tests/check-compose.py
+          sh deploy/tests/check-edge.sh
+
       - name: Test
         run: pnpm test
 
