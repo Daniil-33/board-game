@@ -21,7 +21,7 @@ async function main(): Promise<void> {
   consoleLogger.info('database migrated', { applied: migrated });
   const manager = createRoomManager({ db, entropy: context.entropy });
   await manager.restoreAll();
-  const app = await createServer({ db, manager, gameSeed: context.gameSeed });
+  const app = await createServer({ db, manager, gameSeed: context.gameSeed, allowedOrigins: config.allowedOrigins, gitSha: config.gitSha });
   const address = await app.listen({ host: config.host, port: config.port });
   consoleLogger.info('server listening', { address });
 
