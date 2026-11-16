@@ -25,7 +25,9 @@ Product (effort handoff C10, C13):
    `BuyAsset`, `StartAuction`, `Bid`, `PassAuction`, all with payload `null`.
 2. A non-turn-owner guest's `Bid`/`PassAuction` with the current
    `auctionResponse` target is accepted and broadcast to every guest; a stale
-   or duplicate command is rejected without state change.
+   command (old target) is rejected without state change, and an exact
+   duplicate (same command id) returns the original `Ack` without a second
+   effect.
 3. The 10 s response timer and the paused/resumed turn deadline are armed
    from `pendingDeadlines` after every transition and after restart.
 4. Server restart and reconnect during a pending decision and during an

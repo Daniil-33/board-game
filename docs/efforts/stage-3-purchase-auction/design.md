@@ -170,9 +170,14 @@ non-owner `Bid` is just a player command with the auction target.
   response timer and the paused turn are handled by the existing arming.
 - Restart and reload (C13): state (decision, auction, paused remainder) is in
   the snapshot/log; timers are re-armed from state on boot.
-- Migration `0004` closes stage 2 rooms (policy above).
-- Integration tests: a non-owner bid accepted through the socket; stale and
-  duplicate bid rejected; restart during a decision and during an auction.
+- Migration `0004` closes stage 2 rooms (policy above). It closes every
+  `lobby`/`playing` room regardless of rules version, including any core-5
+  room created on main between the core merge and this migration while the
+  protocol was still v2; those rooms could not offer stage 3 actions, so this
+  is intended (REV-s3-server-1 RVW-003).
+- Integration tests: a non-owner bid accepted through the socket; a stale
+  response (fresh command id, old target) rejected; an exact duplicate (same
+  command id) returns the original `Ack` without a second effect; restart during a decision and during an auction.
 
 ## Client (`apps/client`)
 
