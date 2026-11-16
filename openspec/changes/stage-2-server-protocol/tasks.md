@@ -7,16 +7,16 @@
 
 ## 2. Stored game compatibility
 
-- [ ] 2.1 Implement server/persistence “Stage 1 room retirement” in 0003_stage2_rules.sql; extend migration tests with a real 0002 database containing all statuses and old game data, verify exact closure and unchanged log/snapshot/member rows, re-run idempotence, and keep the 0001 -> 0002 test isolated to those migrations.
-- [ ] 2.2 Implement server/recovery “Unsupported stored games fail safely”: add real-Postgres core-3 log-only and old-shaped snapshot coverage, preserve the existing failed-room load boundary (add an explicit supported-version guard only if required), and verify active boot reporting continues with a healthy core-4 room without rewriting old data.
-- [ ] 2.3 Implement server/game-socket “Hello first” compatibility evidence without reordering the handshake; verify a migrated closed core-3 room returns ROOM_CLOSED, a finished core-3 room returns ROOM_UNAVAILABLE and direct manager.open on closed core-3 data registers a failed room. Verify no unsupported game timer or command runs and package typecheck passes.
+- [x] 2.1 Implement server/persistence “Stage 1 room retirement” in 0003_stage2_rules.sql; extend migration tests with a real 0002 database containing all statuses and old game data, verify exact closure and unchanged log/snapshot/member rows, re-run idempotence, and keep the 0001 -> 0002 test isolated to those migrations.
+- [x] 2.2 Implement server/recovery “Unsupported stored games fail safely”: add real-Postgres core-3 log-only and old-shaped snapshot coverage, preserve the existing failed-room load boundary (add an explicit supported-version guard only if required), and verify active boot reporting continues with a healthy core-4 room without rewriting old data.
+- [x] 2.3 Implement server/game-socket “Hello first” compatibility evidence without reordering the handshake; verify a migrated closed core-3 room returns ROOM_CLOSED, a finished core-3 room returns ROOM_UNAVAILABLE and direct manager.open on closed core-3 data registers a failed room. Verify no unsupported game timer or command runs and package typecheck passes.
 
 ## 3. Stage 2 network and recovery evidence
 
-- [ ] 3.1 Implement server/game-socket “Stage 2 state reaches every guest” evidence in one stage 2 integration test module: start two- and three-guest games, compare all projected boards and exact C(N), verify two seeded games differ in composition and creation logs carry BoardGenerated; run against real Postgres.
-- [ ] 3.2 Extend that module for server/game-socket “Start crossing”: find a bounded deterministic crossing sequence with actual core commands, drive it through authenticated sockets, and assert every guest receives the same persisted BalanceChanged lap-reward and credited balance; run the focused integration file.
-- [ ] 3.3 Extend existing recovery tests for server/recovery “Stage 2 recovery equality”: restore from a snapshot plus nonempty tail including a crossing before shutdown, and compare board/economy/balances deeply; verify focused recovery integration tests.
-- [ ] 3.4 Extend the stage 2 socket integration module for server/game-socket “Restart and reconnect”: clean restart mid-game, reconnect all guests with lastRevision and compare projected board/economy/balances deeply; run the focused file and document any changed server compatibility contract in apps/server/README.md.
+- [x] 3.1 Implement server/game-socket “Stage 2 state reaches every guest” evidence in one stage 2 integration test module: start two- and three-guest games, compare all projected boards and exact C(N), verify two seeded games differ in composition and creation logs carry BoardGenerated; run against real Postgres.
+- [x] 3.2 Extend that module for server/game-socket “Start crossing”: find a bounded deterministic crossing sequence with actual core commands, drive it through authenticated sockets, and assert every guest receives the same persisted BalanceChanged lap-reward and credited balance; run the focused integration file.
+- [x] 3.3 Extend existing recovery tests for server/recovery “Stage 2 recovery equality”: restore from a snapshot plus nonempty tail including a crossing before shutdown, and compare board/economy/balances deeply; verify focused recovery integration tests.
+- [x] 3.4 Extend the stage 2 socket integration module for server/game-socket “Restart and reconnect”: clean restart mid-game, reconnect all guests with lastRevision and compare projected board/economy/balances deeply; run the focused file and document any changed server compatibility contract in apps/server/README.md.
 
 ## 4. Integration validation
 

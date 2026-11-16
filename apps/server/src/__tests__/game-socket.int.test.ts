@@ -102,7 +102,7 @@ describe('Hello', () => {
     const { roomId, guests } = await lobbyWith(s, ['a', 'b']);
     const base = { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: guests[1]!.token, gameId: roomId, lastRevision: null };
     const cases: [Record<string, unknown>, string][] = [
-      [{ ...base, protocolVersion: 1 }, 'PROTOCOL_VERSION_UNSUPPORTED'],
+      [{ ...base, protocolVersion: 1, token: 'never-issued' }, 'PROTOCOL_VERSION_UNSUPPORTED'],
       [{ ...base, token: 'never-issued' }, 'UNAUTHENTICATED'],
       [{ ...base, gameId: 'r_unknown' }, 'ROOM_UNAVAILABLE'],
     ];

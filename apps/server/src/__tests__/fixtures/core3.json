@@ -1,0 +1,235 @@
+{
+  "source": "fc81fa1^ (core-3), generated using original engine with seed 42 and recorded entropy",
+  "snapshot": {
+    "revision": 4,
+    "rulesVersion": "core-3",
+    "phase": "setup",
+    "players": [
+      {
+        "id": "a"
+      },
+      {
+        "id": "b"
+      }
+    ],
+    "eliminated": [],
+    "winner": null,
+    "rng": {
+      "algo": "xoshiro128**",
+      "s": [
+        3230315265,
+        709485731,
+        1959189533,
+        1024604901
+      ]
+    },
+    "setup": {
+      "setupRollId": "s4",
+      "playerId": "a",
+      "deadline": 1767225645000,
+      "groups": [
+        [
+          "a",
+          "b"
+        ]
+      ],
+      "round": {
+        "groupIndex": 0,
+        "pending": [
+          "a",
+          "b"
+        ],
+        "rolls": {}
+      }
+    },
+    "order": null,
+    "turn": null,
+    "positions": {},
+    "jail": {}
+  },
+  "log": [
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-1",
+        "expected": {
+          "kind": "revision",
+          "revision": 0
+        },
+        "payload": {
+          "rulesVersion": "core-3",
+          "seed": 42
+        },
+        "type": "CreateGame"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 1,
+      "events": [
+        {
+          "payload": {
+            "createdAt": 1767225600000,
+            "rulesVersion": "core-3"
+          },
+          "type": "GameCreated"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-2",
+        "expected": {
+          "kind": "revision",
+          "revision": 1
+        },
+        "payload": {
+          "playerId": "a"
+        },
+        "type": "AddPlayer"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 2,
+      "events": [
+        {
+          "payload": {
+            "playerId": "a"
+          },
+          "type": "PlayerAdded"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-3",
+        "expected": {
+          "kind": "revision",
+          "revision": 2
+        },
+        "payload": {
+          "playerId": "b"
+        },
+        "type": "AddPlayer"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 3,
+      "events": [
+        {
+          "payload": {
+            "playerId": "b"
+          },
+          "type": "PlayerAdded"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-4",
+        "expected": {
+          "kind": "revision",
+          "revision": 3
+        },
+        "payload": null,
+        "type": "StartGame"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 4,
+      "events": [
+        {
+          "payload": {
+            "playerIds": [
+              "a",
+              "b"
+            ]
+          },
+          "type": "GameStarted"
+        },
+        {
+          "payload": {
+            "deadline": 1767225645000,
+            "playerId": "a",
+            "setupRollId": "s4"
+          },
+          "type": "OrderRollStarted"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "id": "a",
+          "kind": "player"
+        },
+        "commandId": "legacy-roll",
+        "expected": {
+          "kind": "target",
+          "target": {
+            "id": "s4",
+            "kind": "setupRoll"
+          }
+        },
+        "payload": null,
+        "type": "RollForOrder"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "revision": 5,
+      "events": [
+        {
+          "payload": {
+            "auto": false,
+            "playerId": "a",
+            "value": 5
+          },
+          "type": "OrderDieRolled"
+        },
+        {
+          "payload": {
+            "deadline": 1767225645000,
+            "playerId": "b",
+            "setupRollId": "s5"
+          },
+          "type": "OrderRollStarted"
+        }
+      ]
+    }
+  ]
+}

@@ -1,14 +1,17 @@
-import { copyFile, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { sql } from 'kysely';
+import { createSession, gameEngine, CURRENT_RULES_VERSION, timestamp, entropy } from '@game/game-core';
+import { sys } from './helpers/game.js';
 import { migrateToLatest } from '../db/migrate.js';
 import { createTestDatabase, seedRoom } from './helpers/db.js';
 import { useHarness } from './helpers/harness.js';
 
 const h = useHarness();
+const legacy = JSON.parse(await readFile(new URL('./fixtures/core3.json', import.meta.url), 'utf8'));
 
 const entry = (revision: number, commandId: string) =>
   sql`${JSON.stringify({ revision, command: { commandId } })}::jsonb`;
@@ -16,7 +19,7 @@ const entry = (revision: number, commandId: string) =>
 // spec: server/persistence "Schema", "Migrations"
 describe('migrations', () => {
   it('create the five tables and both unique indexes on an empty database', async () => {
-    expect(h.migrations).toEqual(['0001_init', '0002_lobby']);
+    expect(h.migrations).toEqual(['0001_init', '0002_lobby', '0003_stage2_rules']);
     const tables = await sql<{ table_name: string }>`
       select table_name from information_schema.tables
       where table_schema = 'public' and table_name not like 'kysely_%' order by table_name`.execute(h.db);
@@ -72,7 +75,8 @@ describe('migrations', () => {
       const playingRoom = await seedRoom(test.db);
       await sql`update rooms set status = 'playing' where id = ${playingRoom}`.execute(test.db);
 
-      expect(await migrateToLatest(test.db)).toEqual(['0002_lobby']);
+      await copyFile(join(migrations, '0002_lobby.sql'), join(only0001, '0002_lobby.sql'));
+      expect(await migrateToLatest(test.db, only0001)).toEqual(['0002_lobby']);
       const rows = await test.db.selectFrom('rooms').select(['id', 'status', 'access_code_hash']).orderBy('id').execute();
       expect(rows).toEqual(
         [
@@ -84,6 +88,56 @@ describe('migrations', () => {
       await sql`update rooms set status = 'closed' where id = ${lobbyRoom}`.execute(test.db);
     } finally {
       await rm(only0001, { recursive: true, force: true });
+      await test.drop();
+    }
+  });
+
+  it('0003 closes only active stage 1 rooms and preserves their data; runs once', async () => {
+    const test = await createTestDatabase({ migrate: false });
+    const old = await mkdtemp(join(tmpdir(), 'mig-0002-'));
+    try {
+      const migrations = fileURLToPath(new URL('../../migrations/', import.meta.url));
+      for (const file of ['0001_init.sql', '0002_lobby.sql']) await copyFile(join(migrations, file), join(old, file));
+      expect(await migrateToLatest(test.db, old)).toEqual(['0001_init', '0002_lobby']);
+      const statuses = ['lobby', 'playing', 'finished', 'closed'] as const;
+      const ids = [];
+      for (const status of statuses) {
+        const id = await seedRoom(test.db);
+        ids.push(id);
+        await test.db.updateTable('rooms').set({ status }).where('id', '=', id).execute();
+        for (const entry of legacy.log) await sql`insert into game_log (game_id, revision, command_id, entry)
+          values (${id}, ${entry.revision}, ${entry.command.commandId}, ${JSON.stringify(entry)}::jsonb)`.execute(test.db);
+        await sql`insert into game_snapshots (game_id, revision, state)
+          values (${id}, ${legacy.snapshot.revision}, ${JSON.stringify(legacy.snapshot)}::jsonb)`.execute(test.db);
+      }
+      const data = async () => ({
+        logs: await test.db.selectFrom('game_log').selectAll().orderBy('game_id').orderBy('revision').execute(),
+        snapshots: await test.db.selectFrom('game_snapshots').selectAll().orderBy('game_id').orderBy('revision').execute(),
+        members: await test.db.selectFrom('room_members').selectAll().orderBy('room_id').execute(),
+      });
+      const before = await data();
+      expect(await migrateToLatest(test.db)).toEqual(['0003_stage2_rules']);
+      for (const [i, id] of ids.entries()) {
+        const row = await test.db.selectFrom('rooms').select('status').where('id', '=', id).executeTakeFirstOrThrow();
+        expect(row.status).toBe(i < 2 ? 'closed' : statuses[i]);
+      }
+      expect(await data()).toEqual(before);
+      const current = await seedRoom(test.db);
+      const session = createSession(gameEngine);
+      const created = session.submit(sys('CreateGame', { seed: 42, rulesVersion: CURRENT_RULES_VERSION }, 0), { now: timestamp(1767225600000), entropy: entropy([1, 2, 3, 4]) });
+      expect(created.kind).toBe('accepted');
+      const entry = session.log[0]!;
+      await sql`insert into game_log (game_id, revision, command_id, entry) values (${current}, 1, ${entry.command.commandId}, ${JSON.stringify(entry)}::jsonb)`.execute(test.db);
+      const currentLog = await test.db.selectFrom('game_log').selectAll().where('game_id', '=', current).execute();
+      const currentBefore = await test.db.selectFrom('rooms').selectAll().where('id', '=', current).execute();
+      expect(await migrateToLatest(test.db)).toEqual([]);
+      expect(await test.db.selectFrom('rooms').selectAll().where('id', '=', current).execute()).toEqual(currentBefore);
+      // The new room stays active; old game payloads stay byte-for-byte equal as JSON.
+      expect(await test.db.selectFrom('game_log').selectAll().where('game_id', '=', current).execute()).toEqual(currentLog);
+      expect((await data()).logs.filter(r => r.game_id !== current)).toEqual(before.logs);
+      expect((await data()).snapshots).toEqual(before.snapshots);
+    } finally {
+      await rm(old, { recursive: true, force: true });
       await test.drop();
     }
   });

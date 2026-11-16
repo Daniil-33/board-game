@@ -17,11 +17,12 @@ export interface TestServer extends Context {
 }
 
 /** A listening server on 127.0.0.1 and a random port, over the harness database and a fake clock. */
-export async function startServer(h: Harness, options: { helloTimeoutMs?: number; restore?: boolean } = {}): Promise<TestServer> {
+export async function startServer(h: Harness, options: { helloTimeoutMs?: number; restore?: boolean; gameSeed?: () => number } = {}): Promise<TestServer> {
   const ctx = h.manager();
   if (options.restore) await ctx.manager.restoreAll();
   const app = await createServer({
     db: h.db,
+    ...(options.gameSeed ? { gameSeed: options.gameSeed } : {}),
     manager: ctx.manager,
     logger: ctx.logger,
     ...(options.helloTimeoutMs !== undefined ? { helloTimeoutMs: options.helloTimeoutMs } : {}),
