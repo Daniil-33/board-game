@@ -61,6 +61,16 @@ describe('gen-1 deterministic proof', () => {
     const input = deepFreeze(absorbEntropy(seedRng(42), entropy([1, 2, 3, 4])));
     const generated = generateBoard(input);
     expect(generated).toMatchSnapshot();
+    // Literal gen-1 selections verified independently in REV-s2-core-1.
+    // Keep these outside snapshots: vitest -u must not accept a draw-order change.
+    expect(generated.board.cells.filter(c => c.asset).map(c => c.asset!.assetId)).toEqual([
+      'mobility-1', 'mobility-4', 'logistics-5', 'telecom-1', 'telecom-4', 'telecom-3',
+      'banks-4', 'energy-2', 'banks-2', 'banks-7', 'logistics-3', 'fuel-1', 'fuel-3',
+      'fuel-2', 'commerce-6', 'commerce-2', 'commerce-1', 'logistics-2', 'technology-6',
+      'technology-7', 'energy-4', 'technology-5', 'microfinance-4', 'microfinance-3',
+      'microfinance-5', 'logistics-1', 'media-3', 'media-4',
+    ]);
+    expect(generated.rng.s).toEqual([587327309, 3931911981, 1999916606, 954682392]);
     expect(generateBoard(input)).toEqual(generated);
     expect(generateBoard(absorbEntropy(seedRng(43), entropy([1, 2, 3, 4]))).board).not.toEqual(generated.board);
     expect(generateBoard(absorbEntropy(seedRng(42), entropy([1, 2, 3, 5]))).board).not.toEqual(generated.board);
