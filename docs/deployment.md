@@ -289,8 +289,11 @@ SHA in the waiting deploy job's name before approving; the gated job deploys
 exactly that output even if staging changes while approval is pending.
 The gate also checks successful staging history.
 The production environment requires reviewer Daniil-33, prevents self-review,
-and permits main only. Agents may dispatch once to demonstrate waiting, but
-never approve or cancel production deployments. The staging environment permits
+and permits main only. Only the owner dispatches and approves production
+deployments. Agents never dispatch, approve or cancel them: the agents' GitHub
+identity is currently the owner account, so an agent-dispatched run could not be
+approved (self-review prevention) and approval separation is a policy rule, not
+a GitHub-enforced one (escalated to the CTO 2026-11-16). The staging environment permits
 main only without reviewers. Each environment serializes deployments without
 cancelling an in-progress run. Workflow permissions are empty; no checkout or
 repository token is needed. Gate and health failures propagate to job failure
