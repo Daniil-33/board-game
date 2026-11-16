@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-s3-core
-revision: 2
+revision: 3
 effort: EFF-stage-3-purchase-auction
 project: economic-board-game
 source_commit: 5bf02e9 # effort handoff revision 2 (D1 resolved)
@@ -49,9 +49,15 @@ Product (effort handoff C1-C11 and C14, unchanged in meaning):
 9. Bids and passes are accepted only from the responder with the current
    `auctionResponse` id; a stale or duplicate command never applies twice.
 10. Projection: `owners`, `purchase`, `auction` and balances are public.
-11. Resignation follows E1 as implemented in `resignDuringPurchase` (design §
-    "Open product inputs"); a game ending by resignation drops any decision
-    or auction.
+11. Resignation follows E1 (design § "Open product inputs", CTO answer
+    2026-11-16): (a) non-leader resigns = pass; (b) leader resigns ->
+    `leaderAfterResignation` restores the latest earlier bid whose bidder is
+    still active (sub-point b1 default: a bidder who has passed may lead
+    again and stays passed), resigned leader pays nothing, no earlier bid ->
+    no leader from the start bid, order continues from the current position;
+    (c) decision holder resigns -> default decision dropped, asset free
+    (pending owner); (d) as approved. `AuctionState.bids` records every
+    accepted bid. A game ending by resignation drops any decision/auction.
 
 Technical proof:
 
@@ -89,9 +95,8 @@ per accepted command. Target ids never reused. Balances never negative.
 ## Dependencies
 
 None upstream (main `5bf02e9`). **Merge gate:** the PR may complete review but
-is merged only after E1 is recorded (handoff revision or `ROADMAP.md`); if the
-answer differs from the default, only `resignDuringPurchase` and its tests
-change. Server and client tasks start after this merges and use
+is merged only after E1 (b1, c) is recorded in `ROADMAP.md`; a different answer
+changes only `leaderAfterResignation` / `resignDuringPurchase` and tests. Server and client tasks start after this merges and use
 the exported names in the design.
 
 ## Delegated decisions
@@ -124,6 +129,8 @@ a needed contract change; inability to prove a criterion deterministically.
 - 1: initial.
 - 2: D1 resolved by the owner: `Bid` is a fixed raise with payload `null`
   (criteria 4, 6); merge gate now E1 only.
+- 3: CTO E1 answer: (b) leader resignation restores the previous highest
+  active bid; `AuctionState.bids` added; criterion 11 rewritten.
 
 ## Deliverables
 

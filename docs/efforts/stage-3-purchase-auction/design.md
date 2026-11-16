@@ -3,7 +3,8 @@
 Effort: `EFF-stage-3-purchase-auction`, handoff
 `docs/efforts/stage-3-purchase-auction.md`. Revision 1 accepted by the Team
 Lead on 2026-11-16 at main `66e9fc9`; revision 2 (owner decision D1)
-accepted at main `5bf02e9`.
+accepted at main `5bf02e9`. Design updated for the CTO E1 answer
+(2026-11-16, bid history).
 
 This document holds the technical decisions delegated to the Team Lead. It
 does not change product behavior; rules come only from the handoff,
@@ -18,14 +19,23 @@ criteria (C1..C14) refer to the handoff.
   core computes the amount with `nextBidAmount(auction)` (= `startBid` with no
   leader, else `leadingBid + step`). The bid is rejected when that amount
   exceeds the responder's balance.
-- **E1 (escalated to the CTO 2026-11-16): resignation during a decision or
-  an auction.** Implemented behind one function `resignDuringPurchase` with
-  the Team Lead recommendation: a non-leader resigning passes; a resigning
-  leader voids the auction (no sale, asset free); a resigning decision holder
-  drops the decision (no auction, asset free); if the turn owner resigns
-  while its auction runs, the auction completes among the rest and the turn
-  then closes as a resignation. A game ending by resignation drops any
-  decision or auction. **The core PR does not merge until E1 is recorded (handoff revision or ROADMAP).**
+- **E1 (resignation during a decision or an auction).** CTO answer
+  2026-11-16 (partial): (a) a non-leader resigning passes; (d) the turn owner
+  resigning during its auction: its participation per (a)/(b), the auction
+  completes among the rest, then the turn closes as a resignation with no
+  bonus (paused turn may belong to the eliminated owner only while the
+  auction exists). **(b) owner decision:** if the leader resigns, leadership
+  returns to the previous highest bid: `leaderAfterResignation(auction,
+  state)` walks `auction.bids` backwards to the latest bid whose bidder is
+  still active, makes that bidder leader with that amount (reserved again);
+  the resigned leader pays nothing; passed participants never respond again;
+  the response order continues from the current position; with no earlier
+  bid the auction continues with no leader from the start bid. Open sub-point
+  b1 (escalated): whether a bidder who has since passed can lead again;
+  default Option 1 = yes (stays passed, can win). **(c)** decision holder
+  resigning: pending with the owner; default stays "decision dropped, asset
+  free" behind `resignDuringPurchase`. **The core PR does not merge until E1
+  (b1, c) is recorded in `ROADMAP.md`.**
 
 ## Delegated decisions
 
@@ -38,6 +48,7 @@ criteria (C1..C14) refer to the handoff.
 | Auction commands guard | `auctionResponse` target: a fresh id per response slot | Gives "id and revision" staleness (C10): a bid or pass for an earlier slot, or a duplicate, is rejected by the guard and never applies twice. |
 | Timer pause | `turn.pausedRemainingMs: number \| null`; while non-null the turn deadline is not pending | One explicit field; `pendingDeadlines` stays the single host contract. |
 | Reservation | Derived, not stored: the leader's reserved amount is `auction.leadingBid` | Cannot drift from the auction; stage 4+ spending checks use `available(player) = balance − reserved`. |
+| Bid history | `auction.bids` (append-only per auction); `leader`/`leadingBid` must equal the bid chosen by the rules | Needed by E1 (b); invariant keeps them consistent. |
 
 ## Core (`packages/game-core`)
 
@@ -66,6 +77,7 @@ interface AuctionState {
   readonly passed: readonly PlayerId[];
   readonly leader: PlayerId | null;
   readonly leadingBid: Money | null;
+  readonly bids: readonly { readonly playerId: PlayerId; readonly amount: Money }[]; // every accepted bid, in order
   readonly responder: PlayerId;          // whose response is due
   readonly responseId: string;           // current auctionResponse target id
   readonly responseDeadline: Timestamp;  // now + 10 s
