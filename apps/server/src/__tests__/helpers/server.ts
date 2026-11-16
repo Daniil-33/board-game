@@ -16,9 +16,27 @@ export interface TestServer extends Context {
   stop(): Promise<void>;
 }
 
+export interface StartServerOptions {
+  readonly helloTimeoutMs?: number;
+  readonly restore?: boolean;
+  readonly gameSeed?: () => number;
+  /** Start of the server's fake clock; default `T0`. */
+  readonly now?: number;
+  /**
+   * Host entropy seed. Default: the number of servers this test has started so
+   * far plus one (1, 2, 3, ...; `stopServers` resets it), so a restarted server
+   * draws a new stream like a real process. Timeout command ids come from this
+   * stream: reusing a seed on the same database repeats ids already in the log.
+   */
+  readonly seed?: number;
+}
+
 /** A listening server on 127.0.0.1 and a random port, over the harness database and a fake clock. */
-export async function startServer(h: Harness, options: { helloTimeoutMs?: number; restore?: boolean; gameSeed?: () => number } = {}): Promise<TestServer> {
-  const ctx = h.manager();
+export async function startServer(h: Harness, options: StartServerOptions = {}): Promise<TestServer> {
+  const ctx = h.manager({
+    seed: options.seed ?? servers.length + 1,
+    ...(options.now !== undefined ? { now: options.now } : {}),
+  });
   if (options.restore) await ctx.manager.restoreAll();
   const app = await createServer({
     db: h.db,
