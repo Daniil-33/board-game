@@ -236,9 +236,19 @@ it.each(['BuildHouse', 'SellHouse'])('%s checks the deadline before asset legali
 });
 
 
+// Helper/handler parity for an unexpired command (RVW-004).
+function expectParity(s: GameState, type: string, by: ReturnType<typeof pid>, assetId: AssetId, at: number) {
+  expect(at).toBeLessThan(s.turn!.deadline);
+  const code = (type === 'BuildHouse' ? buildLegality : saleLegality)(s, by, assetId);
+  const r = gameEngine.execute(deepFreeze(s), command(s, type, { assetId }, by), ctx(at));
+  expect(r.kind === 'rejected' ? r.error.code : null).toBe(code);
+}
+
 it.each(['BuildHouse', 'SellHouse'])('%s checks auction pause, actor, then deadline (RVW-003)', type => {
   let s = owned();
   const assetId = group(s)[0]!.assetId;
+  for (const by of [pid('a'), pid('b')]) expectParity(s, type, by, assetId, s.turn!.deadline - 1);
+  expect((type === 'BuildHouse' ? buildLegality : saleLegality)(s, pid('b'), assetId)).toBe('NOT_ACTIVE_PLAYER');
   // An unpaused non-owner is rejected before checking the expired deadline.
   reject(s, command(s, type, { assetId }, pid('b')), 'NOT_ACTIVE_PLAYER', s.turn!.deadline + 5000);
   s = accept(s, command(s, 'RollDice'), undefined, [1, 5]).state;
@@ -250,5 +260,7 @@ it.each(['BuildHouse', 'SellHouse'])('%s checks auction pause, actor, then deadl
     for (const at of [originalDeadline - 1, originalDeadline + 5000]) {
       reject(s, command(s, type, { assetId }, by), 'AUCTION_IN_PROGRESS', at);
     }
+    expect((type === 'BuildHouse' ? buildLegality : saleLegality)(s, by, assetId)).toBe('AUCTION_IN_PROGRESS');
+    expectParity(s, type, by, assetId, originalDeadline - 1);
   }
 });

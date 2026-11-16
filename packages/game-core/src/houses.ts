@@ -7,9 +7,10 @@ import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
 export type HouseErrorCode = 'PHASE_NOT_ALLOWED' | 'NOT_ACTIVE_PLAYER' | 'DECISION_PENDING' | 'AUCTION_IN_PROGRESS' | 'RENT_PENDING' | 'NOT_A_BUILDABLE_ASSET' | 'NOT_OWNER' | 'GROUP_INCOMPLETE' | 'GROUP_MORTGAGED' | 'MAX_HOUSES' | 'UNEVEN_BUILD' | 'BUILD_QUOTA_USED' | 'INSUFFICIENT_FUNDS' | 'NO_HOUSES' | 'UNEVEN_SALE';
 function common(state: GameState, playerId: PlayerId, assetId: AssetId): HouseErrorCode | null {
   if (state.phase !== 'playing') return 'PHASE_NOT_ALLOWED';
+  // Same precedence as the handler: auction pause before turn ownership.
+  if (state.auction) return 'AUCTION_IN_PROGRESS';
   if (state.turn!.playerId !== playerId || state.eliminated.includes(playerId)) return 'NOT_ACTIVE_PLAYER';
   if (state.purchase) return 'DECISION_PENDING';
-  if (state.auction) return 'AUCTION_IN_PROGRESS';
   if (state.rent) return 'RENT_PENDING';
   if (!state.board!.cells.some(c => c.kind === 'monopoly' && c.asset?.assetId === assetId)) return 'NOT_A_BUILDABLE_ASSET';
   if (state.owners[assetId] !== playerId) return 'NOT_OWNER';
