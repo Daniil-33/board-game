@@ -12,6 +12,7 @@ export interface Actor {
   view: StateView | null;
   welcomes: { playerId: string; revision: number }[];
   events: { at: number; revision: number; event: GameEvent }[];
+  acks: { at: number; commandId: string; outcome: string; revision: number; error?: { code: string } }[];
 }
 export const test = base.extend<{ actors: (count: number, invite?: string) => Promise<Actor[]> }>({
   actors: async ({ browser, baseURL }, use, info) => {
@@ -25,7 +26,17 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
         const context = await browser.newContext({ baseURL: baseURL! });
         await context.tracing.start({ screenshots: false, snapshots: true, sources: false });
         const page = await context.newPage();
-        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [] };
+        // Test-only handle on the page's own game socket, used to send a frame the UI refuses to send.
+        await page.addInitScript(() => {
+          const Native = window.WebSocket;
+          window.WebSocket = class extends Native {
+            constructor(url: string | URL, protocols?: string | string[]) {
+              super(url, protocols);
+              (window as unknown as { __e2eSocket: WebSocket }).__e2eSocket = this;
+            }
+          };
+        });
+        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [] };
         actors.push(actor); added.push(actor);
         page.on('response', async (response) => {
           if (response.url().endsWith('/api/guests') && response.status() === 201) {
@@ -37,6 +48,10 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
         });
         page.on('websocket', (ws) => ws.on('framereceived', ({ payload }) => {
           const frame = JSON.parse(payload.toString());
+          if (frame.t === 'Ack') {
+            actor.acks.push({ at: Date.now(), ...frame });
+            log.push({ at: Date.now(), actor: actors.indexOf(actor), frame: 'Ack', commandId: frame.commandId, outcome: frame.outcome, revision: frame.revision, error: frame.error?.code });
+          }
           if (frame.t === 'Welcome') actor.welcomes.push({ playerId: frame.playerId, revision: frame.revision });
           if (frame.t === 'Welcome' || frame.t === 'Update') {
             actor.view = frame.view;
@@ -122,6 +137,14 @@ export async function active(players: Actor[]): Promise<Actor> {
   const actor = players.find(p => p.id === first.view?.turn?.playerId)!;
   await expect.poll(() => actor.view?.revision).toBe(first.view!.revision);
   return actor;
+}
+/** Sends a command frame on the page's live socket, bypassing the UI's button guard. */
+export async function sendRaw(actor: Actor, frame: object): Promise<void> {
+  await actor.page.evaluate((text) => {
+    const socket = (window as unknown as { __e2eSocket?: WebSocket }).__e2eSocket;
+    if (!socket || socket.readyState !== WebSocket.OPEN) throw Error('game socket is not open');
+    socket.send(text);
+  }, JSON.stringify(frame));
 }
 export async function resign(actor: Actor): Promise<void> {
   await actor.page.locator(sel('Resign')).click();
