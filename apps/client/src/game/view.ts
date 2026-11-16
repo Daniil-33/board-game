@@ -59,7 +59,7 @@ export interface ActionContext {
 
 /** Commands presented by the turn-action buttons; resignation has its own confirmation. */
 export type TurnCommandType = 'RollForOrder' | 'RollDice' | 'EndTurn';
-export type ActionAvailability = Readonly<Record<TurnCommandType | 'Resign', boolean>>;
+export type ActionAvailability = Readonly<Record<ClientCommandType, boolean>>;
 
 function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): boolean {
   if (type === 'Resign') return view.phase === 'setup' || view.phase === 'playing';
@@ -91,10 +91,10 @@ export function actionAvailability(ctx: ActionContext): ActionAvailability {
     RollDice: canIssue(ctx, 'RollDice'),
     EndTurn: canIssue(ctx, 'EndTurn'),
     Resign: canIssue(ctx, 'Resign'),
-    BuyAsset: false,
-    StartAuction: false,
-    Bid: false,
-    PassAuction: false,
+    BuyAsset: canIssue(ctx, 'BuyAsset'),
+    StartAuction: canIssue(ctx, 'StartAuction'),
+    Bid: canIssue(ctx, 'Bid'),
+    PassAuction: canIssue(ctx, 'PassAuction'),
   };
 }
 

@@ -6,7 +6,7 @@ import AuctionPanel from '../components/AuctionPanel.vue';
 import TurnTimer from '../components/TurnTimer.vue';
 import AssetCard from '../components/AssetCard.vue';
 import { BoardScene, TOKEN_COLORS } from '../board/BoardCanvas';
-import { canIssue, commandExpectation, type ActionContext } from '../game/view';
+import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../game/view';
 import { playingView, pid, harness, storedSession, room, welcome, update } from './helpers';
 
 function purchase(): StateView {
@@ -24,6 +24,11 @@ function auction(): StateView {
 const props = (view: StateView) => ({ view, me: pid('a'), connected: true, pending: [], now: 50_000, nameOf: (id: string) => `Player ${id}` });
 
 describe('purchase and auction projection', () => {
+  it('exposes real purchase and auction action availability', () => {
+    expect(actionAvailability(props(purchase()))).toMatchObject({ BuyAsset: true, StartAuction: true, Bid: false, PassAuction: false });
+    expect(actionAvailability(props(auction()))).toMatchObject({ BuyAsset: false, StartAuction: false, Bid: true, PassAuction: true, RollDice: false, EndTurn: false });
+    expect(actionAvailability({ ...props(auction()), me: pid('b') })).toMatchObject({ Bid: false, PassAuction: false });
+  });
   it('purchase affordability, viewer roles and emitted intent', async () => {
     const view = purchase(); const price = view.board!.cells[view.purchase!.cell]!.asset!.price;
     const w = mount(PurchaseDialog, { props: props({ ...view, balances: { ...view.balances, a: price } }) });

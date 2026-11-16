@@ -2,7 +2,7 @@
 
 ## 1. Intent selectors and purchase UI
 
-- [ ] 1.1 Extend existing view selectors and command expectations for Purchase and auction intents, Action buttons follow the view and Timer from the server deadline; verify focused selector/connection tests and client typecheck against integrated stage 3 protocol.
+- [x] 1.1 Extend existing view selectors and command expectations for Purchase and auction intents, Action buttons follow the view and Timer from the server deadline; verify focused selector/connection tests and client typecheck against integrated stage 3 protocol.
 - [x] 1.2 Add PurchaseDialog and wire GameScreen for Purchase decision display; verify component tests for deciding/other/eliminated viewers, equal/below price, pending/disconnected/expired states and emitted intent.
 
 ## 2. Auction UI and timer
@@ -18,11 +18,11 @@
 
 ## 4. Mock scenarios
 
-- [ ] 4.1 Extend existing mock scripts/server automation for Purchase decision display and Auction participation display; verify decoded scripted decision, outbid/pass/timeout, won and unsold sequences with expected next amounts, using PROTOCOL_VERSION fixtures.
+- [x] 4.1 Extend existing mock scripts/server automation for Purchase decision display and Auction participation display; verify decoded scripted decision, outbid/pass/timeout, won and unsold sequences with expected next amounts, using PROTOCOL_VERSION fixtures.
 
 ## 5. Integration evidence
 
-- [ ] 5.1 Run pnpm build, pnpm test, client vite build, openspec validate --all --strict and git diff --check; record outputs and compare final diff to every handoff criterion.
+- [x] 5.1 Run pnpm build, pnpm test, client vite build, openspec validate --all --strict and git diff --check; record outputs and compare final diff to every handoff criterion.
 - [x] 5.2 Capture mock purchase dialog, auction panel and owner-marker screenshots in /srv/agents/evidence/TASK-s3-client/ and record paths outside Git.
 
 ## Workflow follow-up
