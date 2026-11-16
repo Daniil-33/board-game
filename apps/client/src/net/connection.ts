@@ -13,8 +13,18 @@ import { commandExpectation } from '../game/view';
 import { MAX_MESSAGES, type GameState } from '../store/game';
 import type { SocketFactory, SocketLike } from './socket';
 
-/** Reconnect delays; the last one repeats. */
-export const RECONNECT_DELAYS_MS = [500, 1000, 2000, 4000, 5000] as const;
+/**
+ * Reconnect delays; the last one repeats. For the first 20 s after a drop no
+ * two attempts are more than 1 s apart (0.5 s, then 1 s up to 19.5 s), so a
+ * server restart is noticed within about a second of the server being back,
+ * well inside a 10 s response window. Then the backoff grows to 2 s and 5 s.
+ */
+export const RECONNECT_DELAYS_MS = [
+  500,
+  1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+  1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+  2000, 5000,
+] as const;
 
 export interface Timers {
   setTimeout(callback: () => void, ms: number): unknown;

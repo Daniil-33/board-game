@@ -59,14 +59,15 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(bidder.page.locator(sel('bid'))).toHaveText(`Bid ${won.startBid}`);
   await respond(players, 'bid');
   await respond(players, 'pass');
+  // A chosen auction resumes the same turn. Read at settlement: the resumed
+  // turn's deadline keeps running during the slow balance and owner checks below.
+  expect(players[0]!.view!.turn!.turnId).toBe(turnId);
+  expect(players[0]!.view!.turn!.pausedRemainingMs).toBeNull();
   const wonEvents = eventsOf(players[0]!, won.auctionId);
   expect(wonEvents.find(e => e.type === 'AuctionWon')!.payload).toEqual({ auctionId: won.auctionId, playerId: bidder.id, assetId: won.assetId, amount: won.startBid });
   expect(bidder.id).not.toBe(actor.id);
   await expectBalances(players, { ...beforeWon, [bidder.id]: beforeWon[bidder.id]! - won.startBid });
   await expectOwner(players, declined.cell, bidder);
-  // A chosen auction resumes the same turn.
-  expect(players[0]!.view!.turn!.turnId).toBe(turnId);
-  expect(players[0]!.view!.turn!.pausedRemainingMs).toBeNull();
   await shoot(players, info, 'auction-won');
 
   // 3. Unsold auction; the second participant is AFK and passes after the real 10 s.
@@ -178,10 +179,12 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   expect(reloaded.view!.auction).toEqual(beforeReload.auction);
   await expect(reloaded.page.locator(sel('auction'))).toBeVisible();
   await expect(reloaded.page.locator(sel('bid'))).toBeEnabled();
-  await shoot(players, info, 'auction-after-reload');
+  // The reloaded tab is responder: the bid goes in before any slow step, inside its 10 s window.
+  expect(beforeReload.auction!.responseDeadline - Date.now(), 'response window left for the reloaded Bid (ms)').toBeGreaterThan(0);
   await respond(players, 'bid');
 
-  // Restart the server while the next response is due.
+  // Restart the server while the next response is due. That Bid opened the
+  // saved responder's window: nothing slow runs before the restart.
   const saved = structuredClone(host.view!);
   // The auction runs inside the turn that reached its deadline.
   expect(saved.turn!.turnId).toBe(turn.turnId);
@@ -194,6 +197,8 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   }
   const reconnectedAt = Date.now();
   info.annotations.push({ type: 'restart-ms', description: String(reconnectedAt - restartAt) });
+  info.annotations.push({ type: 'window-left-at-restart-ms', description: String(saved.auction!.responseDeadline - restartAt) });
+  info.annotations.push({ type: 'window-left-at-reconnect-ms', description: String(saved.auction!.responseDeadline - reconnectedAt) });
   // The restart must leave the response window open, or the evidence below is about a timeout.
   expect(reconnectedAt, 'restart and reconnect finished inside the response window').toBeLessThan(saved.auction!.responseDeadline - 1_000);
   for (const p of players) {
@@ -203,10 +208,14 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
     expect(p.view!.turn).toEqual(saved.turn);
     await expect(p.page.locator(sel('auction'))).toBeVisible();
   }
-  await shoot(players, info, 'auction-after-restart');
-  // The recovered server still enforces the persisted response deadline.
-  const afk = await afkPass(players);
+  // The recovered server still enforces the persisted response deadline:
+  // observe the auto-pass of the saved responder, whatever the current view shows.
+  const afk = await afkPass(players, saved.auction!, saved.revision);
   expect(afk.id).toBe(saved.auction!.responder);
+  // Full-page screenshots only after the AFK pass, outside every response
+  // window they could delay; the auction is still open.
+  await shoot(players, info, 'auction-after-reload');
+  await shoot(players, info, 'auction-after-restart');
   while (host.view!.auction) await respond(players, 'pass');
   const events = eventsOf(host, auction.auctionId);
   expect(events.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: reloaded.id, amount: saved.auction!.leadingBid });
@@ -322,15 +331,20 @@ async function nextOffer(players: Actor[]): Promise<Actor> {
   throw Error('No purchase offer in 100 actions');
 }
 
-/** The current responder does nothing; the server passes for them at the response deadline. */
-async function afkPass(players: Actor[]): Promise<Actor> {
+/**
+ * The responder of `auction` (by default the current one) does nothing; the
+ * server passes for them at that auction's response deadline. `revision` is
+ * the revision whose frame made them responder.
+ */
+async function afkPass(players: Actor[], auction = players[0]!.view!.auction!, revision = players[0]!.view!.revision): Promise<Actor> {
   const host = players[0]!;
-  const auction = host.view!.auction!;
   const afk = byId(players, auction.responder);
   // The frame that made them responder; the deadline is 10 s after it.
-  const assigned = host.events.findLast(e => e.revision === host.view!.revision)
+  const assigned = host.events.findLast(e => e.revision === revision)
     ?? host.events.at(-1)!;
   expect(Math.abs(auction.responseDeadline - assigned.at - AUCTION_RESPONSE_MS)).toBeLessThanOrEqual(TRANSPORT_MS);
+  // The UI checks below need the responder's window to be still open.
+  expect(auction.responseDeadline - Date.now(), 'response window left for the AFK responder checks (ms)').toBeGreaterThanOrEqual(1_000);
   await expect(afk.page.locator(sel('pass'))).toBeEnabled();
   await expect(afk.page.locator(sel('auction-timer'))).toHaveText(/^(10|[1-9]) s$/);
   const isPass = (e: { event: { type: string; payload: unknown } }) => e.event.type === 'AuctionPassed'
