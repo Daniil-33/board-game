@@ -39,7 +39,7 @@ jobs:
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           umask 077
-          test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          [[ -n $DEPLOY_SSH_KEY && -n $DEPLOY_KNOWN_HOSTS ]] || { echo 'deploy secrets missing' >&2; exit 2; }
           printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy-key"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-known-hosts"
           chmod 600 "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-known-hosts"

@@ -14,11 +14,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  resolve:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    environment: production
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
     steps:
       - name: Validate deployment SHA
         id: target
@@ -31,6 +32,15 @@ jobs:
           fi
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected a lowercase full 40-hex SHA' >&2; exit 2; }
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          printf 'Production deployment candidate: `%s`\n' "$SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: deploy production ${{ needs.resolve.outputs.sha }}
+    needs: resolve
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: production
+    steps:
       - name: Prepare pinned SSH credentials
         shell: bash
         env:
@@ -38,14 +48,14 @@ jobs:
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           umask 077
-          test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          [[ -n $DEPLOY_SSH_KEY && -n $DEPLOY_KNOWN_HOSTS ]] || { echo 'deploy secrets missing' >&2; exit 2; }
           printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy-key"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-known-hosts"
           chmod 600 "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-known-hosts"
       - name: Deploy and verify public health
         shell: bash
         env:
-          SHA: ${{ steps.target.outputs.sha }}
+          SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           ssh -T -i "$RUNNER_TEMP/deploy-key" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \

@@ -276,8 +276,12 @@ gh workflow run deploy-production.yml --ref main
 gh workflow run deploy-production.yml --ref main -f sha=<full-main-sha>
 ```
 
-Production's omitted SHA is read from staging `/api/health` after the owner
-releases its environment job. The gate also checks successful staging history.
+Production resolves and validates the input SHA (or staging `/api/health`
+default) in a preceding job with no environment. That job records the exact
+commit in the run summary and passes it as a job output. The owner sees that
+SHA in the waiting deploy job's name before approving; the gated job deploys
+exactly that output even if staging changes while approval is pending.
+The gate also checks successful staging history.
 The production environment requires reviewer Daniil-33, prevents self-review,
 and permits main only. Agents may dispatch once to demonstrate waiting, but
 never approve or cancel production deployments. The staging environment permits
@@ -287,7 +291,12 @@ repository token is needed. Gate and health failures propagate to job failure
 with gate diagnostics; failed checks never silently mark a deployment healthy.
 
 Before configuring GitHub or SSH credentials, obtain TL confirmation that the
-first stack staging deploy succeeded. Record each external mutation with
+first stack staging deploy succeeded. Provision and verify both environments
+(including production owner protection), keys, secrets and SSH refusal tests
+**before PR #47 merges**. Production protection must exist before a workflow
+references that environment. After green exact-head CI and independent review,
+the TL merges; the merge's own successful CI completion then triggers the
+automatic staging deploy. Record each external mutation with
 `agentctl operation intend` and confirm only after read-only verification.
 Use `gh api` to create/update environments and deployment branch policies;
 verify the production protection response explicitly. If this plan cannot
