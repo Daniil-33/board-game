@@ -98,7 +98,7 @@ describe('settlement and movement',()=>{
   });
 });
 describe('houses and legality',()=>{
-  it.each([2,3])('builds and sells evenly in %i asset group with one full-turn quota',size=>{
+  it.each([2,3])('builds and sells evenly in %i asset group with one per-turn quota',size=>{
     let s=owned(size); const assets=group(s,size);
     const first=assets[0]!,id=first.assetId;
     const built=accept(s,command(s,'BuildHouse',{assetId:id}));s=built.state;
@@ -125,11 +125,31 @@ describe('houses and legality',()=>{
     const uneven={...s,houses:{[id]:1,[other]:2}};expect(saleLegality(uneven,pid('a'),id)).toBe('UNEVEN_SALE');reject(uneven,command(uneven,'SellHouse',{assetId:id}),'UNEVEN_SALE');
     for(const type of ['BuildHouse','SellHouse']) for(const payload of [null,{},[],{assetId:id,extra:1},{assetId:1}]) reject(s,command(s,type,payload),'INVALID_PAYLOAD');
   });
-  it.each([0,1])('bonus inherits %i builds and full turn resets',builds=>{
+  it.each([0,1])('a bonus turn resets the build quota from %i and so does the next turn',builds=>{
     const initial=owned(),s={...initial,turn:{...initial.turn!,rolled:true,pendingBonus:true,doublesStreak:1,quotas:{builds,offers:0}}};
-    const bonus=accept(s,command(s,'EndTurn')).state;expect(bonus.turn!.quotas).toEqual({builds,offers:2});
+    const bonus=accept(s,command(s,'EndTurn')).state;expect(bonus.turn!.bonus).toBe(true);expect(bonus.turn!.quotas).toEqual({builds:1,offers:2});
     const next={...bonus,turn:{...bonus.turn!,rolled:true,pendingBonus:false}};
     expect(accept(next,command(next,'EndTurn')).state.turn!.quotas.builds).toBe(1);
+  });
+  it('builds one house in the regular turn and another in its bonus turn',()=>{
+    let s=owned();const [first,second]=group(s);
+    s=accept(s,command(s,'BuildHouse',{assetId:first!.assetId})).state;
+    expect(s.turn!.quotas.builds).toBe(0);expect(buildLegality(s,pid('a'),second!.assetId)).toBe('BUILD_QUOTA_USED');
+    s={...s,turn:{...s.turn!,rolled:true,pendingBonus:true,doublesStreak:1}};
+    s=accept(s,command(s,'EndTurn')).state;
+    expect(s.turn).toMatchObject({playerId:'a',bonus:true,quotas:{builds:1,offers:2}});
+    const built=accept(s,command(s,'BuildHouse',{assetId:second!.assetId}));
+    expect(built.state.houses).toEqual({[first!.assetId]:1,[second!.assetId]:1});expect(built.state.turn!.quotas.builds).toBe(0);
+    expect(built.events.map(e=>e.type)).toEqual(['BalanceChanged','HouseBuilt']);
+  });
+  it('selling never replenishes the build quota, in a regular or a bonus turn',()=>{
+    for(const bonus of [false,true]){
+      let s=owned();const [first,second]=group(s);
+      s={...s,houses:{[first!.assetId]:1,[second!.assetId]:1},turn:{...s.turn!,bonus}};
+      s=accept(s,command(s,'BuildHouse',{assetId:first!.assetId})).state;expect(s.turn!.quotas.builds).toBe(0);
+      s=accept(s,command(s,'SellHouse',{assetId:first!.assetId})).state;
+      expect(s.turn!.quotas.builds).toBe(0);expect(buildLegality(s,pid('a'),first!.assetId)).toBe('BUILD_QUOTA_USED');
+    }
   });
 });
 describe('projection, invariants and restore',()=>{
@@ -204,21 +224,23 @@ it('blocks construction and sale on rent, respects guard and deadline, and emits
   const nohouses={...s,houses:{}};reject(nohouses,command(nohouses,'SellHouse',{assetId:id}),'NO_HOUSES');
 });
 
-it('carries consumed quota through timeout continuation, bonus and auction closure',()=>{
-  let s=owned(),id=group(s)[0]!.assetId;
+it('keeps consumed quota through timeout continuation and resets it for each bonus turn, also after auction closure',()=>{
+  let s=owned(),id=group(s)[0]!.assetId,other=group(s)[1]!.assetId;
   s=accept(s,command(s,'BuildHouse',{assetId:id})).state;
   const timeout=cmd('Timeout',null,{target:{kind:'turn',id:s.turn!.turnId}});
   s=accept(s,timeout,s.turn!.deadline,[2,2]).state;
   expect(s.turn!.continuation).toBe(true);expect(s.turn!.quotas.builds).toBe(0);
   s=accept(s,cmd('Timeout',null,{target:{kind:'turn',id:s.turn!.turnId}}),s.turn!.deadline).state;
-  expect(s.turn!.bonus).toBe(true);expect(s.turn!.quotas.builds).toBe(0);
+  expect(s.turn!.bonus).toBe(true);expect(s.turn!.quotas.builds).toBe(1);
+  s=accept(s,command(s,'BuildHouse',{assetId:other})).state;expect(s.turn!.quotas.builds).toBe(0);
   // The bonus roll lands on free cell 8, opening the existing auction path.
   const now=s.turn!.deadline-100;
   s=accept(s,command(s,'RollDice'),now,[2,2]).state;
   expect(s.purchase).not.toBeNull();
   s=accept(s,command(s,'EndTurn'),now).state;
+  expect(s.turn!.quotas.builds).toBe(0);
   while(s.auction){const a=s.auction;s=accept(s,cmd('PassAuction',null,{actor:player(a.responder),target:{kind:'auctionResponse',id:a.responseId}}),now).state;}
-  expect(s.turn!.bonus).toBe(true);expect(s.turn!.quotas.builds).toBe(0);
+  expect(s.turn!.bonus).toBe(true);expect(s.turn!.quotas.builds).toBe(1);
 });
 
 
