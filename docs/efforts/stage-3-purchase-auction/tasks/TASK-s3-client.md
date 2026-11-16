@@ -5,7 +5,7 @@ id: TASK-s3-client
 revision: 1
 effort: EFF-stage-3-purchase-auction
 project: economic-board-game
-source_commit: <main after TASK-s3-core merges; set at delivery>
+source_commit: 1a8d32fcc82609d755c1312d29c953ad7b74c5b4 # main after TASK-s3-core (PR #34)
 owner: team-lead
 status: proposed
 ```
