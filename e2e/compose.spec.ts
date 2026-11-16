@@ -1,12 +1,19 @@
 import { execFileSync } from 'node:child_process';
+import { cellRect } from '../apps/client/src/board/layout';
 import { test, expect, sel, createRoom, join, start, setup, active, action, resign } from './helpers';
 
-test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }) => {
+test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }, info) => {
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Recovery uses production CSPRNG');
+  test.setTimeout(180_000);
   const players = await actors(3), host = players[0]!;
   const room = await createRoom(host);
   for (const p of players.slice(1)) await join(p, room);
-  await start(players); await setup(players);
+  await start(players); await stage2(players, 19940); await setup(players);
+  for (let i = 0; i < players.length; i++) {
+    const path = info.outputPath(`three-client-${i}.png`);
+    await players[i]!.page.screenshot({ path, fullPage: true });
+    await info.attach(`three-client-${i}`, { path, contentType: 'image/png' });
+  }
   for (let i = 0; i < 4; i++) {
     const actor = await active(players);
     const before = actor.view!.positions[actor.id]!;
@@ -17,12 +24,16 @@ test('three guests: setup, movement, reload, server restart and resignation to w
     await expect.poll(() => host.view?.revision).toBe(actor.view!.revision);
   }
   const current = await active(players), id = current.id, revision = current.view!.revision;
+  const beforeReload = structuredClone(current.view!);
   const welcomeCount = current.welcomes.length;
   await current.page.reload();
   await expect(current.page.locator('[data-screen="game"]')).toBeVisible();
   await expect.poll(() => current.view?.revision).toBe(revision);
   await expect.poll(() => current.welcomes.length).toBeGreaterThan(welcomeCount);
   expect(current.welcomes.at(-1)!.playerId).toBe(id);
+  expect(current.view!.board).toEqual(beforeReload.board);
+  expect(current.view!.balances).toEqual(beforeReload.balances);
+  await panels(players);
   await expect(current.page.locator(sel('RollDice'))).toBeEnabled();
   await action(current, 'RollDice');
   await expect.poll(() => host.view?.revision).toBe(current.view!.revision);
@@ -36,7 +47,10 @@ test('three guests: setup, movement, reload, server restart and resignation to w
     await expect.poll(() => p.view?.revision).toBe(saved.revision);
     expect(p.view!.players).toEqual(saved.players);
     expect(p.view!.positions).toEqual(saved.positions);
+    expect(p.view!.board).toEqual(saved.board);
+    expect(p.view!.balances).toEqual(saved.balances);
   }
+  await panels(players);
   const resumed = await active(players);
   await action(resumed, resumed.view!.turn!.rolled ? 'EndTurn' : 'RollDice');
   await resign(players[2]!); await resign(players[1]!);
@@ -97,9 +111,11 @@ test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ 
 
 test('seed 4491: setup tie, three doubles jail before movement and interim jail attempt', async ({ actors }) => {
   test.skip(process.env['E2E_DETERMINISTIC'] !== '1', 'Requires fresh test-only seeded stack');
+  test.setTimeout(240_000);
   const players = await actors(2), host = players[0]!;
   const room = await createRoom(host); await join(players[1]!, room);
   await start(players);
+  await stage2(players, 29910);
   expect(await setup(players)).toBe(4);
   const prisoner = await active(players);
   for (const dice of [[4, 4], [3, 3]]) {
@@ -107,10 +123,16 @@ test('seed 4491: setup tie, three doubles jail before movement and interim jail 
     expect(prisoner.events.filter(e => e.event.type === 'DiceRolled').at(-1)!.event.payload).toMatchObject({ dice, double: true });
     await action(prisoner, 'EndTurn');
   }
+  const balancesBeforeJail = structuredClone(prisoner.view!.balances);
   const count = prisoner.events.length;
   await action(prisoner, 'RollDice');
   const events = prisoner.events.slice(count).map(e => e.event);
   expect(events.map(e => e.type)).toEqual(['DiceRolled', 'SentToJail', 'TurnEnded', 'TurnStarted']);
+  expect(prisoner.view!.balances).toEqual(balancesBeforeJail);
+  for (const p of players) {
+    await expect.poll(() => p.view?.balances).toEqual(balancesBeforeJail);
+  }
+  await panels(players);
   expect(events[0]!.payload).toMatchObject({ dice: [1, 1], double: true });
   expect(prisoner.view!.positions[prisoner.id]).toBe((events[1]!.payload as { to: number }).to);
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
@@ -139,4 +161,81 @@ test('seed 4491: setup tie, three doubles jail before movement and interim jail 
   }
   expect(prisoner.view!.turn!.pendingBonus).toBe(false);
   expect(prisoner.events.at(-1)!.revision).toBe(prisoner.view!.revision);
+  // Continue the fresh seed-4491/core-4 stream, after the setup tie and jail
+  // attempt above. Player 2 eventually rolls [2, 1] from cell 39 to cell 2,
+  // gaining 3980 (29910 -> 33890). No additional seed or restart is needed.
+  let crossed = false;
+  for (let i = 0; i < 60 && !crossed; i++) {
+    await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
+    const actor = await active(players);
+    if (actor.view!.turn!.rolled) { await action(actor, 'EndTurn'); }
+    else {
+      const before = structuredClone(actor.view!);
+      const eventCount = actor.events.length;
+      await action(actor, 'RollDice');
+      const events = actor.events.slice(eventCount).map(e => e.event);
+      if (events.some(e => e.type === 'BalanceChanged')) {
+        expect(events).toContainEqual({ type: 'BalanceChanged', payload: {
+          playerId: actor.id, delta: 3980, balance: before.balances[actor.id]! + 3980, reason: 'lap-reward',
+        } });
+        expect(before.positions[actor.id]!).toBeGreaterThan(actor.view!.positions[actor.id]!);
+        expect(actor.view!.balances[actor.id]).toBe(before.balances[actor.id]! + 3980);
+        for (const p of players) await expect.poll(() => p.view?.balances).toEqual(actor.view!.balances);
+        await panels(players);
+        crossed = true;
+      }
+    }
+    // Synchronize all views before choosing the next active actor.
+    const revision = actor.view!.revision;
+    for (const p of players) await expect.poll(() => p.view?.revision).toBe(revision);
+  }
+  expect(crossed, 'seed 4491 must reach a rewarded forward start crossing in 60 actions').toBe(true);
+});
+
+async function panels(players: import('./helpers').Actor[]): Promise<void> {
+  for (const p of players) {
+    for (const player of p.view!.players) {
+      const name = `Player ${players.findIndex(a => a.id === player.id) + 1}`;
+      const row = p.page.locator(sel('player-balance')).filter({ has: p.page.getByText(name, { exact: true }) });
+      await expect(row.locator('span').first()).toHaveText(String(p.view!.balances[player.id]));
+    }
+  }
+}
+
+async function stage2(players: import('./helpers').Actor[], capital: number): Promise<void> {
+  const board = players[0]!.view!.board!;
+  expect(board.cells).toHaveLength(40);
+  for (const p of players) {
+    await expect.poll(() => p.view?.board).toEqual(board);
+    await expect.poll(() => Object.values(p.view!.balances)).toEqual(players.map(() => capital));
+    const canvas = p.page.locator(sel('board')).locator('canvas');
+    await expect(canvas).toBeVisible();
+    const box = (await canvas.boundingBox())!;
+    const cell = board.cells.find(c => c.asset)!;
+    const rect = cellRect(cell.index, box.width);
+    await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
+    const card = p.page.locator(sel('asset-card'));
+    await expect(card.getByRole('heading', { level: 2 })).toHaveText(cell.asset!.name);
+    await expect(card).toContainText(cell.asset!.categoryName);
+    await expect(card).toContainText(String(cell.asset!.price));
+    for (const other of board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === cell.asset!.groupId)) {
+      await expect(card).toContainText(other.asset!.name);
+    }
+    await p.page.getByRole('button', { name: 'Close asset card' }).click();
+  }
+  await panels(players);
+}
+
+test('two guests: generated boards agree, capital C(2), and new games differ', async ({ actors }) => {
+  test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Composition variation uses production entropy');
+  const boards = [];
+  const players = await actors(2);
+  for (let game = 0; game < 2; game++) {
+    const room = await createRoom(players[0]!); await join(players[1]!, room);
+    await start(players); await stage2(players, 29910);
+    boards.push(players[0]!.view!.board!.cells.map(c => c.asset?.name ?? c.kind));
+    await resign(players[1]!);
+    for (const p of players) await p.page.locator(sel('return-lobby')).click();
+  }
+  expect(boards[0]).not.toEqual(boards[1]);
 });
