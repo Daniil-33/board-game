@@ -82,7 +82,7 @@ jobs:
     name: compose-browser
     # Playwright 1.58.2 supports Ubuntu24.04; ubuntu-latest has moved to26.04.
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
       # Ephemeral CI database only. The production file requires an operator password.
       POSTGRES_PASSWORD: ephemeral-ci-database
@@ -94,6 +94,11 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps chromium
       - name: Build and start production stack
         run: docker compose -p s1-e2e up --build -d --wait
@@ -107,21 +112,11 @@ jobs:
         run: |
           mkdir -p evidence
           test ! -f playwright-report/results.json || cp playwright-report/results.json evidence/production-results.json
-      - name: Fresh deterministic stack
-        run: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml up --build -d --wait
-        env:
-          WEB_PORT: '8081'
-      - name: Seeded browser scenario
-        run: pnpm test:e2e --output=test-results/seeded
-        env:
-          E2E_DETERMINISTIC: '1'
-          E2E_BASE_URL: http://127.0.0.1:8081
       - name: Collect Compose logs and configuration evidence
         if: always()
         run: |
           mkdir -p evidence
           docker compose -p s1-e2e logs --no-color > evidence/production-compose.log 2>&1
-          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml logs --no-color > evidence/seeded-compose.log 2>&1
           docker compose -p s1-e2e ps -a > evidence/production-services.txt
       - name: Sanitize artifacts
         id: sanitize
@@ -141,4 +136,58 @@ jobs:
         if: always()
         run: |
           docker compose -p s1-e2e down -v
+
+  compose-browser-seeded:
+    name: compose-browser-seeded
+    # Playwright 1.58.2 supports Ubuntu24.04; ubuntu-latest has moved to26.04.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      # Ephemeral CI database only. The production file requires an operator password.
+      POSTGRES_PASSWORD: ephemeral-ci-database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Fresh deterministic stack
+        run: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml up --build -d --wait
+        env:
+          WEB_PORT: '8081'
+      - name: Seeded browser scenario
+        run: pnpm test:e2e --output=test-results/seeded
+        env:
+          E2E_DETERMINISTIC: '1'
+          E2E_BASE_URL: http://127.0.0.1:8081
+      - name: Collect Compose logs and configuration evidence
+        if: always()
+        run: |
+          mkdir -p evidence
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml logs --no-color > evidence/seeded-compose.log 2>&1
+      - name: Sanitize artifacts
+        id: sanitize
+        if: always()
+        run: python3 scripts/sanitize-artifacts.py test-results playwright-report evidence
+      - name: Upload browser evidence
+        if: always() && steps.sanitize.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-browser-seeded-evidence
+          path: |
+            test-results/
+            playwright-report/
+            evidence/
+          retention-days: 14
+      - name: Stop isolated stacks
+        if: always()
+        run: |
           WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml down -v

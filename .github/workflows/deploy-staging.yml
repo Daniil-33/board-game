@@ -1,0 +1,59 @@
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full main SHA to deploy
+        required: true
+        type: string
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions: {}
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: staging
+    steps:
+      - name: Validate deployment SHA
+        id: target
+        shell: bash
+        env:
+          SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.sha }}
+        run: |
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected a lowercase full 40-hex SHA' >&2; exit 2; }
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+      - name: Prepare pinned SSH credentials
+        shell: bash
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy-key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-known-hosts"
+          chmod 600 "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-known-hosts"
+      - name: Deploy and verify public health
+        shell: bash
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          ssh -T -i "$RUNNER_TEMP/deploy-key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy-known-hosts" \
+            -o GlobalKnownHostsFile=/dev/null -o ConnectTimeout=30 \
+            agents@149.5.209.208 "deploy staging $SHA"
+      - name: Remove SSH credentials
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-known-hosts"
