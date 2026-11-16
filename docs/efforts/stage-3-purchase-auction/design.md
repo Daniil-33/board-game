@@ -45,7 +45,7 @@ criteria (C1..C14) refer to the handoff.
 | Protocol version | `PROTOCOL_VERSION = 3` | New commands and view fields. |
 | Stage 2 stored games | Not supported; migration `0004` closes `lobby`/`playing` rooms, logs kept; same failure path as stage 2 | No production games; consistent with stage 2. |
 | Decision commands guard | `turn` target (owner only) | The decision lives inside the turn. |
-| Auction commands guard | `auctionResponse` target: a fresh id per response slot | Gives "id and revision" staleness (C10): a bid or pass for an earlier slot, or a duplicate, is rejected by the guard and never applies twice. |
+| Auction commands guard | `auctionResponse` target: a fresh id per response slot | Gives "id and revision" staleness (C10): a bid or pass for an earlier slot is rejected by the guard; an exact duplicate (same command id) returns the original `Ack`; neither applies twice. |
 | Timer pause | `turn.pausedRemainingMs: number \| null`; while non-null the turn deadline is not pending | One explicit field; `pendingDeadlines` stays the single host contract. |
 | Reservation | Derived, not stored: the leader's reserved amount is `auction.leadingBid` | Cannot drift from the auction; stage 4+ spending checks use `available(player) = balance − reserved`. |
 | Bid history | `auction.bids` (append-only per auction); `leader`/`leadingBid` must equal the bid chosen by the rules | Needed by E1 (b); invariant keeps them consistent. |
