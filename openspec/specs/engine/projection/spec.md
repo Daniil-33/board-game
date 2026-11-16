@@ -13,7 +13,7 @@ A viewer SHALL be either a player viewer carrying a `PlayerId` or a spectator vi
 - **THEN** the projection SHALL be deep-equal to the projection for a spectator viewer
 
 ### Requirement: State projection hides secrets
-Projecting a game state for any viewer SHALL return a view that contains no RNG state, in any phase. Every other field of the current state (revision, rules version, phase, players, order-roll state, turn order, current turn, positions, interim jail entries, eliminated ids and winner) SHALL be present in the view with the same value as in the state.
+Projecting a game state for any viewer SHALL return a view that contains no RNG state, in any phase. Every other field of the current state (revision, rules version, phase, players, order-roll state, turn order, current turn, positions, interim jail entries, eliminated ids, winner, board, economy and balances) SHALL be present in the view with the same value as in the state.
 
 #### Scenario: RNG never projected
 - **WHEN** a state in phase `lobby`, `setup`, `playing` or `finished` is projected for a player viewer and for a spectator viewer
@@ -21,7 +21,7 @@ Projecting a game state for any viewer SHALL return a view that contains no RNG 
 
 #### Scenario: Public fields projected
 - **WHEN** a state is projected for any viewer
-- **THEN** the view SHALL carry the state's revision, rules version, phase, players, order-roll state, turn order, current turn, positions, jail entries, eliminated ids and winner unchanged
+- **THEN** the view SHALL carry the state's revision, rules version, phase, players, order-roll state, turn order, current turn, positions, jail entries, eliminated ids, winner, board, economy and balances unchanged
 
 ### Requirement: Projection is plain data
 A state view and a projected event list SHALL be plain JSON-compatible data. Projecting SHALL NOT mutate the state or the events, and SHALL return the same view for the same inputs.
@@ -42,7 +42,7 @@ Every field of the game state SHALL have an explicit visibility classification, 
 - **THEN** `tsc --noEmit` for `packages/game-core` SHALL fail
 
 ### Requirement: Event projection fails closed
-Projecting events for a viewer SHALL keep their order and return each event the viewer may see. Every lifecycle event (`GameCreated`, `PlayerAdded`, `GameStarted`) and every order-roll, turn, interim-jail, leave, resignation and game-end event SHALL be visible to every viewer unchanged. An event whose type has no visibility classification SHALL raise an engine-defect error rather than be passed through.
+Projecting events for a viewer SHALL keep their order and return each event the viewer may see. BoardGenerated and BalanceChanged and every lifecycle event (`GameCreated`, `PlayerAdded`, `GameStarted`) and every order-roll, turn, interim-jail, leave, resignation and game-end event SHALL be visible to every viewer unchanged. An event whose type has no visibility classification SHALL raise an engine-defect error rather than be passed through.
 
 #### Scenario: Lifecycle events are public
 - **WHEN** the events of `CreateGame`, `AddPlayer` and `StartGame` are projected for a spectator viewer

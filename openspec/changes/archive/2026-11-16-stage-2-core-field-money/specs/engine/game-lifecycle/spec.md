@@ -34,7 +34,7 @@ The engine SHALL accept `CreateGame` only for a rules version it explicitly supp
 - **THEN** the engine SHALL reject it with `UNSUPPORTED_RULES_VERSION`
 
 ### Requirement: Start game
-`StartGame` SHALL be issued only by the system actor, only in phase `lobby`, and only when the game has at least 2 players. Otherwise it SHALL be rejected with `NOT_ENOUGH_PLAYERS`. On acceptance, the phase SHALL become `setup`, the economy SHALL be fixed and every participant credited starting capital, and the first order roll SHALL begin, and the events SHALL be `GameStarted` with the player ids in join order followed by one `BalanceChanged` per player in join order and then `OrderRollStarted`.
+`StartGame` SHALL be issued only by the system actor, only in phase `lobby`, and only when the game has at least 2 players. Otherwise it SHALL be rejected with `NOT_ENOUGH_PLAYERS`. On acceptance, the phase SHALL become `setup`, economy SHALL be fixed and every participant credited starting capital, and the first order roll SHALL begin, and the events SHALL be `GameStarted` with the player ids in join order followed by one `BalanceChanged` per player in join order and then `OrderRollStarted`.
 
 #### Scenario: Game started
 - **WHEN** the system actor issues `StartGame` in `lobby` with 2 players

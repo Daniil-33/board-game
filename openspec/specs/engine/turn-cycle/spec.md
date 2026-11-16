@@ -26,12 +26,12 @@ An accepted `RollDice` by a player not in jail SHALL draw two values from 1 to 6
 - **WHEN** the turn owner issues `RollDice` after already rolling in this turn
 - **THEN** the engine SHALL reject it with `ALREADY_ROLLED`
 
-### Requirement: Movement on the placeholder ring
-After a roll that does not send the player to jail, the player SHALL move forward by the dice sum modulo 40 and `PlayerMoved` SHALL report the start cell, end cell and steps. The ring SHALL be the exported 40-cell placeholder layout, marked as replaced in stage 2, with cell 0 the start and one jail cell.
+### Requirement: Movement on CLASSIC_40
+After a roll that does not send the player to jail, the player SHALL move forward by the dice sum modulo 40 and `PlayerMoved` SHALL report the start cell, end cell and steps. The ring SHALL be the exported CLASSIC_40 layout. A forward crossing or exact landing on cell 0 SHALL credit economy.lapReward once immediately after PlayerMoved and before any landing settlement; landing effects SHALL otherwise be inert in stage 2.
 
 #### Scenario: Wrap around the ring
 - **WHEN** a player on cell 36 rolls 3 and 4
-- **THEN** the player SHALL be on cell 3 and `PlayerMoved` SHALL report from 36, to 3, steps 7
+- **THEN** the player SHALL be on cell 3 and `PlayerMoved` SHALL report from 36, to 3, steps 7, followed by one lap-reward BalanceChanged event
 
 ### Requirement: Ending a turn
 `EndTurn` SHALL be accepted only after the turn's roll; before it the engine SHALL reject it with `ROLL_REQUIRED`. Closing a turn SHALL run the mandatory-settlement step (no effect in stage 1), emit `TurnEnded` with a reason, and start the next turn: a bonus turn for the same player if one is pending, otherwise a turn for the next player in order, wrapping around.
