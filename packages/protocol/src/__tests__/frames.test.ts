@@ -19,8 +19,8 @@ const enc = (v: unknown) => JSON.stringify(v);
 const isMalformed = (r: { ok: boolean; error?: { code: string } }) => !r.ok && r.error?.code === 'MALFORMED_FRAME';
 
 describe('protocol version and codes', () => {
-  it('PROTOCOL_VERSION is 2', () => {
-    expect(PROTOCOL_VERSION).toBe(2);
+  it('PROTOCOL_VERSION is 3', () => {
+    expect(PROTOCOL_VERSION).toBe(3);
   });
 
   it('lists the seven protocol error codes', () => {
@@ -36,7 +36,7 @@ describe('protocol version and codes', () => {
   });
 
   it('client command types are RollForOrder | RollDice | EndTurn | Resign', () => {
-    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign']);
+    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction']);
     expectTypeOf<CommandFrame['type']>().toEqualTypeOf<ClientCommandType>();
   });
 });
