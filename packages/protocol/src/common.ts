@@ -2,7 +2,7 @@ import { Type, type Static } from '@sinclair/typebox';
 import type { CommandId, Expectation, PlayerId, Revision, TargetRef } from '@game/game-core';
 
 /** Wire protocol version carried by `Hello` and `Welcome`. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /** Upper bound, in UTF-16 code units, on the text of one WebSocket frame. */
 export const MAX_FRAME_LENGTH = 1 << 20;
@@ -27,6 +27,7 @@ const idString = (description: string) =>
   Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, pattern: ID_PATTERN, description });
 
 export const CommandIdSchema = Type.Unsafe<CommandId>(idString('Client-generated command id, unique within the game.'));
+export const AssetIdSchema = idString('Game-core asset id.');
 export const PlayerIdSchema = Type.Unsafe<PlayerId>(idString('Game-core player id.'));
 export const RevisionSchema = Type.Unsafe<Revision>(
   Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER, description: 'Game revision.' }),

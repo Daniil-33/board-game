@@ -69,6 +69,8 @@ export interface Room {
 }
 
 export interface RoomManager {
+  /** Host time used for test fixture deadlines. */
+  now(): number;
   /**
    * Boot: load every room with status `lobby` or `playing`. One bad room
    * never throws. `failed` lists rooms whose stored game is bad (registered

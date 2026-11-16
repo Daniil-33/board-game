@@ -55,6 +55,14 @@ describe('service process', () => {
     expect(proc.lines().join('\n')).not.toContain('server listening');
   }, 30_000);
 
+  it.each(['production', 'staging', 'development', ''])('refuses fixtures before DB access in mode %s', async mode => {
+    const proc = run({ NODE_ENV: mode, E2E_FIXTURES: '1', DATABASE_URL: 'postgres://unreachable', PORT: '0' });
+    expect(await proc.exit).toBe(1);
+    expect(proc.lines().join('\n')).toContain('E2E_FIXTURES requires NODE_ENV=test');
+    expect(proc.lines().join('\n')).not.toContain('database migrated');
+    expect(proc.lines().join('\n')).not.toContain('server listening');
+  }, 30_000);
+
   it.each([undefined, 'abc123'])('migrates before health is reachable, binds locally, exits cleanly (SHA %j)', async (sha) => {
     const test = await createTestDatabase({ migrate: false });
     try {

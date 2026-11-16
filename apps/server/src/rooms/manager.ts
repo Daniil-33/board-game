@@ -83,6 +83,7 @@ export function createRoomManager(deps: RoomManagerDeps): RoomManager {
   }
 
   return {
+    now: () => clock.now(),
     async restoreAll() {
       if (closed) throw new RoomManagerClosedError();
       const ids = await store.listActiveRoomIds();

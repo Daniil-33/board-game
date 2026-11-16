@@ -19,8 +19,8 @@ const enc = (v: unknown) => JSON.stringify(v);
 const isMalformed = (r: { ok: boolean; error?: { code: string } }) => !r.ok && r.error?.code === 'MALFORMED_FRAME';
 
 describe('protocol version and codes', () => {
-  it('PROTOCOL_VERSION is 3', () => {
-    expect(PROTOCOL_VERSION).toBe(3);
+  it('PROTOCOL_VERSION is 4', () => {
+    expect(PROTOCOL_VERSION).toBe(4);
   });
 
   it('lists the seven protocol error codes', () => {
@@ -36,7 +36,7 @@ describe('protocol version and codes', () => {
   });
 
   it('client command types match the stage 3 allowlist', () => {
-    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction']);
+    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse']);
     expectTypeOf<CommandFrame['type']>().toEqualTypeOf<ClientCommandType>();
   });
 });
@@ -52,7 +52,7 @@ describe('static types come from game-core', () => {
   it('view schema documents the stage 3 public projection and temporary jail rule', () => {
     expect(StateViewSchema.description).toEqual(
       'Public projection of the game state (game-core StateView), checked only as a JSON object. ' +
-      'Includes the public generated board, economy, balances, asset owners, purchase decision and auction state. ' +
+      'Includes the public generated board, economy, balances, asset owners, purchase decision, auction state, houses, rent and rent quotes. ' +
       'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
     );
   });

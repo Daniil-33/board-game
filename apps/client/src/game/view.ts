@@ -95,6 +95,9 @@ export function actionAvailability(ctx: ActionContext): ActionAvailability {
     StartAuction: canIssue(ctx, 'StartAuction'),
     Bid: canIssue(ctx, 'Bid'),
     PassAuction: canIssue(ctx, 'PassAuction'),
+    PayRent: false,
+    BuildHouse: false,
+    SellHouse: false,
   };
 }
 

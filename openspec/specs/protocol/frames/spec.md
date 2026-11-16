@@ -8,12 +8,12 @@ and how untrusted frame text is decoded.
 ## Requirements
 
 ### Requirement: Protocol version
-The package SHALL export `PROTOCOL_VERSION` equal to `3`. `Hello` and
+The package SHALL export `PROTOCOL_VERSION` equal to `4`. `Hello` and
 `Welcome` SHALL carry the protocol version.
 
 #### Scenario: Version constant
 - **WHEN** `PROTOCOL_VERSION` is imported
-- **THEN** it SHALL equal `3`
+- **THEN** it SHALL equal `4`
 
 ### Requirement: Frame set
 Every WebSocket frame SHALL be a JSON object tagged by a string field `t` and SHALL conform to exactly one of the client or server frame shapes below.
@@ -100,7 +100,7 @@ without naming game-core symbols.
 
 ### Requirement: Client command types
 The client `Command` types SHALL be exactly `RollForOrder`, `RollDice`,
-`EndTurn`, `Resign`, `BuyAsset`, `StartAuction`, `Bid` and `PassAuction`, each with payload `null`, named as in game-core.
+`EndTurn`, `Resign`, `BuyAsset`, `StartAuction`, `Bid`, `PassAuction`, `PayRent`, `BuildHouse` and `SellHouse`, named as in game-core. All except BuildHouse and SellHouse SHALL carry payload `null`. BuildHouse and SellHouse SHALL carry exactly `{ assetId: string }`, with a storable nonempty id bounded to 128 UTF-16 code units and no extra keys.
 
 #### Scenario: Resign frame
 - **WHEN** `{ t: 'Command', commandId: 'c1', type: 'Resign', expected: { kind: 'revision', revision: 7 }, payload: null }` is decoded
@@ -113,6 +113,14 @@ The client `Command` types SHALL be exactly `RollForOrder`, `RollDice`,
 #### Scenario: Purchase and auction intents
 - **WHEN** any of BuyAsset, StartAuction, Bid or PassAuction is decoded with a valid expectation
 - **THEN** null payload SHALL be accepted and every non-null payload SHALL be rejected
+
+#### Scenario: House command payloads
+- **WHEN** BuildHouse or SellHouse is decoded
+- **THEN** exactly one bounded storable assetId string SHALL be accepted; null, missing ids, extra keys, empty or oversized ids, NUL and lone surrogates SHALL be rejected
+
+#### Scenario: Rent command payload
+- **WHEN** PayRent is decoded
+- **THEN** null SHALL be accepted and every non-null payload SHALL be rejected
 
 ### Requirement: Storable ids
 Every id string (room/game id, guest id, player id, command id) SHALL reject
@@ -132,7 +140,7 @@ Welcome and Update views SHALL carry the core public board, economy and balances
 
 #### Scenario: Public view schema description
 - **WHEN** the view schema description is read
-- **THEN** it SHALL equal "Public projection of the game state (game-core StateView), checked only as a JSON object. Includes the public generated board, economy, balances, asset owners, purchase decision and auction state. Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6)."
+- **THEN** it SHALL equal "Public projection of the game state (game-core StateView), checked only as a JSON object. Includes the public generated board, economy, balances, asset owners, purchase decision, auction state, houses, rent and rent quotes. Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6)."
 
 ### Requirement: Stage 3 public projection and events
 Welcome and Update views SHALL carry the core public owners, purchase decision and auction, including the responder and response deadline. Purchase and auction events SHALL retain their core payloads. Views SHALL remain statically typed as StateView and checked as JSON objects at runtime.
@@ -140,3 +148,10 @@ Welcome and Update views SHALL carry the core public owners, purchase decision a
 #### Scenario: Auction round trip
 - **WHEN** Welcome or Update carries a running auction or pending purchase decision
 - **THEN** encoding and decoding SHALL preserve the public state and events unchanged
+
+### Requirement: Stage 4 public projection and events
+Welcome and Update SHALL preserve the core public houses, rent settlement, rentQuotes and balances. RentDue, RentPaid, HouseBuilt, HouseSold and BalanceChanged events SHALL retain their core payloads.
+
+#### Scenario: Stage 4 round trip
+- **WHEN** a Welcome or Update carries houses, a rent settlement or rent quotes
+- **THEN** encoding and decoding SHALL preserve all fields and public events unchanged

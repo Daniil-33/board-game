@@ -1,3 +1,4 @@
+import { fixturesEnabled } from './main-config.js';
 import websocket from '@fastify/websocket';
 import { MAX_FRAME_LENGTH } from '@game/protocol';
 import type { FastifyInstance } from 'fastify';
@@ -35,6 +36,7 @@ export interface ServerDeps {
  * socket) before shutting the manager down.
  */
 export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
+  const enableFixtures = fixturesEnabled(process.env);
   const logger = deps.logger ?? consoleLogger;
   const guests = createGuestStore(deps.db);
   const queries = createRoomQueries(deps.db);
@@ -55,5 +57,9 @@ export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
     logger,
     ...(deps.helloTimeoutMs !== undefined ? { helloTimeoutMs: deps.helloTimeoutMs } : {}),
   });
+  if (enableFixtures) {
+    const { registerFixtureLoader } = await import('./test-fixture-loader.js');
+    registerFixtureLoader(app, deps.db, guests, () => deps.manager.now());
+  }
   return app;
 }
