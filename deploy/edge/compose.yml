@@ -7,8 +7,8 @@ services:
       - 0.0.0.0:80:80
       - 0.0.0.0:443:443
     volumes:
-      - ${EDGE_SOURCE_DIR:-/srv/game/edge/src/deploy/edge}:/edge:ro
-      - ${EDGE_SOURCE_DIR:-/srv/game/edge/src/deploy/edge}/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${EDGE_SOURCE_DIR:-/srv/agents/game/edge/src/deploy/edge}:/edge:ro
+      - ${EDGE_SOURCE_DIR:-/srv/agents/game/edge/src/deploy/edge}/nginx.conf:/etc/nginx/nginx.conf:ro
       - certificates:/etc/letsencrypt:ro
       - challenges:/var/www/certbot:ro
     networks: [staging, production]
@@ -19,7 +19,7 @@ services:
     image: certbot/certbot
     entrypoint: [/bin/sh, /edge/renew.sh]
     volumes:
-      - ${EDGE_SOURCE_DIR:-/srv/game/edge/src/deploy/edge}:/edge:ro
+      - ${EDGE_SOURCE_DIR:-/srv/agents/game/edge/src/deploy/edge}:/edge:ro
       - certificates:/etc/letsencrypt
       - challenges:/var/www/certbot
     tmpfs: [/dry-run]

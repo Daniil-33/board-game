@@ -29,7 +29,7 @@
 - Report proposal checkpoint with agentctl engineer report --wake and await Team Lead approval before Apply; fresh Apply context as required by role policy.
 - Commit/push branch through recorded external-operation protocol, open PR, run independent review using agentctl review start, resolve findings and confirm green CI at exact head.
 - Archive change in PR after review passes, validate resulting specs, and hand off merge to Team Lead.
-- After merge only: record and confirm /srv/game directories, mode-600 generated env files, public HTTPS checkouts and installed gate; preserve preview/test stacks.
+- After merge only: record and confirm /srv/agents/game directories, mode-600 generated env files, public HTTPS checkouts and installed gate; preserve preview/test stacks.
 - Record and confirm edge networks/startup and staging-CA dry runs followed by live certificate issuance. Save TLS/redirect evidence for all four hosts without secrets.
 - After TASK-dep-config merges: record and confirm first manual staging deploy through installed gate and public health checks; no production deploy.
 - Report concrete evidence, operation IDs and residual risks through agentctl; wait for Team Lead acceptance.

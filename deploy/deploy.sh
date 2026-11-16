@@ -10,7 +10,7 @@ fi
 env=$1
 export GIT_SHA="$2"
 export DEPLOY_ENV="$env"
-root=/srv/game
+root=/srv/agents/game
 file="$root/$env/env"
 cd "$(dirname "$0")/.."
 # Never source the env file as shell code or print its contents.

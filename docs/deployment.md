@@ -42,13 +42,13 @@ retrying, and never copy secrets into evidence. Save nonsecret results under
 separately (including certificate issuance and first staging deploy).
 
 1. Verify prerequisites without changes: Python 3, Git, `sg`, Docker Compose
-   v2, `openssl`, `curl`, writable `/srv/game`, all four DNS A records pointing
+   v2, `openssl`, `curl`, writable `/srv/agents/game`, all four DNS A records pointing
    to 149.5.209.208, and ports 80/443 free. Check current `docker ps` so the
    owner `preview` (127.0.0.1:5173), speech service and Engineer stacks are
    preserved. Docker commands on this VPS run through `sg docker -c '…'`.
    Do not publish any additional port.
-2. Create `/srv/game/{bin,edge,staging,production}` as `agents`. Clone the public
-   repository into `/srv/game/edge/src` and each `/srv/game/<env>/src` using
+2. Create `/srv/agents/game/{bin,edge,staging,production}` as `agents`. Clone the public
+   repository into `/srv/agents/game/edge/src` and each `/srv/agents/game/<env>/src` using
    `git clone https://github.com/Daniil-33/board-game.git <path>` and fetch
    `origin/main`. These checkouts store no Git credentials; use only public
    HTTPS fetches and do not configure push credentials. Check out merged main
@@ -65,7 +65,7 @@ separately (including certificate issuance and first staging deploy).
        ('staging', 'stage.focusima.space', 'stage-api.focusima.space'),
        ('production', 'focusima.space', 'api.focusima.space'),
    ):
-       path = f'/srv/game/{env}/env'
+       path = f'/srv/agents/game/{env}/env'
        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
        with os.fdopen(fd, 'w') as file:
            file.write(f'POSTGRES_PASSWORD={secrets.token_hex(32)}\n'
@@ -76,16 +76,16 @@ separately (including certificate issuance and first staging deploy).
    Verify owner and mode using `stat`, never `cat`. Do not commit env files or
    include rendered Compose configs with real passwords in logs/evidence.
 4. Install the gate from the merged main checkout with
-   `install -m 755 /srv/game/staging/src/deploy/deploy-gate /srv/game/bin/deploy-gate`.
+   `install -m 755 /srv/agents/game/staging/src/deploy/deploy-gate /srv/agents/game/bin/deploy-gate`.
    Verify its checksum against that checkout. The host needs Python 3. An SSH
    forced-command shell may lack active Docker group membership; the gate
-   re-execs through `sg docker -c /srv/game/bin/deploy-gate` with a **fixed**
+   re-execs through `sg docker -c /srv/agents/game/bin/deploy-gate` with a **fixed**
    command, preserving `SSH_ORIGINAL_COMMAND` as data. Test a refused command
-   locally: `SSH_ORIGINAL_COMMAND=id /srv/game/bin/deploy-gate` must return 2
+   locally: `SSH_ORIGINAL_COMMAND=id /srv/agents/game/bin/deploy-gate` must return 2
    with one line. Key creation and `authorized_keys` changes belong to
    TASK-dep-pipeline, not this setup.
 5. Create networks `edge-staging` and `edge-production` after inspecting
-   whether they already exist. From `/srv/game/edge/src/deploy/edge`, start
+   whether they already exist. From `/srv/agents/game/edge/src/deploy/edge`, start
    `sg docker -c 'docker compose -p edge -f compose.yml up -d'`. With no
    certificates, nginx starts HTTP only. Verify a temporary public challenge
    file for all four hosts and remove it after testing. Inspect edge logs and
@@ -134,7 +134,7 @@ separately (including certificate issuance and first staging deploy).
 The gate accepts exactly one command grammar, with a lowercase full SHA:
 
 ```sh
-SSH_ORIGINAL_COMMAND='deploy staging <40-hex-main-sha>' /srv/game/bin/deploy-gate
+SSH_ORIGINAL_COMMAND='deploy staging <40-hex-main-sha>' /srv/agents/game/bin/deploy-gate
 # After pipeline setup, the same command is sent by restricted SSH:
 ssh -T <deploy-host> 'deploy staging <40-hex-main-sha>'
 ```
@@ -169,7 +169,7 @@ schema-compatible SHA.
 ## Deliberate edge updates
 
 The shared edge is independent of both app deployments. Its scripts and nginx
-configuration are mounted from `/srv/game/edge/src/deploy/edge`, at the pinned
+configuration are mounted from `/srv/agents/game/edge/src/deploy/edge`, at the pinned
 main SHA recorded by setup. Staging and production gates never touch that
 checkout, so deploying or rolling back either app cannot change edge config.
 `EDGE_SOURCE_DIR` defaults to that dedicated directory; an override is for
@@ -177,7 +177,7 @@ isolated testing or a deliberately recorded copied directory only, never an
 app checkout.
 
 To update shared infrastructure, record a separate operation naming the old
-and proposed full main SHAs. In `/srv/game/edge/src`, fetch origin/main, verify
+and proposed full main SHAs. In `/srv/agents/game/edge/src`, fetch origin/main, verify
 `git merge-base --is-ancestor <new-sha> origin/main`, and review the edge diff.
 Validate a separate candidate checkout first: render Compose with
 `EDGE_SOURCE_DIR=<candidate>/deploy/edge docker compose -p edge -f
@@ -193,7 +193,7 @@ After candidate checks pass, run checkout and recreation back-to-back in one
 command, substituting the validated full SHA (do not pause between the steps):
 
 ```sh
-(cd /srv/game/edge/src && git checkout --detach <validated-full-sha> && \
+(cd /srv/agents/game/edge/src && git checkout --detach <validated-full-sha> && \
   cd deploy/edge && sg docker -c 'docker compose -p edge -f compose.yml up -d --force-recreate')
 ```
 
@@ -218,7 +218,7 @@ errors appear in certbot logs. Config validation failure preserves the running
 nginx configuration and is logged; correct the certificate/config problem and
 retry. Issue scripts are safe to repeat with an unexpired live certificate.
 
-App secrets live only in `/srv/game/<env>/env` (owned by agents, mode 600).
+App secrets live only in `/srv/agents/game/<env>/env` (owned by agents, mode 600).
 To rotate a DB password, coordinate downtime for that environment: update the
 Postgres role password via a private interactive connection (no password on
 argv or in logs), atomically replace only that environment's env file retaining

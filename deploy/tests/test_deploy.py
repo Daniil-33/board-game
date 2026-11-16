@@ -120,7 +120,7 @@ class GateTests(unittest.TestCase):
         with patch.object(gate.os, 'execvp', side_effect=SystemExit) as execute:
             with self.assertRaises(SystemExit):
                 gate.deploy(f'deploy staging {SHA}')
-        execute.assert_called_once_with('sg', ['sg', 'docker', '-c', '/srv/game/bin/deploy-gate'])
+        execute.assert_called_once_with('sg', ['sg', 'docker', '-c', '/srv/agents/game/bin/deploy-gate'])
         self.git.assert_not_called()
 
     def test_operational_exception_text_is_omitted(self):
@@ -134,7 +134,7 @@ class GateTests(unittest.TestCase):
     def test_app_deployment_never_references_edge_checkout(self):
         for file in ('deploy-gate', 'deploy.sh'):
             source = (DEPLOY / file).read_text()
-            self.assertNotIn('/srv/game/edge', source)
+            self.assertNotIn('/srv/agents/game/edge', source)
             self.assertNotIn('deploy/edge', source)
             self.assertNotIn('EDGE_SOURCE_DIR', source)
 
@@ -206,7 +206,7 @@ class ScriptTests(unittest.TestCase):
         self.env = self.root / 'staging/env'
         self.env.write_text('POSTGRES_PASSWORD=do-not-print-this-secret\n')
         self.env.chmod(0o600)
-        script = (DEPLOY / 'deploy.sh').read_text().replace('root=/srv/game', f'root={self.root}')
+        script = (DEPLOY / 'deploy.sh').read_text().replace('root=/srv/agents/game', f'root={self.root}')
         (self.repo / 'deploy/deploy.sh').write_text(script)
         (self.repo / 'deploy/health.py').write_text("import os, sys\nsys.exit(int(os.environ.get('HEALTH_FAIL', '0')))\n")
         self.bin = self.root / 'bin'

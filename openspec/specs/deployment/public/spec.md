@@ -75,6 +75,6 @@ The runbook SHALL document setup, deployment, rollback, certificate lifecycle, s
 
 #### Scenario: Initial provisioning
 - **WHEN** approved merged infrastructure is provisioned
-- **THEN** mode-600 environment files and read-only HTTPS checkouts exist under /srv/game, edge networks and valid TLS are prepared, and staging is verified once config support is merged
+- **THEN** mode-600 environment files and read-only HTTPS checkouts exist under /srv/agents/game, edge networks and valid TLS are prepared, and staging is verified once config support is merged
 - **AND** before live issuance the VPS-to-own-public-IP HTTPS path is verified, with failure escalated to the Team Lead without root or host-file workarounds
 - **AND** production has no app deployment without owner approval
