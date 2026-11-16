@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from '@game/protocol';
 import { CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward } from '@game/game-core';
 import type { PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientFrame, RoomSummary, ServerFrame } from '@game/protocol';
@@ -94,7 +95,7 @@ export function playingView(order: string[], o: PlayingOptions = {}): StateView 
 
 export const welcome = (view: StateView, playerId = 'a'): ServerFrame => ({
   t: 'Welcome',
-  protocolVersion: 1,
+  protocolVersion: PROTOCOL_VERSION,
   playerId: pid(playerId),
   revision: view.revision,
   view,
