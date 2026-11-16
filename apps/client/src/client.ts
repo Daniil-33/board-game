@@ -18,6 +18,7 @@ import type { BoardView } from './board/BoardCanvas';
 
 /** What the client needs from a mounted board. */
 export interface Board {
+  refreshOwnership?(view: BoardView): void;
   setAssetSelection?(callback: ((index: number) => void) | null): void;
   setNames(nameOf: (playerId: string) => string): void;
   snap(view: BoardView, activeId: string | null): void;
@@ -172,6 +173,7 @@ export function createClient(deps: ClientDeps): Client {
     ...(deps.timers !== undefined && { timers: deps.timers }),
     ...(deps.newCommandId !== undefined && { newCommandId: deps.newCommandId }),
     onWelcome(view) {
+      board?.refreshOwnership?.(view);
       eliminatedKey = JSON.stringify(view.eliminated);
       // No delta replay in stage 1: drop what was waiting and show the view as it is.
       queue.clear();
@@ -179,6 +181,7 @@ export function createClient(deps: ClientDeps): Client {
       resolveNames();
     },
     onUpdate(view, events) {
+      board?.refreshOwnership?.(view);
       const nextEliminated = JSON.stringify(view.eliminated);
       if (nextEliminated !== eliminatedKey || view.phase === 'finished' || events.some((e) => e.type === 'PlayerResigned' || e.type === 'GameEnded')) {
         queue.clear();
@@ -345,6 +348,7 @@ export function createClient(deps: ClientDeps): Client {
       board = next;
       if (board === null) return;
       board.setNames(nameOf);
+      if (game.view !== null) board.refreshOwnership?.(game.view);
       if (queue.idle) snapBoard();
     },
   };

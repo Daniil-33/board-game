@@ -4,8 +4,8 @@
  * the shapes game-core defines, enough to demo every screen. The real server
  * runs `@game/game-core`; nothing here ships in the client bundle.
  */
-import { generateBoard, seedRng, startingCapital, lapReward, creditBalance, CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
-import type { Expectation, GameEvent, PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
+import { gameEngine, projectState, timestamp, entropy, CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward, creditBalance, CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
+import type { CommandId, Expectation, GameEvent, PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientCommandType, ErrorBody } from '@game/protocol';
 import { ORDER_DICE, TURN_DICE } from './script';
 
@@ -27,7 +27,7 @@ const reject = (code: string, message: string): MockResult => ({ ok: false, erro
 export class MockGame {
   private state: Mutable<StateView> = {
     revision: 1 as Revision,
-    rulesVersion: 'mock',
+    rulesVersion: CURRENT_RULES_VERSION,
     phase: 'lobby',
     owners: {}, purchase: null, auction: null,
     board: generateBoard(seedRng(42)).board,
@@ -58,6 +58,7 @@ export class MockGame {
 
   /** The player the game is waiting for, and until when. */
   get waitingFor(): { playerId: PlayerId; deadline: number } | null {
+    if (this.state.auction !== null) return { playerId: this.state.auction.responder, deadline: this.state.auction.responseDeadline };
     if (this.state.setup !== null) return { playerId: this.state.setup.playerId, deadline: this.state.setup.deadline };
     if (this.state.turn !== null) return { playerId: this.state.turn.playerId, deadline: this.state.turn.deadline };
     return null;
@@ -118,6 +119,7 @@ export class MockGame {
   /** A player's command: checks the target, whose turn it is and the deadline, then plays the script. */
   command(playerId: string, type: ClientCommandType, expected: Expectation, now: number): MockResult {
     const { setup, turn } = this.state;
+    if (this.state.auction !== null || type === 'BuyAsset' || type === 'StartAuction' || type === 'Bid' || type === 'PassAuction' || (type === 'EndTurn' && this.state.purchase !== null) || (type === 'Resign' && this.state.purchase !== null)) return this.coreCommand(playerId, type, expected, now);
     if (type === 'Resign') return this.resign(playerId as PlayerId, expected, now);
     if (this.state.eliminated.includes(playerId as PlayerId)) return reject('PLAYER_ELIMINATED', 'You are out');
     if (type === 'RollForOrder') {
@@ -146,6 +148,13 @@ export class MockGame {
   /** The deadline passed: roll for the player, or close a turn that had rolled. Null when nothing is due. */
   timeout(now: number): GameEvent[] | null {
     const { setup, turn } = this.state;
+    if (this.state.auction !== null || (this.state.purchase !== null && turn !== null && now >= turn.deadline)) {
+      const a = this.state.auction;
+      const deadline = a?.responseDeadline ?? turn!.deadline;
+      if (now < deadline) return null;
+      const result = this.coreCommand(null, 'Timeout', { kind: 'target', target: a ? { kind: 'auctionResponse', id: a.responseId } : { kind: 'turn', id: turn!.turnId } }, now);
+      return result.ok ? [...result.events] : null;
+    }
     if (setup !== null) {
       if (now < setup.deadline) return null;
       return this.bumped(this.rollForOrder(now, true));
@@ -157,6 +166,24 @@ export class MockGame {
     const deadline = (now + this.options.continuationMs) as Timestamp;
     this.state.turn = { ...this.state.turn, deadline, continuation: true };
     return this.bumped([...rolled.events, { type: 'TurnContinued', payload: { turnId: turn.turnId, deadline } }]);
+  }
+
+  /** Acquisition commands and deadlines use the real core; scripted movement mirrors the offer trigger below. */
+  private coreCommand(playerId: string | null, type: string, expected: Expectation, now: number): MockResult {
+    const result = gameEngine.execute({ ...this.state, rng: seedRng(42) }, {
+      type, commandId: `mock-${this.revision + 1}` as CommandId,
+      actor: playerId === null ? { kind: 'system' } : { kind: 'player', id: playerId as PlayerId }, expected, payload: null,
+    }, { now: timestamp(now), entropy: entropy([1, 2, 3, 4]) });
+    if (result.kind === 'rejected') return { ok: false, error: result.error };
+    this.state = projectState(result.state, { kind: 'spectator' });
+    return { ok: true, events: result.events };
+  }
+
+  private offer(playerId: PlayerId, events: GameEvent[]): void {
+    const cell = this.state.board!.cells[this.state.positions[playerId]!]!;
+    if (cell.asset === null || this.state.owners[cell.asset.assetId] !== undefined) return;
+    this.state.purchase = { playerId, cell: cell.index, assetId: cell.asset.assetId };
+    events.push({ type: 'PurchaseOffered', payload: this.state.purchase });
   }
 
   private accept(events: GameEvent[]): MockResult {
@@ -288,6 +315,7 @@ export class MockGame {
         events.push(...this.move(playerId, dice[0] + dice[1]));
       }
       this.state.turn = rolled;
+      if (!Object.hasOwn(this.state.jail, playerId)) this.offer(playerId, events);
       return { events, closed: false };
     }
 
@@ -304,6 +332,7 @@ export class MockGame {
 
     events.push(...this.move(playerId, dice[0] + dice[1]));
     this.state.turn = { ...rolled, doublesStreak: double ? turn.doublesStreak + 1 : 0, pendingBonus: double };
+    this.offer(playerId, events);
     return { events, closed: false };
   }
 }

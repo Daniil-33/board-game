@@ -74,3 +74,6 @@ input[readonly] { width: 100%; }
 .asset-card dd { margin: 0; }
 .asset-card li { margin: .5rem 0; }
 .game-panel { flex: 1 1 280px; }
+
+.decision-panel button { float: none; margin-right: .5rem; }
+.decision-panel dl { grid-template-columns: 110px 1fr; }

@@ -15,15 +15,15 @@ function sources(dir: string): string[] {
 
 const FILES = sources(srcDir).map((file) => ({ name: relative(srcDir, file), text: readFileSync(file, 'utf8') }));
 
-/** The pure constants the client may take from game-core. Everything else must be `import type`. */
-const ALLOWED_VALUES = ['CLASSIC_40', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIND'];
+/** The pure constants and display helper the client may take from game-core. Everything else must be `import type`. */
+const ALLOWED_VALUES = ['CLASSIC_40', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIND', 'AUCTION_RESPONSE_TARGET_KIND', 'nextBidAmount'];
 
 describe('client boundary', () => {
   it('finds the client sources', () => {
     expect(FILES.map((f) => f.name)).toEqual(expect.arrayContaining(['main.ts', 'App.vue', 'net/connection.ts']));
   });
 
-  it('imports only types and pure constants from game-core, never transition logic', () => {
+  it('imports only types, constants and display helpers from game-core, never transition logic', () => {
     const imported: string[] = [];
     for (const { name, text } of FILES) {
       for (const match of text.matchAll(/import\s+(type\s+)?([^;]*?)\s+from\s+'@game\/game-core'/g)) {

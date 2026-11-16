@@ -28,6 +28,8 @@ export interface MockTimers {
 
 export interface MockOptions extends MockGameOptions {
   readonly timers: MockTimers;
+  /** Disable automatic seats for deterministic multi-peer scripts. */
+  readonly automateSeats?: boolean;
 }
 
 /** One WebSocket connection, as the mock sees it. */
@@ -95,7 +97,7 @@ export class MockServer {
       const accessCode = (body as { accessCode?: string } | undefined)?.accessCode;
       const room = this.createRoom(guest, accessCode);
       // Nobody else is here in a mock: a bot joins so the game can be started.
-      this.options.timers.setTimeout(() => this.join(room, this.addGuest('Bot Ada', true)), LOBBY_BOT_DELAY_MS);
+      if (this.options.automateSeats !== false) this.options.timers.setTimeout(() => this.join(room, this.addGuest('Bot Ada', true)), LOBBY_BOT_DELAY_MS);
       return { status: 200, body: { room: summaryOf(room), ...(accessCode !== undefined && { accessCode, inviteLink: `/?room=${encodeURIComponent(room.summary.roomId)}&code=${encodeURIComponent(accessCode)}` }) } };
     }
 
@@ -305,9 +307,9 @@ export class MockServer {
     room.botTimer = timers.setTimeout(() => {
       room.botTimer = null;
       const current = room.game.view;
-      const type = current.setup !== null ? 'RollForOrder' : current.turn?.rolled ? 'EndTurn' : 'RollDice';
+      const type = current.auction !== null ? (current.auction.leader === null ? 'Bid' : 'PassAuction') : current.purchase !== null ? 'BuyAsset' : current.setup !== null ? 'RollForOrder' : current.turn?.rolled ? 'EndTurn' : 'RollDice';
       const target =
-        current.setup !== null
+        current.auction !== null ? { kind: 'auctionResponse', id: current.auction.responseId } : current.setup !== null
           ? { kind: 'setupRoll', id: current.setup.setupRollId }
           : { kind: 'turn', id: current.turn!.turnId };
       const result = room.game.command(waiting.playerId, type, { kind: 'target', target }, timers.now());

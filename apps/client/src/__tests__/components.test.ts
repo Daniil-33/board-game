@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+import { actionAvailability } from '../game/view';
 import { describe, expect, it } from 'vitest';
 import type { StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
@@ -73,7 +74,7 @@ describe('TurnOrder', () => {
 
 describe('ActionButtons', () => {
   it('disables per availability and emits the command type', async () => {
-    const wrapper = mount(ActionButtons, { props: { available: { RollForOrder: false, RollDice: true, EndTurn: false, Resign: false, BuyAsset: false, StartAuction: false, Bid: false, PassAuction: false } } });
+    const wrapper = mount(ActionButtons, { props: { available: actionAvailability({ view: playingView(['a', 'b']), me: pid('a'), connected: true, pending: [], now: 50_000 }) } });
     const disabled = (type: string): boolean => wrapper.find(`[data-test="${type}"]`).attributes('disabled') !== undefined;
     expect([disabled('RollForOrder'), disabled('RollDice'), disabled('EndTurn')]).toEqual([true, false, true]);
     await wrapper.find('[data-test="RollDice"]').trigger('click');
