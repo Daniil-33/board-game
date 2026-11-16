@@ -32,8 +32,8 @@
 
 ## 5. Integrated acceptance
 
-- [ ] 5.1 Compare the complete diff against TASK-s2-core revision 1 criteria 1–13 and the Team Lead state/event/gen-1 contracts; record a criterion-to-test evidence map and any residual limitation.
-- [ ] 5.2 Run pnpm build, pnpm test, openspec validate --all --strict and git diff --check; record exact commands/results and current head in agentctl.
+- [x] 5.1 Compare the complete diff against TASK-s2-core revision 1 criteria 1–13 and the Team Lead state/event/gen-1 contracts; record a criterion-to-test evidence map and any residual limitation.
+- [x] 5.2 Run pnpm build, pnpm test, openspec validate --all --strict and git diff --check; record exact commands/results and current head in agentctl.
 
 ## Workflow follow-up
 

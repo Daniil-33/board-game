@@ -75,3 +75,7 @@ Data tests independently pin proposal names, ordering, indices, counts, exact pr
 ## Migration Plan
 
 This task accepts only core-4. It does not migrate old sessions or operate on databases; the sibling server task implements the Team Lead's core-3 failed-room/closure policy. Work remains on agent/task-s2-core. After approval, a fresh Apply session implements and verifies; open a PR using recorded external-operation intent/result, obtain independent review and green exact-head CI. Archive/sync this change in the PR after review passes, then recheck the final head. No deployment in this task.
+
+## Approved fixture scope extension
+
+The Team Lead approved test-data-only changes to the existing shared seeded scenario in apps/server/src/__tests__/compose-fixture.test.ts, docker-compose.e2e.yml and e2e/compose.spec.ts after the core-4 RNG change invalidated seed 1036. Search ascending seeds with the actual createServerContext stream and complete accepted-command flow; retain a setup tie, three consecutive doubles sending the player to jail before movement, and the following interim jail attempt. Seed 4491 is the first match: four setup rolls, a rolls [4,4], [3,3], [1,1] and is jailed; b rolls [3,6], then a attempts [4,2] and remains jailed with one attempt used. Only seeds and pinned expected values change in these three files; all browser flow and scenario assertions remain. Any other compose-browser failure returns to the Team Lead before changes.

@@ -3,4 +3,4 @@ services:
   server:
     environment:
       NODE_ENV: test
-      E2E_TEST_SEED: '1036'
+      E2E_TEST_SEED: '4491'

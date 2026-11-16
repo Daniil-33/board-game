@@ -95,14 +95,14 @@ test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ 
   expect(ended.event.payload).toMatchObject({ reason: 'timeout' });
 });
 
-test('seed 1036: setup tie, three doubles jail before movement and interim jail attempt', async ({ actors }) => {
+test('seed 4491: setup tie, three doubles jail before movement and interim jail attempt', async ({ actors }) => {
   test.skip(process.env['E2E_DETERMINISTIC'] !== '1', 'Requires fresh test-only seeded stack');
   const players = await actors(2), host = players[0]!;
   const room = await createRoom(host); await join(players[1]!, room);
   await start(players);
   expect(await setup(players)).toBe(4);
   const prisoner = await active(players);
-  for (const dice of [[1, 1], [5, 5]]) {
+  for (const dice of [[4, 4], [3, 3]]) {
     await action(prisoner, 'RollDice');
     expect(prisoner.events.filter(e => e.event.type === 'DiceRolled').at(-1)!.event.payload).toMatchObject({ dice, double: true });
     await action(prisoner, 'EndTurn');
@@ -111,7 +111,7 @@ test('seed 1036: setup tie, three doubles jail before movement and interim jail 
   await action(prisoner, 'RollDice');
   const events = prisoner.events.slice(count).map(e => e.event);
   expect(events.map(e => e.type)).toEqual(['DiceRolled', 'SentToJail', 'TurnEnded', 'TurnStarted']);
-  expect(events[0]!.payload).toMatchObject({ dice: [6, 6], double: true });
+  expect(events[0]!.payload).toMatchObject({ dice: [1, 1], double: true });
   expect(prisoner.view!.positions[prisoner.id]).toBe((events[1]!.payload as { to: number }).to);
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
   expect(prisoner.view!.turn!.doublesStreak).toBe(0);
