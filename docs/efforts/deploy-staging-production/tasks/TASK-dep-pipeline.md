@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-dep-pipeline
-revision: 1
+revision: 2
 effort: EFF-deploy-staging-production
 project: economic-board-game
 source_commit: 7634003 # main after TASK-dep-config (PR #45) and TASK-dep-stack (PR #42)
@@ -111,8 +111,12 @@ trigger semantics.
 ## Required workflow
 
 Explore -> short plan in a report (`agentctl engineer report --wake`) ->
-Team Lead approval -> Apply -> Verify -> PR -> independent review ->
-merge by the Team Lead -> operations and evidence 8-12 -> report.
+Team Lead approval -> Apply -> Verify -> PR -> independent review -> after
+the Team Lead confirms the first staging deploy of TASK-dep-stack:
+external operations 5-6 and the refusal evidence 11 (environments with
+production protection, keys, `authorized_keys`, secrets) **before** the
+merge -> merge by the Team Lead -> the merge's own CI completion triggers
+the automatic staging deploy (evidence 8) -> evidence 9, 10, 12 -> report.
 
 ## Required checks
 
@@ -123,6 +127,14 @@ both browser jobs on the PR head, operation records confirmed.
 
 GitHub refusing environment protection on this plan; the forced command
 not enforceable; any need for a new account or paid feature.
+
+## Revision history
+
+- 1: initial.
+- 2: provisioning (criteria 5-6, evidence 11) happens before the PR merges,
+  so the merge's CI triggers a real staging deploy and no unprotected
+  `production` environment can be auto-created (REV-dep-pipeline-1 RVW-003,
+  REV-dep-pipeline-2 RVW-004).
 
 ## Deliverables
 
