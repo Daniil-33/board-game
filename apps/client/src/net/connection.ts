@@ -91,8 +91,8 @@ export function createConnection(options: ConnectionOptions): Connection {
     socket?.send(JSON.stringify(frame));
   }
 
-  function showMessage(code: string, message: string): void {
-    state.messages.push({ id: nextMessageId++, code, message });
+  function showMessage(code: string, message: string, commandType?: ClientCommandType): void {
+    state.messages.push({ id: nextMessageId++, code, message, ...(commandType !== undefined && { commandType }) });
     if (state.messages.length > MAX_MESSAGES) state.messages.splice(0, state.messages.length - MAX_MESSAGES);
   }
 
@@ -185,9 +185,9 @@ export function createConnection(options: ConnectionOptions): Connection {
   function handleAck(frame: AckFrame): void {
     const index = state.pending.findIndex((c) => c.commandId === frame.commandId);
     if (index < 0) return;
-    state.pending.splice(index, 1);
+    const [command] = state.pending.splice(index, 1);
     // An accepted Ack changes nothing by itself; the Update carries the result.
-    if (frame.outcome === 'rejected') showMessage(frame.error.code, frame.error.message);
+    if (frame.outcome === 'rejected') showMessage(frame.error.code, frame.error.message, command!.type);
   }
 
   function handleError(frame: ErrorFrame): void {

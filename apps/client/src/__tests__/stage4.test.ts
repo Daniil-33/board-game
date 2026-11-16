@@ -87,9 +87,11 @@ describe('house legality adapter', () => {
     expect(houseControls(ctx(view, { pending: ['BuildHouse'] }), at(view, 9))!.build.reason).toBe('Waiting for the server…');
     expect(houseControls(ctx(view, { now: 100_000 }), at(view, 9))!.build.reason).toBe('The turn time is over.');
     expect(houseControls(ctx(view, { pending: ['BuildHouse'] }), at(view, 6))!.sell).toMatchObject({ enabled: true });
-    expect(houseReason('UNEVEN_BUILD')).toBe(HOUSE_REASONS.UNEVEN_BUILD);
-    expect(houseReason('TARGET_MISMATCH')).toBeNull();
-    expect(houseReason('toString')).toBeNull();
+    expect(houseReason('UNEVEN_BUILD', 'BuildHouse')).toBe(HOUSE_REASONS.UNEVEN_BUILD);
+    expect(houseReason('NO_HOUSES', 'SellHouse')).toBe(HOUSE_REASONS.NO_HOUSES);
+    expect(houseReason('TARGET_MISMATCH', 'BuildHouse')).toBeNull();
+    expect(houseReason('toString', 'BuildHouse')).toBeNull();
+    for (const type of ['BuyAsset', 'Bid', 'RollDice', 'PayRent', undefined] as const) expect(houseReason('INSUFFICIENT_FUNDS', type)).toBeNull();
     expect(new Set(Object.values(HOUSE_REASONS)).size).toBe(Object.keys(HOUSE_REASONS).length);
   });
 });
@@ -273,7 +275,7 @@ describe('rent and building intents', () => {
     const view = project(owning()); h.sockets.last().receive(welcome(view));
     h.client.sendCommand({ type: 'BuildHouse', payload: { assetId: at(view, 6) } });
     h.sockets.last().receive({ t: 'Ack', commandId: 'c1' as CommandId, outcome: 'rejected', revision: view.revision, error: { code: 'UNEVEN_BUILD', message: 'UNEVEN_BUILD' } });
-    expect(h.client.game.messages.at(-1)).toMatchObject({ code: 'UNEVEN_BUILD', message: 'UNEVEN_BUILD' });
+    expect(h.client.game.messages.at(-1)).toMatchObject({ code: 'UNEVEN_BUILD', message: 'UNEVEN_BUILD', commandType: 'BuildHouse' });
     expect(h.client.game.view).toEqual(view);
     h.client.sendCommand({ type: 'BuildHouse', payload: { assetId: at(view, 9) } });
     h.sockets.last().receive({ t: 'Ack', commandId: 'c2' as CommandId, outcome: 'accepted', revision: view.revision });
@@ -281,6 +283,30 @@ describe('rent and building intents', () => {
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view };
     const w = mount(Hud, { props: { ...base, messages: h.client.game.messages } });
     expect(w.get('[data-test="message"]').text()).toContain(`UNEVEN_BUILD: UNEVEN_BUILD — ${HOUSE_REASONS.UNEVEN_BUILD}`);
+    h.client.returnToLobby();
+  });
+  it('shows no house reason for a rejected purchase or bid with a shared code (RVW-001)', () => {
+    const h = harness({ stored: storedSession(room([['a', 'Alice'], ['b', 'Bob']])) });
+    h.client.start(); h.sockets.last().open();
+    const s = owning(); const decision = project({ ...s, purchase: { playerId: pid('a'), cell: 13, assetId: at(s, 13) } });
+    h.sockets.last().receive(welcome(decision));
+    h.client.sendCommand('BuyAsset');
+    h.sockets.last().receive({ t: 'Ack', commandId: 'c1' as CommandId, outcome: 'rejected', revision: decision.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'Purchase exceeds balance' } });
+    const auction = project({ ...s, turn: { ...s.turn!, pausedRemainingMs: 1000 }, auction: {
+      auctionId: 'u1', assetId: at(s, 13), cell: 13, price: 1210 as Money, startBid: 720 as Money, step: 60 as Money, reason: 'choice', order: s.order!,
+      passed: [], leader: null, leadingBid: null, bids: [], responder: pid('a'), responseId: 'r1', responseDeadline: 60_000 as never,
+    } });
+    h.sockets.last().receive(welcome(auction));
+    h.client.sendCommand('Bid');
+    h.sockets.last().receive({ t: 'Ack', commandId: 'c2' as CommandId, outcome: 'rejected', revision: auction.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'Bid exceeds balance' } });
+    h.client.sendCommand({ type: 'BuildHouse', payload: { assetId: at(s, 9) } });
+    h.sockets.last().receive({ t: 'Ack', commandId: 'c3' as CommandId, outcome: 'rejected', revision: auction.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'INSUFFICIENT_FUNDS' } });
+    expect(h.client.game.messages.map(m => m.commandType)).toEqual(['BuyAsset', 'Bid', 'BuildHouse']);
+    const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view: auction };
+    const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-test="message"]').map(m => m.text());
+    expect(texts[0]).toContain('INSUFFICIENT_FUNDS: Purchase exceeds balance'); expect(texts[0]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
+    expect(texts[1]).toContain('INSUFFICIENT_FUNDS: Bid exceeds balance'); expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
+    expect(texts[2]).toContain(`INSUFFICIENT_FUNDS: INSUFFICIENT_FUNDS — ${HOUSE_REASONS.INSUFFICIENT_FUNDS}`);
     h.client.returnToLobby();
   });
 });

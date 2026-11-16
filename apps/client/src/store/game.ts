@@ -1,12 +1,14 @@
 import { reactive } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
-import type { CommandFrame } from '@game/protocol';
+import type { ClientCommandType, CommandFrame } from '@game/protocol';
 
 /** A message for the player: a rejected command or a server error. */
 export interface HudMessage {
   readonly id: number;
   readonly code: string;
   readonly message: string;
+  /** The type of the rejected command; absent for a server Error frame. */
+  readonly commandType?: ClientCommandType;
 }
 
 export interface GameState {

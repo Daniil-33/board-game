@@ -22,7 +22,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Rebase on main after TASK-s4-server merges; run `pnpm build`, `pnpm test`, the client vite build, `openspec validate --all --strict`, `git diff --check`; compare the diff to every handoff criterion.
+- [x] 5.1 Rebase on main after TASK-s4-server merges; run `pnpm build`, `pnpm test`, the client vite build, `openspec validate --all --strict`, `git diff --check`; compare the diff to every handoff criterion.
 - [x] 5.2 Capture mock screenshots (settlement payer/other, asset card with quotes and controls and a disabled reason, house markers, rent animation) in `/srv/agents/evidence/TASK-s4-client/`.
 
 ## Workflow

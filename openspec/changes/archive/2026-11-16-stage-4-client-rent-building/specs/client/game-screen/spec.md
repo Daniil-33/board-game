@@ -67,11 +67,22 @@ A disabled Build or Sell control SHALL show one reason text: the message mapped 
 - **THEN** Build SHALL be disabled with the disconnected reason
 
 ### Requirement: Rent and building intents
-`PayRent` SHALL be sent with payload `null`; `BuildHouse` and `SellHouse` with payload `{ assetId }` of the selected asset. All three SHALL target the projected turn. A rejected Ack SHALL show its code and message, and for a `HouseErrorCode` also the mapped reason text. An accepted Ack SHALL NOT change houses, balances or the settlement locally.
+`PayRent` SHALL be sent with payload `null`; `BuildHouse` and `SellHouse` with payload `{ assetId }` of the selected asset. All three SHALL target the projected turn. An accepted Ack SHALL NOT change houses, balances or the settlement locally.
+
+#### Scenario: Accepted build
+- **WHEN** the server accepts BuildHouse before the next Update
+- **THEN** houses, balances and the settlement SHALL stay as last projected
+
+### Requirement: Rejected house command reasons
+A rejected Ack SHALL show its code and message. For a rejected `BuildHouse` or `SellHouse` with a `HouseErrorCode` it SHALL also show the mapped reason text; other commands sharing a code SHALL show no house reason.
 
 #### Scenario: Illegal build rejected
 - **WHEN** the server rejects BuildHouse with `UNEVEN_BUILD`
 - **THEN** the HUD SHALL show the code, message and the uneven-build reason, and the view SHALL stay as last projected
+
+#### Scenario: Shared code on another command
+- **WHEN** the server rejects BuyAsset or Bid with `INSUFFICIENT_FUNDS`
+- **THEN** the HUD SHALL show the code and message without a house reason
 
 ### Requirement: House markers
 Every asset cell SHALL show 1-4 PixiJS house markers equal to `view.houses` for that asset and none when absent. Markers SHALL refresh on each view independently of movement animations, like owner markers.

@@ -5,6 +5,7 @@
  */
 import { buildLegality, houseCost, houseRefund, saleLegality } from '@game/game-core';
 import type { AssetId, GameState, HouseErrorCode, Money, StateView } from '@game/game-core';
+import type { ClientCommandType } from '@game/protocol';
 import { connectionReason, type ActionContext } from './view';
 
 /** One message per game-core house error code, for disabled controls and rejected Acks. */
@@ -26,8 +27,13 @@ export const HOUSE_REASONS: Readonly<Record<HouseErrorCode, string>> = {
   UNEVEN_SALE: 'Sell evenly: another asset of the group has more houses.',
 };
 
-/** The reason text for an error code, when it is a house error code. */
-export function houseReason(code: string): string | null {
+/**
+ * The reason text for a rejected BuildHouse or SellHouse with a house error
+ * code. Other commands share some codes (INSUFFICIENT_FUNDS, NOT_ACTIVE_PLAYER,
+ * ...) and get no house text.
+ */
+export function houseReason(code: string, commandType: ClientCommandType | undefined): string | null {
+  if (commandType !== 'BuildHouse' && commandType !== 'SellHouse') return null;
   return Object.hasOwn(HOUSE_REASONS, code) ? HOUSE_REASONS[code as HouseErrorCode] : null;
 }
 

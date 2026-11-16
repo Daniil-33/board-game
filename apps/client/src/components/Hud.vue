@@ -61,7 +61,7 @@ const headline = computed(() => {
 
     <ul v-if="messages.length > 0" class="messages">
       <li v-for="message in messages" :key="message.id" class="error" data-test="message">
-        <span><strong>{{ message.code }}</strong>: {{ message.message }}<template v-if="houseReason(message.code)"> — {{ houseReason(message.code) }}</template></span>
+        <span><strong>{{ message.code }}</strong>: {{ message.message }}<template v-if="houseReason(message.code, message.commandType)"> — {{ houseReason(message.code, message.commandType) }}</template></span>
         <button class="link" aria-label="Dismiss" @click="emit('dismiss', message.id)">×</button>
       </li>
     </ul>
