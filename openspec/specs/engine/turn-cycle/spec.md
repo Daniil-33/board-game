@@ -45,7 +45,7 @@ After a roll that does not send the player to jail, the player SHALL move forwar
 - **THEN** the engine SHALL reject it with `ROLL_REQUIRED`
 
 ### Requirement: Doubles grant a bonus turn
-A double outside jail that is not the third consecutive one SHALL mark a bonus turn as pending. When the turn closes, by `EndTurn` or by `Timeout`, the same player SHALL start a new turn with a fresh deadline and fresh offer quota, inheriting the remaining build quota, and `TurnStarted` SHALL carry `bonus: true`. The count of consecutive doubles carries into the bonus turn and resets when a non-double is rolled or play passes to another player.
+A double outside jail that is not the third consecutive one SHALL mark a bonus turn as pending. When the turn closes, by `EndTurn` or by `Timeout`, the same player SHALL start a new turn with a fresh deadline and fresh build and offer quotas, and `TurnStarted` SHALL carry `bonus: true`. The count of consecutive doubles carries into the bonus turn and resets when a non-double is rolled or play passes to another player.
 
 #### Scenario: Manual double
 - **WHEN** a rolls 3 and 3 and then issues `EndTurn`
@@ -63,15 +63,19 @@ A third consecutive double SHALL, before any movement, put the player on the jai
 - **THEN** the third roll's events SHALL be `DiceRolled`, `SentToJail`, `TurnEnded { reason: 'sent-to-jail' }` and `TurnStarted` for the next player, with no `PlayerMoved`, and a SHALL be on the jail cell and in jail
 
 ### Requirement: Turn quotas
-Each new full turn SHALL start with one build and two trade offers remaining. A bonus turn SHALL inherit the remaining build quota and reset offers to two. A continuation SHALL preserve both quotas. Building SHALL consume one build; selling SHALL not restore it.
+Every new turn, bonus turns included, SHALL start with one build and two trade offers remaining. A continuation SHALL preserve both quotas. Building SHALL consume one build; selling SHALL not restore it.
 
 #### Scenario: Fresh quotas on a bonus turn
 - **WHEN** a bonus turn starts
-- **THEN** its build quota SHALL equal the closing turn’s remaining build quota and its offer quota SHALL be two
+- **THEN** its build quota SHALL be one and its offer quota SHALL be two, whatever the closing turn had left
 
 #### Scenario: Used quota on a bonus turn
 - **WHEN** a player builds, rolls a double and closes the turn
-- **THEN** the bonus turn SHALL have zero builds and two offers remaining
+- **THEN** the bonus turn SHALL have one build and two offers remaining, and a legal build in it SHALL be accepted
+
+#### Scenario: Selling does not replenish
+- **WHEN** a player builds and then sells a house in the same turn
+- **THEN** the build quota SHALL remain zero
 
 #### Scenario: New full turn
 - **WHEN** play returns to the player after another player has taken a turn
@@ -86,4 +90,4 @@ An auction SHALL set pausedRemainingMs to max(0, deadline - now) and emit TurnPa
 
 #### Scenario: End-turn double
 - **WHEN** a double's owner ends a turn with a pending purchase and the resulting auction settles
-- **THEN** closure SHALL start the bonus turn with fresh time and offers, inheriting the remaining build quota
+- **THEN** closure SHALL start the bonus turn with fresh time, a fresh build quota and fresh offers

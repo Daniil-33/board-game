@@ -33,7 +33,7 @@ export interface SetupState {
   };
 }
 
-/** Remaining full-turn build and per-turn offer quotas. */
+/** Remaining per-turn build and offer quotas; every turn, bonus included, starts full. */
 export interface TurnQuotas {
   readonly builds: number;
   readonly offers: number;

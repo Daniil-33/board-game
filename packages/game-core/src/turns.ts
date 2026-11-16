@@ -84,7 +84,8 @@ function startTurn(state: GameState, playerId: PlayerId, bonus: boolean, doubles
     continuation: false,
     doublesStreak,
     pendingBonus: false,
-    quotas: bonus ? { ...TURN_QUOTAS, builds: state.turn!.quotas.builds } : TURN_QUOTAS,
+    // Every turn, bonus turns included, starts with the full quotas (owner decision 2026-11-16).
+    quotas: TURN_QUOTAS,
   };
   return {
     state: { ...state, turn },
