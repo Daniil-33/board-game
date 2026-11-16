@@ -23,8 +23,10 @@ from a configured list only, and both expose the commit they were built from.
    - set: `/api/*` answers CORS for those origins only (preflight allows
      `Authorization` and `Content-Type`, the methods the client uses, no
      credentials/cookies); requests from other origins get no CORS grant;
-     WebSocket upgrades on `/ws` whose `Origin` is not in the list are
-     rejected before any frame;
+     WebSocket upgrades on `/ws` whose `Origin` is not in the list (or
+     absent) are rejected with HTTP `403` before the upgrade (no 101, no
+     frame); the deploy health check of TASK-dep-stack relies on exactly
+     this status;
    - unset or empty: behaviour identical to today (same-origin through the
      web container; no CORS headers; WebSocket accepted).
    Invalid values (not `scheme://host[:port]`) fail startup with the variable
