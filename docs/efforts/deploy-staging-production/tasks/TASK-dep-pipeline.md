@@ -47,7 +47,7 @@ the deploy key can do nothing but deploy; CI has headroom for stages 4-8.
    Agents never approve a production deployment.
 6. Keys (recorded operations): one ed25519 key per environment generated on
    the VPS; public parts added to `~/.ssh/authorized_keys` as
-   `restrict,command="/srv/game/bin/deploy-gate" ssh-ed25519 …
+   `restrict,command="/srv/agents/game/bin/deploy-gate" ssh-ed25519 …
    deploy-<env>` (existing entries untouched, file backed up first); private
    parts uploaded with `gh secret set --env <env> < file` and then deleted;
    no key material in Git, logs, evidence or checkpoints.
