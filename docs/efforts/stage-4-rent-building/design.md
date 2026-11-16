@@ -187,7 +187,9 @@ gain `rent`, `build` and `house-sale`. All are public.
   - it is persisted as the room's genesis snapshot;
   - it is refused otherwise, like `E2E_TEST_SEED`.
 
-  The fixtures are defined in `e2e/` and built with core helpers. Production
+  The named fixture builders live in a test-only server module
+    (`apps/server/src/test-fixtures.ts`, importable by `e2e/`) and are built with
+    core helpers; the loader route is imported only when enabled. Production
   and staging never enable it.
 - Integration tests:
   - rent over sockets, payer and owner balances on every guest;
