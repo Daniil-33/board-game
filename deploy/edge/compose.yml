@@ -1,0 +1,36 @@
+name: edge
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    entrypoint: [/bin/sh, /edge/entrypoint.sh]
+    ports:
+      - 0.0.0.0:80:80
+      - 0.0.0.0:443:443
+    volumes:
+      - ./:/edge:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - certificates:/etc/letsencrypt:ro
+      - challenges:/var/www/certbot:ro
+    networks: [staging, production]
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 256m
+  certbot:
+    image: certbot/certbot
+    entrypoint: [/bin/sh, /edge/renew.sh]
+    volumes:
+      - ./:/edge:ro
+      - certificates:/etc/letsencrypt
+      - challenges:/var/www/certbot
+    tmpfs: [/dry-run]
+    restart: unless-stopped
+volumes:
+  certificates:
+  challenges:
+networks:
+  staging:
+    external: true
+    name: edge-staging
+  production:
+    external: true
+    name: edge-production

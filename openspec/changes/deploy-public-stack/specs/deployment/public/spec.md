@@ -20,7 +20,7 @@ The public deployment SHALL publish only edge ports 80 and 443 and serve only fo
 - **THEN** the edge starts and serves TLS with a 502 or maintenance response for that environment
 
 ### Requirement: Certificate lifecycle
-The edge SHALL bootstrap HTTP before certificates exist. Certificate issuance SHALL support a staging-CA dry run before live issuance, with one SAN certificate per environment. Renewal SHALL run every 12 hours and nginx SHALL reload every 6 hours without manual intervention.
+The edge SHALL bootstrap HTTP before certificates exist. Certificate issuance SHALL support a staging-CA dry run before live issuance, with one SAN certificate per environment. Staging-CA state SHALL be disposable and isolated from live certificates; no-email registration SHALL be documented. Renewal SHALL run every 12 hours and nginx SHALL reload every 6 hours without manual intervention.
 
 #### Scenario: First issuance and renewal
 - **WHEN** a clean edge is started without certificate files
@@ -48,6 +48,10 @@ The gate SHALL accept only `deploy (staging|production) <40 lowercase hex>` via 
 - **AND** production is refused if the SHA is absent from staging's successful deployed.log
 - **AND** Docker access works in the forced-command context
 
+#### Scenario: Target predates deployment tooling
+- **WHEN** an admitted target checkout lacks executable deploy/deploy.sh
+- **THEN** the gate refuses with exit 2 and one line without attempting deployment
+
 ### Requirement: Deployment health and audit
 Deploy SHALL build with GIT_SHA, converge services with wait and remove-orphans, then verify public HTTPS API health and client version equal the target SHA, allowed-Origin WebSocket upgrade returns 101, and foreign-Origin upgrade is refused. Success SHALL append UTC time and SHA to deployed.log. Failure SHALL exit nonzero with a clear message and recent server logs without printing secrets. Repeating a SHA SHALL be safe.
 
@@ -65,4 +69,5 @@ The runbook SHALL document setup, deployment, rollback, certificate lifecycle, s
 #### Scenario: Initial provisioning
 - **WHEN** approved merged infrastructure is provisioned
 - **THEN** mode-600 environment files and read-only HTTPS checkouts exist under /srv/game, edge networks and valid TLS are prepared, and staging is verified once config support is merged
+- **AND** before live issuance the VPS-to-own-public-IP HTTPS path is verified, with failure escalated to the Team Lead without root or host-file workarounds
 - **AND** production has no app deployment without owner approval

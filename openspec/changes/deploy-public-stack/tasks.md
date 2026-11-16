@@ -2,27 +2,27 @@
 
 ## 1. TLS edge
 
-- [ ] 1.1 Implement deploy/edge Compose and nginx bootstrap/routing (Public TLS edge, Certificate lifecycle); verify Compose config, nginx config with missing/present certificates, absent-app DNS, host restrictions and query-free logging.
-- [ ] 1.2 Implement certificate issuance and renewal/reload scripts (Certificate lifecycle); verify shellcheck and fake certbot tests including isolated staging-CA state; document issuance and renewal in docs/deployment.md.
+- [x] 1.1 Implement deploy/edge Compose and nginx bootstrap/routing (Public TLS edge, Certificate lifecycle); verify Compose config, nginx config with missing/present certificates, absent-app DNS, host restrictions and query-free logging.
+- [x] 1.2 Implement certificate issuance and renewal/reload scripts (Certificate lifecycle); verify shellcheck and fake certbot tests including isolated staging-CA state; document issuance and renewal in docs/deployment.md.
 
 ## 2. Environment Compose
 
-- [ ] 2.1 Implement deploy/app/compose.yml (Environment isolation); verify both project configs with dummy env, no published ports, distinct aliases, volumes, limits and build args; document layout, origins, resources and coexistence in runbook.
+- [x] 2.1 Implement deploy/app/compose.yml (Environment isolation); verify both project configs with dummy env, no published ports, distinct aliases, volumes, limits and build args; document layout, origins, resources and coexistence in runbook.
 
 ## 3. Restricted gate
 
-- [ ] 3.1 Implement deploy/deploy-gate (Restricted deployment gate); run offline tests for invalid grammar/metacharacters/extra args, ancestry, production staging admission, locking and Docker forced-command access; document invocation and installation.
+- [x] 3.1 Implement deploy/deploy-gate (Restricted deployment gate); run offline tests for invalid grammar/metacharacters/extra args, ancestry, production staging admission, locking and Docker forced-command access; document invocation and installation.
 
 ## 4. Deploy and health
 
-- [ ] 4.1 Implement public health helper (Deployment health and audit); test API/client SHA mismatch, TLS/network errors, valid upgrade and foreign-Origin refusal with local fakes.
-- [ ] 4.2 Implement deploy/deploy.sh (Deployment health and audit); test fake build/up/health failures produce nonzero status, bounded diagnostics and no success record, and successful repeat SHA is safe; shellcheck clean.
-- [ ] 4.3 Complete runbook deploy/rollback, secrets/rotation, ordered setup, risks and operation evidence instructions (Operational boundaries); check against every handoff criterion without printing secrets.
+- [x] 4.1 Implement public health helper (Deployment health and audit); test API/client SHA mismatch, TLS/network errors, valid upgrade and foreign-Origin refusal with local fakes.
+- [x] 4.2 Implement deploy/deploy.sh (Deployment health and audit); test fake build/up/health failures produce nonzero status, bounded diagnostics and no success record, and successful repeat SHA is safe; shellcheck clean.
+- [x] 4.3 Complete runbook deploy/rollback, secrets/rotation, ordered setup, risks and operation evidence instructions (Operational boundaries); check against every handoff criterion without printing secrets.
 
 ## 5. Integration verification
 
-- [ ] 5.1 Add minimal ci script-check step; verify offline tests and shellcheck run without VPS access, leaving compose-browser ownership unchanged.
-- [ ] 5.2 Run script tests, shellcheck, both Compose config checks, openspec validate --all --strict and git diff --check; inspect diff against TASK-dep-stack revision 1 and record evidence.
+- [x] 5.1 Add minimal ci script-check step; verify offline tests and shellcheck run without VPS access, leaving compose-browser ownership unchanged.
+- [x] 5.2 Run script tests, shellcheck, both Compose config checks, openspec validate --all --strict and git diff --check; inspect diff against TASK-dep-stack revision 1 and record evidence.
 
 ## Workflow follow-up
 

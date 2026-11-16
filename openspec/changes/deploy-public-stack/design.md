@@ -32,3 +32,7 @@ Base 78478c6 has a local Compose stack, nginx client proxy and CI, with no publi
 ## Migration Plan
 
 After approval implement and verify locally, open a PR, start independent review via agentctl and resolve findings. Archive the OpenSpec change after review passes in the PR. Team Lead merges; do not merge as Engineer. Only then provision /srv/game layouts and secret env files, public read-only HTTPS checkouts, install the gate, create networks and start edge from merged main. Record each external mutation with agentctl intent/perform/verify/confirm. Issue certificates using staging CA first and verify redirects/TLS for all four hosts. Wait for TASK-dep-config merge before first manual staging gate deployment and health evidence. Keep production app stopped. Evidence goes under /srv/agents/evidence/TASK-dep-stack with no secrets. Rollback redeploys a previously successful compatible main SHA.
+
+## Apply notes from Team Lead approval
+
+The gate cleanly refuses a target without executable deploy/deploy.sh (exit 2, one line), covered offline. Initial provisioning uses check-hairpin.sh before live ACME: a temporary locally trusted test certificate proves direct VPS-to-public-IP HTTPS and cleanup restores HTTP-only mode; failure escalates to the Team Lead without root or /etc/hosts changes. The isolated staging-CA run remains mandatory before live issuance; no-email registration is documented. The edge owns nginx.conf to avoid the stock image combined access log running alongside the path-only log.
