@@ -90,7 +90,10 @@ accepted; b1 and c remain gated on ROADMAP.
 
 Resignation passes emit PlayerResigned and update public passed state, without
 an AuctionPassed event. AuctionPassed describes explicit PassAuction or response
-Timeout only; consumers must use the projected state for resignation departures.
+Timeout only; consumers must use the projected state for resignation departures. This also
+includes leadership restoration: PlayerResigned is the only departure event;
+the restored leader/leadingBid (or their null reset) is visible through the
+projected auction state, without a separate leadership-change event.
 
 The Team Lead additionally approved integration-test-only compatibility in the
 shared core/room nextMove driver, timer fixtures, socket test drivers and minimal
