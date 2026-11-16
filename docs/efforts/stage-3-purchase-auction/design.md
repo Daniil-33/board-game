@@ -137,6 +137,11 @@ no effect (C9). The decision never survives `closeTurn`.
 `TurnResumed`; `BalanceChanged` reasons gain `purchase` and `auction`. All
 public.
 
+Resignation effects inside an auction (a resignation pass, leadership
+restored after the leader resigns) emit only `PlayerResigned`; they are
+visible through the projected `auction` state. Clients render auction state
+from the view, never by folding events.
+
 ### Invariants
 
 - `owners`: keys are asset ids of the board, values are participants.

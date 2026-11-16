@@ -35,6 +35,9 @@ Product (effort handoff C12; visual design is stage 8):
 4. Turn controls follow the view: Roll/End turn disabled during an auction;
    the turn timer shows "paused" while `turn.pausedRemainingMs` is set.
 5. Rejected commands show their `Ack` error; no outcome computed locally.
+   The dialog and auction panel render from the projected `purchase` and
+   `auction` state of each view, never by folding events: resignation passes
+   and leader restoration emit only `PlayerResigned`.
 
 Technical proof:
 
