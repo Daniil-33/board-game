@@ -61,7 +61,7 @@ describe.each(fixtures)('unsupported $snapshot.rulesVersion data', historical =>
     expect(await data(id)).toEqual(before);
   });
 
-  it.each(['closed', 'finished'] as const)('Hello for %s core-3 keeps error precedence and stored data', async status => {
+  it.each(['closed', 'finished'] as const)('Hello for %s legacy game keeps error precedence and stored data', async status => {
     const server = await startServer(h);
     const guest = await login(server, 'legacy guest');
     const id = await seedRoom(h.db);

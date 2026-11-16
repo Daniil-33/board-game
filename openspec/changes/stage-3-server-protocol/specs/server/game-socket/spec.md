@@ -34,11 +34,11 @@ accepted.
 - **THEN** the server SHALL send PROTOCOL_VERSION_UNSUPPORTED and close the socket before authenticating
 
 #### Scenario: Migrated stage 1 game
-- **WHEN** an authenticated guest sends a version 2 Hello for a core-3 game closed by migration 0003
+- **WHEN** an authenticated guest sends a version 3 Hello for a core-3 game closed by migration 0003
 - **THEN** the server SHALL send ROOM_CLOSED and close the socket
 
 #### Scenario: Finished stage 1 game
-- **WHEN** an authenticated guest sends a version 2 Hello for a finished core-3 game untouched by migration 0003
+- **WHEN** an authenticated guest sends a version 3 Hello for a finished core-3 game untouched by migration 0003
 - **THEN** opening SHALL fail and the server SHALL send ROOM_UNAVAILABLE and close the socket without changing stored game data
 
 

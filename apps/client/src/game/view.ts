@@ -83,6 +83,10 @@ export function actionAvailability(ctx: ActionContext): ActionAvailability {
     RollDice: canIssue(ctx, 'RollDice'),
     EndTurn: canIssue(ctx, 'EndTurn'),
     Resign: canIssue(ctx, 'Resign'),
+    BuyAsset: false,
+    StartAuction: false,
+    Bid: false,
+    PassAuction: false,
   };
 }
 

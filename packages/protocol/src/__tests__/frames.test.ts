@@ -35,7 +35,7 @@ describe('protocol version and codes', () => {
     ]);
   });
 
-  it('client command types are RollForOrder | RollDice | EndTurn | Resign', () => {
+  it('client command types match the stage 3 allowlist', () => {
     expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction']);
     expectTypeOf<CommandFrame['type']>().toEqualTypeOf<ClientCommandType>();
   });

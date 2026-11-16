@@ -31,3 +31,7 @@ Prove the existing infrastructure accommodates core-5 while updating its wire al
 ## Migration Plan
 
 Run tracked migration 0004 once before serving protocol v3. New rooms use the already-merged core-5 default. Keep localhost binding unchanged. Rollback requires operator-managed status decisions; this change does not reopen retired games or rewrite history.
+
+## Team Lead scope clarification (2026-11-16)
+
+The Command union expansion forces two mechanical client edits in this PR: `actionAvailability` in `apps/client/src/game/view.ts` and the availability fixture in `apps/client/src/__tests__/components.test.ts` each gain `BuyAsset`, `StartAuction`, `Bid` and `PassAuction` set to `false`. These are type-forced placeholders, replaced by TASK-s3-client. No other client changes are authorized; the server PR still merges first.

@@ -169,6 +169,7 @@ describe('migrations', () => {
         members: await test.db.selectFrom('room_members').selectAll().orderBy('room_id').execute(),
       });
       const before = await data();
+      const roomsBefore = await test.db.selectFrom('rooms').selectAll().orderBy('id').execute();
       await copyFile(join(migrations, '0004_stage3_rules.sql'), join(old, '0004_stage3_rules.sql'));
       expect(await migrateToLatest(test.db, old)).toEqual(['0004_stage3_rules']);
       for (const [i, id] of ids.entries()) {
@@ -176,6 +177,7 @@ describe('migrations', () => {
         expect(row.status).toBe(i < 2 ? 'closed' : statuses[i]);
       }
       expect(await data()).toEqual(before);
+      expect(await test.db.selectFrom('rooms').selectAll().orderBy('id').execute()).toEqual(roomsBefore.map(room => ({ ...room, status: room.status === 'lobby' || room.status === 'playing' ? 'closed' : room.status })));
       const current = await seedRoom(test.db);
       const session = createSession(gameEngine);
       const created = session.submit(sys('CreateGame', { seed: 42, rulesVersion: CURRENT_RULES_VERSION }, 0), { now: timestamp(1767225600000), entropy: entropy([1, 2, 3, 4]) });
