@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { sql } from 'kysely';
 import { PROTOCOL_VERSION } from '@game/protocol';
@@ -7,7 +7,8 @@ import { useHarness } from './helpers/harness.js';
 import { lobby, sys, whenIdle } from './helpers/game.js';
 import { startServer, stopServers, login, TestSocket } from './helpers/server.js';
 
-const fixture = JSON.parse(await readFile(new URL('./fixtures/core3.json', import.meta.url), 'utf8'));
+const fixtures = await Promise.all(['core3', 'core4'].map(async version => JSON.parse(await readFile(new URL(`./fixtures/${version}.json`, import.meta.url), 'utf8'))));
+let fixture = fixtures[0];
 const h = useHarness({ perTest: true });
 afterEach(stopServers);
 
@@ -24,8 +25,9 @@ const data = async (id: string) => ({
   snapshots: await h.db.selectFrom('game_snapshots').selectAll().where('game_id', '=', id).execute(),
 });
 
-describe('unsupported core-3 data', () => {
-  it.each([false, true])('fails safely with old snapshot=%s and restores healthy core-4 alongside', async snapshot => {
+describe.each(fixtures)('unsupported $snapshot.rulesVersion data', historical => {
+  beforeEach(() => { fixture = historical; });
+  it.each([false, true])('fails safely with old snapshot=%s and restores healthy core-5 alongside', async snapshot => {
     const bad = await seedRoom(h.db);
     await legacy(bad, snapshot);
     const good = await seedRoom(h.db);
