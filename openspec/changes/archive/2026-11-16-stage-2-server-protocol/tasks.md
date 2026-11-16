@@ -20,7 +20,7 @@
 
 ## 4. Integration validation
 
-- [ ] 4.1 Verify all handoff checks: pnpm build, pnpm test, pnpm test:integration with real Postgres, openspec validate --all --strict and git diff --check; record exact commands/results and compare final diff against TASK-s2-server criteria 1–6. Confirm shared Compose seed 4491 and out-of-scope files remain untouched.
+- [x] 4.1 Verify all handoff checks: pnpm build, pnpm test, pnpm test:integration with real Postgres, openspec validate --all --strict and git diff --check; record exact commands/results and compare final diff against TASK-s2-server criteria 1–6. Confirm shared Compose seed 4491 and out-of-scope files remain untouched.
 
 ## Workflow follow-up
 
