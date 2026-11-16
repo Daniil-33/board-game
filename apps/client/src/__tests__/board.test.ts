@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLASSIC_40 } from '@game/game-core';
-import { BoardScene, PLACEHOLDER_CAPTION, type SceneClock } from '../board/BoardCanvas';
+import { BoardScene, type SceneClock } from '../board/BoardCanvas';
 import { cellRect, jailBox } from '../board/layout';
 import { playingView, setupView } from './helpers';
 
@@ -19,13 +19,12 @@ const within = (p: { x: number; y: number }, r: { x: number; y: number; width: n
 
 // Smoke test: the scene graph only, no renderer (there is no WebGL here).
 describe('board scene', () => {
-  it('holds 40 cells, a jail marker, the placeholder caption and one token per player', () => {
+  it('holds 40 cells, a jail marker, generated labels and one token per player', () => {
     const scene = new BoardScene(660, instant);
     scene.snap(playingView(['a', 'b', 'c']), 'a');
     expect(scene.cells.children).toHaveLength(CLASSIC_40.size);
     expect(scene.jailMarker.label).toBe('jail-box');
-    expect(scene.caption.text).toBe(PLACEHOLDER_CAPTION);
-    expect(scene.caption.text).toMatch(/PLACEHOLDER/);
+    expect(scene.cells.children[1]!.children).toHaveLength(5);
     expect(scene.tokens.children).toHaveLength(3);
   });
 

@@ -18,6 +18,7 @@ import type { BoardView } from './board/BoardCanvas';
 
 /** What the client needs from a mounted board. */
 export interface Board {
+  setAssetSelection?(callback: ((index: number) => void) | null): void;
   setNames(nameOf: (playerId: string) => string): void;
   snap(view: BoardView, activeId: string | null): void;
   play(step: AnimationStep, speed: number): Promise<void>;

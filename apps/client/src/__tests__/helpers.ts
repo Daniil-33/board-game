@@ -1,4 +1,5 @@
-import { CURRENT_RULES_VERSION } from '@game/game-core';
+import { PROTOCOL_VERSION } from '@game/protocol';
+import { CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward } from '@game/game-core';
 import type { PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientFrame, RoomSummary, ServerFrame } from '@game/protocol';
 import type { FetchLike } from '../api/lobby';
@@ -14,7 +15,7 @@ const BASE: StateView = {
   revision: rev(1),
   rulesVersion: CURRENT_RULES_VERSION,
   phase: 'lobby',
-  board: null,
+  board: generateBoard(seedRng(42)).board,
   economy: null,
   balances: {},
   players: [],
@@ -46,6 +47,8 @@ export function setupView(players: string[], o: SetupOptions = {}): StateView {
   return {
     ...lobbyView(players, o.revision ?? 5),
     phase: 'setup',
+    economy: { startingCapital: startingCapital(players.length), lapReward: lapReward(startingCapital(players.length)) },
+    balances: Object.fromEntries(players.map(id => [id, startingCapital(players.length)])),
     setup: {
       setupRollId: o.setupRollId ?? 's5',
       playerId: roller,
@@ -71,6 +74,8 @@ export function playingView(order: string[], o: PlayingOptions = {}): StateView 
   return {
     ...lobbyView(order, o.revision ?? 9),
     phase: 'playing',
+    economy: { startingCapital: startingCapital(order.length), lapReward: lapReward(startingCapital(order.length)) },
+    balances: Object.fromEntries(order.map(id => [id, startingCapital(order.length)])),
     order: order.map(pid),
     turn: {
       turnId: o.turnId ?? 't7',
@@ -90,7 +95,7 @@ export function playingView(order: string[], o: PlayingOptions = {}): StateView 
 
 export const welcome = (view: StateView, playerId = 'a'): ServerFrame => ({
   t: 'Welcome',
-  protocolVersion: 1,
+  protocolVersion: PROTOCOL_VERSION,
   playerId: pid(playerId),
   revision: view.revision,
   view,

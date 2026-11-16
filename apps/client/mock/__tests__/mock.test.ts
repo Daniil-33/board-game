@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { Value } from '@sinclair/typebox/value';
 import {
+  PROTOCOL_VERSION,
   CreateRoomResponseSchema,
   GuestLoginResponseSchema,
   ListRoomsResponseSchema,
@@ -78,7 +79,7 @@ function setup(turnMs = 45_000) {
   const auth = `Bearer ${token}`;
   const say = (p: ReturnType<typeof peer>, frame: ClientFrame): void => mock.message(p.mockPeer, JSON.stringify(frame));
   const hello = (p: ReturnType<typeof peer>, gameId: string): void =>
-    say(p, { t: 'Hello', protocolVersion: 1, token, gameId, lastRevision: null });
+    say(p, { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token, gameId, lastRevision: null });
   let nextCommand = 1;
   /** The human acts if the view allows it. Returns whether a command was sent. */
   const act = (p: ReturnType<typeof peer>): boolean => {
@@ -124,7 +125,7 @@ describe('mock socket', () => {
     const p = peer();
     mock.message(p.mockPeer, 'garbage');
     mock.message(p.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 99, token, gameId: 'r1', lastRevision: null }));
-    mock.message(p.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token: 'nope', gameId: 'r1', lastRevision: null }));
+    mock.message(p.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: 'nope', gameId: 'r1', lastRevision: null }));
     hello(p, 'missing');
     hello(p, 'r2'); // the seeded demo room: not a member
     expect(p.frames.map((f) => (f.t === 'Error' ? f.code : f.t))).toEqual([
@@ -148,7 +149,7 @@ describe('mock socket', () => {
     expect(p.eventTypes()).toEqual(['PlayerAdded']);
     expect(p.view().players).toHaveLength(2);
     expect(mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined).status).toBe(200);
-    expect(p.eventTypes()).toEqual(['PlayerAdded', 'GameStarted', 'OrderRollStarted']);
+    expect(p.eventTypes()).toEqual(['PlayerAdded', 'GameStarted', 'BalanceChanged', 'BalanceChanged', 'OrderRollStarted']);
     expect(p.view().phase).toBe('setup');
     // A started room is no longer joinable.
     const listed = (mock.http('GET', '/api/rooms', auth, undefined).body as { rooms: { roomId: string }[] }).rooms;
@@ -254,7 +255,7 @@ describe('mock socket', () => {
     expect(mock.dropAll()).toBe(1);
     expect(p.closed).toBe(true);
     const again = peer();
-    mock.message(again.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token, gameId: room.roomId, lastRevision: 2 }));
+    mock.message(again.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token, gameId: room.roomId, lastRevision: 2 }));
     expect(again.frames[0]).toMatchObject({ t: 'Welcome', revision: again.view().revision });
   });
 });
@@ -284,7 +285,7 @@ describe('mock revision-3 lifecycle', () => {
     const a = peer(); hello(a, room.roomId);
     const bob = mock.http('POST', '/api/guests', undefined, { nickname: 'Bob' }).body as { token: string };
     mock.http('POST', `/api/rooms/${room.roomId}/join`, `Bearer ${bob.token}`, undefined);
-    const b = peer(); mock.message(b.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token: bob.token, gameId: room.roomId, lastRevision: null }));
+    const b = peer(); mock.message(b.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: bob.token, gameId: room.roomId, lastRevision: null }));
     mock.http('POST', `/api/rooms/${room.roomId}/leave`, auth, undefined);
     expect(a.frames.at(-1)).toMatchObject({ t: 'Error', code: 'NOT_A_PARTICIPANT' });
     expect(b.frames.at(-1)).toMatchObject({ t: 'Error', code: 'ROOM_CLOSED' });
@@ -309,7 +310,7 @@ describe('mock revision-3 lifecycle', () => {
     mock.http('POST', `/api/rooms/${room.roomId}/join`, `Bearer ${bob.token}`, undefined);
     timers.advance(2000); // third seat is bot Ada
     const a = peer(); hello(a, room.roomId);
-    const b = peer(); mock.message(b.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: 1, token: bob.token, gameId: room.roomId, lastRevision: null }));
+    const b = peer(); mock.message(b.mockPeer, JSON.stringify({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: bob.token, gameId: room.roomId, lastRevision: null }));
     mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined);
     if (phase === 'playing') for (let i = 0; i < 100 && a.view().phase !== 'playing'; i++) {
       if (!act(a)) timers.advance(45001); // timeout Bob, bot Ada rolls itself
@@ -331,5 +332,35 @@ describe('mock revision-3 lifecycle', () => {
     mock.http('POST', `/api/rooms/${room.roomId}/start`, auth, undefined);
     say(p, { t: 'Command', commandId: 'resign', type: 'Resign', payload: null, expected: { kind: 'revision', revision: p.view().revision } } as never);
     expect(p.view()).toMatchObject({ phase: 'finished', positions: {}, setup: null, turn: null });
+  });
+});
+
+describe('stage 2 mock economy', () => {
+  it('projects generated cells and capital, then credits lap rewards in event order', async () => {
+    const { MockGame } = await import('../game');
+    const { startingCapital, lapReward } = await import('@game/game-core');
+    const game = new MockGame({ turnMs: 45000, continuationMs: 20000 });
+    game.addPlayer('a'); game.addPlayer('b');
+    const started = game.start(0);
+    expect(game.view.board?.cells).toHaveLength(40);
+    expect(game.view.balances).toEqual({ a: startingCapital(2), b: startingCapital(2) });
+    expect(started.filter(e => e.type === 'BalanceChanged')).toHaveLength(2);
+    let sawLap = false;
+    for (let n = 0; n < 400 && !sawLap; n++) {
+      const view = game.view;
+      const player = view.setup?.playerId ?? view.turn!.playerId;
+      const type = view.setup ? 'RollForOrder' : view.turn!.rolled ? 'EndTurn' : 'RollDice';
+      const id = view.setup?.setupRollId ?? view.turn!.turnId;
+      const result = game.command(player, type, { kind: 'target', target: { kind: view.setup ? 'setupRoll' : 'turn', id } }, 1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) break;
+      for (const [i, event] of result.events.entries()) if (event.type === 'BalanceChanged') {
+        const payload = event.payload as { playerId: string; balance: number; delta: number; reason: string };
+        expect(payload.reason).toBe('lap-reward'); expect(payload.delta).toBe(lapReward(startingCapital(2)));
+        expect(result.events[i - 1]?.type).toBe('PlayerMoved');
+        expect(game.view.balances[payload.playerId]).toBe(payload.balance); sawLap = true;
+      }
+    }
+    expect(sawLap).toBe(true);
   });
 });

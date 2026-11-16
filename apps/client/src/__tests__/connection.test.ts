@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from '@game/protocol';
 import { flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeClientFrame, type ServerFrame } from '@game/protocol';
@@ -38,7 +39,7 @@ describe('handshake', () => {
     expect(h.sockets.last().sent).toEqual([]);
     h.sockets.last().open();
     expect(h.sockets.last().sent).toEqual([
-      { t: 'Hello', protocolVersion: 1, token: GUEST.token, gameId: 'r1', lastRevision: null },
+      { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: GUEST.token, gameId: 'r1', lastRevision: null },
     ]);
     expect(decodeClientFrame(JSON.stringify(h.sockets.last().sent[0])).ok).toBe(true);
     expect(h.client.game.connected).toBe(false);
@@ -197,7 +198,7 @@ describe('reconnect', () => {
     expect(h.sockets.sockets).toHaveLength(2);
     h.sockets.last().open();
     expect(h.sockets.last().sent).toEqual([
-      { t: 'Hello', protocolVersion: 1, token: GUEST.token, gameId: 'r1', lastRevision: 20 },
+      { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: GUEST.token, gameId: 'r1', lastRevision: 20 },
     ]);
 
     const current = playingView(['a', 'b'], { revision: 23, owner: 'b', turnId: 't22', positions: { a: 7, b: 0 } });
@@ -269,7 +270,7 @@ describe('reconnect', () => {
     reloaded.client.start();
     reloaded.sockets.last().open();
     expect(reloaded.sockets.last().sent).toEqual([
-      { t: 'Hello', protocolVersion: 1, token: GUEST.token, gameId: 'r1', lastRevision: null },
+      { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: GUEST.token, gameId: 'r1', lastRevision: null },
     ]);
   });
 
