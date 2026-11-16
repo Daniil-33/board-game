@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Web container runtime configuration
-At container startup the web service SHALL generate `/config.js` exposing only `API_ORIGIN`, validated against `^https?://[a-z0-9.-]+(:[0-9]{1,5})?$` (or empty) in a shell entrypoint script without adding a Node runtime. This whitelist SHALL provide JavaScript and HTML safety without escaping. Invalid input SHALL fail startup naming `API_ORIGIN`. Empty or absent input SHALL select same-origin operation.
+At startup the web service SHALL generate `/config.js` exposing only `API_ORIGIN`, using a shell script without a Node runtime. Values SHALL be empty or match `^https?://[a-z0-9.-]+(:[0-9]{1,5})?$`, with explicit ports numerically restricted to 1..65535. This whitelist provides JavaScript/HTML safety without escaping. Invalid input SHALL fail startup naming `API_ORIGIN`. Empty or absent input SHALL select same-origin operation.
 
 #### Scenario: Configured startup
 - **WHEN** the web container starts with a valid `API_ORIGIN`
@@ -10,6 +10,10 @@ At container startup the web service SHALL generate `/config.js` exposing only `
 #### Scenario: Invalid input
 - **WHEN** `API_ORIGIN` contains a path, credentials, query, fragment or executable injection payload
 - **THEN** startup SHALL fail naming `API_ORIGIN` without executing that payload
+
+#### Scenario: Explicit port range
+- **WHEN** `API_ORIGIN` specifies a port
+- **THEN** ports `0` and `99999` SHALL fail startup naming `API_ORIGIN`, while valid ports such as `8443` SHALL be accepted
 
 #### Scenario: Local default
 - **WHEN** the web container starts without `API_ORIGIN` or with an empty value

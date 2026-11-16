@@ -11,7 +11,7 @@ describe('runtime configuration', () => {
     expect(readConfig({ ...base, ALLOWED_ORIGINS: 'https://stage.focusima.space, http://localhost:5173', GIT_SHA: 'abc123' }))
       .toMatchObject({ allowedOrigins: ['https://stage.focusima.space', 'http://localhost:5173'], gitSha: 'abc123' });
   });
-  it.each([' ', ',', 'https://a,', 'https://a/', 'https://a/path', 'ftp://a', 'https://a?q=1', 'https://a#x', 'https://u@a', 'https://a:99999', 'https://a\n.example', 'null'])('rejects invalid list %j', (value) => {
+  it.each([' ', ',', 'https://a,', 'https://a/', 'https://a/path', 'ftp://a', 'https://a?q=1', 'https://a#x', 'https://u@a', 'https://a:99999', 'https://a\n.example', 'null', 'https://STAGE.focusima.space', 'https://a:443', 'http://a:80', 'https://a:08443', 'https://127.1'])('rejects invalid list %j', (value) => {
     expect(() => readConfig({ ...base, ALLOWED_ORIGINS: value })).toThrow('ALLOWED_ORIGINS');
   });
 });

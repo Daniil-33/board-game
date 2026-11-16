@@ -23,9 +23,9 @@ export function readConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   for (const origin of allowedOrigins) {
     try {
       const url = new URL(origin);
-      if (!/^https?:\/\/[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$/.test(origin) || !url.hostname) throw new Error();
+      if (!/^https?:\/\/[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$/.test(origin) || !url.hostname || url.origin !== origin) throw new Error();
     } catch {
-      throw new Error('ALLOWED_ORIGINS must contain comma-separated HTTP(S) origins without paths');
+      throw new Error('ALLOWED_ORIGINS must contain comma-separated canonical HTTP(S) origins without paths');
     }
   }
   return { databaseUrl, host, port, testSeed, allowedOrigins, gitSha: env['GIT_SHA'] ?? 'unknown' };

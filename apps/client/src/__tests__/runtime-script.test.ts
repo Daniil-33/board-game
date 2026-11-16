@@ -21,7 +21,7 @@ function generate(origin?: string) {
 }
 
 describe('shell runtime config generator', () => {
-  it.each(['https://stage-api.focusima.space', 'http://localhost:8787', '', undefined])('generates only API_ORIGIN for %j', (origin) => {
+  it.each(['https://stage-api.focusima.space', 'http://localhost:8787', 'https://a:8443', 'https://a:1', 'https://a:65535', 'https://a:00008', '', undefined])('generates only API_ORIGIN for %j', (origin) => {
     const result = generate(origin);
     expect(result.status).toBe(0);
     const context = { window: {} };
@@ -34,7 +34,7 @@ describe('shell runtime config generator', () => {
     'https://a";alert(1)//', "https://a'", '</script>', 'https://a\nhttps://b',
     'https://a\n', '\nhttps://a', 'https://a b', ' https://a', 'https://a\r',
     'https://a; touch /tmp/runtime-injected', '$(touch /tmp/runtime-injected)',
-    'ftp://a', 'https://A', 'https://a:123456',
+    'ftp://a', 'https://A', 'https://a:123456', 'https://a:99999', 'https://a:0', 'https://a:65536', 'https://a:00000',
   ])('fails startup naming the variable for %j', (origin) => {
     const result = generate(origin);
     expect(result.status).not.toBe(0);

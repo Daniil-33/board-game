@@ -12,4 +12,14 @@ case "$api_origin" in
   *'
 '*) echo 'API_ORIGIN must not contain newlines' >&2; exit 1 ;;
 esac
+# The regex bounds the digit count; numeric checks reject unusable ports.
+case "${api_origin#*://}" in
+  *:*)
+    api_port=${api_origin##*:}
+    if [ "$api_port" -lt 1 ] || [ "$api_port" -gt 65535 ]; then
+      echo 'API_ORIGIN port must be between 1 and 65535' >&2
+      exit 1
+    fi
+    ;;
+esac
 printf 'window.__GAME_CONFIG__ = {"API_ORIGIN":"%s"};\n' "$api_origin" > /usr/share/nginx/html/config.js

@@ -20,10 +20,18 @@
 ## 4. Integrated verification and delivery
 
 - [x] 4.1 Run pnpm build, pnpm test, pnpm test:integration, client build:bundle, openspec validate --all --strict and git diff --check; record results and compare final diff against all nine handoff acceptance criteria.
-- [ ] 4.2 Push branch agent/task-dep-config and open PR using recorded agentctl external operations; verify unchanged Compose browser suites pass in CI on exact PR head.
-- [ ] 4.3 Start independent review with agentctl review start, resolve supported findings and obtain exact-head passing review evidence; report residual risks and request Team Lead acceptance through agentctl.
+- [x] 4.2 Push branch agent/task-dep-config and open PR using recorded agentctl external operations; verify unchanged Compose browser suites pass in CI on exact PR head.
+- [x] 4.3 Start independent review with agentctl review start, resolve supported findings and obtain exact-head passing review evidence; report residual risks and request Team Lead acceptance through agentctl.
 
 ## Workflow follow-up
 
 - Archive the change in the PR after independent review passes, as required by the task handoff; validate archived specs and refresh exact-head checks/review evidence for the archive commit.
 - Do not merge the PR; Team Lead acceptance and merge policy apply.
+
+## Review disposition and archive round
+
+- REV-dep-config-2 PASS on 6944d3f; CI run 43883150090 passed both jobs on that head.
+- RVW-001: Team Lead amended the whitelist to require explicit ports in 1..65535. Shell validation and regression tests implement the refinement.
+- RVW-002: Reject non-canonical ALLOWED_ORIGINS at startup by comparing each entry with its URL origin serialization; regression tests cover uppercase hosts, explicit default ports and other non-canonical forms.
+- RVW-003: Team Lead owns the handoff revision-history note; no Engineer change required.
+- Archive round: rerun required checks and both CI jobs on the archive commit, then start REV-dep-config-3 for 6944d3f..new head (full task base 4347800) before Team Lead merge acceptance.

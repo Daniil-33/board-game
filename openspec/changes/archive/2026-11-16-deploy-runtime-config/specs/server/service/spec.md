@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Browser origin configuration
-The service SHALL read `ALLOWED_ORIGINS` as comma-separated exact HTTP(S) origins without credentials, paths, queries or fragments. Invalid entries SHALL fail startup naming `ALLOWED_ORIGINS`. Unset or empty configuration SHALL disable origin enforcement and CORS headers, preserving existing behaviour.
+The service SHALL read `ALLOWED_ORIGINS` as comma-separated exact HTTP(S) origins without credentials, paths, queries or fragments. Each entry SHALL equal its canonical URL origin serialization; invalid or non-canonical entries SHALL fail startup naming `ALLOWED_ORIGINS`. Unset or empty configuration SHALL disable origin enforcement and CORS headers, preserving existing behaviour.
 
 #### Scenario: Valid list
 - **WHEN** configured with `https://stage.focusima.space,http://localhost:5173`
@@ -9,6 +9,10 @@ The service SHALL read `ALLOWED_ORIGINS` as comma-separated exact HTTP(S) origin
 
 #### Scenario: Invalid entry
 - **WHEN** an entry contains a path, credentials, query, fragment or is not an HTTP(S) origin
+- **THEN** startup SHALL fail naming `ALLOWED_ORIGINS`
+
+#### Scenario: Non-canonical origin
+- **WHEN** an entry uses an uppercase host, an explicit default port (`:443` for HTTPS or `:80` for HTTP), or another spelling different from its URL origin serialization
 - **THEN** startup SHALL fail naming `ALLOWED_ORIGINS`
 
 #### Scenario: Default compatibility
