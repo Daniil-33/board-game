@@ -27,7 +27,9 @@ describe('current turn', () => {
       const events = i % 4 === 0 ? g.timeout({ dice: [d1, d2] }) : g.roll(d1, d2);
       g.now += 1_000;
       const closing = g.state.turn!.rolled ? (i % 3 === 0 ? g.timeout() : g.endTurn()) : [];
-      for (const e of [...events, ...closing]) {
+      const settlement = [];
+      while (g.state.auction !== null) settlement.push(...g.timeout());
+      for (const e of [...events, ...closing, ...settlement]) {
         if (e.type === 'TurnStarted') {
           const id = (e.payload as { turnId: string }).turnId;
           expect(ids.has(id)).toBe(false);

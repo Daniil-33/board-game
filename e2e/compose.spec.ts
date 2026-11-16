@@ -1,10 +1,12 @@
+import { AUCTION_RESPONSE_MS, CONTINUATION_MS } from '../packages/game-core/src/index';
+import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
 import { cellRect } from '../apps/client/src/board/layout';
 import { test, expect, sel, createRoom, join, start, setup, active, action, resign } from './helpers';
 
 test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }, info) => {
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Recovery uses production CSPRNG');
-  test.setTimeout(180_000);
+  test.setTimeout(180_000 + 4 * 3 * AUCTION_RESPONSE_MS);
   const players = await actors(3), host = players[0]!;
   const room = await createRoom(host);
   for (const p of players.slice(1)) await join(p, room);
@@ -20,7 +22,7 @@ test('three guests: setup, movement, reload, server restart and resignation to w
     await action(actor, 'RollDice');
     const rolled = actor.events.filter(e => e.event.type === 'DiceRolled').at(-1)!.event.payload as { dice: number[] };
     if (!actor.view!.jail[actor.id]) expect(actor.view!.positions[actor.id]).toBe((before + rolled.dice[0]! + rolled.dice[1]!) % 40);
-    if (actor.view!.turn?.playerId === actor.id && actor.view!.turn.rolled) await action(actor, 'EndTurn');
+    if (actor.view!.turn?.playerId === actor.id && actor.view!.turn.rolled) await endTurn(actor, players);
     await expect.poll(() => host.view?.revision).toBe(actor.view!.revision);
   }
   const current = await active(players), id = current.id, revision = current.view!.revision;
@@ -103,25 +105,26 @@ test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ 
   const roll = host.events.find(e => e.event.type === 'DiceRolled')!;
   expect(roll.at).toBeGreaterThanOrEqual(original.deadline);
   expect(roll.event.payload).toMatchObject({ auto: true });
-  await expect.poll(() => host.view?.turn?.turnId, { timeout: 25_000 }).not.toBe(original.turnId);
+  await expect.poll(() => host.view?.turn?.turnId, { timeout: CONTINUATION_MS + players.length * AUCTION_RESPONSE_MS + playwrightConfig.expect!.timeout! }).not.toBe(original.turnId);
+  await settledAuction(players, host.events.filter(e => e.event.type === 'AuctionStarted').at(-1)?.event.payload as import('../packages/game-core/src/index').AuctionState | undefined);
   const ended = host.events.find(e => e.event.type === 'TurnEnded')!;
   expect(ended.at).toBeGreaterThanOrEqual(continued.deadline);
   expect(ended.event.payload).toMatchObject({ reason: 'timeout' });
 });
 
-test('seed 4491: setup tie, three doubles jail before movement and interim jail attempt', async ({ actors }) => {
+test('seed 6689: setup tie, three doubles jail before movement and interim jail attempt', async ({ actors }) => {
   test.skip(process.env['E2E_DETERMINISTIC'] !== '1', 'Requires fresh test-only seeded stack');
-  test.setTimeout(240_000);
+  test.setTimeout(240_000 + 60 * 2 * AUCTION_RESPONSE_MS);
   const players = await actors(2), host = players[0]!;
   const room = await createRoom(host); await join(players[1]!, room);
   await start(players);
   await stage2(players, 29910);
   expect(await setup(players)).toBe(4);
   const prisoner = await active(players);
-  for (const dice of [[4, 4], [3, 3]]) {
+  for (const dice of [[1, 1], [4, 4]]) {
     await action(prisoner, 'RollDice');
     expect(prisoner.events.filter(e => e.event.type === 'DiceRolled').at(-1)!.event.payload).toMatchObject({ dice, double: true });
-    await action(prisoner, 'EndTurn');
+    await endTurn(prisoner, players);
   }
   const balancesBeforeJail = structuredClone(prisoner.view!.balances);
   const count = prisoner.events.length;
@@ -133,7 +136,7 @@ test('seed 4491: setup tie, three doubles jail before movement and interim jail 
     await expect.poll(() => p.view?.balances).toEqual(balancesBeforeJail);
   }
   await panels(players);
-  expect(events[0]!.payload).toMatchObject({ dice: [1, 1], double: true });
+  expect(events[0]!.payload).toMatchObject({ dice: [6, 6], double: true });
   expect(prisoner.view!.positions[prisoner.id]).toBe((events[1]!.payload as { to: number }).to);
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
   expect(prisoner.view!.turn!.doublesStreak).toBe(0);
@@ -142,7 +145,7 @@ test('seed 4491: setup tie, three doubles jail before movement and interim jail 
   for (let i = 0; host.view!.turn!.playerId !== prisoner.id; i++) {
     expect(i).toBeLessThan(10);
     const other = await active(players); await action(other, 'RollDice');
-    if (other.view!.turn!.rolled) await action(other, 'EndTurn');
+    if (other.view!.turn!.rolled) await endTurn(other, players);
     await expect.poll(() => host.view?.revision).toBe(other.view!.revision);
   }
   const attemptStart = prisoner.events.length;
@@ -156,19 +159,19 @@ test('seed 4491: setup tie, three doubles jail before movement and interim jail 
     expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
     await expect(prisoner.page.locator(sel('jail'))).toContainText('1 attempts used');
   } else {
-    expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved']);
+    expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
     expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });
   }
   expect(prisoner.view!.turn!.pendingBonus).toBe(false);
   expect(prisoner.events.at(-1)!.revision).toBe(prisoner.view!.revision);
-  // Continue the fresh seed-4491/core-4 stream, after the setup tie and jail
-  // attempt above. Player 2 eventually rolls [2, 1] from cell 39 to cell 2,
-  // gaining 3980 (29910 -> 33890). No additional seed or restart is needed.
+  // Continue the fresh seed-6689/core-5 stream, after the setup tie and jail
+  // attempt above, allowing acquisitions to pass by their real response timers.
+  // A forward crossing still credits exactly 3980 without a new seed or restart.
   let crossed = false;
   for (let i = 0; i < 60 && !crossed; i++) {
     await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
     const actor = await active(players);
-    if (actor.view!.turn!.rolled) { await action(actor, 'EndTurn'); }
+    if (actor.view!.turn!.rolled) { await endTurn(actor, players); }
     else {
       const before = structuredClone(actor.view!);
       const eventCount = actor.events.length;
@@ -189,8 +192,38 @@ test('seed 4491: setup tie, three doubles jail before movement and interim jail 
     const revision = actor.view!.revision;
     for (const p of players) await expect.poll(() => p.view?.revision).toBe(revision);
   }
-  expect(crossed, 'seed 4491 must reach a rewarded forward start crossing in 60 actions').toBe(true);
+  expect(crossed, 'seed 6689 must reach a rewarded forward start crossing in 60 actions').toBe(true);
 });
+
+/** Existing browser flows have no auction UI yet: observe only server-driven passes. */
+async function settledAuction(players: import('./helpers').Actor[], auction = players[0]!.view!.auction ?? undefined): Promise<void> {
+  if (!auction) return;
+  const host = players[0]!;
+  const activeCount = host.view!.players.length - host.view!.eliminated.length;
+  await expect.poll(() => host.events.some(e => e.event.type === 'AuctionEndedUnsold' &&
+    (e.event.payload as { auctionId: string }).auctionId === auction.auctionId), {
+    timeout: activeCount * AUCTION_RESPONSE_MS + playwrightConfig.expect!.timeout!,
+  }).toBe(true);
+  expect(host.view!.auction).toBeNull();
+  const relevant = host.events.filter(e => (e.event.payload as { auctionId?: string }).auctionId === auction.auctionId);
+  expect(relevant[0]!.event.type).toBe('AuctionStarted');
+  const passes = relevant.filter(e => e.event.type === 'AuctionPassed');
+  expect(passes).toHaveLength(activeCount);
+  for (const pass of passes) expect(pass.event.payload).toMatchObject({ auto: true });
+  expect(relevant.at(-1)!.event.type).toBe('AuctionEndedUnsold');
+  const revision = host.view!.revision;
+  for (const p of players) await expect.poll(() => p.view?.revision).toBe(revision);
+}
+
+async function endTurn(actor: import('./helpers').Actor, players: import('./helpers').Actor[]): Promise<void> {
+  const turnId = actor.view!.turn!.turnId;
+  await action(actor, 'EndTurn');
+  const auction = actor.view!.auction;
+  await settledAuction(players, auction ?? undefined);
+  if (auction) {
+    expect(actor.events.some(e => e.event.type === 'TurnEnded' && (e.event.payload as { turnId: string }).turnId === turnId)).toBe(true);
+  }
+}
 
 async function panels(players: import('./helpers').Actor[]): Promise<void> {
   for (const p of players) {

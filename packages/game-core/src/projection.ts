@@ -22,6 +22,7 @@ export type Visibility = 'public' | 'secret';
  * makes adding a state field without classifying it a compile error.
  */
 export const STATE_VISIBILITY = {
+  owners: 'public', purchase: 'public', auction: 'public',
   board: 'public', economy: 'public', balances: 'public',
   revision: 'public',
   rulesVersion: 'public',
@@ -83,6 +84,9 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
  * type missing at runtime fails closed in `projectEvents`.
  */
 export const EVENT_VISIBILITY = {
+  PurchaseOffered: 'public', AssetPurchased: 'public', AuctionStarted: 'public',
+  AuctionBid: 'public', AuctionPassed: 'public', AuctionWon: 'public', AuctionEndedUnsold: 'public',
+  TurnPaused: 'public', TurnResumed: 'public',
   BoardGenerated: 'public', BalanceChanged: 'public',
   GameCreated: 'public',
   PlayerAdded: 'public',

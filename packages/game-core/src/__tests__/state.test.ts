@@ -26,7 +26,7 @@ describe('genesis', () => {
 const lobby: GameState = {
   ...genesis(),
   revision: 3 as Revision,
-  rulesVersion: 'core-4',
+  rulesVersion: 'core-5',
   phase: 'lobby',
   players: [{ id: pid('a') }, { id: pid('b') }],
   ...generateBoard(seedRng(1)),

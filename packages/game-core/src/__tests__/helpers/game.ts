@@ -67,7 +67,9 @@ export class Game {
   roll(d1: number, d2: number, at?: number): readonly GameEvent[] {
     return this.ok(this.rollDiceCmd(), { dice: [d1, d2], at });
   }
+  /** Legacy turn tests explicitly buy a pending asset before testing closure. */
   endTurn(at?: number): readonly GameEvent[] {
+    if (this.state.purchase !== null) this.ok(cmd('BuyAsset', null, { actor: player(this.state.turn!.playerId), target: { kind: 'turn', id: this.state.turn!.turnId } }));
     return this.ok(this.endTurnCmd(), { at });
   }
   /** Timeout at the deadline (or `at`), forcing an automatic roll to `dice` when given. */
@@ -79,7 +81,7 @@ export class Game {
 /** CreateGame, AddPlayer for each id, StartGame: a game in phase `setup`. */
 export function setupGame(ids: readonly string[], seed = 42): Game {
   const g = new Game();
-  g.ok(cmd('CreateGame', { seed, rulesVersion: 'core-4' }, { rev: 0 }));
+  g.ok(cmd('CreateGame', { seed, rulesVersion: 'core-5' }, { rev: 0 }));
   for (const id of ids) g.ok(cmd('AddPlayer', { playerId: id }, { rev: g.state.revision }));
   g.ok(cmd('StartGame', null, { rev: g.state.revision }));
   return g;

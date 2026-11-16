@@ -43,7 +43,7 @@ function randomExpectation(g: Gen, state: GameState, seen: Seen): unknown {
 
 /** Mostly the current turn or roll owner; sometimes another member, a stranger, or the system. */
 function randomActor(g: Gen, state: GameState): GameCommand['actor'] {
-  const owner = state.turn?.playerId ?? state.setup?.playerId;
+  const owner = state.auction?.responder ?? state.turn?.playerId ?? state.setup?.playerId;
   const roll = g.int(0, 19);
   if (owner !== undefined && roll < 15) return player(owner);
   if (roll < 18 && state.players.length > 0) return player(g.pick(state.players).id);
@@ -73,7 +73,7 @@ function lifecycleCommand(g: Gen, state: GameState, history: GameCommand[], seq:
     phase === 'uninitialized' ? g.pick([0, 0, 0, 1, 4]) : phase === 'lobby' ? g.pick([1, 1, 1, 2, 2, 3, 4, 0]) : g.int(0, 4);
   switch (choice) {
     case 0:
-      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-4' }, opts);
+      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-5' }, opts);
     case 1:
       return cmd('AddPlayer', { playerId: g.pick(PLAYER_IDS) }, opts);
     case 2:
@@ -91,7 +91,7 @@ function gameCommand(g: Gen, state: GameState, seen: Seen, seq: number): GameCom
   const payload = g.int(0, 29) === 0 ? { extra: true } : null;
   const roll = g.int(0, 99);
   if (roll < 25) return cmd('Timeout', payload, { id, expected, actor: g.int(0, 19) === 0 ? player('a') : { kind: 'system' } });
-  const type = state.phase === 'setup' ? (roll < 85 ? 'RollForOrder' : g.pick(['RollDice', 'EndTurn'])) : roll < 60 ? 'RollDice' : roll < 95 ? 'EndTurn' : 'RollForOrder';
+  const type = state.auction !== null ? g.pick(['Bid', 'Bid', 'PassAuction']) : state.purchase !== null ? g.pick(['BuyAsset', 'StartAuction', 'EndTurn']) : state.phase === 'setup' ? (roll < 85 ? 'RollForOrder' : g.pick(['RollDice', 'EndTurn'])) : roll < 60 ? 'RollDice' : roll < 95 ? 'EndTurn' : 'RollForOrder';
   return cmd(type, payload, { id, expected, actor: randomActor(g, state) });
 }
 
@@ -138,6 +138,7 @@ function randomTime(g: Gen, t: number, state: GameState): number {
 describe('property: any command sequence replays and restores to the identical session', () => {
   const g = new Gen(seedRng(20261116));
   const stats = {
+    purchases: 0, auctions: 0, bids: 0, passes: 0, wins: 0, unsold: 0,
     leaves: 0,
     resignations: 0,
     setupVictories: 0,
@@ -200,6 +201,12 @@ describe('property: any command sequence replays and restores to the identical s
         states.push(live.state);
         for (const ev of r.events) {
           const p = ev.payload as Record<string, unknown>;
+          if (ev.type === 'AssetPurchased') stats.purchases++;
+          if (ev.type === 'AuctionStarted') stats.auctions++;
+          if (ev.type === 'AuctionBid') stats.bids++;
+          if (ev.type === 'AuctionPassed') stats.passes++;
+          if (ev.type === 'AuctionWon') stats.wins++;
+          if (ev.type === 'AuctionEndedUnsold') stats.unsold++;
           if (ev.type === 'TurnOrderDetermined') stats.reachedPlaying += 1;
           if (ev.type === 'TurnContinued') stats.continuations += 1;
           if (ev.type === 'TurnStarted' && p['bonus'] === true) stats.bonusTurns += 1;
@@ -249,6 +256,7 @@ describe('property: any command sequence replays and restores to the identical s
   }
 
   it('generator covers the interesting paths', () => {
+    for (const value of [stats.purchases, stats.auctions, stats.bids, stats.passes, stats.wins, stats.unsold]) expect(value).toBeGreaterThan(0);
     expect(stats.leaves).toBeGreaterThan(0);
     expect(stats.resignations).toBeGreaterThan(0);
     expect(stats.setupVictories).toBeGreaterThan(0);

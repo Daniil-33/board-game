@@ -62,3 +62,15 @@ Core supports only core-5. Server migration and protocol version 3 belong to the
 ## Acceptance evidence plan
 
 Task criteria 1–3: landing classes, lap reward ordering, owned assets, affordable/unaffordable buy, voluntary/EndTurn/timeout auction origins. Criteria 4–7 and 9: null payload, exact raises, all prices and 2..6 players, cyclic order, leader skipping, all-pass, single-winner, insufficient balance, deadline boundaries, wrong actor/target/phase, stale and duplicate response, AFK. Criterion 8: pause arithmetic, rejected conflicting commands and Timeout, continuation, bonus closure. Criteria 10–11: detached public projections and all E1 cases including immediate victory, leader-owner void, later successor departure. Criteria 12–14: focused tests, golden/property coverage with nonzero acquisition statistics, replay and mid-auction snapshot-tail equality. Run pnpm build, pnpm test, openspec validate --all --strict and git diff --check; require both CI jobs and independent review on the exact PR head before technical acceptance.
+
+### Approved compatibility scope during Apply
+
+The Team Lead approved test-only compatibility changes in `e2e/compose.spec.ts`,
+`apps/server/src/__tests__/compose-fixture.test.ts` and the Compose override seed.
+Existing browser flows wait for timeout-only auction passes and unsold settlement
+before the next roll; they send no acquisition commands. Added timing derives from
+continuation/response constants plus the existing Playwright expectation bound.
+All movement, jail, AFK, recovery and victory assertions retain their meaning.
+The shared seed is re-pinned from 4491 to 6689: four setup rolls followed by
+[1,1], [4,4], [6,6] preserve the three-double jail scenario without an intervening
+purchase. Client mock/test fixture fields are mechanical type compatibility only.

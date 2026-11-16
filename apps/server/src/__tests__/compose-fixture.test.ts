@@ -44,10 +44,10 @@ function fixture(seed: number) {
   return { rolls, dice, state: session.state, log: session.log };
 }
 
-it('seed 4491 repeats setup ties and three doubles through the complete command flow', () => {
-  const first = fixture(4491);
-  expect(first).toEqual(fixture(4491));
+it('seed 6689 repeats setup ties and three doubles through the complete command flow', () => {
+  const first = fixture(6689);
+  expect(first).toEqual(fixture(6689));
   expect(first.rolls).toBe(4);
-  expect(first.dice.map(value => (value as { dice: number[] }).dice)).toEqual([[4, 4], [3, 3], [1, 1]]);
+  expect(first.dice.map(value => (value as { dice: number[] }).dice)).toEqual([[1, 1], [4, 4], [6, 6]]);
   expect(first.state.jail).toEqual({ a: { attemptsUsed: 0 } });
 });

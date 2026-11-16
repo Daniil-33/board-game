@@ -23,7 +23,7 @@ function play(): Session {
     if (r.kind !== 'accepted') throw new Error(`command ${i} (${c.type}) rejected: ${r.error.code}`);
     t = Math.max(t, at);
   };
-  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-4' }, { id: 'g0', rev: 0 }), t);
+  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-5' }, { id: 'g0', rev: 0 }), t);
   for (const p of ['a', 'b', 'c', 'd']) submit(cmd('AddPlayer', { playerId: p }, { id: `add-${p}`, rev: s.state.revision }), t);
   submit(cmd('StartGame', null, { id: 'start', rev: s.state.revision }), t);
 
@@ -34,11 +34,13 @@ function play(): Session {
     // Every fifth command is a Timeout at the deadline; otherwise the owner acts 1 s later.
     if (s.log.length % 5 === 0) {
       submit(cmd('Timeout', null, { id, target }), d!.at);
+    } else if (s.state.auction !== null) {
+      submit(cmd(s.log.length % 3 === 0 ? 'Bid' : 'PassAuction', null, { id, target, actor: player(s.state.auction.responder) }), t + 1_000);
     } else if (s.state.phase === 'setup') {
       submit(cmd('RollForOrder', null, { id, target, actor: player(s.state.setup!.playerId) }), t + 1_000);
     } else {
       const turn = s.state.turn!;
-      const type = turn.rolled ? 'EndTurn' : 'RollDice';
+      const type = s.state.purchase !== null ? (s.log.length % 2 === 0 ? 'BuyAsset' : 'StartAuction') : turn.rolled ? 'EndTurn' : 'RollDice';
       submit(cmd(type, null, { id, target, actor: player(turn.playerId) }), t + 1_000);
     }
   }
@@ -71,10 +73,10 @@ describe('seeded multi-turn game', () => {
     expect(summary(s)).toMatchInlineSnapshot(`
       {
         "balances": {
-          "a": 28880,
-          "b": 26890,
-          "c": 24900,
-          "d": 26890,
+          "a": 20920,
+          "b": 10960,
+          "c": 6860,
+          "d": 10780,
         },
         "boardAssets": [
           "fuel-3",
@@ -106,12 +108,12 @@ describe('seeded multi-turn game', () => {
           "technology-1",
           "technology-3",
         ],
-        "bonusTurns": 27,
-        "continuations": 30,
-        "eventCount": 658,
+        "bonusTurns": 20,
+        "continuations": 22,
+        "eventCount": 640,
         "jail": {},
-        "jailReleases": 1,
-        "jailSends": 1,
+        "jailReleases": 0,
+        "jailSends": 0,
         "order": [
           "d",
           "c",
@@ -119,17 +121,17 @@ describe('seeded multi-turn game', () => {
           "a",
         ],
         "positions": {
-          "a": 20,
-          "b": 12,
-          "c": 20,
-          "d": 17,
+          "a": 10,
+          "b": 35,
+          "c": 38,
+          "d": 31,
         },
         "revision": 300,
         "turn": {
           "playerId": "b",
           "turnId": "t299",
         },
-        "turnsStarted": 146,
+        "turnsStarted": 95,
       }
     `);
   });

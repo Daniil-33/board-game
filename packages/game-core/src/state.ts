@@ -1,5 +1,5 @@
 import type { GeneratedBoard } from './board/generate.js';
-import type { Money, PlayerId, Revision, Timestamp } from './types.js';
+import type { AssetId, Money, PlayerId, Revision, Timestamp } from './types.js';
 import type { RngState } from './rng.js';
 
 /**
@@ -45,6 +45,7 @@ export interface TurnState {
   readonly turnId: string;
   readonly playerId: PlayerId;
   readonly deadline: Timestamp;
+  readonly pausedRemainingMs: number | null;
   /** Whether this turn was granted by a double. */
   readonly bonus: boolean;
   readonly rolled: boolean;
@@ -62,7 +63,33 @@ export interface JailEntry {
   readonly attemptsUsed: number;
 }
 
+export interface PurchaseDecision {
+  readonly playerId: PlayerId;
+  readonly cell: number;
+  readonly assetId: AssetId;
+}
+
+export interface AuctionState {
+  readonly auctionId: string;
+  readonly assetId: AssetId;
+  readonly cell: number;
+  readonly price: Money;
+  readonly startBid: Money;
+  readonly step: Money;
+  readonly reason: 'choice' | 'end-turn' | 'timeout';
+  readonly order: readonly PlayerId[];
+  readonly passed: readonly PlayerId[];
+  readonly leader: PlayerId | null;
+  readonly leadingBid: Money | null;
+  readonly responder: PlayerId;
+  readonly responseId: string;
+  readonly responseDeadline: Timestamp;
+}
+
 export interface GameState {
+  readonly owners: Readonly<Record<string, PlayerId>>;
+  readonly purchase: PurchaseDecision | null;
+  readonly auction: AuctionState | null;
   readonly board: GeneratedBoard | null;
   readonly economy: { readonly startingCapital: Money; readonly lapReward: Money } | null;
   readonly balances: Readonly<Record<string, Money>>;
@@ -96,6 +123,7 @@ export const MAX_PLAYERS = 6;
 /** The state every game starts from. */
 export function genesis(): GameState {
   return {
+    owners: {}, purchase: null, auction: null,
     revision: 0 as Revision,
     board: null, economy: null, balances: {},
     rulesVersion: null,

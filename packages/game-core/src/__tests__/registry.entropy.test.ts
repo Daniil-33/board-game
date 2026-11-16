@@ -45,7 +45,7 @@ describe('entropy absorption in the engine', () => {
   });
 
   it('CreateGame absorbs entropy before generating the board', () => {
-    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-4' }, { rev: 0 });
+    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-5' }, { rev: 0 });
     const r1 = gameEngine.execute(genesis(), c, ctx(undefined, E1));
     const r2 = gameEngine.execute(genesis(), c, ctx(undefined, E2));
     expect(r1.kind).toBe('accepted');

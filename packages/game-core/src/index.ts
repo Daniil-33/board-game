@@ -31,7 +31,7 @@ export { Q } from './money.js';
 export type { RngState } from './rng.js';
 export { RNG_ALGORITHM, absorbEntropy, seedRng, isValidSeed, isWellFormedRng, nextUint32, nextIntInclusive } from './rng.js';
 
-export type { GameState, Phase, PlayerState, SetupState, TurnState, TurnQuotas, JailEntry } from './state.js';
+export type { PurchaseDecision, AuctionState, GameState, Phase, PlayerState, SetupState, TurnState, TurnQuotas, JailEntry } from './state.js';
 export { genesis, MIN_PLAYERS, MAX_PLAYERS } from './state.js';
 
 export type { InvariantName } from './invariants.js';
@@ -67,6 +67,8 @@ export {
   SETUP_ROLL_DURATION_MS,
   TURN_DURATION_MS,
   CONTINUATION_MS,
+  AUCTION_RESPONSE_MS,
+  AUCTION_RESPONSE_TARGET_KIND,
   TURN_TARGET_KIND,
   SETUP_ROLL_TARGET_KIND,
 } from './deadlines.js';
@@ -122,3 +124,8 @@ export { startingCapital, lapReward, creditBalance } from './money.js';
 export type { BalanceChanged, BalanceChangedEvent } from './money.js';
 export { PRICE_TABLE } from './board/prices.js';
 export { generateBoard } from './board/generate.js';
+
+/** Public acquisition contracts; bid amounts and reservation derive from auction state. */
+export { nextBidAmount } from './purchase-auction.js';
+export type { BuyAssetCommand, StartAuctionCommand, BidCommand, PassAuctionCommand, PurchaseOfferedEvent, AssetPurchasedEvent, AuctionStartedEvent, AuctionBidEvent, AuctionPassedEvent, AuctionWonEvent, AuctionEndedUnsoldEvent, TurnPausedEvent, TurnResumedEvent, PurchaseAuctionEvent } from './purchase-auction.js';
+export { debitBalance } from './money.js';
