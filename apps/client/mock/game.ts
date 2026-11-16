@@ -168,7 +168,7 @@ export class MockGame {
     return this.bumped([...rolled.events, { type: 'TurnContinued', payload: { turnId: turn.turnId, deadline } }]);
   }
 
-  /** Acquisition semantics are executed by the real core, never copied into the mock. */
+  /** Acquisition commands and deadlines use the real core; scripted movement mirrors the offer trigger below. */
   private coreCommand(playerId: string | null, type: string, expected: Expectation, now: number): MockResult {
     const result = gameEngine.execute({ ...this.state, rng: seedRng(42) }, {
       type, commandId: `mock-${this.revision + 1}` as CommandId,

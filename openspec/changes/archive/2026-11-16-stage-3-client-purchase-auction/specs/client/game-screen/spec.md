@@ -71,12 +71,12 @@ changes the timer SHALL follow it.
 - **THEN** the turn timer SHALL show "paused", regardless of the old deadline
 
 ### Requirement: Action buttons follow the view
-`RollForOrder` SHALL be enabled only in phase `setup` when the viewer is
-`setup.playerId`. `RollDice` SHALL be enabled only in phase `playing` when
-the viewer is `turn.playerId` and `turn.rolled` is false. `EndTurn` SHALL be
-enabled only in phase `playing` when the viewer is `turn.playerId` and
-`turn.rolled` is true. RollDice and EndTurn SHALL be disabled while view.auction exists. Every button SHALL be disabled while disconnected,
-while a command of its type is pending, and once the deadline has passed.
+`RollForOrder` SHALL require setup and the viewer as `setup.playerId`.
+`RollDice` SHALL require playing, the viewer as turn owner and `rolled: false`;
+`EndTurn` SHALL require playing, the viewer as turn owner and `rolled: true`.
+RollDice and EndTurn SHALL be disabled during auctions. Buttons SHALL be
+disabled while disconnected, while their command type is pending, and once
+the server deadline has passed.
 
 #### Scenario: Not my turn
 - **WHEN** the view's `turn.playerId` is another player

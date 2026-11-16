@@ -386,17 +386,20 @@ describe('decoded stage 3 mock socket script', () => {
     function send(type: ClientCommandType) {
       const v = seats[0]!.p.view(); const a = v.auction; const s = v.setup; const t = v.turn!;
       const seat = seats.find(seat => seat.guestId === (a?.responder ?? s?.playerId ?? t.playerId))!;
-      mock.message(seat.p.mockPeer, JSON.stringify({ t: 'Command', commandId: `stage3-${++id}`, type, payload: null, expected: { kind: 'target', target: a ? { kind: 'auctionResponse', id: a.responseId } : s ? { kind: 'setupRoll', id: s.setupRollId } : { kind: 'turn', id: t.turnId } } }));
-      expect(seat.p.frames.at(-2)?.t === 'Ack' ? seat.p.frames.at(-2) : seat.p.frames.at(-1)).toMatchObject({ outcome: 'accepted' });
+      const commandId = `stage3-${++id}`;
+      mock.message(seat.p.mockPeer, JSON.stringify({ t: 'Command', commandId, type, payload: null, expected: { kind: 'target', target: a ? { kind: 'auctionResponse', id: a.responseId } : s ? { kind: 'setupRoll', id: s.setupRollId } : { kind: 'turn', id: t.turnId } } }));
+      expect(seat.p.frames.find(frame => frame.t === 'Ack' && frame.commandId === commandId)).toMatchObject({ outcome: 'accepted' });
     }
     while (seats[0]!.p.view().setup) send('RollForOrder');
     send('RollDice'); expect(seats[0]!.p.view().purchase).not.toBeNull(); send('StartAuction');
     const initial = seats[0]!.p.view().auction!;
     expect(nextBidAmount(initial)).toBe(initial.startBid); send('Bid');
     expect(nextBidAmount(seats[0]!.p.view().auction!)).toBe(initial.startBid + initial.step); send('Bid'); send('PassAuction');
+    const winningLeader = seats[0]!.p.view().auction!.leader;
     // Invoke the response deadline through the mock scheduler (no local outcome).
     timers.advance(10_000);
     expect(seats[0]!.p.eventTypes()).toContain('AuctionWon');
+    expect(seats[0]!.p.view().owners[initial.assetId]).toBe(winningLeader);
     expect(seats[0]!.p.view().auction).toBeNull();
     // Seek the next free asset, pass every response and observe unsold settlement.
     for (let n = 0; n < 60 && seats[0]!.p.view().purchase === null; n++) {
