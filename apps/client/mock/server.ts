@@ -195,7 +195,7 @@ export class MockServer {
     const known = room.acks.get(frame.commandId);
     if (known !== undefined) return peer.send(known);
 
-    const result = room.game.command(playerId, frame.type, frame.expected, this.options.timers.now());
+    const result = room.game.command(playerId, frame.type, frame.expected, this.options.timers.now(), frame.payload);
     const ack: AckFrame = result.ok
       ? { t: 'Ack', commandId: frame.commandId, outcome: 'accepted', revision: room.game.revision }
       : { t: 'Ack', commandId: frame.commandId, outcome: 'rejected', revision: room.game.revision, error: result.error };

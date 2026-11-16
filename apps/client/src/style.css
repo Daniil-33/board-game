@@ -77,3 +77,7 @@ input[readonly] { width: 100%; }
 
 .decision-panel button { float: none; margin-right: .5rem; }
 .decision-panel dl { grid-template-columns: 110px 1fr; }
+.note { margin: 8px 0; color: var(--muted); font-size: 0.9rem; }
+.house-control { margin: 8px 0; }
+.asset-card .house-control button { float: none; }
+.house-control .reason { display: block; margin-top: 4px; color: var(--muted); font-size: 0.85rem; }

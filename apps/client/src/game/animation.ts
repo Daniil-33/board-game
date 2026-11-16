@@ -17,7 +17,9 @@ export type AnimationStep =
   /** A short note about `playerId`. */
   | { readonly kind: 'banner'; readonly playerId: string; readonly text: string }
   /** Mark the player whose roll or turn began. */
-  | { readonly kind: 'highlight'; readonly playerId: string };
+  | { readonly kind: 'highlight'; readonly playerId: string }
+  /** A paid rent `amount` moves from the payer's token to the owner's. */
+  | { readonly kind: 'rentPayment'; readonly from: string; readonly to: string; readonly amount: number };
 
 /** Plays one step; resolves when it has finished. `speed` > 1 shortens it. */
 export type StepPlayer = (step: AnimationStep, speed: number) => Promise<void>;
@@ -40,7 +42,14 @@ const isDie = (value: unknown): value is number =>
  */
 export function stepsForEvent(event: GameEvent, ringSize: number): AnimationStep[] {
   const p = record(event.payload);
-  if (p === null || typeof p.playerId !== 'string') return [];
+  if (p === null) return [];
+  if (event.type === 'RentPaid') {
+    // Only a payment that moved money; an interim shortfall with an empty balance shows nothing.
+    const { payerId, ownerId, paid } = p;
+    if (typeof payerId !== 'string' || typeof ownerId !== 'string' || typeof paid !== 'number' || !Number.isInteger(paid) || paid <= 0) return [];
+    return [{ kind: 'rentPayment', from: payerId, to: ownerId, amount: paid }];
+  }
+  if (typeof p.playerId !== 'string') return [];
   const playerId = p.playerId;
 
   switch (event.type) {

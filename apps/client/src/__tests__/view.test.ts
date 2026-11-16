@@ -13,7 +13,7 @@ import {
 } from '../game/view';
 import { lobbyView, pid, playingView, setupView } from './helpers';
 
-const NONE: ActionAvailability = { RollForOrder: false, RollDice: false, EndTurn: false, Resign: false, BuyAsset: false, StartAuction: false, Bid: false, PassAuction: false, PayRent: false, BuildHouse: false, SellHouse: false };
+const NONE: ActionAvailability = { RollForOrder: false, RollDice: false, EndTurn: false, Resign: false, BuyAsset: false, StartAuction: false, Bid: false, PassAuction: false, PayRent: false };
 
 function available(over: Partial<ActionContext>): ActionAvailability {
   return actionAvailability({ view: null, me: pid('a'), connected: true, pending: [], now: 50_000, ...over });

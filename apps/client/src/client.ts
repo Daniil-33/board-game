@@ -5,11 +5,11 @@
  */
 import { inject, reactive, type InjectionKey } from 'vue';
 import { CLASSIC_40 } from '@game/game-core';
-import { AccessCodeSchema, RoomIdSchema, type ClientCommandType, type RoomSummary } from '@game/protocol';
+import { AccessCodeSchema, RoomIdSchema, type RoomSummary } from '@game/protocol';
 import { Value } from '@sinclair/typebox/value';
 import { LobbyRequestError, createLobbyApi, type FetchLike, type LobbyApi } from './api/lobby';
 import { AnimationQueue, type AnimationStep } from './game/animation';
-import { activePlayerId } from './game/view';
+import { activePlayerId, type IntentRequest } from './game/view';
 import { createConnection, type Connection, type Timers } from './net/connection';
 import type { SocketFactory } from './net/socket';
 import { createGameState, type GameState } from './store/game';
@@ -67,7 +67,8 @@ export interface Client {
   leaveRoom(): Promise<void>;
   returnToLobby(): void;
   startGame(): Promise<void>;
-  sendCommand(type: ClientCommandType): void;
+  /** A null-payload command by type, or a command with its protocol payload. */
+  sendCommand(request: IntentRequest): void;
   nameOf(playerId: string): string;
   /** The game screen hands over its board while mounted, null when it goes away. */
   attachBoard(board: Board | null): void;
@@ -341,8 +342,8 @@ export function createClient(deps: ClientDeps): Client {
       // The game start itself arrives on the socket as an Update.
       if (room !== undefined && session.state.room?.roomId === room.roomId) session.setRoom(room);
     },
-    sendCommand(type) {
-      connection.sendCommand(type);
+    sendCommand(request) {
+      connection.sendCommand(request);
     },
     attachBoard(next) {
       board = next;

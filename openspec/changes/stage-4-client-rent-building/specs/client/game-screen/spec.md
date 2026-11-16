@@ -38,7 +38,7 @@ The asset card SHALL show the house count (0-4) from `view.houses` for monopoly 
 - **THEN** the open card SHALL show 2 houses and the new quote
 
 ### Requirement: Build and sell controls
-For a monopoly asset owned by the viewer the asset card SHALL show Build and Sell controls; other viewers' assets and non-monopoly assets SHALL show none. Build SHALL show the house cost `Q(50% × price)` and Sell the refund `Q(50% × cost)`. Each control SHALL be enabled only when game-core `buildLegality` / `saleLegality` on the current view returns no code and the connection checks pass.
+For a monopoly asset owned by the viewer the asset card SHALL show Build and Sell controls; other viewers' assets and non-monopoly assets SHALL show none. Build SHALL show the house cost from game-core `houseCost(price)` and Sell the refund from `houseRefund(cost)`; the client SHALL NOT compute them otherwise. Each control SHALL be enabled only when game-core `buildLegality` / `saleLegality` on the current view returns no code and the connection checks pass.
 
 #### Scenario: Legal build and sale
 - **WHEN** the viewer owns a whole group with even houses, has the quota and the funds, and it is their turn
@@ -47,6 +47,13 @@ For a monopoly asset owned by the viewer the asset card SHALL show Build and Sel
 #### Scenario: Not the owner
 - **WHEN** the selected asset belongs to another player
 - **THEN** the card SHALL show no Build or Sell control
+
+### Requirement: Build quota display
+While it is the viewer's turn, the controls SHALL show the builds left this turn from `view.turn.quotas.builds`. The client SHALL NOT compute or reset the quota; a bonus turn shows whatever the view projects.
+
+#### Scenario: Quota used
+- **WHEN** the view's turn quota shows zero builds after a build
+- **THEN** the card SHALL show zero builds left and Build SHALL be disabled with the quota reason
 
 ### Requirement: Disabled control reasons
 A disabled Build or Sell control SHALL show one reason text: the message mapped from the helper's `HouseErrorCode` (one message per code) or, when the helper allows it, the connection reason (disconnected, pending, deadline passed, not an active player).

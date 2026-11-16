@@ -2,9 +2,9 @@
 import { computed } from 'vue';
 import { nextBidAmount, type PlayerId, type StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
-import { canIssue, remainingSeconds } from '../game/view';
+import { canIssue, remainingSeconds, type NullPayloadType } from '../game/view';
 const props = defineProps<{ view: StateView; me: PlayerId | null; connected: boolean; pending: readonly ClientCommandType[]; now: number; nameOf: (id: string) => string }>();
-const emit = defineEmits<{ command: [type: ClientCommandType] }>();
+const emit = defineEmits<{ command: [type: NullPayloadType] }>();
 const asset = computed(() => props.view.board?.cells.find(c => c.index === props.view.auction?.cell)?.asset);
 const responding = computed(() => props.view.auction?.responder === props.me && props.me !== null && !props.view.eliminated.includes(props.me));
 </script>

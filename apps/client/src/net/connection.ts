@@ -9,7 +9,7 @@ import {
   type HelloFrame,
   type ServerFrame,
 } from '@game/protocol';
-import { commandExpectation } from '../game/view';
+import { commandExpectation, type Intent, type IntentRequest } from '../game/view';
 import { MAX_MESSAGES, type GameState } from '../store/game';
 import type { SocketFactory, SocketLike } from './socket';
 
@@ -55,8 +55,11 @@ export interface Connection {
   connect(roomId: string): void;
   /** Leave the room: close the socket and drop the view and pending commands. */
   disconnect(): void;
-  /** Send an intent. Returns false when the view has no target for it or one is already pending. */
-  sendCommand(type: ClientCommandType): boolean;
+  /**
+   * Send an intent: a null-payload type by name, or a type with its protocol
+   * payload. Returns false when the view has no target for it or one is already pending.
+   */
+  sendCommand(request: IntentRequest): boolean;
   dismissMessage(id: number): void;
 }
 
@@ -235,7 +238,9 @@ export function createConnection(options: ConnectionOptions): Connection {
       open();
     },
     disconnect,
-    sendCommand(type) {
+    sendCommand(request) {
+      const intent: Intent = typeof request === 'string' ? { type: request, payload: null } : request;
+      const type: ClientCommandType = intent.type;
       if (state.pending.some((c) => c.type === type)) return false;
       if (state.playerId !== null && state.view?.eliminated.includes(state.playerId)) return false;
       if (type === 'Resign' && (!state.connected || state.view === null || state.playerId === null ||
@@ -249,9 +254,8 @@ export function createConnection(options: ConnectionOptions): Connection {
       const frame: CommandFrame = {
         t: 'Command',
         commandId: newCommandId() as CommandId,
-        type,
         expected,
-        payload: null,
+        ...intent,
       };
       state.pending.push(frame);
       if (state.connected) send(frame);

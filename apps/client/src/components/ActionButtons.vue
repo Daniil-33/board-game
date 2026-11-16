@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { ClientCommandType } from '@game/protocol';
-import type { ActionAvailability, TurnCommandType } from '../game/view';
+import type { ActionAvailability, NullPayloadType, TurnCommandType } from '../game/view';
 
 defineProps<{ available: ActionAvailability }>();
-const emit = defineEmits<{ command: [type: ClientCommandType] }>();
+const emit = defineEmits<{ command: [type: NullPayloadType] }>();
 
 const BUTTONS: readonly { type: TurnCommandType; label: string }[] = [
   { type: 'RollForOrder', label: 'Roll for order' },

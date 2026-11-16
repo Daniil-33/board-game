@@ -19,6 +19,9 @@ export const DIE_MS = 600;
 export const HOP_MS = 150;
 export const JUMP_MS = 450;
 export const BANNER_MS = 1300;
+export const RENT_MS = 900;
+/** House marker fill. */
+export const HOUSE_COLOR = 0x7ee06a;
 
 const TOKEN_RADIUS = 7;
 const DIE_SIZE = 54;
@@ -47,7 +50,7 @@ const PIPS: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
 };
 
 /** The slice of the view the board draws. */
-export type BoardView = Pick<StateView, 'owners' | 'board' | 'players' | 'positions' | 'jail' | 'eliminated'>;
+export type BoardView = Pick<StateView, 'owners' | 'board' | 'players' | 'positions' | 'jail' | 'eliminated' | 'houses'>;
 
 export interface SceneClock {
   /** Run `frame(t)` with t from 0 to 1 over `ms`; resolves early (false) when `cancelled()` turns true. */
@@ -85,6 +88,8 @@ export class BoardScene {
   /** One child per player. */
   readonly tokens = new Container();
   readonly ownership = new Container();
+  /** House markers, 1-4 per asset cell, from `view.houses`. */
+  readonly housing = new Container();
   private boardKey = '';
   private selectAsset: ((index: number) => void) | null = null;
   /** The marker of the jail cell's "in jail" box. */
@@ -108,7 +113,7 @@ export class BoardScene {
     const ring = CLASSIC_40;
     this.root.addChild(new Graphics().rect(0, 0, size, size).fill(COLORS.board));
 
-    this.root.addChild(this.cells, this.ownership);
+    this.root.addChild(this.cells, this.ownership, this.housing);
 
     const jb = jailBox(cellRect(ring.jailCell, size));
     this.jailMarker.rect(jb.x, jb.y, jb.width, jb.height).fill(COLORS.jailBox).stroke({ width: 1, color: COLORS.cellEdge });
@@ -132,7 +137,9 @@ export class BoardScene {
     this.root.addChild(this.tokens, this.activeRing);
   }
 
+  /** Redraw the view-driven cell layers (owners and houses) without touching tokens or a step in flight. */
   refreshOwnership(view: BoardView): void {
+    this.refreshHouses(view);
     for (const child of this.ownership.removeChildren()) child.destroy();
     for (const cell of view.board?.cells ?? []) {
       if (cell.asset === null) continue;
@@ -145,6 +152,21 @@ export class BoardScene {
       marker.tint = TOKEN_COLORS[index % TOKEN_COLORS.length]!;
       marker.label = `owner-${cell.index}-${owner}`;
       this.ownership.addChild(marker);
+    }
+  }
+
+  refreshHouses(view: BoardView): void {
+    for (const child of this.housing.removeChildren()) child.destroy();
+    for (const cell of view.board?.cells ?? []) {
+      if (cell.asset === null) continue;
+      const count = view.houses[cell.asset.assetId] ?? 0;
+      if (!Number.isInteger(count) || count < 1) continue;
+      const r = cellRect(cell.index, this.size);
+      for (let i = 0; i < Math.min(count, 4); i++) {
+        const marker = new Graphics().rect(r.x + 4 + i * 11, r.y + r.height - 27, 9, 9).fill(HOUSE_COLOR).stroke({ width: 1, color: 0x0b1218 });
+        marker.label = `house-${cell.index}-${i + 1}`;
+        this.housing.addChild(marker);
+      }
     }
   }
 
@@ -248,6 +270,25 @@ export class BoardScene {
           token.position.set(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t - Math.sin(Math.PI * t) * lift);
           if (this.activeId === step.playerId) this.activeRing.position.copyFrom(token.position);
         });
+        return;
+      }
+      case 'rentPayment': {
+        const from = this.tokenById.get(step.from);
+        const to = this.tokenById.get(step.to);
+        if (from === undefined || to === undefined) return;
+        const amount = label(`${step.amount}`, 15, 0xffe08a, true);
+        amount.anchor.set(0.5);
+        amount.label = 'rent-payment';
+        const start = { x: from.x, y: from.y - 14 };
+        const end = { x: to.x, y: to.y - 14 };
+        amount.position.set(start.x, start.y);
+        this.root.addChild(amount);
+        try {
+          await wait(RENT_MS, (t) => amount.position.set(start.x + (end.x - start.x) * t, start.y + (end.y - start.y) * t - Math.sin(Math.PI * t) * 30));
+        } finally {
+          this.root.removeChild(amount);
+          amount.destroy();
+        }
         return;
       }
       case 'banner':
