@@ -19,8 +19,8 @@ const enc = (v: unknown) => JSON.stringify(v);
 const isMalformed = (r: { ok: boolean; error?: { code: string } }) => !r.ok && r.error?.code === 'MALFORMED_FRAME';
 
 describe('protocol version and codes', () => {
-  it('PROTOCOL_VERSION is 1', () => {
-    expect(PROTOCOL_VERSION).toBe(1);
+  it('PROTOCOL_VERSION is 2', () => {
+    expect(PROTOCOL_VERSION).toBe(2);
   });
 
   it('lists the seven protocol error codes', () => {
@@ -160,7 +160,7 @@ describe('field validation', () => {
   });
 
   it('accepts other protocol versions so the server can answer PROTOCOL_VERSION_UNSUPPORTED', () => {
-    expect(decodeClientFrame(enc({ ...hello, protocolVersion: 2 })).ok).toBe(true);
+    expect(decodeClientFrame(enc({ ...hello, protocolVersion: 1 })).ok).toBe(true);
   });
 
   it.each([

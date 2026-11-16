@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from '@game/protocol';
 import type { AddressInfo } from 'node:net';
 import { decodeServerFrame, type ClientFrame, type ServerFrame } from '@game/protocol';
 import type { FastifyInstance } from 'fastify';
@@ -224,7 +225,7 @@ export async function connect(
   lastRevision: number | null = null,
 ) {
   const socket = await TestSocket.open(server.wsUrl);
-  socket.send({ t: 'Hello', protocolVersion: 1, token: guest.token, gameId: roomId, lastRevision });
+  socket.send({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: guest.token, gameId: roomId, lastRevision });
   const welcome = await socket.nextOf('Welcome');
   return { socket, welcome };
 }

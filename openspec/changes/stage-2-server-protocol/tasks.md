@@ -2,8 +2,8 @@
 
 ## 1. Protocol version and projection
 
-- [ ] 1.1 Implement protocol/frames “Protocol version” and “Stage 2 public projection and events”: export version 2, update the schema description and add typed board/economy/balance/event fixtures; verify package typecheck and protocol unit tests, then include the version bump in the first implementation commit.
-- [ ] 1.2 Implement server/game-socket “Hello first” version compatibility evidence: update successful server Hello helpers/fixtures to use PROTOCOL_VERSION, retain an explicit version 1 rejection test, and verify socket integration tests reject version 1 with PROTOCOL_VERSION_UNSUPPORTED before authentication.
+- [x] 1.1 Implement protocol/frames “Protocol version” and “Stage 2 public projection and events”: export version 2, update the schema description and add typed board/economy/balance/event fixtures; verify package typecheck and protocol unit tests, then include the version bump in the first implementation commit.
+- [x] 1.2 Implement server/game-socket “Hello first” version compatibility evidence: update successful server Hello helpers/fixtures to use PROTOCOL_VERSION, retain an explicit version 1 rejection test, and verify socket integration tests reject version 1 with PROTOCOL_VERSION_UNSUPPORTED before authentication.
 
 ## 2. Stored game compatibility
 
