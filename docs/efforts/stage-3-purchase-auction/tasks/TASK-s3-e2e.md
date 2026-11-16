@@ -45,7 +45,7 @@ Team Lead.
 
 ## Canonical references
 
-- `docs/efforts/stage-3-purchase-auction.md` revision 1 "Completion evidence".
+- `docs/efforts/stage-3-purchase-auction.md` revision 2 "Completion evidence".
 - `docs/efforts/stage-3-purchase-auction/design.md` § "Evidence plan".
 - `e2e/compose.spec.ts`, `openspec/specs/deployment/*`.
 

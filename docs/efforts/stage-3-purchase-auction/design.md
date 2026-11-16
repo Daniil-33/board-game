@@ -2,7 +2,8 @@
 
 Effort: `EFF-stage-3-purchase-auction`, handoff
 `docs/efforts/stage-3-purchase-auction.md`. Revision 1 accepted by the Team
-Lead on 2026-11-16 at main `66e9fc9`.
+Lead on 2026-11-16 at main `66e9fc9`; revision 2 (owner decision D1)
+accepted at main `5bf02e9`.
 
 This document holds the technical decisions delegated to the Team Lead. It
 does not change product behavior; rules come only from the handoff,
@@ -11,13 +12,12 @@ criteria (C1..C14) refer to the handoff.
 
 ## Open product inputs
 
-- **D1 (owner, via CTO): bid amount.** Implemented as one pure function
-  `isValidBidAmount(auction, amount, balance)`. Default implementation is the
-  CTO recommendation (any amount ≥ minimum next bid). The `Bid` command
-  carries `{ amount }` under either rule, so protocol and client do not
-  change if the answer is "exactly current + step" (the client then offers a
-  single raise button). **The core PR does not merge until D1 is recorded in
-  `ROADMAP.md`.**
+- **D1 (resolved by the owner, handoff revision 2): bid amount.** The first
+  bid equals the start bid; every later bid is exactly the leading bid plus
+  the step. A bid is a single raise action: `Bid` has payload `null` and the
+  core computes the amount with `nextBidAmount(auction)` (= `startBid` with no
+  leader, else `leadingBid + step`). The bid is rejected when that amount
+  exceeds the responder's balance.
 - **E1 (escalated to the CTO 2026-11-16): resignation during a decision or
   an auction.** Implemented behind one function `resignDuringPurchase` with
   the Team Lead recommendation: a non-leader resigning passes; a resigning
@@ -25,7 +25,7 @@ criteria (C1..C14) refer to the handoff.
   drops the decision (no auction, asset free); if the turn owner resigns
   while its auction runs, the auction completes among the rest and the turn
   then closes as a resignation. A game ending by resignation drops any
-  decision or auction. **The core PR does not merge until E1 is recorded.**
+  decision or auction. **The core PR does not merge until E1 is recorded (handoff revision or ROADMAP).**
 
 ## Delegated decisions
 
@@ -83,7 +83,7 @@ test over the price table).
 |---|---|---|---|
 | `BuyAsset` | turn owner | `turn` | Allowed only with a pending decision and `balance ≥ price`; debit (`BalanceChanged reason 'purchase'`), set owner (`AssetPurchased`), clear decision. |
 | `StartAuction` | turn owner | `turn` | Allowed with a pending decision (affordability irrelevant); pause turn; open auction with `reason 'choice'`. |
-| `Bid { amount }` | the `responder` | `auctionResponse` | `isValidBidAmount` (≥ startBid if no leader, else per D1; ≤ responder's balance); becomes leader; advance responder. |
+| `Bid` (payload `null`) | the `responder` | `auctionResponse` | Amount = `nextBidAmount(auction)`; rejected if above the responder's balance; becomes leader; advance responder. |
 | `PassAuction` | the `responder` | `auctionResponse` | Add to `passed`; advance responder. |
 | `Timeout` | system | `auctionResponse` | The responder passes (C5). |
 
@@ -142,8 +142,8 @@ balance are public (C11). No RNG data.
 
 ## Protocol (`packages/protocol`)
 
-`PROTOCOL_VERSION = 3`. `Command.type` gains the four new types;
-`Bid.payload = { amount: integer }`, others `null`. The view stays
+`PROTOCOL_VERSION = 3`. `Command.type` gains the four new types; all four
+have payload `null` (the bid amount is computed by the core). The view stays
 `Type.Unsafe<StateView>`. The server still sets `actor` from the session, so a
 non-owner `Bid` is just a player command with the auction target.
 
@@ -162,7 +162,8 @@ non-owner `Bid` is just a player command with the auction target.
 Functional only (C12): a Vue dialog for the landing player (Buy disabled when
 unaffordable, Start auction); an auction panel for every viewer (asset, leading
 bid and leader, responder, a 10 s timer from `responseDeadline`, passed
-players; Bid with amount input and Pass for the responder only); owner marker
+players; for the responder only: a Bid/Raise button showing the next amount
+(disabled above own balance) and Pass); owner marker
 on owned cells; owner line in the asset card; balances already live.
 
 ## Tasks and order
@@ -172,8 +173,8 @@ TASK-s3-core ──┬─> TASK-s3-server (protocol + server) ──┐
                └─> TASK-s3-client ──────────────────────┴─> TASK-s3-e2e
 ```
 
-`TASK-s3-core` starts now and may complete review before D1/E1 are recorded;
-its merge waits for both. Server and client start from the core branch head
+`TASK-s3-core` starts now and may complete review before E1 is recorded; its
+merge waits for E1. Server and client start from the core branch head
 only after the core merges (no stacking on unmerged branches). At most two
 Engineers at once. Learned from stage 2: the client PR updates its own
 protocol-version fixtures to follow `PROTOCOL_VERSION`, and whichever of

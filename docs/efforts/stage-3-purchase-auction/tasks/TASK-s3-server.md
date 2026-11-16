@@ -22,7 +22,7 @@ decision or auction, and closure of stage 2 rooms.
 Product (effort handoff C10, C13):
 
 1. `PROTOCOL_VERSION = 3`; version 2 `Hello` rejected. `Command.type` accepts
-   `BuyAsset`, `StartAuction`, `Bid { amount: integer }`, `PassAuction`.
+   `BuyAsset`, `StartAuction`, `Bid`, `PassAuction`, all with payload `null`.
 2. A non-turn-owner guest's `Bid`/`PassAuction` with the current
    `auctionResponse` target is accepted and broadcast to every guest; a stale
    or duplicate command is rejected without state change.
@@ -36,7 +36,8 @@ Product (effort handoff C10, C13):
 
 Technical proof:
 
-6. Protocol tests for the new command payloads (valid/invalid amount).
+6. Protocol tests for the new command types (null payload accepted, other
+   payloads rejected).
 7. Real-Postgres integration tests for 2-5, migration upgrade, and a full
    auction over sockets with three guests (bid, outbid, pass, AFK timeout,
    win; and unsold).
@@ -51,7 +52,7 @@ Playwright and Compose changes (e2e task), stage 1-2 deferred items.
 
 ## Canonical references
 
-- `docs/efforts/stage-3-purchase-auction.md` revision 1.
+- `docs/efforts/stage-3-purchase-auction.md` revision 2.
 - `docs/efforts/stage-3-purchase-auction/design.md` § "Protocol", § "Server".
 - `docs/efforts/stage-2-field-money/design.md` § "Server" (stored-game policy).
 - `openspec/specs/protocol/*`, `openspec/specs/server/*`.

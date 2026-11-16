@@ -2,10 +2,10 @@
 
 ```yaml
 id: TASK-s3-core
-revision: 1
+revision: 2
 effort: EFF-stage-3-purchase-auction
 project: economic-board-game
-source_commit: 66e9fc9eaa94308093b2b88ef3216a42a3d7139d
+source_commit: 5bf02e9 # effort handoff revision 2 (D1 resolved)
 owner: team-lead
 status: proposed
 ```
@@ -32,12 +32,13 @@ Product (effort handoff C1-C11 and C14, unchanged in meaning):
    after resolution the turn closes through `closeTurn` (bonus turn by
    existing rules).
 4. Start bid `Q(60% × price)`, step `Q(5% × price)`, both positive for every
-   `prices-1` price; the first bid may equal the start bid; later bids per D1
-   via `isValidBidAmount` (default: any amount ≥ leading bid + step).
+   `prices-1` price. `Bid` has payload `null`: the first bid is exactly the
+   start bid and every later bid exactly the leading bid plus the step
+   (owner decision D1, handoff revision 2), computed by `nextBidAmount`.
 5. Cyclic order in turn order from the landing player; pass irreversible;
    leader skipped; 10 s without response = pass (system `Timeout` on the
    `auctionResponse` target); every active player participates.
-6. A bid above the bidder's balance is rejected; the leader's bid is its
+6. A bid whose computed amount exceeds the bidder's balance is rejected; the leader's bid is its
    reservation (derived from the auction).
 7. When every opponent of the leader has passed, the leader pays and owns;
    with no bid the asset stays free.
@@ -73,7 +74,7 @@ rent, building, mortgage, bankruptcy, trades, casino, chance, final jail.
 
 ## Canonical references
 
-- `docs/efforts/stage-3-purchase-auction.md` revision 1.
+- `docs/efforts/stage-3-purchase-auction.md` revision 2.
 - `docs/efforts/stage-3-purchase-auction/design.md` § "Core", § "Open product inputs".
 - `ROADMAP.md` stage 3; `GAME-BREAKDOWN.md` § "Покупка и аукцион",
   § "Начальная настройка и деньги".
@@ -87,10 +88,10 @@ per accepted command. Target ids never reused. Balances never negative.
 
 ## Dependencies
 
-None upstream (main `66e9fc9`). **Merge gate:** the PR may complete review but
-is merged only after D1 and E1 are recorded in `ROADMAP.md`; if either answer
-differs from the default, only `isValidBidAmount` / `resignDuringPurchase` and
-their tests change. Server and client tasks start after this merges and use
+None upstream (main `5bf02e9`). **Merge gate:** the PR may complete review but
+is merged only after E1 is recorded (handoff revision or `ROADMAP.md`); if the
+answer differs from the default, only `resignDuringPurchase` and its tests
+change. Server and client tasks start after this merges and use
 the exported names in the design.
 
 ## Delegated decisions
@@ -117,6 +118,12 @@ stage 2 (test data only) and report.
 
 A case the rules do not determine; a conflict with existing turn/jail rules;
 a needed contract change; inability to prove a criterion deterministically.
+
+## Revision history
+
+- 1: initial.
+- 2: D1 resolved by the owner: `Bid` is a fixed raise with payload `null`
+  (criteria 4, 6); merge gate now E1 only.
 
 ## Deliverables
 

@@ -26,8 +26,9 @@ Product (effort handoff C12; visual design is stage 8):
    auction. Other viewers see who is deciding.
 2. Auction panel for every viewer while `view.auction` exists: asset, start
    bid, step, leading bid and leader, passed players, current responder and a
-   timer computed from `responseDeadline`. The responder gets Bid (amount
-   input, minimum shown, not above own balance) and Pass; everyone else sees
+   timer computed from `responseDeadline`. The responder gets a Bid button
+   showing the next amount (start bid, else leading bid + step; disabled when
+   above own balance) and Pass; everyone else sees
    the panel read-only.
 3. Owner marker on owned cells (player colour); the asset card shows the
    owner or "free".
@@ -38,9 +39,10 @@ Product (effort handoff C12; visual design is stage 8):
 Technical proof:
 
 6. Component tests for dialog enablement, panel per viewer role, timer from
-   deadline, bid amount bounds, owner marker and card owner; mock server
+   deadline, next-bid amount and its enablement, owner marker and card owner;
+   mock server
    scripted through a decision, an auction with outbid/pass/timeout, and an
-   unsold auction.
+   unsold auction; the shown next amount matches the view.
 7. Test fixtures follow `PROTOCOL_VERSION` (no literal version).
 8. `pnpm build`, `pnpm test`, `vite build`; mock screenshots of dialog,
    auction panel and owner marker kept in `/srv/agents/evidence/TASK-s3-client/`
@@ -55,7 +57,7 @@ clean usable layout, Playwright (e2e task).
 
 ## Canonical references
 
-- `docs/efforts/stage-3-purchase-auction.md` revision 1.
+- `docs/efforts/stage-3-purchase-auction.md` revision 2.
 - `docs/efforts/stage-3-purchase-auction/design.md` § "Client", § "Core".
 - `openspec/specs/client/*`.
 
@@ -68,9 +70,7 @@ helpers (dev mock excepted). Frames go through `@game/protocol` decoders.
 ## Dependencies
 
 Starts after `TASK-s3-core` merges; parallel with `TASK-s3-server`, which
-bumps `PROTOCOL_VERSION` to 3. Do not edit `packages/protocol`. If the bid
-rule (D1) is "exactly current + step", replace the amount input with a single
-raise button (one component change).
+bumps `PROTOCOL_VERSION` to 3. Do not edit `packages/protocol`.
 
 ## Delegated decisions
 
