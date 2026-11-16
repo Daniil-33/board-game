@@ -181,10 +181,9 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   // The reloaded tab is responder: the bid goes in before any slow step, inside its 10 s window.
   expect(beforeReload.auction!.responseDeadline - Date.now(), 'response window left for the reloaded Bid (ms)').toBeGreaterThan(0);
   await respond(players, 'bid');
-  // Full-page screenshots outside that window; the auction is still open.
-  await shoot(players, info, 'auction-after-reload');
 
-  // Restart the server while the next response is due.
+  // Restart the server while the next response is due. That Bid opened the
+  // saved responder's window: nothing slow runs before the restart.
   const saved = structuredClone(host.view!);
   // The auction runs inside the turn that reached its deadline.
   expect(saved.turn!.turnId).toBe(turn.turnId);
@@ -197,6 +196,8 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   }
   const reconnectedAt = Date.now();
   info.annotations.push({ type: 'restart-ms', description: String(reconnectedAt - restartAt) });
+  info.annotations.push({ type: 'window-left-at-restart-ms', description: String(saved.auction!.responseDeadline - restartAt) });
+  info.annotations.push({ type: 'window-left-at-reconnect-ms', description: String(saved.auction!.responseDeadline - reconnectedAt) });
   // The restart must leave the response window open, or the evidence below is about a timeout.
   expect(reconnectedAt, 'restart and reconnect finished inside the response window').toBeLessThan(saved.auction!.responseDeadline - 1_000);
   for (const p of players) {
@@ -210,7 +211,9 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   // observe the auto-pass of the saved responder, whatever the current view shows.
   const afk = await afkPass(players, saved.auction!, saved.revision);
   expect(afk.id).toBe(saved.auction!.responder);
-  // Full-page screenshots only after the AFK pass; the auction is still open.
+  // Full-page screenshots only after the AFK pass, outside every response
+  // window they could delay; the auction is still open.
+  await shoot(players, info, 'auction-after-reload');
   await shoot(players, info, 'auction-after-restart');
   while (host.view!.auction) await respond(players, 'pass');
   const events = eventsOf(host, auction.auctionId);
@@ -340,7 +343,7 @@ async function afkPass(players: Actor[], auction = players[0]!.view!.auction!, r
     ?? host.events.at(-1)!;
   expect(Math.abs(auction.responseDeadline - assigned.at - AUCTION_RESPONSE_MS)).toBeLessThanOrEqual(TRANSPORT_MS);
   // The UI checks below need the responder's window to be still open.
-  expect(auction.responseDeadline - Date.now(), 'response window left for the AFK responder checks (ms)').toBeGreaterThan(0);
+  expect(auction.responseDeadline - Date.now(), 'response window left for the AFK responder checks (ms)').toBeGreaterThanOrEqual(1_000);
   await expect(afk.page.locator(sel('pass'))).toBeEnabled();
   await expect(afk.page.locator(sel('auction-timer'))).toHaveText(/^(10|[1-9]) s$/);
   const isPass = (e: { event: { type: string; payload: unknown } }) => e.event.type === 'AuctionPassed'
