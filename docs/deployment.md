@@ -189,10 +189,17 @@ read-only at `/etc/letsencrypt`; render `/edge/render.sh` to
 `/etc/nginx/conf.d/default.conf` and run `nginx -t`. Do not start a second public
 edge or alter live certificate volumes.
 
-After candidate checks pass, check out that exact SHA detached in the dedicated
-edge checkout. From `/srv/game/edge/src/deploy/edge`, run
-`sg docker -c 'docker compose -p edge -f compose.yml up -d --force-recreate'`.
+After candidate checks pass, run checkout and recreation back-to-back in one
+command, substituting the validated full SHA (do not pause between the steps):
+
+```sh
+(cd /srv/game/edge/src && git checkout --detach <validated-full-sha> && \
+  cd deploy/edge && sg docker -c 'docker compose -p edge -f compose.yml up -d --force-recreate')
+```
+
 Recreation is required to pick up file bind mounts and supervisor scripts.
+The directory mount can observe checkout changes before the file bind mount
+is recreated; keeping these steps together minimizes that update window.
 Verify normal system-trusted HTTPS, redirects, HSTS and both environments'
 routing on all four names, plus container status and preservation of preview
 and test stacks. Confirm the operation with the new pinned SHA and evidence.
