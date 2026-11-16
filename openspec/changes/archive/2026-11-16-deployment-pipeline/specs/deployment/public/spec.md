@@ -32,10 +32,18 @@ CI SHALL run production compose-browser and deterministic compose-browser-seeded
 
 
 ### Requirement: Provisioning before pipeline activation
-After TL confirmation of first staging success, environments, keys, secrets and SSH refusal checks SHALL be provisioned and verified before the pipeline PR merges. Production owner protection SHALL exist before any workflow references that environment.
+After TL confirmation of first staging success, environments, keys, secrets and SSH refusal checks SHALL be provisioned and verified before the pipeline PR merges. Production owner protection SHALL exist before any workflow using that environment runs on main.
 
 #### Scenario: Provisioning and merge order
 - **WHEN** the TL confirms the first staging deploy succeeded
 - **THEN** recorded provisioning backs up authorized_keys, preserves existing entries, installs restricted keys and verifies command and interactive refusals
 - **AND** private keys are deleted after secret upload and verification
 - **AND** only after protection and credentials are verified does the TL merge, allowing that merge's successful CI completion to trigger staging
+
+### Requirement: Deployment file and build reproducibility
+The gate SHALL reset umask to 022 before checkout and deploy.sh SHALL use umask 022 so public checkout and generated files remain readable to container users. Compose build SHALL disable default provenance and SBOM attestations so a cached same-SHA redeploy retains image identity and does not recreate unchanged containers.
+
+#### Scenario: Restrictive caller and repeated deployment
+- **WHEN** a caller uses umask 077 and deploys the same SHA twice
+- **THEN** checkout directories and public files remain readable to container users
+- **AND** both builds disable provenance and SBOM attestations

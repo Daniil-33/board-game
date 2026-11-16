@@ -1,5 +1,5 @@
 ## Context
-TASK-dep-pipeline revision 1 implements the accepted deployment design on base 7634003. Stack provisioning is complete; external configuration waits for TL confirmation of first staging success.
+TASK-dep-pipeline revision 2 implements the accepted deployment design on base 7634003. Stack provisioning is complete; external configuration waits for TL confirmation of first staging success.
 
 ## Decisions
 Staging accepts only successful whole-CI push/main completions, deploying their exact SHA; manual dispatch requires a SHA and main workflow ref. Production resolves and validates an input SHA or the trusted staging HTTPS health default in a preceding job without an environment. It exposes the exact SHA as a job output, run summary and gated job name before owner approval; the production environment job deploys exactly that output. Both validate lowercase 40-hex SHAs, serialize without cancellation, use pinned known_hosts and mode-600 RUNNER_TEMP files with unconditional cleanup. SSH failures propagate unchanged.
@@ -10,4 +10,7 @@ Split production and deterministic browser stacks into independent 35-minute job
 Recorded intent/verification/confirmation governs environments, backed-up authorized_keys, ephemeral private keys and secrets. Production requires Daniil-33 with self-review prevention; agents never approve or cancel it. Stop and escalate unavailable protection. Existing gate admission and migration restrictions remain. Rollback uses dispatch and owner approval for production. No game behavior or gate contract changes.
 
 ## Validation
-Actionlint, strict OpenSpec validation, browser typecheck, diff checks, exact-head CI timings and independent review precede TL merge. After TL confirms first staging success, provision and verify environments (production owner protection before any reference), keys, secrets and SSH refusals before PR #47 merges. Only then does the TL merge; its successful CI completion triggers automatic staging. Verify rejected deploy, pending production review and two-browser public smoke after merge. Never retain private key material in evidence.
+Actionlint, strict OpenSpec validation, browser typecheck, diff checks, exact-head CI timings and independent review precede TL merge. After TL confirms first staging success, provision and verify environments (production owner protection before any workflow using that environment runs on main), keys, secrets and SSH refusals before PR #47 merges. Only then does the TL merge; its successful CI completion triggers automatic staging. Verify rejected deploy, pending production review and two-browser public smoke after merge. Never retain private key material in evidence.
+
+## TL-directed deployment fixes
+Set gate umask022 before checkout and deploy.sh umask022 before generated files. Disable Compose build provenance and SBOM defaults to keep cached same-SHA image identity stable. Offline tests exercise checkout modes under caller077, deploy child umask and both repeated build flags. Install the reviewed gate revision through a recorded operation after merge; the existing forced-command path remains unchanged.

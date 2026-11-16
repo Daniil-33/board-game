@@ -149,6 +149,10 @@ from before deployment tooling exists is cleanly refused. A successful staging
 log entry means a previously verified SHA; it does not assert it is the latest
 staging SHA. Production still requires the owner's workflow approval.
 
+The gate resets the caller umask to 022 before checkout; deploy.sh also sets
+umask 022 so checked-out and generated public files remain container-readable.
+Compose build disables provenance and SBOM attestations so repeated cached builds
+of the same SHA retain stable image identity and do not recreate containers.
 Deploy validates env ownership and mode, exports `GIT_SHA` / `DEPLOY_ENV`, builds
 and runs `up -d --wait --wait-timeout 180 --remove-orphans`. Server migrations
 run before readiness. Public health uses the system TLS trust store for
@@ -293,8 +297,7 @@ with gate diagnostics; failed checks never silently mark a deployment healthy.
 Before configuring GitHub or SSH credentials, obtain TL confirmation that the
 first stack staging deploy succeeded. Provision and verify both environments
 (including production owner protection), keys, secrets and SSH refusal tests
-**before PR #47 merges**. Production protection must exist before a workflow
-references that environment. After green exact-head CI and independent review,
+**before PR #47 merges**. Production protection must exist before any workflow using that environment runs on main. After green exact-head CI and independent review,
 the TL merges; the merge's own successful CI completion then triggers the
 automatic staging deploy. Record each external mutation with
 `agentctl operation intend` and confirm only after read-only verification.
