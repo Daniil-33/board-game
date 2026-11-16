@@ -7,7 +7,7 @@ import { useHarness } from './helpers/harness.js';
 import { lobby, sys, whenIdle } from './helpers/game.js';
 import { startServer, stopServers, login, TestSocket } from './helpers/server.js';
 
-const fixtures = await Promise.all(['core3', 'core4'].map(async version => JSON.parse(await readFile(new URL(`./fixtures/${version}.json`, import.meta.url), 'utf8'))));
+const fixtures = await Promise.all(['core3', 'core4', 'core5'].map(async version => JSON.parse(await readFile(new URL(`./fixtures/${version}.json`, import.meta.url), 'utf8'))));
 let fixture = fixtures[0];
 const h = useHarness({ perTest: true });
 afterEach(stopServers);
@@ -27,7 +27,7 @@ const data = async (id: string) => ({
 
 describe.each(fixtures)('unsupported $snapshot.rulesVersion data', historical => {
   beforeEach(() => { fixture = historical; });
-  it.each([false, true])('fails safely with old snapshot=%s and restores healthy core-5 alongside', async snapshot => {
+  it.each([false, true])('fails safely with old snapshot=%s and restores healthy core-6 alongside', async snapshot => {
     const bad = await seedRoom(h.db);
     await legacy(bad, snapshot);
     const good = await seedRoom(h.db);

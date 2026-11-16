@@ -1,5 +1,11 @@
 import { readTestSeed } from './context/test-context.js';
 
+export function fixturesEnabled(env: NodeJS.ProcessEnv): boolean {
+  if (env['E2E_FIXTURES'] !== '1') return false;
+  if (env['NODE_ENV'] !== 'test') throw new Error('E2E_FIXTURES requires NODE_ENV=test');
+  return true;
+}
+
 export interface ServiceConfig {
   readonly databaseUrl: string;
   readonly host: string;
@@ -11,6 +17,7 @@ export interface ServiceConfig {
 
 /** Configuration from the environment; throws with the variable's name when it is missing or bad. */
 export function readConfig(env: NodeJS.ProcessEnv): ServiceConfig {
+  fixturesEnabled(env);
   const testSeed = readTestSeed(env);
   const databaseUrl = env['DATABASE_URL'];
   if (databaseUrl === undefined || databaseUrl === '') throw new Error('DATABASE_URL is required');

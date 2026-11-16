@@ -92,10 +92,10 @@ server (`lobby`, `game-socket`, `e2e`) and the service process itself
 In agent sessions that predate the docker group change, wrap the compose
 commands: `sg docker -c 'docker compose -f docker-compose.dev.yml up -d --wait'`.
 
-## Stage 3 compatibility
+## Stage 4 compatibility
 
-The server speaks protocol 3 and runs core-5 games. Welcome and Update expose
-board, economy, balances, owners, purchase decisions and auction state; public
+The server speaks protocol 4 and runs core-6 games. Welcome and Update expose
+board, economy, balances, owners, purchase decisions, auction state, houses, rent and rent quotes; public
 core events pass through unchanged. BuyAsset, StartAuction, Bid and PassAuction
 carry null payloads; the authenticated guest supplies the actor. A duplicate
 command id returns the original Ack, while a new id with a stale response
@@ -105,9 +105,60 @@ Timers follow pendingDeadlines, including the 10 second auction response and
 paused/resumed turn deadlines. Purchase and auction states recover from the
 snapshot and ordered log tail; overdue response deadlines fire on boot.
 
-Migration 0004 closes existing lobby/playing rooms once, preserving logs,
+Migration 0005 closes existing lobby/playing rooms once, preserving logs,
 snapshots and membership. Closed rows answer ROOM_CLOSED at Hello before game
-loading. Unsupported core-3 or core-4 data actually opened (including a finished
+loading. Unsupported core-3, core-4 or core-5 data actually opened (including a finished
 room at Hello or a closed room through the manager) uses the failed-room path
 with ROOM_UNAVAILABLE; active boot recovery reports that room and continues.
-Protocol 1 and 2 Hello frames are refused before authentication.
+Protocol 1, 2 and 3 Hello frames are refused before authentication.
+
+PayRent carries null. BuildHouse and SellHouse carry exactly
+`{ assetId: string }` (1–128 UTF-16 units, no NUL or lone surrogates).
+Core error codes are returned unchanged in rejected Acks. Rent uses the existing
+turn deadline; timeout auto-payment and open settlements recover normally.
+
+## Test fixtures
+
+Enable only in isolated test environments with `NODE_ENV=test E2E_FIXTURES=1`.
+Startup and direct server construction reject opt-in with any other NODE_ENV,
+naming E2E_FIXTURES. Without opt-in the route is absent. Deployment configurations
+do not enable it.
+
+First create 2–6 guests through POST /api/guests. Supply their distinct tokens
+in seat order (the first guest is the room creator):
+
+```http
+POST /api/test/fixtures
+Content-Type: application/json
+
+{"fixture":"open-rent","tokens":["<guest-a-token>","<guest-b-token>","<guest-c-token>"]}
+```
+
+The response is HTTP 201 `{ "roomId": "..." }`. All tokens authenticate existing
+guests; no extra authorization header is needed for this test-only endpoint.
+Unknown names, duplicate tokens or invalid body shapes return 400 INVALID_REQUEST;
+unknown tokens return 401 UNAUTHENTICATED. Clients cannot supply a state or path.
+Connect each guest normally through /ws with a protocol 4 Hello for that roomId.
+
+Builders are importable from `apps/server/src/test-fixtures.ts`:
+`buildFixture(name, guestIds, now)` returns an invariant-checked core-6 GameState.
+The fixture uses seed 42, deterministic setup, actual guest identities and host
+time for deadlines. The active player is given by state.turn.playerId; callers
+should read the Welcome rather than assume the creator is active.
+
+| Name | State |
+|---|---|
+| regular-rent | Open regular rent on one opponent-owned asset |
+| full-group-rent | Open rent on an opponent's full regular group |
+| logistics-rent | Open rent with two opponent-owned logistics assets |
+| energy-rent | Open energy rent for a dice sum of 7 |
+| own-asset | Rolled turn on the active player's asset, no rent |
+| shortfall | Open regular rent with payer balance 10 |
+| building | Unrolled turn with a complete regular group owned by the active player |
+| open-rent | Open regular settlement for restart/deadline scenarios |
+
+The full state is persisted atomically with the room and membership as its
+genesis snapshot at the state's actual revision. No historical commands are
+fabricated. Subsequent intents use the normal authenticated room pipeline and
+log; recovery uses the genesis snapshot plus that tail. Builders derive quotas
+from core setup and never override bonus-turn quota behavior.
