@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-s4-client
-revision: 1
+revision: 2
 effort: EFF-stage-4-rent-building
 project: economic-board-game
 source_commit: 7f5f174 # main after TASK-s4-core (PR #51)
@@ -61,6 +61,29 @@ Technical proof:
 10. `pnpm build`, `pnpm test`, the client bundle. Mock screenshots in
     `/srv/agents/evidence/TASK-s4-client/` (never committed).
 
+## Revision 2 addition: bonus-turn build quota (owner decision)
+
+Owner decision 2026-11-16 (handoff revision 2, docs PR #52): a double's
+bonus turn is a NEW turn and allows one more house. The build counter
+resets at the start of every turn, bonus turns included.
+
+Deliver this FIRST, as a separate small PR on branch
+`agent/task-s4-core-bonus-quota` from current main:
+
+- `packages/game-core`: `startTurn` gives every turn the full build quota.
+  Selling still never replenishes it.
+- Replace the merged test "bonus inherits ... builds" with tests showing:
+  - a bonus turn resets the quota;
+  - one house can be built in the regular turn and another in the bonus
+    turn;
+  - selling does not replenish the quota.
+- Update the engine spec and the stage 4 design wording (a short OpenSpec
+  change, archived in the PR).
+- Run the checks below, get an independent review and green CI, then report
+  it for the Team Lead merge.
+- Then continue the client work on top of the merged fix. The client shows
+  the quota from the view and never computes it.
+
 ## Scope and non-goals
 
 In scope: `apps/client/**`, the OpenSpec client delta.
@@ -112,6 +135,11 @@ passes.
 - Missing view data for a required display.
 - A product question about what to show.
 - A needed protocol or core change.
+
+## Revision history
+
+- 1: initial.
+- 2: separate core PR for the owner's bonus-turn build-quota decision.
 
 ## Deliverables
 

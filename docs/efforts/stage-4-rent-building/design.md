@@ -31,7 +31,7 @@ the Team Lead; product rules come from the handoff, `ROADMAP.md` stage 4 and
 | Doubled rent rounding (C1) | `2 × Q(5% × price)` (the handoff default) | Doubling a quantized amount stays quantized; simplest to explain. |
 | Rent amount | Computed **at landing** and stored in the settlement | Nothing that changes rent can happen during the payer's turn in stage 4 (owners build only in their own turn; no trades or mortgage yet). Stage 5 keeps this. |
 | Houses | Stored: `houses: Record<assetId, 1..4>` (absent = 0) | Source of truth; projected publicly. |
-| Build counter | Stored in the existing `turn.quotas.builds` (1 at a regular turn start); **a bonus turn inherits the remaining quota** of the turn that granted it | Matches "one house per full turn, a bonus turn belongs to the same full turn" with no new state. |
+| Build counter | Stored in the existing `turn.quotas.builds`, reset to 1 at the start of **every** turn, bonus turns included (owner decision 2026-11-16, handoff r2; supersedes the r1 "full turn" interpretation) | No new state. |
 | Mortgage hooks (C4) | `isMortgaged(state, assetId)` returns `false` in stage 4. Rent, doubling, holdings and build legality all go through it | Stage 5 plugs in without a redesign. |
 | Settlement deadline | No separate deadline: the settlement lives inside the turn. `EndTurn` and the turn `Timeout` pay it automatically through `closeTurn`'s `settleMandatory` hook, then the turn closes | One timer; restart already restores the turn deadline (C11). |
 | Turn timer during a settlement | Not paused | Nothing waits on other players. |
