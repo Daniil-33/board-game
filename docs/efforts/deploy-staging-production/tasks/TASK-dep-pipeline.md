@@ -53,6 +53,10 @@ the deploy key can do nothing but deploy; CI has headroom for stages 4-8.
    no key material in Git, logs, evidence or checkpoints.
 7. Runbook (`docs/deployment.md`) updated with the workflows, approval flow,
    rollback via dispatch, key rotation, CI job layout.
+   Also close REV-dep-stack-2 RVW-004: the edge update procedure must not
+   expose new scripts to the running edge before the recreate (per-SHA edge
+   directories switched at recreate time, or checkout and recreate as one
+   back-to-back command), documented in the runbook.
 
 Evidence:
 
