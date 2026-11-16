@@ -91,3 +91,13 @@ server (`lobby`, `game-socket`, `e2e`) and the service process itself
 
 In agent sessions that predate the docker group change, wrap the compose
 commands: `sg docker -c 'docker compose -f docker-compose.dev.yml up -d --wait'`.
+
+## Stage 2 compatibility
+
+The server speaks protocol 2 and runs core-4 games. Welcome and Update expose
+the generated board, economy and balances; core events pass through unchanged.
+Migration 0003 closes existing lobby/playing rooms once, preserving logs,
+snapshots and membership. Closed rows answer ROOM_CLOSED at Hello before game
+loading. Unsupported core-3 data actually opened (including a finished room at
+Hello or a closed room through the manager) uses the failed-room path with
+ROOM_UNAVAILABLE; active boot recovery reports that room and continues.

@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from '@game/protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { GameState } from '@game/game-core';
 import { logEntries } from './helpers/db.js';
@@ -54,7 +55,7 @@ describe('Hello', () => {
     const s = await startServer(h);
     const { roomId, guests } = await lobbyWith(s, ['a', 'b']);
     const { welcome } = await connect(s, guests[1]!, roomId);
-    expect(welcome).toMatchObject({ protocolVersion: 1, playerId: guests[1]!.guestId, revision: 3 });
+    expect(welcome).toMatchObject({ protocolVersion: PROTOCOL_VERSION, playerId: guests[1]!.guestId, revision: 3 });
     expect(welcome.view).toMatchObject({ phase: 'lobby', revision: 3 });
     expect(welcome.view).not.toHaveProperty('rng');
   });
@@ -63,7 +64,7 @@ describe('Hello', () => {
     const s = await startServer(h);
     const { roomId } = await lobbyWith(s, ['a', 'b']);
     const stranger = await login(s, 'stranger');
-    const socket = await hello(s, { t: 'Hello', protocolVersion: 1, token: stranger.token, gameId: roomId, lastRevision: null });
+    const socket = await hello(s, { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: stranger.token, gameId: roomId, lastRevision: null });
     expect(await socket.nextOf('Error')).toMatchObject({ code: 'NOT_A_PARTICIPANT' });
     await socket.whenClosed();
   });
@@ -99,9 +100,9 @@ describe('Hello', () => {
   it('wrong protocol version, unknown token, unknown room, closed room', async () => {
     const s = await startServer(h);
     const { roomId, guests } = await lobbyWith(s, ['a', 'b']);
-    const base = { t: 'Hello', protocolVersion: 1, token: guests[1]!.token, gameId: roomId, lastRevision: null };
+    const base = { t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: guests[1]!.token, gameId: roomId, lastRevision: null };
     const cases: [Record<string, unknown>, string][] = [
-      [{ ...base, protocolVersion: 2 }, 'PROTOCOL_VERSION_UNSUPPORTED'],
+      [{ ...base, protocolVersion: 1, token: 'never-issued' }, 'PROTOCOL_VERSION_UNSUPPORTED'],
       [{ ...base, token: 'never-issued' }, 'UNAUTHENTICATED'],
       [{ ...base, gameId: 'r_unknown' }, 'ROOM_UNAVAILABLE'],
     ];
@@ -166,7 +167,7 @@ describe('commands and updates', () => {
     const s = await startServer(h);
     const { roomId, guests } = await lobbyWith(s, ['a', 'b']);
     const { socket } = await connect(s, guests[0]!, roomId);
-    socket.send({ t: 'Hello', protocolVersion: 1, token: guests[0]!.token, gameId: roomId, lastRevision: null });
+    socket.send({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: guests[0]!.token, gameId: roomId, lastRevision: null });
     expect(await socket.nextOf('Error')).toMatchObject({ code: 'MALFORMED_FRAME' });
     expect(socket.closeCode).toBeNull();
   });

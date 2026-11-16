@@ -30,6 +30,7 @@ export const StateViewSchema = Type.Unsafe<StateView>(
       additionalProperties: true,
       description:
         'Public projection of the game state (game-core StateView), checked only as a JSON object. ' +
+        'Includes the public generated board, economy and balances. ' +
         'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
     },
   ),
