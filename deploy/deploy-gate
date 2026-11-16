@@ -60,6 +60,8 @@ def deploy(command):
 
 
 def main():
+    # SSH callers may use 077; checkout files must be readable by container users.
+    os.umask(0o022)
     try:
         deploy(os.environ.get('SSH_ORIGINAL_COMMAND', ''))
     except Refused as error:
