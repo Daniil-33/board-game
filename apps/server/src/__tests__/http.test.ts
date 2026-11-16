@@ -159,7 +159,7 @@ describe('Fastify Ajv options', () => {
 // spec: server/service "Configuration and bind address"
 describe('configuration', () => {
   it('defaults to 127.0.0.1:8787', () => {
-    expect(readConfig({ DATABASE_URL: 'postgres://x' })).toEqual({ databaseUrl: 'postgres://x', host: '127.0.0.1', port: 8787 });
+    expect(readConfig({ DATABASE_URL: 'postgres://x' })).toEqual({ databaseUrl: 'postgres://x', host: '127.0.0.1', port: 8787, testSeed: undefined, allowedOrigins: [], gitSha: 'unknown' });
   });
 
   it('reads HOST and PORT', () => {

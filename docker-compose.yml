@@ -16,6 +16,8 @@ services:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -25,7 +27,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: [CMD, node, -e, "fetch('http://127.0.0.1:8787/api/rooms').then(r=>{if(r.status!==401)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8787/api/health').then(r=>{if(r.status!==200)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -34,6 +36,8 @@ services:
     build:
       context: .
       dockerfile: apps/client/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     ports:
       - 127.0.0.1:${WEB_PORT:-8080}:80
     depends_on:
