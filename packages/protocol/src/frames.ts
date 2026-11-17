@@ -1,5 +1,5 @@
 import { Type, type Static } from '@sinclair/typebox';
-import type { GameEvent, StateView } from '@game/game-core';
+import type { GameEvent, Revision, StateView } from '@game/game-core';
 import {
   CommandIdSchema,
   AssetIdSchema,
@@ -11,7 +11,10 @@ import {
   RoomIdSchema,
   TokenSchema,
   closed,
+  ID_PATTERN,
+  MAX_ID_LENGTH,
 } from './common.js';
+import { CHAT_LIMITS, CHAT_REJECT_REASONS, MAX_CHAT_FRAME_TEXT } from './chat.js';
 
 /**
  * Command types a client may send through stage 5, named as in game-core
@@ -42,6 +45,37 @@ export const GameEventSchema = Type.Unsafe<GameEvent>(
   Type.Object({ type: Type.String({ minLength: 1 }), payload: Type.Unknown() }, closed),
 );
 
+const TimestampSchema = Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER, description: 'Epoch milliseconds.' });
+
+/** A stored chat message. `seq` orders the messages of one room. */
+export const ChatMessageSchema = Type.Object(
+  {
+    seq: Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
+    authorId: PlayerIdSchema,
+    text: Type.String({ minLength: 1, maxLength: CHAT_LIMITS.maxCodePoints * 2 }),
+    at: TimestampSchema,
+  },
+  closed,
+);
+
+/** One log entry as the viewer may see it: its revision, transition time and projected events. */
+export const HistoryEntrySchema = Type.Object(
+  {
+    revision: Type.Unsafe<Revision>(Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER })),
+    at: TimestampSchema,
+    events: Type.Array(GameEventSchema),
+  },
+  closed,
+);
+
+/** `Welcome.history`: recent log entries and chat, both oldest first. */
+export const HistorySchema = Type.Object(
+  { entries: Type.Array(HistoryEntrySchema), chat: Type.Array(ChatMessageSchema) },
+  closed,
+);
+
+export const ChatRejectReasonSchema = Type.Union(CHAT_REJECT_REASONS.map((reason) => Type.Literal(reason)));
+
 // ---- Client frames ---------------------------------------------------------
 
 export const HelloFrameSchema = Type.Object(
@@ -71,7 +105,16 @@ const commandFrame = <T extends ClientCommandType>(type: T) =>
 /** One schema per command type, so per-type payloads can be added without changing the frame. */
 export const CommandFrameSchema = Type.Union(CLIENT_COMMAND_TYPES.map((type) => commandFrame(type)));
 
-export const ClientFrameSchema = Type.Union([HelloFrameSchema, CommandFrameSchema]);
+export const ChatSendFrameSchema = Type.Object(
+  {
+    t: Type.Literal('ChatSend'),
+    clientMsgId: Type.String({ minLength: 1, maxLength: MAX_ID_LENGTH, pattern: ID_PATTERN }),
+    text: Type.String({ maxLength: MAX_CHAT_FRAME_TEXT }),
+  },
+  closed,
+);
+
+export const ClientFrameSchema = Type.Union([HelloFrameSchema, CommandFrameSchema, ChatSendFrameSchema]);
 
 // ---- Server frames ---------------------------------------------------------
 
@@ -82,6 +125,7 @@ export const WelcomeFrameSchema = Type.Object(
     playerId: PlayerIdSchema,
     revision: RevisionSchema,
     view: StateViewSchema,
+    history: HistorySchema,
   },
   closed,
 );
@@ -123,16 +167,47 @@ export const ErrorFrameSchema = Type.Object(
   closed,
 );
 
-export const ServerFrameSchema = Type.Union([WelcomeFrameSchema, AckFrameSchema, UpdateFrameSchema, ErrorFrameSchema]);
+export const ChatFrameSchema = Type.Object({ t: Type.Literal('Chat'), message: ChatMessageSchema }, closed);
+
+export const ChatAckFrameSchema = Type.Union([
+  Type.Object(
+    { t: Type.Literal('ChatAck'), clientMsgId: ChatSendFrameSchema.properties.clientMsgId, ok: Type.Literal(true) },
+    closed,
+  ),
+  Type.Object(
+    {
+      t: Type.Literal('ChatAck'),
+      clientMsgId: ChatSendFrameSchema.properties.clientMsgId,
+      ok: Type.Literal(false),
+      reason: ChatRejectReasonSchema,
+    },
+    closed,
+  ),
+]);
+
+export const ServerFrameSchema = Type.Union([
+  WelcomeFrameSchema,
+  AckFrameSchema,
+  UpdateFrameSchema,
+  ErrorFrameSchema,
+  ChatFrameSchema,
+  ChatAckFrameSchema,
+]);
 
 // ---- Types -----------------------------------------------------------------
 
 export type HelloFrame = Static<typeof HelloFrameSchema>;
 export type CommandFrame = Static<typeof CommandFrameSchema>;
-export type ClientFrame = HelloFrame | CommandFrame;
+export type ChatSendFrame = Static<typeof ChatSendFrameSchema>;
+export type ClientFrame = HelloFrame | CommandFrame | ChatSendFrame;
 
 export type WelcomeFrame = Static<typeof WelcomeFrameSchema>;
 export type AckFrame = Static<typeof AckFrameSchema>;
 export type UpdateFrame = Static<typeof UpdateFrameSchema>;
 export type ErrorFrame = Static<typeof ErrorFrameSchema>;
-export type ServerFrame = WelcomeFrame | AckFrame | UpdateFrame | ErrorFrame;
+export type ChatFrame = Static<typeof ChatFrameSchema>;
+export type ChatAckFrame = Static<typeof ChatAckFrameSchema>;
+export type ChatMessage = Static<typeof ChatMessageSchema>;
+export type HistoryEntry = Static<typeof HistoryEntrySchema>;
+export type History = Static<typeof HistorySchema>;
+export type ServerFrame = WelcomeFrame | AckFrame | UpdateFrame | ErrorFrame | ChatFrame | ChatAckFrame;

@@ -3,8 +3,8 @@ import type { AddressInfo } from 'node:net';
 import { decodeServerFrame, type ClientFrame, type ServerFrame } from '@game/protocol';
 import type { FastifyInstance } from 'fastify';
 import { WebSocket } from 'ws';
-import { createServer } from '../../server.js';
-import type { Context, Harness } from './harness.js';
+import { createServer, type ServerDeps } from '../../server.js';
+import type { Context, ContextOptions, Harness } from './harness.js';
 import type { RoomManager } from '../../rooms/types.js';
 
 export interface TestServer extends Context {
@@ -29,6 +29,10 @@ export interface StartServerOptions {
    * stream: reusing a seed on the same database repeats ids already in the log.
    */
   readonly seed?: number;
+  /** Wrap the real store, e.g. to fail or delay a chat write. */
+  readonly wrapStore?: ContextOptions['wrapStore'];
+  /** Replaces the socket's per-viewer event filter. */
+  readonly projectEvents?: ServerDeps['projectEvents'];
 }
 
 /** A listening server on 127.0.0.1 and a random port, over the harness database and a fake clock. */
@@ -36,6 +40,7 @@ export async function startServer(h: Harness, options: StartServerOptions = {}):
   const ctx = h.manager({
     seed: options.seed ?? servers.length + 1,
     ...(options.now !== undefined ? { now: options.now } : {}),
+    ...(options.wrapStore !== undefined ? { wrapStore: options.wrapStore } : {}),
   });
   if (options.restore) await ctx.manager.restoreAll();
   const app = await createServer({
@@ -44,6 +49,7 @@ export async function startServer(h: Harness, options: StartServerOptions = {}):
     manager: ctx.manager,
     logger: ctx.logger,
     ...(options.helloTimeoutMs !== undefined ? { helloTimeoutMs: options.helloTimeoutMs } : {}),
+    ...(options.projectEvents !== undefined ? { projectEvents: options.projectEvents } : {}),
   });
   await app.listen({ host: '127.0.0.1', port: 0 });
   const { port } = app.server.address() as AddressInfo;

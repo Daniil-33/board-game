@@ -21,7 +21,7 @@ it('round-trips a real stage 2 projection and public money/board events', () => 
   expect(events.some(e => e.type === 'BoardGenerated')).toBe(true);
   expect(events.filter(e => e.type === 'BalanceChanged')).toHaveLength(2);
   const frames: ServerFrame[] = [
-    { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: session.state.players[0]!.id, revision: session.state.revision, view },
+    { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: session.state.players[0]!.id, revision: session.state.revision, view, history: { entries: [], chat: [] } },
     { t: 'Update', revision: session.state.revision, view, events },
   ];
   for (const frame of frames) expect(decodeServerFrame(JSON.stringify(frame))).toEqual({ ok: true, frame });

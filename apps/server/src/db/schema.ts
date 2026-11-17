@@ -56,7 +56,19 @@ export interface GameResultsTable {
   created_at: CreatedAt;
 }
 
+export interface ChatMessagesTable {
+  room_id: string;
+  /** 1, 2, ... per room. */
+  seq: number;
+  author_id: string;
+  /** Trimmed text, 1-300 code points. */
+  text: string;
+  /** The room's clock when the message was handled. */
+  created_at: Date;
+}
+
 export interface Database {
+  chat_messages: ChatMessagesTable;
   game_results: GameResultsTable;
   guests: GuestsTable;
   rooms: RoomsTable;

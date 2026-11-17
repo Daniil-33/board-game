@@ -4,13 +4,17 @@
  * the routes of `src/api/routes.ts` and plays the other seats itself.
  */
 import {
+  CHAT_LIMITS,
   PROTOCOL_VERSION,
   CreateRoomRequestSchema,
+  checkChatText,
   JoinRoomRequestSchema,
   decodeClientFrame,
   normalizeNickname,
   type AckFrame,
+  type ChatMessage,
   type ErrorBody,
+  type HistoryEntry,
   type RoomSummary,
   type ServerFrame,
 } from '@game/protocol';
@@ -58,6 +62,9 @@ interface Room {
   readonly peers: Map<MockPeer, string>;
   /** Acks by command id, so a resent command gets its first answer again. */
   readonly acks: Map<string, AckFrame>;
+  /** Log entries with events, and chat messages, for `Welcome.history`. No rate limit in the mock. */
+  readonly history: HistoryEntry[];
+  readonly chat: ChatMessage[];
   deadlineTimer: unknown;
   botTimer: unknown;
 }
@@ -188,13 +195,22 @@ export class MockServer {
       this.helloed.set(peer, room);
       // No delta replay in stage 1: always the full current view.
       const view = room.game.view;
-      return peer.send({ t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: view.players.find((p) => p.id === guest.guestId)!.id, revision: view.revision, view });
+      const history = { entries: room.history.slice(-CHAT_LIMITS.historySize), chat: room.chat.slice(-CHAT_LIMITS.historySize) };
+      return peer.send({ t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: view.players.find((p) => p.id === guest.guestId)!.id, revision: view.revision, view, history });
     }
 
     const room = this.helloed.get(peer);
     const playerId = room?.peers.get(peer);
     if (room === undefined || playerId === undefined) {
       return peer.send({ t: 'Error', code: 'UNAUTHENTICATED', message: 'Hello is required before commands' });
+    }
+    if (frame.t === 'ChatSend') {
+      const checked = checkChatText(frame.text);
+      if (!checked.ok) return peer.send({ t: 'ChatAck', clientMsgId: frame.clientMsgId, ok: false, reason: checked.reason });
+      const message: ChatMessage = { seq: room.chat.length + 1, authorId: playerId as ChatMessage['authorId'], text: checked.text, at: this.options.timers.now() };
+      room.chat.push(message);
+      for (const other of room.peers.keys()) other.send({ t: 'Chat', message });
+      return peer.send({ t: 'ChatAck', clientMsgId: frame.clientMsgId, ok: true });
     }
     const known = room.acks.get(frame.commandId);
     if (known !== undefined) return peer.send(known);
@@ -259,6 +275,8 @@ export class MockServer {
       game: new MockGame(this.options),
       peers: new Map(),
       acks: new Map(),
+      history: [],
+      chat: [],
       deadlineTimer: null,
       botTimer: null,
     };
@@ -291,6 +309,7 @@ export class MockServer {
   private changed(room: Room, events: readonly GameEvent[]): void {
     const view = room.game.view;
     if (view.phase === 'finished') room.summary.status = 'finished';
+    if (events.length > 0) room.history.push({ revision: view.revision, at: this.options.timers.now(), events: [...events] });
     for (const peer of room.peers.keys()) peer.send({ t: 'Update', revision: view.revision, view, events: [...events] });
 
     const { timers } = this.options;

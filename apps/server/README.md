@@ -38,7 +38,7 @@ Every route but guest login needs `authorization: Bearer <token>` (401
 | `POST /api/rooms/:roomId/join { accessCode? }` | lobby only; locked rooms: 403 `ACCESS_CODE_REQUIRED` / `ACCESS_CODE_INVALID` |
 | `POST /api/rooms/:roomId/leave` | lobby only; the creator leaving closes the room |
 | `POST /api/rooms/:roomId/start` | creator only (403 `NOT_ROOM_CREATOR`) |
-| `GET /ws` | game socket: `Hello` -> `Welcome`, `Command` -> `Ack`, `Update` per commit |
+| `GET /ws` | game socket: `Hello` -> `Welcome` (with history), `Command` -> `Ack`, `Update` per commit, `ChatSend` -> `Chat` to every connection, then `ChatAck` |
 
 Engine rejections are 409 with the engine code; a closed room is 409
 `ROOM_CLOSED`; an unknown room 404 `ROOM_UNAVAILABLE`.
@@ -94,7 +94,7 @@ commands: `sg docker -c 'docker compose -f docker-compose.dev.yml up -d --wait'`
 
 ## Stage 5 compatibility
 
-The server speaks protocol 5 and runs core-7 games. Welcome and Update expose
+The server runs core-7 games. Welcome and Update expose
 board, economy, balances, owners, purchase decisions, auction state, houses, rent,
 rent quotes, mortgages (with remainingLaps), eliminations and, once finished, the
 result; public core events (including AssetMortgaged, AssetRedeemed,
@@ -107,6 +107,25 @@ target is rejected with TARGET_MISMATCH.
 BuildHouse, SellHouse, Mortgage and Redeem carry exactly `{ assetId: string }`
 (1–128 UTF-16 units, no NUL or lone surrogates). Core error codes are returned
 unchanged in rejected Acks.
+
+## Chat and Welcome history (protocol 6)
+
+The server speaks protocol 6. `ChatSend { clientMsgId, text }` is handled on the
+room's serial queue with commands: the author must be a player of the room
+(eliminated players included); the trimmed text follows `checkChatText` from
+`@game/protocol` (1-300 code points, no control character other than newline,
+at most 4 lines); each author may have 5 accepted messages per 10 s and one per
+500 ms (in memory, reset on restart). An accepted message is stored in
+`chat_messages` (migration 0007), sent as `Chat` to every connection of the
+room and only then answered `ChatAck { ok: true }`; every rejection is
+`ChatAck { ok: false, reason }`. Chat never enters the game log, snapshots or
+replay.
+
+`Welcome.history` holds the last 200 log entries as `{ revision, at, events }`
+(`at` is the entry's transition time; events filtered by the same per-viewer
+projection as `Update`, emptied entries dropped) and the last 200 chat messages,
+both oldest first. History and the socket's subscription are taken in one step of
+the room queue, so nothing is both in the history and in a later frame.
 
 Timers follow pendingDeadlines, including the 10 second auction response and
 paused/resumed turn deadlines. Purchase, auction, rent and mortgage states recover
@@ -150,7 +169,7 @@ The response is HTTP 201 `{ "roomId": "..." }`. All tokens authenticate existing
 guests; no extra authorization header is needed for this test-only endpoint.
 Unknown names, duplicate tokens or invalid body shapes return 400 INVALID_REQUEST;
 unknown tokens return 401 UNAUTHENTICATED. Clients cannot supply a state or path.
-Connect each guest normally through /ws with a protocol 5 Hello for that roomId.
+Connect each guest normally through /ws with a protocol 6 Hello for that roomId.
 
 Builders are importable from `apps/server/src/test-fixtures.ts`:
 `buildFixture(name, guestIds, now)` returns an invariant-checked core-7 GameState.

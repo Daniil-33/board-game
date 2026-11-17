@@ -1,16 +1,31 @@
-import { projectEvents, projectState, type GameCommand, type GameEvent, type GameState, type PlayerId } from '@game/game-core';
 import {
+  projectEvents,
+  projectState,
+  type GameCommand,
+  type GameEvent,
+  type GameState,
+  type PlayerId,
+  type Viewer,
+} from '@game/game-core';
+import {
+  MAX_FRAME_LENGTH,
   PROTOCOL_VERSION,
   decodeClientFrame,
   type AckFrame,
+  type ChatAckFrame,
+  type ChatMessage,
+  type ChatSendFrame,
   type CommandFrame,
   type HelloFrame,
+  type History,
   type ServerFrame,
+  type WelcomeFrame,
 } from '@game/protocol';
 import type { WebSocket } from 'ws';
 import type { GuestStore } from '../auth/guests.js';
 import type { RoomQueries } from '../lobby/queries.js';
 import { errorFields, type Logger } from '../logger.js';
+import type { StoredChatMessage, StoredHistory } from '../db/game-store.js';
 import { RoomNotFoundError, type Room, type RoomEvent, type RoomManager } from '../rooms/types.js';
 import type { ConnectionRegistry, Replaceable } from './registry.js';
 
@@ -37,6 +52,11 @@ export interface ConnectionDeps {
   readonly logger: Logger;
   /** Default `HELLO_TIMEOUT_MS`. */
   readonly helloTimeoutMs?: number;
+  /**
+   * The per-viewer event filter for `Update` and `Welcome.history`. Default:
+   * game-core `projectEvents`. Tests only: every core event is public today.
+   */
+  readonly projectEvents?: ProjectEvents;
 }
 
 type Phase = 'awaitingHello' | 'authenticating' | 'ready' | 'closed';
@@ -44,6 +64,40 @@ type Phase = 'awaitingHello' | 'authenticating' | 'ready' | 'closed';
 const OPEN = 1;
 
 const isMember = (state: GameState, guestId: string): boolean => state.players.some((p) => p.id === guestId);
+
+const chatMessage = (m: StoredChatMessage): ChatMessage => ({ seq: m.seq, authorId: m.authorId as PlayerId, text: m.text, at: m.at });
+
+/** A Welcome longer than this (UTF-16 units) is logged: 75% of the client's decode limit. */
+export const WELCOME_WARN_LENGTH = Math.floor(MAX_FRAME_LENGTH * 0.75);
+
+type ProjectEvents = (events: readonly GameEvent[], viewer: Viewer) => GameEvent[];
+
+/** The stored history as `viewer` may see it: projected events, empty entries dropped, oldest first. */
+export function viewerHistory(stored: StoredHistory, viewer: Viewer, project: ProjectEvents = projectEvents): History {
+  const entries: History['entries'] = [];
+  for (const entry of stored.entries) {
+    const events = project(entry.events, viewer);
+    if (events.length > 0) entries.push({ revision: entry.revision, at: entry.now, events });
+  }
+  return { entries, chat: stored.chat.map(chatMessage) };
+}
+
+/** The `Welcome` a player receives for `state` and the room's stored history. */
+export function welcomeFrame(
+  state: GameState,
+  viewer: { readonly kind: 'player'; readonly id: PlayerId },
+  stored: StoredHistory,
+  project: ProjectEvents = projectEvents,
+): WelcomeFrame {
+  return {
+    t: 'Welcome',
+    protocolVersion: PROTOCOL_VERSION,
+    playerId: viewer.id,
+    revision: state.revision,
+    view: projectState(state, viewer),
+    history: viewerHistory(stored, viewer, project),
+  };
+}
 
 /**
  * One game socket: `Hello` -> `Welcome`, then `Command` -> `Ack` and room
@@ -61,6 +115,8 @@ export class GameConnection implements Replaceable {
   private viewer: { readonly kind: 'player'; readonly id: PlayerId } | null = null;
   /** Revision of the last view this socket was sent (Welcome or Update). */
   private sentRevision = -1;
+  /** Room events that arrive between subscribing and sending Welcome; replayed after it. */
+  private early: RoomEvent[] | null = null;
 
   constructor(
     private readonly socket: WebSocket,
@@ -125,6 +181,10 @@ export class GameConnection implements Replaceable {
       this.send({ t: 'Error', code: 'MALFORMED_FRAME', message: 'Hello was already received' });
       return;
     }
+    if (decoded.frame.t === 'ChatSend') {
+      await this.chat(decoded.frame);
+      return;
+    }
     await this.command(decoded.frame);
   }
 
@@ -173,22 +233,47 @@ export class GameConnection implements Replaceable {
       return;
     }
 
-    // Subscribe, read the state and send Welcome in one synchronous step: every
-    // later commit arrives as an Update with a higher revision, none is lost.
+    // The room reads the history and subscribes in one step of its queue:
+    // every later commit or chat message arrives as an Update or Chat, and none
+    // is also in the history. Events that reach the listener before Welcome is
+    // sent are held and replayed after it.
     this.room = room;
     this.guestId = guest.guestId;
-    this.viewer = { kind: 'player', id: guest.guestId as PlayerId };
-    this.unsubscribe = room.subscribe((event) => this.onRoomEvent(event));
-    const state = room.state;
+    const viewer = { kind: 'player', id: guest.guestId as PlayerId } as const;
+    this.viewer = viewer;
+    this.early = [];
+    const attached = await room.attach((event) => this.onRoomEvent(event));
+    if (this.closed) {
+      if (attached.ok) attached.unsubscribe();
+      return;
+    }
+    if (!attached.ok) {
+      if ((room.status as Room['status']) === 'closed') this.fail('ROOM_CLOSED', 'The room was closed', CLOSE.normal);
+      else this.fail('ROOM_UNAVAILABLE', 'The room is unavailable', CLOSE.serverError);
+      return;
+    }
+    this.unsubscribe = attached.unsubscribe;
+    const state = attached.state;
+    if (!isMember(state, guest.guestId)) {
+      this.fail('NOT_A_PARTICIPANT', 'You are not a member of this room', CLOSE.policy);
+      return;
+    }
+    const welcome = JSON.stringify(welcomeFrame(state, viewer, attached.history, this.deps.projectEvents ?? projectEvents));
+    if (welcome.length > WELCOME_WARN_LENGTH) {
+      this.deps.logger.warn('Welcome frame nears the client frame limit', {
+        roomId: room.gameId,
+        guestId: guest.guestId,
+        length: welcome.length,
+        limit: MAX_FRAME_LENGTH,
+      });
+    }
     this.sentRevision = state.revision;
     this.phase = 'ready';
-    this.send({
-      t: 'Welcome',
-      protocolVersion: PROTOCOL_VERSION,
-      playerId: this.viewer.id,
-      revision: state.revision,
-      view: projectState(state, this.viewer),
-    });
+    this.sendText(welcome);
+    const early = this.early;
+    this.early = null;
+    for (const event of early) this.onRoomEvent(event);
+    if (this.closed) return;
     this.deps.registry.register(room.gameId, guest.guestId, this);
     this.deps.logger.info('game socket joined', {
       roomId: room.gameId,
@@ -221,9 +306,22 @@ export class GameConnection implements Replaceable {
     this.send(ack);
   }
 
+  private async chat(frame: ChatSendFrame): Promise<void> {
+    const result = await this.room!.chat(this.guestId!, frame.text);
+    // Every connection of the room, this one included, already has the Chat frame.
+    const ack: ChatAckFrame = result.ok
+      ? { t: 'ChatAck', clientMsgId: frame.clientMsgId, ok: true }
+      : { t: 'ChatAck', clientMsgId: frame.clientMsgId, ok: false, reason: result.reason };
+    this.send(ack);
+  }
+
   // ---- Room events ----------------------------------------------------------
 
   private onRoomEvent(event: RoomEvent): void {
+    if (this.early !== null && this.phase !== 'closed') {
+      this.early.push(event);
+      return;
+    }
     if (this.phase !== 'ready') return;
     switch (event.kind) {
       case 'update':
@@ -238,6 +336,9 @@ export class GameConnection implements Replaceable {
       case 'closed':
         this.fail('ROOM_CLOSED', 'The room was closed by its creator', CLOSE.normal);
         return;
+      case 'chat':
+        this.send({ t: 'Chat', message: chatMessage(event.message) });
+        return;
     }
   }
 
@@ -245,7 +346,8 @@ export class GameConnection implements Replaceable {
     if (revision <= this.sentRevision) return;
     this.sentRevision = revision;
     const viewer = this.viewer!;
-    this.send({ t: 'Update', revision: state.revision, view: projectState(state, viewer), events: projectEvents(events, viewer) });
+    const project = this.deps.projectEvents ?? projectEvents;
+    this.send({ t: 'Update', revision: state.revision, view: projectState(state, viewer), events: project(events, viewer) });
     if (!isMember(state, this.guestId!)) {
       this.fail('NOT_A_PARTICIPANT', 'You left this room', CLOSE.normal);
     }
@@ -254,6 +356,10 @@ export class GameConnection implements Replaceable {
   // ---- Outbound -------------------------------------------------------------
 
   private send(frame: ServerFrame): void {
+    this.sendText(JSON.stringify(frame));
+  }
+
+  private sendText(text: string): void {
     if (this.socket.readyState !== OPEN) return;
     if (this.socket.bufferedAmount > MAX_BUFFERED_BYTES) {
       this.deps.logger.warn('game socket too slow; dropped', { roomId: this.room?.gameId, guestId: this.guestId });
@@ -261,7 +367,7 @@ export class GameConnection implements Replaceable {
       this.cleanup();
       return;
     }
-    this.socket.send(JSON.stringify(frame));
+    this.socket.send(text);
   }
 
   /** Send `Error { code }` and close. Idempotent. */

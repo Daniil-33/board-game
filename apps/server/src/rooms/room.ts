@@ -15,6 +15,7 @@ import {
   type TargetRef,
   type Timestamp,
 } from '@game/game-core';
+import { CHAT_LIMITS, checkChatText } from '@game/protocol';
 import type { Clock } from '../context/clock.js';
 import { entropyHex, type EntropySource } from '../context/entropy.js';
 import { CorruptGameDataError, type GameStore } from '../db/game-store.js';
@@ -23,6 +24,8 @@ import type { TimerScheduler } from '../timers/scheduler.js';
 import {
   PERSISTENCE_FAILED,
   ROOM_UNAVAILABLE,
+  type AttachResult,
+  type ChatResult,
   type Engine,
   type Room,
   type RoomEvent,
@@ -120,6 +123,10 @@ export class GameRoom implements Room {
   private closing: Promise<void> | null = null;
   private readonly timers = new Map<string, () => void>();
   private readonly listeners = new Set<(event: RoomEvent) => void>();
+  /** Next chat `seq`; null until read from the store, and again after a failed write. */
+  private nextChatSeq: number | null = null;
+  /** Times of each author's accepted messages within the rate window. In memory only. */
+  private readonly chatTimes = new Map<string, number[]>();
 
   private constructor(gameId: string, deps: RoomDeps, session: Session | null) {
     this.gameId = gameId;
@@ -174,7 +181,41 @@ export class GameRoom implements Room {
       return Promise.resolve(this.reject(command, ROOM_UNAVAILABLE, 'The room could not run the command'));
     }
     const closeRoom = options.closeRoom === true;
-    const run = this.tail.then(() => this.execute(command, now, closeRoom));
+    return this.enqueue(() => this.execute(command, now, closeRoom));
+  }
+
+  attach(listener: (event: RoomEvent) => void): Promise<AttachResult> {
+    if (!this.accepting) return Promise.resolve({ ok: false });
+    return this.enqueue(async (): Promise<AttachResult> => {
+      if (this.currentStatus !== 'live') return { ok: false };
+      const state = this.committed;
+      try {
+        const history = await this.deps.store.loadHistory(this.gameId, state.revision, CHAT_LIMITS.historySize);
+        // Still this step of the queue: nothing committed while the history was read.
+        if (this.currentStatus !== 'live') return { ok: false };
+        return { ok: true, state, history, unsubscribe: this.subscribe(listener) };
+      } catch (error) {
+        this.deps.logger.error('room history could not be read', { gameId: this.gameId, ...errorFields(error) });
+        return { ok: false };
+      }
+    });
+  }
+
+  chat(authorId: string, text: string): Promise<ChatResult> {
+    if (!this.accepting) return Promise.resolve({ ok: false, reason: ROOM_UNAVAILABLE });
+    return this.enqueue(async (): Promise<ChatResult> => {
+      try {
+        return await this.runChat(authorId, text);
+      } catch (error) {
+        this.deps.logger.error('room chat failed unexpectedly', { gameId: this.gameId, ...errorFields(error) });
+        return { ok: false, reason: ROOM_UNAVAILABLE };
+      }
+    });
+  }
+
+  /** Run `task` after everything queued so far; later tasks wait for it. */
+  private enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.tail.then(task);
     this.tail = run.then(
       () => undefined,
       () => undefined,
@@ -210,6 +251,38 @@ export class GameRoom implements Room {
       this.currentStatus = 'closed';
     })();
     return this.closing;
+  }
+
+  // ---- Chat -----------------------------------------------------------------
+
+  private async runChat(authorId: string, raw: string): Promise<ChatResult> {
+    if (this.currentStatus !== 'live' || this.session === null) return { ok: false, reason: ROOM_UNAVAILABLE };
+    // Eliminated players stay in `players`; lobby leavers do not.
+    if (!this.committed.players.some((p) => p.id === authorId)) return { ok: false, reason: 'NOT_A_MEMBER' };
+    const checked = checkChatText(raw);
+    if (!checked.ok) return { ok: false, reason: checked.reason };
+
+    const now: number = this.deps.clock.now();
+    const recent = (this.chatTimes.get(authorId) ?? []).filter((t) => now - t < CHAT_LIMITS.windowMs);
+    const last = recent[recent.length - 1];
+    if (last !== undefined && now - last < CHAT_LIMITS.minIntervalMs) return { ok: false, reason: 'TOO_FAST' };
+    if (recent.length >= CHAT_LIMITS.maxPerWindow) return { ok: false, reason: 'RATE_LIMITED' };
+
+    let seq: number;
+    try {
+      seq = (this.nextChatSeq ??= (await this.deps.store.lastChatSeq(this.gameId)) + 1);
+      const message = { seq, authorId, text: checked.text, at: now };
+      await this.deps.store.appendChat(this.gameId, message);
+      this.nextChatSeq = seq + 1;
+      recent.push(now);
+      this.chatTimes.set(authorId, recent);
+      this.emit({ kind: 'chat', message });
+      return { ok: true, message };
+    } catch (error) {
+      this.nextChatSeq = null; // re-read from the store next time
+      this.deps.logger.warn('chat write failed', { gameId: this.gameId, ...errorFields(error) });
+      return { ok: false, reason: PERSISTENCE_FAILED };
+    }
   }
 
   // ---- Pipeline -------------------------------------------------------------

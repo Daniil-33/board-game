@@ -3,3 +3,4 @@ export * from './nickname.js';
 export * from './frames.js';
 export * from './decode.js';
 export * from './lobby.js';
+export * from './chat.js';

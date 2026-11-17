@@ -19,8 +19,8 @@ const enc = (v: unknown) => JSON.stringify(v);
 const isMalformed = (r: { ok: boolean; error?: { code: string } }) => !r.ok && r.error?.code === 'MALFORMED_FRAME';
 
 describe('protocol version and codes', () => {
-  it('PROTOCOL_VERSION is 5', () => {
-    expect(PROTOCOL_VERSION).toBe(5);
+  it('PROTOCOL_VERSION is 6', () => {
+    expect(PROTOCOL_VERSION).toBe(6);
   });
 
   it('lists the seven protocol error codes', () => {
@@ -158,7 +158,7 @@ describe('field validation', () => {
   });
 
   it('rejects a server frame whose player id holds NUL', () => {
-    expect(isMalformed(decodeServerFrame(enc({ t: 'Welcome', protocolVersion: 1, playerId: 'p\u0000', revision: 0, view })))).toBe(true);
+    expect(isMalformed(decodeServerFrame(enc({ t: 'Welcome', protocolVersion: 1, playerId: 'p\u0000', revision: 0, view, history: { entries: [], chat: [] } })))).toBe(true);
   });
 
   it('accepts other protocol versions so the server can answer PROTOCOL_VERSION_UNSUPPORTED', () => {
@@ -177,7 +177,7 @@ describe('field validation', () => {
     ['empty error code', { t: 'Error', code: '', message: 'm' }],
     ['error code over 64 characters', { t: 'Error', code: 'X'.repeat(65), message: 'm' }],
     ['ack error code over 64 characters', { t: 'Ack', commandId: 'c', outcome: 'rejected', revision: 1, error: { code: 'X'.repeat(65), message: 'm' } }],
-    ['welcome without view', { t: 'Welcome', protocolVersion: 1, playerId: 'p', revision: 0 }],
+    ['welcome without view', { t: 'Welcome', protocolVersion: 1, playerId: 'p', revision: 0, history: { entries: [], chat: [] } }],
   ])('server: %s', (_name, frame) => {
     expect(isMalformed(decodeServerFrame(enc(frame)))).toBe(true);
   });
