@@ -245,6 +245,11 @@ expiry; it is reached in tier 3.
 - `finalBalances` holds every player's balance.
 - A terminal elimination does not run lap processing or start a turn.
 
+**Empty release (REV-s5-core-mortgage-1 RVW-002, TL decision).**
+`AssetsReleased` is emitted only when `assetIds` is non-empty. This holds
+for both reasons, `resigned` and `bankrupt`, so a player who owns nothing
+produces no release event.
+
 ### Invariants (added)
 
 - `mortgages` keys are assets owned by an active player.

@@ -54,7 +54,8 @@ Product (handoff revision 2 C6-C9, C11; design § "Debt settlement",
    - sell all houses;
    - `paid = min(debt, cash after sales)` (I3, confirmed by the CTO: no
      mortgages taken);
-   - release every asset (`AssetsReleased reason 'bankrupt'`) and emit
+   - release every asset (`AssetsReleased reason 'bankrupt'`, only
+     when the list is non-empty, as for resignation) and emit
      `PlayerBankrupt { playerId, creditorId, debt, paid, writtenOff }`;
    - `cancelOffersOf`;
    - eliminate the player (`eliminations` reason `bankrupt` with
