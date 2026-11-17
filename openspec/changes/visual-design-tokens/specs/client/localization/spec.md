@@ -31,7 +31,7 @@ All client-owned UI text, accessibility labels and error-code reasons SHALL use 
 - **THEN** the complete named-slot message controls the sentence order and retains the amount emphasis
 
 ### Requirement: Shared locale formatting
-Money and time formatting SHALL go through shared Intl wrappers using the active locale, preserving integer monetary values. Russian money SHALL use thin-space grouping.
+Money and time formatting SHALL go through shared Intl wrappers using the active locale, preserving integer monetary values. Russian money SHALL use narrow no-break space (U+202F) grouping.
 
 #### Scenario: Format existing values
 - **WHEN** money, timer or timestamp fixtures are formatted

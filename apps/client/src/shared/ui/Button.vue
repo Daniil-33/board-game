@@ -9,7 +9,7 @@ const reasonId = useId();
 
 <template>
   <Tooltip v-if="disabled && reason" :text="reason">
-    <span class="ds-disabled-trigger" tabindex="0" :aria-label="reason">
+    <span class="ds-disabled-trigger" tabindex="0" role="group" :aria-labelledby="reasonId">
       <button v-bind="$attrs" :class="['ds-button', variant]" :aria-describedby="reasonId" disabled><slot /></button>
       <span :id="reasonId" class="ds-disabled-reason">{{ reason }}</span>
     </span>

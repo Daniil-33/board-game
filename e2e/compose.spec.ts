@@ -259,7 +259,7 @@ async function stage2(players: import('./helpers').Actor[], capital: number): Pr
     for (const other of board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === cell.asset!.groupId)) {
       await expect(card).toContainText(other.asset!.name);
     }
-    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Закрыть карточку актива');
   await p.page.locator(sel('asset-close')).click();
   }
   await panels(players);

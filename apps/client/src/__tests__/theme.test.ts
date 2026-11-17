@@ -4,9 +4,15 @@ import { readFileSync } from 'node:fs';
 const tokens = readFileSync(import.meta.dirname + '/../shared/config/tokens.css', 'utf8');
 
 function rgb(name: string): number[] {
-  const hex = tokens.match(new RegExp(`^  --${name}: #([0-9a-f]{6});`, 'im'))?.[1];
-  if (!hex) throw new Error(`Missing color token: ${name}`);
-  return hex.match(/../g)!.map(channel => Number.parseInt(channel, 16));
+  const value = tokens.match(new RegExp(`^  --${name}: ([^;]+);`, 'm'))?.[1];
+  if (!value) throw new Error(`Missing color token: ${name}`);
+  if (/^#[0-9a-f]{6}$/i.test(value)) {
+    return value.slice(1).match(/../g)!.map(channel => Number.parseInt(channel, 16));
+  }
+  const rgba = value.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
+  if (!rgba) throw new Error(`Unsupported color token ${name}: ${value}`);
+  const alpha = Number(rgba[4]);
+  return rgb('bg-base').map((base, index) => Number(rgba[index + 1]) * alpha + base * (1 - alpha));
 }
 
 function luminance(rgb: number[]): number {
@@ -19,14 +25,10 @@ function luminance(rgb: number[]): number {
 }
 
 it.each([
-  ['text-primary', 'bg-base'],
-  ['text-secondary', 'bg-base'],
-  ['text-muted', 'bg-base'],
-  ['text-disabled', 'bg-base'],
+  ...['text-primary', 'text-secondary', 'text-muted', 'text-disabled', 'warning-text', 'danger-text']
+    .flatMap(text => ['bg-base', 'surface-1', 'surface-2', 'bg-deep'].map(surface => [text, surface])),
   ['ink-primary', 'light-1'],
   ['ink-secondary', 'light-1'],
-  ['warning-text', 'bg-base'],
-  ['danger-text', 'bg-base'],
   ['danger-on-light', 'danger-surface'],
   ['on-accent', 'accent-blue'],
   ['on-accent', 'accent-mint'],

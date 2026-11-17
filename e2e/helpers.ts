@@ -63,8 +63,8 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
           }
         }));
         await page.goto(invite ?? '/');
-        await expect(page.locator(sel('nickname'))).toHaveAccessibleName('Nickname');
-        await expect(page.locator(sel('login-enter'))).toHaveAccessibleName('Enter');
+        await expect(page.locator(sel('nickname'))).toHaveAccessibleName('Ник');
+        await expect(page.locator(sel('login-enter'))).toHaveAccessibleName('Войти');
         await page.locator(sel('nickname')).fill(`Player ${actors.length}`);
         await page.locator(sel('login-enter')).click();
         await expect(page.locator(sel('screen-login'))).toHaveCount(0);

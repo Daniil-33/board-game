@@ -94,7 +94,7 @@ describe('localization contracts', () => {
     } finally { i18n.global.locale.value = 'ru'; wrapper.unmount(); }
   });
   it('preserves integer money, countdown and UTC timestamp fixtures', () => {
-    expect([0, 10, 123450, -10].map(formatMoney)).toEqual(['0', '10', '123\u2009450', '-10']);
+    expect([0, 10, 123450, -10].map(formatMoney)).toEqual(['0', '10', '123\u202F450', '-10']);
     i18n.global.locale.value = 'en';
     try { expect(formatMoney(123450)).toBe('123,450'); }
     finally { i18n.global.locale.value = 'ru'; }

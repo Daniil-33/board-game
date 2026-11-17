@@ -383,7 +383,7 @@ describe('elimination and game over', () => {
       expect(w.get('[data-testid="winner"]').text()).toBe('Победитель: Bob');
       expect(w.get('[data-testid="finished-at"]').text()).toBe(`Время завершения: ${formatTime(61_000)}`);
       expect(w.findAll('[data-testid="elimination-row"]').map(li => li.text())).toEqual([`Carol: сдача, ${formatTime(1_000)}`, `Alice: банкротство, ${formatTime(61_000)}`]);
-      expect(w.findAll('[data-testid="final-balance-row"]').map(li => li.text())).toEqual(['Alice: 0', 'Bob: 4 200', 'Carol: 0']);
+      expect(w.findAll('[data-testid="final-balance-row"]').map(li => li.text())).toEqual(['Alice: 0', 'Bob: 4\u202F200', 'Carol: 0']);
       expect(w.get('[data-testid="spectator"]').text()).toBe('Вы выбыли из-за банкротства.');
       for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-testid="${sel}"]`).exists(), sel).toBe(false);
       expect(w.find('[data-testid="return-lobby"]').exists()).toBe(true);

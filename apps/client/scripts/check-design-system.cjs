@@ -26,6 +26,7 @@ async function main() {
       if (evidence) await page.screenshot({ path: `${evidence}/design-system-${width}x${height}.png` });
       await expect(page.getByTestId('ds-disabled')).toBeDisabled();
       const reason = page.locator('.ds-disabled-reason');
+      await expect(page.locator('.ds-disabled-trigger')).toHaveAccessibleName('Дом уже построен в этом ходу.');
       if (width < 1024) {
         await expect(reason).toBeVisible();
       } else {
@@ -69,7 +70,7 @@ async function main() {
       await popoverTrigger.click();
       const popover = page.getByRole('dialog', { name: 'Рента' });
       await expect(page.getByTestId('ds-popover-action')).toBeFocused();
-      assert.equal(await popover.locator('.ds-number').textContent(), '6\u2009150');
+      assert.equal(await popover.locator('.ds-number').textContent(), '6\u202F150');
       await expect(popover.locator('.ds-number')).toHaveCSS('font-variant-numeric', 'tabular-nums');
       await page.keyboard.press('Escape');
       await expect(popover).toHaveCount(0);

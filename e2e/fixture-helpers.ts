@@ -65,6 +65,6 @@ export async function card(p: Actor, cell: number) {
   await expect(p.page.locator(sel('asset-card'))).toBeVisible();
 }
 export async function close(p: Actor) {
-  await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+  await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Закрыть карточку актива');
   await p.page.locator(sel('asset-close')).click();
 }

@@ -388,7 +388,7 @@ async function expectOwner(players: Actor[], cell: number, owner: Actor | null):
     const card = p.page.locator(sel('asset-card'));
     await expect(card.locator(sel('asset-title'))).toHaveText(assetAt(p, cell).name);
     await expect(card.locator(sel('asset-owner'))).toHaveText(owner === null ? 'свободно' : `Player ${players.indexOf(owner) + 1}`);
-    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Закрыть карточку актива');
   await p.page.locator(sel('asset-close')).click();
   }
 }

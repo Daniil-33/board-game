@@ -145,7 +145,7 @@ describe('asset card: houses, quotes and controls', () => {
     const quote = view.rentQuotes[at(view, 12)]!;
     if (quote.kind !== 'energy') throw new Error('energy quote expected');
     const energy = card(view, 12);
-    expect(energy.get('[data-testid="asset-energy"]').text()).toContain(`Рента = Q(2 660 × сумма костей × ${quote.holdings} / (200 × ${quote.groupSize}))`);
+    expect(energy.get('[data-testid="asset-energy"]').text()).toContain(`Рента = Q(2\u202F660 × сумма костей × ${quote.holdings} / (200 × ${quote.groupSize}))`);
     expect(energy.get('[data-testid="energy-examples"]').text()).toBe(`Сумма костей 2: ${energyRentFor(quote, 2)}, Сумма костей 7: ${energyRentFor(quote, 7)}, Сумма костей 12: ${energyRentFor(quote, 12)}`);
     expect(energy.find('[data-testid="asset-rent"]').exists()).toBe(false);
     expect(card(view, 13).find('[data-testid="asset-rent"]').exists()).toBe(false); // free asset: no quote
