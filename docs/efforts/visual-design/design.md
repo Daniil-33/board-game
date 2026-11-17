@@ -188,6 +188,18 @@ needs no code change.
 - A file that fails to load falls back to the manifest `monogram` text on
   the group gradient.
 
+**Two sets (owner, 2026-11-17 evening).**
+- `logos/brand/` holds the v2 brand icons, the default.
+- `logos/geometric/` holds the v1 set, the fallback. The brand set's
+  `microfinance-4` uses the geometric icon.
+- The runtime config `logoSet` (`LOGO_SET`) selects the set: staging uses
+  `brand`; production uses `geometric` until the owner clears trademark use.
+- Logos are always lazily loaded URLs and never inlined into JS. See
+  `TASK-vd-logos-brand`.
+
+**Feed ordering (REV-vd-chat-2 RVW-002).** The event feed merges live items
+by arrival order, and history items (from `Welcome`) by server `at`.
+
 ## Event log and chat (C7)
 
 **Event feed.** The client maps the core events it receives to entries with
