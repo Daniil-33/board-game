@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AnimationQueue, BACKLOG_SPEED, stepsForEvents, type AnimationStep } from '../game/animation';
+import { AnimationQueue, BACKLOG_SPEED, stepsForEvents, type AnimationStep } from '../entities/game/index';
 
 const RING = 40;
 const diceRolled = (dice: [number, number], playerId = 'a') => ({

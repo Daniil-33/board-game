@@ -1,6 +1,6 @@
 /** Shared helpers of the isolated fixture-stack specs (stage 4 and later). */
 import type { TestInfo } from '@playwright/test';
-import { cellRect } from '../apps/client/src/board/layout';
+import { cellRect } from '../apps/client/src/widgets/board/index';
 import { expect, sel, type Actor } from './helpers';
 
 export const fast = { intervals: [20] };
@@ -34,7 +34,7 @@ export async function load(players: Actor[], fixture: string): Promise<string> {
     const welcomes = p.welcomes.length;
     await p.page.reload();
     await expect.poll(() => p.welcomes.length, fast).toBeGreaterThan(welcomes);
-    await expect(p.page.locator('[data-screen="game"]')).toBeVisible();
+    await expect(p.page.locator(sel('screen-game'))).toBeVisible();
   }));
   await sync(players, players[0]!.view!.revision);
   return roomId;
@@ -50,18 +50,20 @@ export async function balances(players: Actor[], expected: Readonly<Record<strin
   for (const p of players) {
     expect(p.view!.balances).toEqual(expected);
     for (const [i, other] of players.entries()) {
-      const row = p.page.locator(sel('player-balance')).filter({ has: p.page.getByText(`Player ${i + 1}`, { exact: true }) });
-      await expect(row.locator('span').first()).toHaveText(String(expected[other.id]));
+      const row = p.page.locator(`${sel('player-balance')}[data-player-id="${other.id}"]`);
+      await expect(row.locator(sel('player-balance-name'))).toHaveText(`Player ${i + 1}`);
+      await expect(row.locator(sel('player-balance-value'))).toHaveText(String(expected[other.id]));
     }
   }
 }
 export async function card(p: Actor, cell: number) {
-  const canvas = p.page.locator(sel('board')).locator('canvas');
+  const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
   const box = (await canvas.boundingBox())!;
   const rect = cellRect(cell, box.width);
   await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
   await expect(p.page.locator(sel('asset-card'))).toBeVisible();
 }
 export async function close(p: Actor) {
-  await p.page.getByRole('button', { name: 'Close asset card' }).click();
+  await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+  await p.page.locator(sel('asset-close')).click();
 }

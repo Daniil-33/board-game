@@ -10,7 +10,7 @@ import {
   turnOrder,
   type ActionAvailability,
   type ActionContext,
-} from '../game/view';
+} from '../entities/game/index';
 import { lobbyView, pid, playingView, setupView } from './helpers';
 
 const NONE: ActionAvailability = { RollForOrder: false, RollDice: false, EndTurn: false, Resign: false, BuyAsset: false, StartAuction: false, Bid: false, PassAuction: false, PayRent: false };

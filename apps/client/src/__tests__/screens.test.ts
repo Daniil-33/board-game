@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import App from '../App.vue';
-import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../client';
-import LobbyScreen from '../screens/LobbyScreen.vue';
-import LoginScreen from '../screens/LoginScreen.vue';
-import RoomScreen from '../screens/RoomScreen.vue';
+import { App } from '../app/index';
+import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
+import { LobbyScreen } from '../pages/lobby/index';
+import { LoginScreen } from '../pages/login/index';
+import { RoomScreen } from '../pages/room/index';
 import {
   GUEST,
   harness,
@@ -32,8 +32,8 @@ describe('LoginScreen', () => {
     const h = harness({ route: login });
     const wrapper = mount(App, provide(h));
     expect(wrapper.attributes('data-screen')).toBe('login');
-    await wrapper.find('input').setValue(' bob ');
-    await wrapper.find('form').trigger('submit');
+    await wrapper.find('[data-testid="nickname"]').setValue(' bob ');
+    await wrapper.find('[data-testid="login-form"]').trigger('submit');
     await flushPromises();
     expect(h.calls[0]).toMatchObject({ method: 'POST', path: '/api/guests', body: { nickname: 'bob' } });
     expect(JSON.parse(h.storage.getItem('game.guest')!)).toEqual({ guestId: 'g1', token: 'tok-1', nickname: 'bob' });
@@ -43,21 +43,21 @@ describe('LoginScreen', () => {
   it.each(['', '   ', 'x'.repeat(25)])('does not send the invalid nickname %j', async (value) => {
     const h = harness({ route: login });
     const wrapper = mount(LoginScreen, provide(h));
-    await wrapper.find('input').setValue(value);
-    await wrapper.find('form').trigger('submit');
+    await wrapper.find('[data-testid="nickname"]').setValue(value);
+    await wrapper.find('[data-testid="login-form"]').trigger('submit');
     await flushPromises();
     expect(h.calls).toEqual([]);
-    expect(wrapper.find('[data-test="invalid"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="invalid"]').exists()).toBe(true);
     expect(h.client.session.state.guest).toBeNull();
   });
 
   it('shows a failed login and stays on the login screen', async () => {
     const h = harness({ route: () => ({ status: 400, body: { code: 'INVALID_REQUEST', message: 'Nickname rejected' } }) });
     const wrapper = mount(App, provide(h));
-    await wrapper.find('input').setValue('bob');
-    await wrapper.find('form').trigger('submit');
+    await wrapper.find('[data-testid="nickname"]').setValue('bob');
+    await wrapper.find('[data-testid="login-form"]').trigger('submit');
     await flushPromises();
-    expect(wrapper.find('[data-test="error"]').text()).toContain('Nickname rejected');
+    expect(wrapper.find('[data-testid="error"]').text()).toContain('Nickname rejected');
     expect(wrapper.attributes('data-screen')).toBe('login');
     expect(h.storage.data.size).toBe(0);
   });
@@ -84,8 +84,8 @@ describe('LobbyScreen', () => {
     const h = harness({ stored: storedSession(), route: lobby });
     const wrapper = mount(LobbyScreen, provide(h));
     await flushPromises();
-    expect(wrapper.findAll('[data-test="room"]')).toHaveLength(1);
-    expect(wrapper.find('[data-test="room-members"]').text()).toBe('Bob');
+    expect(wrapper.findAll('[data-testid="room"]')).toHaveLength(1);
+    expect(wrapper.find('[data-testid="room-members"]').text()).toBe('Bob');
     expect(wrapper.text()).not.toMatch(/leave/i);
   });
 
@@ -93,7 +93,7 @@ describe('LobbyScreen', () => {
     const h = harness({ stored: storedSession(), route: lobby });
     const wrapper = mount(App, provide(h));
     await flushPromises();
-    await wrapper.find('[data-test="create"]').trigger('click');
+    await wrapper.find('[data-testid="create"]').trigger('click');
     await flushPromises();
     expect(h.calls.map((c) => `${c.method} ${c.path}`)).toContain('POST /api/rooms');
     expect(wrapper.attributes('data-screen')).toBe('room');
@@ -106,7 +106,7 @@ describe('LobbyScreen', () => {
     const h = harness({ stored: storedSession(), route: lobby });
     const wrapper = mount(App, provide(h));
     await flushPromises();
-    await wrapper.find('[data-test="join"]').trigger('click');
+    await wrapper.find('[data-testid="join"]').trigger('click');
     await flushPromises();
     expect(h.calls.map((c) => `${c.method} ${c.path}`)).toContain('POST /api/rooms/r2/join');
     expect(wrapper.attributes('data-screen')).toBe('room');
@@ -122,9 +122,9 @@ describe('LobbyScreen', () => {
       });
       const wrapper = mount(LobbyScreen, provide(h));
       await flushPromises();
-      await wrapper.find('[data-test="join"]').trigger('click');
+      await wrapper.find('[data-testid="join"]').trigger('click');
       await flushPromises();
-      expect(wrapper.find('[data-test="error"]').text()).toContain('ROOM_UNAVAILABLE');
+      expect(wrapper.find('[data-testid="error"]').text()).toContain('ROOM_UNAVAILABLE');
 
       const polls = h.calls.filter((c) => c.method === 'GET').length;
       // The poll has been sent and not answered yet.
@@ -133,13 +133,13 @@ describe('LobbyScreen', () => {
       expect(h.calls.filter((c) => c.method === 'GET').length).toBe(polls + 1);
       expect(h.client.lobby.busy).toBe(false);
       for (const button of ['create', 'join', 'refresh']) {
-        expect(wrapper.find(`[data-test="${button}"]`).attributes('disabled')).toBeUndefined();
+        expect(wrapper.find(`[data-testid="${button}"]`).attributes('disabled')).toBeUndefined();
       }
-      expect(wrapper.find('[data-test="error"]').text()).toContain('ROOM_UNAVAILABLE');
+      expect(wrapper.find('[data-testid="error"]').text()).toContain('ROOM_UNAVAILABLE');
       // And after it was answered.
       await flushPromises();
-      expect(wrapper.find('[data-test="error"]').text()).toContain('ROOM_UNAVAILABLE');
-      expect(wrapper.findAll('[data-test="room"]')).toHaveLength(1);
+      expect(wrapper.find('[data-testid="error"]').text()).toContain('ROOM_UNAVAILABLE');
+      expect(wrapper.findAll('[data-testid="room"]')).toHaveLength(1);
       wrapper.unmount();
     } finally {
       vi.useRealTimers();
@@ -150,8 +150,8 @@ describe('LobbyScreen', () => {
     const h = harness({ stored: storedSession(), route: () => ({ body: { rooms: [{ roomId: 'r9', members: 'x' }] } }) });
     const wrapper = mount(LobbyScreen, provide(h));
     await flushPromises();
-    expect(wrapper.find('[data-test="error"]').text()).toContain('BAD_RESPONSE');
-    expect(wrapper.findAll('[data-test="room"]')).toHaveLength(0);
+    expect(wrapper.find('[data-testid="error"]').text()).toContain('BAD_RESPONSE');
+    expect(wrapper.findAll('[data-testid="room"]')).toHaveLength(0);
     expect(wrapper.text()).not.toContain('r9');
   });
 
@@ -165,9 +165,9 @@ describe('LobbyScreen', () => {
 });
 
 describe('RoomScreen', () => {
-  const start = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-test="start"]');
+  const start = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="start"]');
   const names = (wrapper: ReturnType<typeof mount>): string[] =>
-    wrapper.findAll('[data-test="member"]').map((m) => m.text().split(/\s+/)[0]!);
+    wrapper.findAll('[data-testid="member"]').map((m) => m.text().split(/\s+/)[0]!);
 
   function inRoom(summary = ALICE_ROOM, route?: Route): Harness {
     const h = harness({ stored: storedSession(summary), ...(route !== undefined && { route }) });
@@ -184,7 +184,7 @@ describe('RoomScreen', () => {
     expect(names(wrapper)).toEqual(['Alice']);
     expect(start(wrapper).exists()).toBe(true);
     expect(start(wrapper).attributes('disabled')).toBeDefined();
-    expect(wrapper.find('[data-test="leave"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="leave"]').exists()).toBe(true);
   });
 
   it('a second member arrives on the socket: Start becomes enabled and the roster is refreshed through get-room', async () => {
@@ -209,11 +209,11 @@ describe('RoomScreen', () => {
     h.sockets.last().receive({ t: 'Error', code: 'MALFORMED_FRAME', message: 'bad hello' });
     h.sockets.last().receive('garbage');
     await flushPromises();
-    expect(wrapper.find('[data-test="message"]').text()).toContain('MALFORMED_FRAME');
-    expect(wrapper.find('[data-test="message"]').text()).toContain('bad hello');
-    expect(wrapper.find('[data-test="problem"]').text()).toContain('Unreadable');
-    await wrapper.find('[data-test="message"] button').trigger('click');
-    expect(wrapper.find('[data-test="message"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="message"]').text()).toContain('MALFORMED_FRAME');
+    expect(wrapper.find('[data-testid="message"]').text()).toContain('bad hello');
+    expect(wrapper.find('[data-testid="problem"]').text()).toContain('Unreadable');
+    await wrapper.find('[data-testid="message-dismiss"]').trigger('click');
+    expect(wrapper.find('[data-testid="message"]').exists()).toBe(false);
   });
 
   it('falls back to the player id when no nickname is known', async () => {
@@ -230,7 +230,7 @@ describe('RoomScreen', () => {
     h.sockets.last().receive(welcome(lobbyView(['b', 'a'])));
     await flushPromises();
     expect(start(wrapper).exists()).toBe(false);
-    expect(wrapper.find('[data-test="waiting"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="waiting"]').exists()).toBe(true);
   });
 
   it('Start requests the start route; a rejection is shown', async () => {
@@ -241,7 +241,7 @@ describe('RoomScreen', () => {
     await start(wrapper).trigger('click');
     await flushPromises();
     expect(h.calls[h.calls.length - 1]).toMatchObject({ method: 'POST', path: '/api/rooms/r1/start' });
-    expect(wrapper.find('[data-test="error"]').text()).toContain('NOT_ENOUGH_PLAYERS');
+    expect(wrapper.find('[data-testid="error"]').text()).toContain('NOT_ENOUGH_PLAYERS');
   });
 });
 
@@ -261,8 +261,8 @@ describe('App screen selection', () => {
     h.sockets.last().receive(update(setupView(['a', 'b'], { revision: 4, roller: 'a', deadline: 95_000 })));
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');
-    expect(wrapper.find('[data-test="timer"]').text()).toBe('45 s');
-    expect(wrapper.find('[data-test="headline"]').text()).toBe('Rolling for turn order: Alice');
+    expect(wrapper.find('[data-testid="timer"]').text()).toBe('45 s');
+    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Rolling for turn order: Alice');
     expect(h.board.snaps.length).toBeGreaterThan(0);
   });
 
@@ -274,8 +274,8 @@ describe('App screen selection', () => {
     h.sockets.last().receive(welcome(playingView(['b', 'a'], { owner: 'a', deadline: 62_400 })));
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');
-    expect(wrapper.findAll('[data-test="order-name"]').map((n) => n.text())).toEqual(['Bob', 'Alice']);
-    expect(wrapper.find('[data-test="timer"]').text()).toBe('13 s');
+    expect(wrapper.findAll('[data-testid="order-name"]').map((n) => n.text())).toEqual(['Bob', 'Alice']);
+    expect(wrapper.find('[data-testid="timer"]').text()).toBe('13 s');
   });
 
   it('pressing Roll sends one command and disables the button until the Ack', async () => {
@@ -285,7 +285,7 @@ describe('App screen selection', () => {
     h.sockets.last().open();
     h.sockets.last().receive(welcome(playingView(['a', 'b'], { owner: 'a' })));
     await flushPromises();
-    const roll = wrapper.find('[data-test="RollDice"]');
+    const roll = wrapper.find('[data-testid="RollDice"]');
     await roll.trigger('click');
     expect(roll.attributes('disabled')).toBeDefined();
     await roll.trigger('click');
@@ -293,7 +293,7 @@ describe('App screen selection', () => {
 
     h.sockets.last().receive({ t: 'Ack', commandId: 'c1', outcome: 'rejected', revision: 9, error: { code: 'DEADLINE_PASSED', message: 'Too late' } } as never);
     await flushPromises();
-    expect(wrapper.find('[data-test="message"]').text()).toContain('DEADLINE_PASSED');
+    expect(wrapper.find('[data-testid="message"]').text()).toContain('DEADLINE_PASSED');
     expect(roll.attributes('disabled')).toBeUndefined();
   });
 
@@ -306,6 +306,6 @@ describe('App screen selection', () => {
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('lobby');
     expect(h.storage.getItem('game.room')).toBeNull();
-    expect(wrapper.find('[data-test="notice"]').text()).toContain('ROOM_UNAVAILABLE');
+    expect(wrapper.find('[data-testid="notice"]').text()).toContain('ROOM_UNAVAILABLE');
   });
 });

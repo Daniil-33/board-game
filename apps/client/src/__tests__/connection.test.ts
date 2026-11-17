@@ -2,7 +2,7 @@ import { PROTOCOL_VERSION } from '@game/protocol';
 import { flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeClientFrame, type ServerFrame } from '@game/protocol';
-import { RECONNECT_DELAYS_MS } from '../net/connection';
+import { RECONNECT_DELAYS_MS } from '../shared/api/index';
 import { GUEST, harness, lobbyView, playingView, room, setupView, storedSession, update, welcome, type Harness } from './helpers';
 
 const ROOM = room([['a', 'Alice'], ['b', 'Bob']]);

@@ -52,6 +52,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Client boundaries and localization lint
+        run: pnpm --filter @game/client lint
+
       - name: Typecheck
         run: pnpm build
 

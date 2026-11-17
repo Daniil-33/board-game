@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CLASSIC_40 } from '@game/game-core';
-import { BoardScene, type SceneClock } from '../board/BoardCanvas';
-import { cellRect, jailBox } from '../board/layout';
+import { BoardScene, type SceneClock } from '../widgets/board/index';
+import { cellRect, jailBox } from '../widgets/board/index';
 import { playingView, setupView } from './helpers';
 
 /** Runs every animation to its end at once. */

@@ -1,0 +1,263 @@
+{
+  "app": {
+    "board_game": "Board game"
+  },
+  "animation": {
+    "jail_attempt_failed": "{player} stays in jail: attempt {attempts} failed (interim rule)",
+    "jail_released_double": "{player} leaves jail on a double (interim rule)",
+    "jail_released": "{player} leaves jail (interim rule)"
+  },
+  "debts": {
+    "resigned": "You are out: you resigned.",
+    "bankrupt": "You are out: you went bankrupt.",
+    "eliminated": "You are out.",
+    "mortgage_step": "Tier {tier}: mortgage of {asset}, +{amount}",
+    "house_sale_step": "Tier {tier}: house sale of {asset}, +{amount}",
+    "spectator_resigned": "You are out: you resigned. Watching the game.",
+    "spectator_bankrupt": "You are out: you went bankrupt. Watching the game.",
+    "spectator": "You are out. Watching the game."
+  },
+  "view": {
+    "disconnected_reconnecting": "Disconnected: reconnecting…",
+    "inactive_player": "You are not an active player.",
+    "pending_command": "Waiting for the server…",
+    "deadline_passed": "The turn time is over."
+  },
+  "client": {
+    "invalid_invite_link": "Invalid invite link. Check the room and access code.",
+    "room_closed": "The room was closed. You are back in the lobby.",
+    "room_left": "You left the room.",
+    "room_unavailable": "The room is no longer available. You are back in the lobby.",
+    "session_expired": "Your session is no longer valid. Log in again.",
+    "return_reason": "You are back in the lobby: {message} ({code})",
+    "error": "{message} ({code})",
+    "unexpected_error": "Unexpected error",
+    "joining_invite": "Joining the invited room.",
+    "returned_to_lobby": "You returned to the lobby."
+  },
+  "resign_control": {
+    "resign": "Resign",
+    "confirm_resignation": "Confirm resignation",
+    "warning": "Resigning is permanent. You will be out and keep watching the game.",
+    "cancel": "Cancel"
+  },
+  "action_buttons": {
+    "roll_for_order": "Roll for order",
+    "roll_dice": "Roll dice",
+    "end_turn": "End turn"
+  },
+  "game": {
+    "board_unavailable": "The board could not be drawn in this browser. The game continues in the panel."
+  },
+  "game_over": {
+    "game_over": "Game over",
+    "winner": "Winner: {player}",
+    "no_winner_reported": "No winner reported.",
+    "finished_at": "Finished at: {time}",
+    "elimination_order": "Elimination order",
+    "elimination_entry": "{player}: {reason} at {time}",
+    "final_balances": "Final balances",
+    "balance_entry": "{player}: {amount}",
+    "back_to_lobby": "Back to lobby"
+  },
+  "lobby": {
+    "rooms": "Rooms",
+    "refresh": "Refresh",
+    "create_room": "Create room",
+    "optional_access_code": "Optional room access code",
+    "invite_target": "Invite to room {roomId}",
+    "retry_invite": "Retry invite",
+    "dismiss_invite": "Dismiss invite",
+    "empty_rooms": "No rooms to join yet. Create one.",
+    "access_code": "Access code",
+    "join_with_code": "Join with code",
+    "join": "Join",
+    "network_error": "The server could not be reached",
+    "unreadable_response": "Unreadable response (HTTP {status})",
+    "unexpected_response": "Unexpected error response (HTTP {status})",
+    "protocol_mismatch": "The server response does not match the protocol",
+    "invalid_access_code": "Access code must have 4–32 letters, digits, underscores or hyphens",
+    "in_play": "in play",
+    "full": "full",
+    "locked": "locked",
+    "open": "open",
+    "empty": "empty",
+    "access_code_for": "Access code for {roomId}"
+  },
+  "login": {
+    "invalid_nickname": "Enter a nickname of 1 to {maxLength} visible characters.",
+    "heading": "Play as a guest",
+    "nickname": "Nickname",
+    "enter": "Enter"
+  },
+  "room": {
+    "invite_copied": "Invite copied.",
+    "copy_unavailable": "Copy unavailable. Select and copy the link above.",
+    "connecting": "Connecting…",
+    "access_code": "Access code:",
+    "invite_link": "Invite link",
+    "copy_invite": "Copy invite",
+    "leave_room": "Leave room",
+    "host": "host",
+    "start_game": "Start game",
+    "waiting_for_host": "Waiting for the host to start the game.",
+    "waiting_for_player": "Waiting for a second player."
+  },
+  "connection": {
+    "unreadable_frame": "Unreadable message from the server: {message}",
+    "replaced": "This room is open in another tab.",
+    "version_mismatch": "This page is out of date. Reload it to continue."
+  },
+  "asset_card": {
+    "house_count": "{houses} / 4",
+    "asset_details": "Asset details",
+    "close_asset_card": "Close asset card",
+    "close": "Close",
+    "category": "Category",
+    "group": "Group",
+    "rank": "Rank",
+    "owner": "Owner",
+    "price": "Price",
+    "cell": "Cell",
+    "houses": "Houses",
+    "mortgage": "Mortgage",
+    "mortgage_terms": "mortgaged, advance {advance}, {laps} laps left",
+    "lap_waits_for": "Lap waits for",
+    "energy_formula": "Rent = Q({sumPrices} × dice sum × {holdings} / (200 × {groupSize}))",
+    "energy_example": "dice {diceSum}: {rent}",
+    "settlement": "Open rent: {amount}",
+    "builds_remaining": "Builds left this turn: {builds}",
+    "build_action": "Build a house: {cost}",
+    "sell_action": "Sell a house: +{refund}",
+    "mortgage_action": "Mortgage: +{advance}",
+    "redeem_action": "Redeem: {amount}",
+    "other_group_members": "Other group members",
+    "group_member": "{name} — {price} (cell {cell})",
+    "free": "free",
+    "nobody": "nobody",
+    "energy_settlement": "Open rent: {amount} (dice sum {diceSum})"
+  },
+  "auction_panel": {
+    "auction": "Auction",
+    "title": "Auction: {asset}",
+    "start_bid": "Start bid",
+    "step": "Step",
+    "leading_bid": "Leading bid",
+    "leader": "Leader",
+    "passed": "Passed",
+    "responder": "Responder",
+    "bid": "Bid {amount}",
+    "pass": "Pass",
+    "none": "None"
+  },
+  "board_canvas": {
+    "order_roll": "{player} rolls for order",
+    "dice_roll": "{player} rolls",
+    "custom_banner": "{player} {text}",
+    "mortgage_marker": "M"
+  },
+  "display": {
+    "start": "Start",
+    "jail": "Jail",
+    "casino": "Casino",
+    "go_to_jail": "Go to jail",
+    "chance": "Chance"
+  },
+  "debt_notices": {
+    "debt_notices": "Debt notices",
+    "debt_settlements": "Debt settlements",
+    "liquidation": "Liquidation: {player}",
+    "debt": "Owes {creditor} {debt}.",
+    "payment_summary": "Raised {raised}. Paid {payment}.",
+    "bankruptcy": "Bankruptcy: {player}",
+    "bankruptcy_summary": "Owed {creditor} {debt}: paid {paid}, written off {writtenOff}.",
+    "freed_assets": "Freed assets: {assets}",
+    "payment_unreported": "Raised {raised}. Paid not reported.",
+    "freed_assets_empty": "Freed assets: none"
+  },
+  "player_panel": {
+    "active_turn": "Active turn",
+    "out": "Out"
+  },
+  "purchase_dialog": {
+    "purchase_decision": "Purchase decision",
+    "price": "Price: {price}",
+    "balance": "Your balance: {balance}",
+    "buy": "Buy",
+    "start_auction": "Start auction",
+    "deciding": "{player} is deciding."
+  },
+  "rent_panel": {
+    "rent_due": "Rent due",
+    "pay": "Pay rent: {amount} to {owner}",
+    "sentence": "{payer} owes {owner} {amount} for {asset}.",
+    "energy_sentence": "{payer} owes {owner} {amount} for {asset} (dice sum {diceSum})."
+  },
+  "hud": {
+    "waiting": "Waiting for the server",
+    "order_roll": "Order roll",
+    "your_turn": "Your turn",
+    "turn": "Turn: {player}",
+    "connection_lost_reconnecting": "Connection lost. Reconnecting…",
+    "automatic_payment": "Ending the turn pays the open rent automatically.",
+    "turn_order": "Turn order",
+    "setup_you": "Rolling for turn order: You",
+    "setup_player": "Rolling for turn order: {player}",
+    "your_bonus_turn": "Your turn (bonus turn after a double)",
+    "player_bonus_turn": "Turn: {player} (bonus turn after a double)",
+    "rejected_command": "{code}: {message} — {reason}"
+  },
+  "turn_order": {
+    "out": "out",
+    "rolled": "rolled {roll}",
+    "jail_attempts": "in jail, {attempts} attempts used (interim rule)",
+    "tied": "tied",
+    "undecided": "order undecided"
+  },
+  "turn_timer": {
+    "paused": "paused"
+  },
+  "reasons": {
+    "house": {
+      "PHASE_NOT_ALLOWED": "Houses can be built and sold only during play.",
+      "AUCTION_IN_PROGRESS": "Not while an auction is running.",
+      "NOT_ACTIVE_PLAYER": "Only on your turn.",
+      "DECISION_PENDING": "Decide on the purchase first.",
+      "RENT_PENDING": "Pay the rent first.",
+      "NOT_A_BUILDABLE_ASSET": "Houses can be built only on monopoly assets.",
+      "NOT_OWNER": "You do not own this asset.",
+      "GROUP_INCOMPLETE": "You need the whole group to build.",
+      "GROUP_MORTGAGED": "An asset of this group is mortgaged.",
+      "MAX_HOUSES": "This asset already has 4 houses.",
+      "UNEVEN_BUILD": "Build evenly: another asset of the group has fewer houses.",
+      "BUILD_QUOTA_USED": "You have already built a house this turn.",
+      "INSUFFICIENT_FUNDS": "Not enough money to build.",
+      "NO_HOUSES": "There is no house to sell.",
+      "UNEVEN_SALE": "Sell evenly: another asset of the group has more houses."
+    },
+    "mortgage": {
+      "PHASE_NOT_ALLOWED": "Assets can be mortgaged and redeemed only during play.",
+      "AUCTION_IN_PROGRESS": "Not while an auction is running.",
+      "NOT_ACTIVE_PLAYER": "Only on your turn.",
+      "DECISION_PENDING": "Decide on the purchase first.",
+      "RENT_PENDING": "Pay the rent first.",
+      "NOT_AN_ASSET": "This cell is not an asset.",
+      "NOT_OWNER": "You do not own this asset.",
+      "ALREADY_MORTGAGED": "This asset is already mortgaged.",
+      "HAS_HOUSES": "Sell the houses on this asset first.",
+      "NOT_MORTGAGED": "This asset is not mortgaged.",
+      "INSUFFICIENT_FUNDS": "Not enough money to redeem."
+    }
+  },
+  "common": {
+    "room": "Room {roomId}",
+    "dismiss": "Dismiss",
+    "dismiss_icon": "×",
+    "players": "Players",
+    "you": "you",
+    "rent": "Rent",
+    "seconds_remaining": "{seconds} s",
+    "unreported": "–",
+    "server_message": "{code}: {message}"
+  }
+}

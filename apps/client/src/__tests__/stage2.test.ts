@@ -2,12 +2,12 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { Text } from 'pixi.js';
 import { generateBoard, seedRng } from '@game/game-core';
-import PlayerPanel from '../components/PlayerPanel.vue';
-import AssetCard from '../components/AssetCard.vue';
-import GameScreen from '../screens/GameScreen.vue';
-import { BoardScene } from '../board/BoardCanvas';
-import { cellDisplay, GROUP_COLORS } from '../board/display';
-import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../client';
+import { PlayerPanel } from '../widgets/players-panel/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { GameScreen } from '../pages/game/index';
+import { BoardScene } from '../widgets/board/index';
+import { cellDisplay, GROUP_COLORS } from '../widgets/board/index';
+import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
 import { harness, playingView, pid, storedSession, room, welcome, update } from './helpers';
 
 const board = generateBoard(seedRng(42)).board;
@@ -41,9 +41,9 @@ describe('stage 2 display', () => {
   it('refreshes balances, names and active/out marks for every participant', async () => {
     const view = playingView(['a', 'b', 'c']);
     const panel = mount(PlayerPanel, { props: { view, nameOf: id => id } });
-    expect(panel.findAll('li')).toHaveLength(3);
+    expect(panel.findAll('[data-testid="player-balance"]')).toHaveLength(3);
     await panel.setProps({ view: { ...view, balances: { a: 12340 as never, b: 45670 as never, c: 890 as never }, eliminated: [pid('b')], order: [pid('a'), pid('c')] }, nameOf: id => `New ${id}` });
-    expect(panel.findAll('li').map(x => x.text())).toEqual(['New a12340Active turn', 'New b45670Out', 'New c890']);
+    expect(panel.findAll('[data-testid="player-balance"]').map(x => x.text())).toEqual(['New a12340Active turn', 'New b45670Out', 'New c890']);
     panel.unmount();
   });
   it.each(['M1', 'logistics', 'energy'])('shows projected %s details and group peers', group => {
@@ -53,7 +53,7 @@ describe('stage 2 display', () => {
     expect(card.text()).toContain(String(cell.asset!.price));
     expect(card.text().includes('Rank')).toBe(cell.asset!.rank !== null);
     const peers = board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === group);
-    expect(card.findAll('li')).toHaveLength(peers.length);
+    expect(card.findAll('[data-testid="asset-group-member"]')).toHaveLength(peers.length);
     peers.forEach(c => { expect(card.text()).toContain(c.asset!.name); expect(card.text()).toContain(`cell ${c.index}`); expect(card.text()).toContain(String(c.asset!.price)); });
     card.unmount();
   });
@@ -70,7 +70,7 @@ describe('stage 2 display', () => {
       { type: 'BalanceChanged', payload: { playerId: 'a', balance: 98760, delta: 100, reason: 'lap-reward' } },
     ]));
     await flushPromises();
-    expect(wrapper.find('[data-test="player-balance"]').text()).toContain('98760');
+    expect(wrapper.find('[data-testid="player-balance"]').text()).toContain('98760');
     expect(finish).toBeTypeOf('function'); finish(); await flushPromises();
     wrapper.unmount(); h.client.returnToLobby();
   });
@@ -82,16 +82,16 @@ describe('stage 2 display', () => {
     const wrapper = mount(GameScreen, { global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
     await flushPromises();
     const click = async (index: number) => { (select as ((index: number) => void) | null)?.(index); await flushPromises(); };
-    await click(0); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
-    await click(1); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(true);
-    await wrapper.find('[aria-label="Close asset card"]').trigger('click'); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
-    await click(1); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
+    await click(0); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(false);
+    await click(1); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(true);
+    await wrapper.find('[data-testid="asset-close"]').trigger('click'); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(false);
+    await click(1); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await flushPromises(); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(false);
     await click(1);
     h.sockets.last().receive(update({ ...playingView(['a', 'b']), revision: 10 as never, balances: { a: 98760 as never, b: 120 as never }, owners: { [board.cells[1]!.asset!.assetId]: pid('b') } }));
-    await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="player-balance"]').text()).toContain('98760');
-    expect(wrapper.get('[data-test="asset-owner"]').text()).toBe('Bob');
-    h.client.game.view = { ...h.client.game.view!, board: generateBoard(seedRng(43)).board }; await flushPromises(); expect(wrapper.find('[data-test="asset-card"]').exists()).toBe(false);
+    await flushPromises(); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="player-balance"]').text()).toContain('98760');
+    expect(wrapper.get('[data-testid="asset-owner"]').text()).toBe('Bob');
+    h.client.game.view = { ...h.client.game.view!, board: generateBoard(seedRng(43)).board }; await flushPromises(); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(false);
     wrapper.unmount(); expect(select).toBeNull(); h.client.returnToLobby();
   });
 });

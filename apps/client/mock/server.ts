@@ -16,7 +16,7 @@ import {
 } from '@game/protocol';
 import { Value } from '@sinclair/typebox/value';
 import type { GameEvent } from '@game/game-core';
-import { ROUTES } from '../src/api/routes';
+import { ROUTES } from '../src/shared/api/index';
 import { MockGame, type MockGameOptions } from './game';
 import { BOT_DELAY_MS, LOBBY_BOT_DELAY_MS } from './script';
 

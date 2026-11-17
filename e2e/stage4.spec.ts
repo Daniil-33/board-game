@@ -11,11 +11,11 @@ test.beforeEach(() => test.skip(process.env['E2E_FIXTURES'] !== '1', 'Requires i
 async function rejectedBuild(players: Actor[], actor: Actor, assetId: string, code: string) {
   const before = structuredClone(actor.view!);
   const name = before.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!.name;
-  await expect(actor.page.locator(sel('asset-card')).getByRole('heading', { level: 2 })).toHaveText(name);
+  await expect(actor.page.locator(sel('asset-card')).locator(sel('asset-title'))).toHaveText(name);
   const count = actor.acks.length;
   await actor.page.locator(sel('build-house')).evaluate(button => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   await expect.poll(() => actor.acks.slice(count).find(a => a.error?.code === code), fast).toMatchObject({ outcome: 'rejected', revision: before.revision, error: { code } });
-  await expect(actor.page.locator(sel('message')).filter({ hasText: code })).toBeVisible();
+  await expect(actor.page.locator(`${sel('message')}[data-code="${code}"]`)).toBeVisible();
   for (const p of players) {
     expect(p.view!.revision).toBe(before.revision);
     expect(p.view!.houses).toEqual(before.houses);
@@ -168,7 +168,7 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   await expect(mover.page.locator(sel('build-house'))).toBeDisabled();
   await expect(mover.page.locator(sel('build-reason'))).toHaveText('You have already built a house this turn.');
   await rejectedBuild(players, mover, secondId, 'BUILD_QUOTA_USED');
-  await expect(mover.page.locator(sel('message')).filter({ hasText: 'BUILD_QUOTA_USED' })).toContainText('You have already built a house this turn.');
+  await expect(mover.page.locator(`${sel('message')}[data-code="BUILD_QUOTA_USED"]`)).toContainText('You have already built a house this turn.');
   await close(mover);
   const turn = mover.view!.turn!.turnId;
   await click(players, mover, 'EndTurn');
@@ -181,7 +181,7 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   await expect(mover.page.locator(sel('build-house'))).toBeDisabled();
   await expect(mover.page.locator(sel('build-reason'))).toHaveText('Build evenly: another asset of the group has fewer houses.');
   await rejectedBuild(players, mover, firstId, 'UNEVEN_BUILD');
-  await expect(mover.page.locator(sel('message')).filter({ hasText: 'UNEVEN_BUILD' })).toContainText('Build evenly');
+  await expect(mover.page.locator(`${sel('message')}[data-code="UNEVEN_BUILD"]`)).toContainText('Build evenly');
   await close(mover);
   await card(mover, secondCell);
   await expect(mover.page.locator(sel('build-house'))).toBeEnabled();

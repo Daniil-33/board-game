@@ -6,16 +6,16 @@ import {
   type PlayerBankrupt, type RentPaid, type StateView, type Timestamp,
 } from '@game/game-core';
 import { decodeClientFrame, type ClientCommandType } from '@game/protocol';
-import App from '../App.vue';
-import AssetCard from '../components/AssetCard.vue';
-import DebtNotices from '../components/DebtNotices.vue';
-import Hud from '../components/Hud.vue';
-import { BoardScene } from '../board/BoardCanvas';
-import { CLIENT_KEY, BOARD_MOUNT_KEY } from '../client';
-import { HOUSE_REASONS, houseControls } from '../game/houses';
-import { MORTGAGE_REASONS, mortgageControls, mortgageReason, mortgageTerms } from '../game/mortgages';
-import { NOTICE_LIMIT, debtNotices, eliminationText, formatTime, type DebtNotice } from '../game/debts';
-import type { ActionContext } from '../game/view';
+import { App } from '../app/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { DebtNotices } from '../widgets/debt-notices/index';
+import { Hud } from '../widgets/turn-header/index';
+import { BoardScene } from '../widgets/board/index';
+import { CLIENT_KEY, BOARD_MOUNT_KEY } from '../features/client-session/index';
+import { HOUSE_REASONS, houseControls } from '../entities/game/index';
+import { MORTGAGE_REASONS, mortgageControls, mortgageReason, mortgageTerms } from '../entities/game/index';
+import { NOTICE_LIMIT, debtNotices, eliminationText, formatTime, type DebtNotice } from '../entities/game/index';
+import type { ActionContext } from '../entities/game/index';
 import { harness, pid, playingView, room, storedSession, update, welcome } from './helpers';
 
 const nameOf = (id: string): string => ({ a: 'Alice', b: 'Bob', c: 'Carol' })[id] ?? id;
@@ -119,7 +119,7 @@ describe('mortgage controls', () => {
   it('shows GROUP_MORTGAGED on Build once a group asset is mortgaged', () => {
     const s = mortgaged(owning(), 9);
     expect(buildLegality(s, pid('a'), at(s, 6))).toBe('GROUP_MORTGAGED');
-    expect(card(project(s), 6).get('[data-test="build-reason"]').text()).toBe(HOUSE_REASONS.GROUP_MORTGAGED);
+    expect(card(project(s), 6).get('[data-testid="build-reason"]').text()).toBe(HOUSE_REASONS.GROUP_MORTGAGED);
   });
 });
 
@@ -127,12 +127,12 @@ describe('asset card: mortgage', () => {
   it('emits Mortgage and Redeem intents with the asset and nothing from a disabled control', async () => {
     const s = owning();
     const free = card(project(s), 9);
-    await free.get('[data-test="mortgage"]').trigger('click');
-    await free.get('[data-test="redeem"]').trigger('click'); // disabled: NOT_MORTGAGED
+    await free.get('[data-testid="mortgage"]').trigger('click');
+    await free.get('[data-testid="redeem"]').trigger('click'); // disabled: NOT_MORTGAGED
     expect(free.emitted('command')).toEqual([[{ type: 'Mortgage', payload: { assetId: at(s, 9) } }]]);
     const held = card(project(mortgaged(s, 9)), 9);
-    await held.get('[data-test="redeem"]').trigger('click');
-    await held.get('[data-test="mortgage"]').trigger('click'); // disabled: ALREADY_MORTGAGED
+    await held.get('[data-testid="redeem"]').trigger('click');
+    await held.get('[data-testid="mortgage"]').trigger('click'); // disabled: ALREADY_MORTGAGED
     expect(held.emitted('command')).toEqual([[{ type: 'Redeem', payload: { assetId: at(s, 9) } }]]);
   });
 
@@ -140,15 +140,15 @@ describe('asset card: mortgage', () => {
     const s = owning(); const view = project(s);
     for (const cell of [1, 9, 12]) {
       const w = card(view, cell);
-      expect(w.get('[data-test="mortgage"]').text(), `cell ${cell}`).toBe(`Mortgage: +${mortgageAdvance(priceAt(s, cell))}`);
-      expect(w.get('[data-test="redeem"]').text()).toBe(`Redeem: ${mortgageAdvance(priceAt(s, cell))}`);
-      expect(w.get('[data-test="redeem-reason"]').text()).toBe(MORTGAGE_REASONS.NOT_MORTGAGED);
-      expect(w.find('[data-test="mortgage-reason"]').exists()).toBe(false);
-      expect(w.get('[data-test="mortgage"]').attributes('disabled')).toBeUndefined();
+      expect(w.get('[data-testid="mortgage"]').text(), `cell ${cell}`).toBe(`Mortgage: +${mortgageAdvance(priceAt(s, cell))}`);
+      expect(w.get('[data-testid="redeem"]').text()).toBe(`Redeem: ${mortgageAdvance(priceAt(s, cell))}`);
+      expect(w.get('[data-testid="redeem-reason"]').text()).toBe(MORTGAGE_REASONS.NOT_MORTGAGED);
+      expect(w.find('[data-testid="mortgage-reason"]').exists()).toBe(false);
+      expect(w.get('[data-testid="mortgage"]').attributes('disabled')).toBeUndefined();
     }
-    for (const cell of [5, 11, 13]) expect(card(view, cell).find('[data-test="mortgage-controls"]').exists(), `cell ${cell}`).toBe(false);
-    expect(card(view, 9, { me: pid('b') }).find('[data-test="mortgage-controls"]').exists()).toBe(false);
-    expect(card(project(s, 'b'), 5, { me: pid('b') }).find('[data-test="mortgage-controls"]').exists()).toBe(true);
+    for (const cell of [5, 11, 13]) expect(card(view, cell).find('[data-testid="mortgage-controls"]').exists(), `cell ${cell}`).toBe(false);
+    expect(card(view, 9, { me: pid('b') }).find('[data-testid="mortgage-controls"]').exists()).toBe(false);
+    expect(card(project(s, 'b'), 5, { me: pid('b') }).find('[data-testid="mortgage-controls"]').exists()).toBe(true);
   });
 
   it('shows one disabled reason per code on the card', async () => {
@@ -166,35 +166,35 @@ describe('asset card: mortgage', () => {
     ];
     for (const [state, action, code] of states) {
       await w.setProps({ view: project(state) });
-      expect(w.get(`[data-test="${action}"]`).attributes('disabled'), code).toBeDefined();
-      expect(w.get(`[data-test="${action}-reason"]`).text()).toBe(MORTGAGE_REASONS[code]);
+      expect(w.get(`[data-testid="${action}"]`).attributes('disabled'), code).toBeDefined();
+      expect(w.get(`[data-testid="${action}-reason"]`).text()).toBe(MORTGAGE_REASONS[code]);
     }
-    expect(card(project(s), 6).get('[data-test="mortgage-reason"]').text()).toBe(MORTGAGE_REASONS.HAS_HOUSES);
-    expect(card(project(s), 9, { connected: false }).get('[data-test="mortgage-reason"]').text()).toBe('Disconnected: reconnecting…');
+    expect(card(project(s), 6).get('[data-testid="mortgage-reason"]').text()).toBe(MORTGAGE_REASONS.HAS_HOUSES);
+    expect(card(project(s), 9, { connected: false }).get('[data-testid="mortgage-reason"]').text()).toBe('Disconnected: reconnecting…');
   });
 
   it('shows projected terms, pending names and zero rent, and follows each view until the mortgage ends', async () => {
     const s = owning();
     const w = card(project(mortgaged(s, 9, { laps: 2, pending: ['b', 'c'] })), 9);
-    expect(w.get('[data-test="asset-mortgage"]').text()).toBe(`mortgaged, advance ${mortgageAdvance(priceAt(s, 9))}, 6 laps left`);
-    expect(w.get('[data-test="asset-mortgage-pending"]').text()).toBe('Bob, Carol');
-    expect(w.get('[data-test="asset-rent"]').text()).toBe('0');
-    expect(w.get('[data-test="redeem"]').text()).toBe(`Redeem: ${mortgageAdvance(priceAt(s, 9))}`);
+    expect(w.get('[data-testid="asset-mortgage"]').text()).toBe(`mortgaged, advance ${mortgageAdvance(priceAt(s, 9))}, 6 laps left`);
+    expect(w.get('[data-testid="asset-mortgage-pending"]').text()).toBe('Bob, Carol');
+    expect(w.get('[data-testid="asset-rent"]').text()).toBe('0');
+    expect(w.get('[data-testid="redeem"]').text()).toBe(`Redeem: ${mortgageAdvance(priceAt(s, 9))}`);
     await w.setProps({ view: project(mortgaged(s, 9, { laps: 7, pending: ['c'] })) });
-    expect(w.get('[data-test="asset-mortgage"]').text()).toContain('1 laps left');
-    expect(w.get('[data-test="asset-mortgage-pending"]').text()).toBe('Carol');
+    expect(w.get('[data-testid="asset-mortgage"]').text()).toContain('1 laps left');
+    expect(w.get('[data-testid="asset-mortgage-pending"]').text()).toBe('Carol');
     await w.setProps({ view: project(s) });
-    expect(w.find('[data-test="asset-mortgage"]').exists()).toBe(false);
-    expect(w.get('[data-test="asset-rent"]').text()).not.toBe('0');
+    expect(w.find('[data-testid="asset-mortgage"]').exists()).toBe(false);
+    expect(w.get('[data-testid="asset-rent"]').text()).not.toBe('0');
     // Expiry: the projection drops both the mortgage and the owner.
     const { [at(s, 9)]: _gone, ...owners } = s.owners;
     await w.setProps({ view: project({ ...s, owners }), owner: undefined });
-    expect(w.find('[data-test="asset-mortgage"]').exists()).toBe(false);
-    expect(w.find('[data-test="mortgage-controls"]').exists()).toBe(false);
-    expect(w.get('[data-test="asset-owner"]').text()).toBe('free');
+    expect(w.find('[data-testid="asset-mortgage"]').exists()).toBe(false);
+    expect(w.find('[data-testid="mortgage-controls"]').exists()).toBe(false);
+    expect(w.get('[data-testid="asset-owner"]').text()).toBe('free');
     const energy = card(project(mortgaged(s, 12)), 12);
-    expect(energy.get('[data-test="asset-rent"]').text()).toBe('0');
-    expect(energy.find('[data-test="asset-energy"]').exists()).toBe(false);
+    expect(energy.get('[data-testid="asset-rent"]').text()).toBe('0');
+    expect(energy.find('[data-testid="asset-energy"]').exists()).toBe(false);
     expect(mortgageTerms(project(s), at(s, 9))).toBeNull();
   });
 });
@@ -233,7 +233,7 @@ describe('mortgage intents', () => {
     h.client.sendCommand({ type: 'Redeem', payload: { assetId: at(s, 9) } });
     h.sockets.last().receive({ t: 'Ack', commandId: 'c3' as CommandId, outcome: 'rejected', revision: view.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'INSUFFICIENT_FUNDS' } });
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view };
-    const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-test="message"]').map(m => m.text());
+    const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-testid="message"]').map(m => m.text());
     expect(texts[0]).toContain(`HAS_HOUSES: HAS_HOUSES — ${MORTGAGE_REASONS.HAS_HOUSES}`);
     expect(texts[1]).toContain(`INSUFFICIENT_FUNDS: INSUFFICIENT_FUNDS — ${MORTGAGE_REASONS.INSUFFICIENT_FUNDS}`);
     expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
@@ -293,19 +293,19 @@ describe('debt notices', () => {
     const steps = [1, 3, 6, 9].map(i => at(view, i));
     const notices = debtNotices([liquidation({ steps: liquidation().payload.steps.map((s, i) => ({ ...s, assetId: steps[i]! })) }), rentPaid(900), bankrupt({ playerId: pid('c') }), { type: 'AssetsReleased', payload: { playerId: 'c', reason: 'bankrupt', assetIds: [at(view, 12)] } }]);
     const w = mount(DebtNotices, { props: { notices, nameOf, board: view.board } });
-    expect(w.get('[data-test="liquidation"] h4').text()).toBe('Liquidation: Alice');
-    expect(w.get('[data-test="liquidation-debt"]').text()).toBe('Owes Bob 900.');
+    expect(w.get('[data-testid="liquidation"] [data-testid="debt-notice-title"]').text()).toBe('Liquidation: Alice');
+    expect(w.get('[data-testid="liquidation-debt"]').text()).toBe('Owes Bob 900.');
     const name = (i: number) => view.board!.cells[i]!.asset!.name;
-    expect(w.findAll('[data-test="liquidation-step"]').map(s => s.text())).toEqual([
+    expect(w.findAll('[data-testid="liquidation-step"]').map(s => s.text())).toEqual([
       `Tier 1: mortgage of ${name(1)}, +200`, `Tier 2: mortgage of ${name(3)}, +150`, `Tier 3: house sale of ${name(6)}, +120`, `Tier 3: mortgage of ${name(9)}, +350`,
     ]);
-    expect(w.get('[data-test="liquidation-total"]').text()).toBe('Raised 820. Paid 900.');
-    expect(w.get('[data-test="bankruptcy"] h4').text()).toBe('Bankruptcy: Carol');
-    expect(w.get('[data-test="bankruptcy-amounts"]').text()).toBe('Owed Bob 900: paid 600, written off 300.');
-    expect(w.get('[data-test="bankruptcy-assets"]').text()).toBe(`Freed assets: ${name(12)}`);
+    expect(w.get('[data-testid="liquidation-total"]').text()).toBe('Raised 820. Paid 900.');
+    expect(w.get('[data-testid="bankruptcy"] [data-testid="debt-notice-title"]').text()).toBe('Bankruptcy: Carol');
+    expect(w.get('[data-testid="bankruptcy-amounts"]').text()).toBe('Owed Bob 900: paid 600, written off 300.');
+    expect(w.get('[data-testid="bankruptcy-assets"]').text()).toBe(`Freed assets: ${name(12)}`);
     const empty = mount(DebtNotices, { props: { notices: debtNotices([bankrupt()]), nameOf } });
-    expect(empty.get('[data-test="bankruptcy-assets"]').text()).toBe('Freed assets: none');
-    expect(mount(DebtNotices, { props: { notices: [], nameOf } }).find('[data-test="debt-notices"]').exists()).toBe(false);
+    expect(empty.get('[data-testid="bankruptcy-assets"]').text()).toBe('Freed assets: none');
+    expect(mount(DebtNotices, { props: { notices: [], nameOf } }).find('[data-testid="debt-notices"]').exists()).toBe(false);
   });
 });
 
@@ -343,8 +343,8 @@ describe('debt notices in the room session', () => {
     h.sockets.last().receive(update(finished, [bankrupt(), releasedEvent(), { type: 'GameEnded', payload: { winner: 'b' } }]));
     await flushPromises(); finish(); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('finished');
-    expect(wrapper.get('[data-test="bankruptcy-amounts"]').text()).toBe('Owed Bob 900: paid 600, written off 300.');
-    expect(wrapper.get('[data-test="spectator"]').text()).toBe('You are out: you went bankrupt.');
+    expect(wrapper.get('[data-testid="bankruptcy-amounts"]').text()).toBe('Owed Bob 900: paid 600, written off 300.');
+    expect(wrapper.get('[data-testid="spectator"]').text()).toBe('You are out: you went bankrupt.');
     wrapper.unmount(); h.client.returnToLobby();
   });
 });
@@ -363,9 +363,9 @@ describe('elimination and game over', () => {
     for (const reason of ['resigned', 'bankrupt'] as const) {
       const view = project({ ...s, turn: { ...s.turn!, playerId: pid('b') }, order: [pid('b'), pid('c')], eliminated: [pid('a')], eliminations: [{ playerId: pid('a'), reason, at: 5 as Timestamp, creditorId: reason === 'bankrupt' ? pid('b') : null }] });
       const w = mount(Hud, { props: { ...base, me: pid('a'), view } });
-      expect(w.get('[data-test="spectator"]').text()).toBe(`${eliminationText(view, 'a')} Watching the game.`);
-      expect(w.get('[data-test="spectator"]').text()).toContain(reason === 'bankrupt' ? 'went bankrupt' : 'resigned');
-      for (const type of ['RollDice', 'EndTurn', 'Resign']) expect(w.get(`[data-test="${type}"]`).attributes('disabled'), type).toBeDefined();
+      expect(w.get('[data-testid="spectator"]').text()).toBe(`${eliminationText(view, 'a')} Watching the game.`);
+      expect(w.get('[data-testid="spectator"]').text()).toContain(reason === 'bankrupt' ? 'went bankrupt' : 'resigned');
+      for (const type of ['RollDice', 'EndTurn', 'Resign']) expect(w.get(`[data-testid="${type}"]`).attributes('disabled'), type).toBeDefined();
       expect(mortgageControls(ctx(view), at(s, 9))?.mortgage.enabled ?? false).toBe(false);
     }
   });
@@ -380,14 +380,14 @@ describe('elimination and game over', () => {
       if (remount) { wrapper.unmount(); }
       const w = remount ? mount(App, provide(h)) : wrapper; await flushPromises();
       expect(w.attributes('data-screen')).toBe('finished');
-      expect(w.get('[data-test="winner"]').text()).toBe('Winner: Bob');
-      expect(w.get('[data-test="finished-at"]').text()).toBe(`Finished at: ${formatTime(61_000)}`);
-      expect(w.findAll('[data-test="eliminations"] li').map(li => li.text())).toEqual([`Carol: resigned at ${formatTime(1_000)}`, `Alice: bankrupt at ${formatTime(61_000)}`]);
-      expect(w.findAll('[data-test="final-balances"] li').map(li => li.text())).toEqual(['Alice: 0', 'Bob: 4200', 'Carol: 0']);
-      expect(w.get('[data-test="spectator"]').text()).toBe('You are out: you went bankrupt.');
-      for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-test="${sel}"]`).exists(), sel).toBe(false);
-      expect(w.find('[data-test="return-lobby"]').exists()).toBe(true);
-      expect(w.find('[data-test="debt-notices"]').exists()).toBe(false);
+      expect(w.get('[data-testid="winner"]').text()).toBe('Winner: Bob');
+      expect(w.get('[data-testid="finished-at"]').text()).toBe(`Finished at: ${formatTime(61_000)}`);
+      expect(w.findAll('[data-testid="elimination-row"]').map(li => li.text())).toEqual([`Carol: resigned at ${formatTime(1_000)}`, `Alice: bankrupt at ${formatTime(61_000)}`]);
+      expect(w.findAll('[data-testid="final-balance-row"]').map(li => li.text())).toEqual(['Alice: 0', 'Bob: 4200', 'Carol: 0']);
+      expect(w.get('[data-testid="spectator"]').text()).toBe('You are out: you went bankrupt.');
+      for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-testid="${sel}"]`).exists(), sel).toBe(false);
+      expect(w.find('[data-testid="return-lobby"]').exists()).toBe(true);
+      expect(w.find('[data-testid="debt-notices"]').exists()).toBe(false);
       w.unmount(); h.client.returnToLobby();
     }
     expect(formatTime(0)).toBe('1970-01-01 00:00:00 UTC');

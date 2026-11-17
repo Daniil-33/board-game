@@ -9,7 +9,7 @@
  */
 import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
-import { ROUTES } from '../src/api/routes';
+import { ROUTES } from '../src/shared/api/index';
 import { MockServer, type MockPeer } from './server';
 
 const port = Number(process.env.MOCK_PORT ?? 8787);

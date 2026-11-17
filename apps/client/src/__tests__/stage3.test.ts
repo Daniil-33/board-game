@@ -1,12 +1,12 @@
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { Q, timestamp, nextBidAmount, type StateView } from '@game/game-core';
-import PurchaseDialog from '../components/PurchaseDialog.vue';
-import AuctionPanel from '../components/AuctionPanel.vue';
-import TurnTimer from '../components/TurnTimer.vue';
-import AssetCard from '../components/AssetCard.vue';
-import { BoardScene, TOKEN_COLORS } from '../board/BoardCanvas';
-import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../game/view';
+import { PurchaseDialog } from '../widgets/purchase-card/index';
+import { AuctionPanel } from '../widgets/auction-panel/index';
+import { TurnTimer } from '../widgets/turn-header/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { BoardScene, TOKEN_COLORS } from '../widgets/board/index';
+import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../entities/game/index';
 import { playingView, pid, harness, storedSession, room, welcome, update } from './helpers';
 
 function purchase(): StateView {
@@ -32,30 +32,30 @@ describe('purchase and auction projection', () => {
   it('purchase affordability, viewer roles and emitted intent', async () => {
     const view = purchase(); const price = view.board!.cells[view.purchase!.cell]!.asset!.price;
     const w = mount(PurchaseDialog, { props: props({ ...view, balances: { ...view.balances, a: price } }) });
-    expect(w.get('[data-test="buy"]').attributes('disabled')).toBeUndefined();
-    await w.get('[data-test="buy"]').trigger('click'); expect(w.emitted('command')).toEqual([['BuyAsset']]);
+    expect(w.get('[data-testid="buy"]').attributes('disabled')).toBeUndefined();
+    await w.get('[data-testid="buy"]').trigger('click'); expect(w.emitted('command')).toEqual([['BuyAsset']]);
     await w.setProps({ view: { ...view, balances: { a: Q(price - 10) } } });
-    expect(w.get('[data-test="buy"]').attributes('disabled')).toBeDefined();
-    expect(w.get('[data-test="start-auction"]').attributes('disabled')).toBeUndefined();
+    expect(w.get('[data-testid="buy"]').attributes('disabled')).toBeDefined();
+    expect(w.get('[data-testid="start-auction"]').attributes('disabled')).toBeUndefined();
     for (const extra of [{ connected: false }, { now: 100_000 }, { pending: ['StartAuction'] }] satisfies Partial<ActionContext>[]) {
       const context = { ...props(view), ...extra };
       expect(canIssue(context, 'StartAuction')).toBe(false);
     }
-    await w.setProps({ me: pid('b') }); expect(w.find('button').exists()).toBe(false); expect(w.text()).toContain('Player a is deciding');
-    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('button').exists()).toBe(false);
+    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false); expect(w.text()).toContain('Player a is deciding');
+    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
   });
   it('auction roles, projected amounts, deadlines and restored leader', async () => {
     const view = auction(); const a = view.auction!;
     const w = mount(AuctionPanel, { props: props(view) });
-    expect(w.get('[data-test="bid"]').text()).toBe(`Bid ${a.startBid}`);
-    await w.get('[data-test="pass"]').trigger('click'); expect(w.emitted('command')).toEqual([['PassAuction']]);
+    expect(w.get('[data-testid="bid"]').text()).toBe(`Bid ${a.startBid}`);
+    await w.get('[data-testid="pass"]').trigger('click'); expect(w.emitted('command')).toEqual([['PassAuction']]);
     const raised = { ...view, auction: { ...a, leader: pid('b'), leadingBid: Q(a.startBid + a.step), passed: [pid('c')], responseId: 'r2', responseDeadline: timestamp(52_400) } };
     await w.setProps({ view: raised }); expect(w.text()).toContain('Player b'); expect(w.text()).toContain('Player c');
-    expect(w.get('[data-test="bid"]').text()).toBe(`Bid ${nextBidAmount(raised.auction)}`); expect(w.get('[data-test="auction-timer"]').text()).toBe('3 s');
-    await w.setProps({ view: { ...raised, balances: { a: Q(0) } } }); expect(w.get('[data-test="bid"]').attributes('disabled')).toBeDefined();
-    await w.setProps({ now: 53_000 }); expect(w.get('[data-test="auction-timer"]').text()).toBe('0 s'); expect(w.get('[data-test="pass"]').attributes('disabled')).toBeDefined(); expect(w.find('[data-test="auction"]').exists()).toBe(true);
-    await w.setProps({ me: pid('b') }); expect(w.find('button').exists()).toBe(false);
-    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('button').exists()).toBe(false);
+    expect(w.get('[data-testid="bid"]').text()).toBe(`Bid ${nextBidAmount(raised.auction)}`); expect(w.get('[data-testid="auction-timer"]').text()).toBe('3 s');
+    await w.setProps({ view: { ...raised, balances: { a: Q(0) } } }); expect(w.get('[data-testid="bid"]').attributes('disabled')).toBeDefined();
+    await w.setProps({ now: 53_000 }); expect(w.get('[data-testid="auction-timer"]').text()).toBe('0 s'); expect(w.get('[data-testid="pass"]').attributes('disabled')).toBeDefined(); expect(w.find('[data-testid="auction"]').exists()).toBe(true);
+    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
+    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
     for (const extra of [{ connected: false }, { now: 60_000 }, { pending: ['Bid', 'PassAuction'] }] satisfies Partial<ActionContext>[]) {
       expect(canIssue({ ...props(view), ...extra }, 'Bid')).toBe(false);
       expect(canIssue({ ...props(view), ...extra }, 'PassAuction')).toBe(false);
@@ -73,7 +73,7 @@ describe('purchase and auction projection', () => {
     scene.refreshOwnership({ ...v, owners: { [p.assetId]: pid('b') } });
     expect(scene.ownership.children[0]!.tint).toBe(TOKEN_COLORS[1]);
     expect(scene.ownership.children.map(c => c.label)).toEqual([`owner-${p.cell}-b`]); expect(scene.cells.children[0]).toBe(first);
-    await w.setProps({ owner: 'Player b' }); expect(w.get('[data-test="asset-owner"]').text()).toBe('Player b'); w.unmount();
+    await w.setProps({ owner: 'Player b' }); expect(w.get('[data-testid="asset-owner"]').text()).toBe('Player b'); w.unmount();
   });
   it('refreshes ownership immediately during movement and on Welcome', async () => {
     const h = harness({ stored: storedSession(room([['a','Alice'],['b','Bob']])) });

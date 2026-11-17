@@ -1,8 +1,8 @@
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { cellRect } from '../apps/client/src/board/layout';
-import { BOARD_SIZE, TOKEN_COLORS } from '../apps/client/src/board/BoardCanvas';
+import { cellRect } from '../apps/client/src/widgets/board/index';
+import { BOARD_SIZE, TOKEN_COLORS } from '../apps/client/src/widgets/board/index';
 import { test, expect, sel, createRoom, join, start, setup, active, sendRaw, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
 
@@ -173,7 +173,7 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   const beforeReload = structuredClone(reloaded.view!);
   const welcomes = reloaded.welcomes.length;
   await reloaded.page.reload();
-  await expect(reloaded.page.locator('[data-screen="game"]')).toBeVisible();
+  await expect(reloaded.page.locator(sel('screen-game'))).toBeVisible();
   await expect.poll(() => reloaded.welcomes.length).toBeGreaterThan(welcomes);
   expect(reloaded.view!.revision).toBe(beforeReload.revision);
   expect(reloaded.view!.auction).toEqual(beforeReload.auction);
@@ -363,8 +363,9 @@ async function expectBalances(players: Actor[], balances: Record<string, number>
   for (const p of players) {
     await expect.poll(() => p.view?.balances).toEqual(balances);
     for (const [index, player] of players.entries()) {
-      const row = p.page.locator(sel('player-balance')).filter({ has: p.page.getByText(`Player ${index + 1}`, { exact: true }) });
-      await expect(row.locator('span').first()).toHaveText(String(balances[player.id]));
+      const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);
+      await expect(row.locator(sel('player-balance-name'))).toHaveText(`Player ${index + 1}`);
+      await expect(row.locator(sel('player-balance-value'))).toHaveText(String(balances[player.id]));
     }
   }
 }
@@ -379,20 +380,21 @@ async function expectOwner(players: Actor[], cell: number, owner: Actor | null):
       const pixel = await markerPixel(p, cell);
       return color === null ? !TOKEN_COLORS.includes(pixel as never) : pixel === color;
     }).toBe(true);
-    const canvas = p.page.locator(sel('board')).locator('canvas');
+    const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
     const box = (await canvas.boundingBox())!;
     const rect = cellRect(cell, box.width);
     await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
     const card = p.page.locator(sel('asset-card'));
-    await expect(card.getByRole('heading', { level: 2 })).toHaveText(assetAt(p, cell).name);
+    await expect(card.locator(sel('asset-title'))).toHaveText(assetAt(p, cell).name);
     await expect(card.locator(sel('asset-owner'))).toHaveText(owner === null ? 'free' : `Player ${players.indexOf(owner) + 1}`);
-    await p.page.getByRole('button', { name: 'Close asset card' }).click();
+    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+  await p.page.locator(sel('asset-close')).click();
   }
 }
 
 /** RGB of the canvas pixel at the centre of the owner marker of `cell`, read from a screenshot. */
 async function markerPixel(p: Actor, cell: number): Promise<number> {
-  const canvas = p.page.locator(sel('board')).locator('canvas');
+  const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
   const box = (await canvas.boundingBox())!;
   const r = cellRect(cell, BOARD_SIZE);
   // BoardScene draws the 10x10 marker 14 units in from the cell's bottom-right corner.

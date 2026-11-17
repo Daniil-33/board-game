@@ -2,10 +2,10 @@ import { PROTOCOL_VERSION } from '@game/protocol';
 import { CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward } from '@game/game-core';
 import type { PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientFrame, RoomSummary, ServerFrame } from '@game/protocol';
-import type { FetchLike } from '../api/lobby';
-import { createClient, type Board, type BoardMount, type Client } from '../client';
-import type { AnimationStep } from '../game/animation';
-import type { SocketFactory, SocketHandlers } from '../net/socket';
+import type { FetchLike } from '../shared/api/index';
+import { createClient, type Board, type BoardMount, type Client } from '../features/client-session/index';
+import type { AnimationStep } from '../entities/game/index';
+import type { SocketFactory, SocketHandlers } from '../shared/api/index';
 
 export const pid = (id: string): PlayerId => id as PlayerId;
 const rev = (n: number): Revision => n as Revision;

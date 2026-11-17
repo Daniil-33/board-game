@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GUEST_STORAGE_KEY, ROOM_STORAGE_KEY, createSessionStore } from '../store/session';
+import { GUEST_STORAGE_KEY, ROOM_STORAGE_KEY, createSessionStore } from '../entities/session/index';
 import { GUEST, fakeStorage, room, storedSession } from './helpers';
 
 describe('session store', () => {

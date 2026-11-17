@@ -8,25 +8,33 @@
     "mock": "vite-node mock/main.ts",
     "build:bundle": "vite build",
     "typecheck": "vue-tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint src && node scripts/check-lint-contracts.mjs"
   },
   "dependencies": {
     "@game/game-core": "workspace:*",
     "@game/protocol": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "pixi.js": "^8.6.0",
-    "vue": "^3.5.0"
+    "vue": "^3.5.0",
+    "vue-i18n": "11.1.12"
   },
   "devDependencies": {
+    "@intlify/eslint-plugin-vue-i18n": "4.5.1",
+    "@intlify/unplugin-vue-i18n": "11.2.8",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.5.0",
     "@vitejs/plugin-vue": "^5.2.0",
     "@vue/test-utils": "^2.4.0",
+    "eslint": "9.39.1",
+    "eslint-plugin-boundaries": "5.1.0",
     "happy-dom": "^15.11.0",
     "typescript": "^5.5.0",
+    "typescript-eslint": "8.46.1",
     "vite": "^5.4.0",
     "vite-node": "^2.1.0",
     "vitest": "^2.0.0",
+    "vue-eslint-parser": "10.2.0",
     "vue-tsc": "^2.2.0",
     "ws": "^8.18.0"
   }
