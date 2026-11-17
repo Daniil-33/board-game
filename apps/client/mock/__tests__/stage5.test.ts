@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { Value } from '@sinclair/typebox/value';
-import { mortgageAdvance, type AssetId, type GameEvent, type StateView } from '@game/game-core';
+import { mortgageAdvance, type AssetId, type GameEvent, type PlayerId, type StateView } from '@game/game-core';
 import { PROTOCOL_VERSION, GuestLoginResponseSchema, decodeServerFrame, type AckFrame, type ClientFrame, type ServerFrame } from '@game/protocol';
 import { debtNotices } from '../../src/game/debts';
 import { MockServer } from '../server';
@@ -73,7 +73,7 @@ describe('mock stage 5 scenario', () => {
       if (g.view().setup!.playerId === g.guestId) expect(g.send({ type: 'RollForOrder', payload: null }).outcome).toBe('accepted');
       else g.timers.advance(BOT_DELAY_MS);
     }
-    const [me, ada, ben] = g.view().order!;
+    const [me, ada, ben] = g.view().order! as readonly [PlayerId, PlayerId, PlayerId];
     expect(me).toBe(g.guestId);
     expect(g.view().players.map((p) => p.id)).toEqual([me, ada, ben]);
     // Seeded: the creator's energy 12 is mortgaged with the whole term ahead, Ada's logistics 35 is about to expire.
@@ -81,12 +81,26 @@ describe('mock stage 5 scenario', () => {
     expect(g.view().mortgages[g.assetAt(35)]).toMatchObject({ remainingLaps: 1 });
     expect(g.view().rentQuotes[g.assetAt(12)]).toEqual({ kind: 'fixed', amount: 0 });
 
-    // Round 1: nothing due for the creator and Ada; Ben owes Ada 2870 and liquidates in every tier.
+    // Round 1: the creator mortgages M1's cell 1 and redeems energy 12; an illegal mortgage is rejected.
+    const advance = (i: number): number => mortgageAdvance(g.view().board!.cells[i]!.asset!.price);
+    expect(g.send({ type: 'Mortgage', payload: { assetId: g.assetAt(12) } })).toMatchObject({ outcome: 'rejected', error: { code: 'ALREADY_MORTGAGED' } });
+    let mark = g.frames.length;
+    expect(g.send({ type: 'Mortgage', payload: { assetId: g.assetAt(1) } }).outcome).toBe('accepted');
+    expect(g.eventsSince(mark).find((e) => e.type === 'AssetMortgaged')!.payload).toMatchObject({ playerId: me, assetId: g.assetAt(1), advance: advance(1), auto: false });
+    expect(g.view().mortgages[g.assetAt(1)]).toMatchObject({ remainingLaps: 8, pending: [me, ada, ben] });
+    expect(g.view().balances[me]).toBe(1000 + advance(1));
+    mark = g.frames.length;
+    expect(g.send({ type: 'Redeem', payload: { assetId: g.assetAt(12) } }).outcome).toBe('accepted');
+    expect(g.eventsSince(mark).find((e) => e.type === 'AssetRedeemed')!.payload).toMatchObject({ assetId: g.assetAt(12), amount: advance(12) });
+    expect(g.view().mortgages[g.assetAt(12)]).toBeUndefined();
+    expect(g.view().balances[me]).toBe(1000 + advance(1) - advance(12));
+
+    // Nothing due for the creator and Ada; Ben owes Ada 2870 and liquidates in every tier.
     expect(g.send({ type: 'RollDice', payload: null }).outcome).toBe('accepted');
     expect(g.view().rent).toBeNull();
     expect(g.send({ type: 'EndTurn', payload: null }).outcome).toBe('accepted');
-    expect(g.view().mortgages[g.assetAt(12)]!.pending).toEqual([ada, ben]);
-    let mark = g.frames.length;
+    expect(g.view().mortgages[g.assetAt(1)]!.pending).toEqual([ada, ben]);
+    mark = g.frames.length;
     g.timers.advance(BOT_DELAY_MS * 4);
     const round = g.eventsSince(mark);
     const [liquidation] = debtNotices(round);
@@ -96,7 +110,7 @@ describe('mock stage 5 scenario', () => {
     expect(round.find((e) => e.type === 'MortgageExpired')!.payload).toMatchObject({ playerId: ada, assetId: g.assetAt(35) });
     expect(g.view().mortgages[g.assetAt(35)]).toBeUndefined();
     expect(g.view().owners[g.assetAt(35)]).toBeUndefined();
-    expect(g.view().mortgages[g.assetAt(12)]).toMatchObject({ remainingLaps: 7, pending: [me, ada, ben] });
+    expect(g.view().mortgages[g.assetAt(1)]).toMatchObject({ remainingLaps: 7, pending: [me, ada, ben] });
     expect(g.view().turn!.playerId).toBe(me);
 
     // Round 2: the creator lands on Ada's 29 and goes bankrupt, then keeps receiving the game.
@@ -105,7 +119,7 @@ describe('mock stage 5 scenario', () => {
     mark = g.frames.length;
     expect(g.send({ type: 'EndTurn', payload: null }).outcome).toBe('accepted');
     const [bankruptcy] = debtNotices(g.eventsSince(mark));
-    expect(bankruptcy).toMatchObject({ kind: 'bankruptcy', playerId: me, creditorId: ada, debt: 2870, assetIds: [g.assetAt(1), g.assetAt(3), g.assetAt(12)] });
+    expect(bankruptcy).toMatchObject({ kind: 'bankruptcy', playerId: me, creditorId: ada, debt: 2870, paid: 1000 + advance(1) - advance(12), assetIds: [g.assetAt(1), g.assetAt(3), g.assetAt(12)] });
     expect(g.view().eliminations).toMatchObject([{ playerId: me, reason: 'bankrupt', creditorId: ada }]);
     expect(g.view().phase).toBe('playing');
     expect(g.send({ type: 'RollDice', payload: null }).outcome).toBe('rejected');

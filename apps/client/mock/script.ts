@@ -86,7 +86,7 @@ export const STAGE5_SEED: readonly {
 ];
 
 export const STAGE5_TURN_DICE: readonly (readonly [number, number])[] = [
-  [3, 4], // creator 15 -> 22: nothing due; mortgage or redeem now
+  [3, 4], // creator 15 -> 22: nothing due; mortgage M1 or redeem 12 before or after rolling
   [3, 4], // Ada 0 -> 7: nothing due
   [4, 5], // Ben 20 -> 29: Ada's rent 2870, liquidation in all tiers; the lap ends and Ada's mortgage expires
   [2, 5], // creator 22 -> 29: Ada's rent 2870 exceeds everything the creator has: bankrupt, watching

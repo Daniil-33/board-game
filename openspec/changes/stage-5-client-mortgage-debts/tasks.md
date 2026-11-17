@@ -2,9 +2,9 @@
 
 ## 1. Mortgage presentation and commands
 
-- [ ] 1.1 After Team Lead proposal approval, consume the server task's protocol v5 without editing protocol files; extend existing asset intent plumbing for Mortgage/Redeem (client/connection: Intents only). Verify both command payloads and turn targets through protocol decoders, rejected Ack display, unchanged state after accepted Ack and unchanged pending resend frames.
+- [x] 1.1 After Team Lead proposal approval, consume the server task's protocol v5 without editing protocol files; extend existing asset intent plumbing for Mortgage/Redeem (client/connection: Intents only). Verify both command payloads and turn targets through protocol decoders, rejected Ack display, unchanged state after accepted Ack and unchanged pending resend frames.
 - [x] 1.2 Add game/mortgages.ts with exhaustive reason texts, shared-helper labels/legality and existing connection guards (client/game-screen: Mortgage controls). Verify all MortgageErrorCode messages, core-state/projected-view parity and disconnected/pending/deadline cases with focused tests; run client typecheck.
-- [ ] 1.3 Extend AssetCard for mortgage actions, projected terms, pending player names and zero rent (client/game-screen: Mortgage controls, Projected mortgage terms, Asset inspection). Verify component tests for all asset kinds, own/other ownership, amounts, term refresh/removal, every disabled reason and open-rent Mortgage/Sell versus Redeem/Build; run client typecheck.
+- [x] 1.3 Extend AssetCard for mortgage actions, projected terms, pending player names and zero rent (client/game-screen: Mortgage controls, Projected mortgage terms, Asset inspection). Verify component tests for all asset kinds, own/other ownership, amounts, term refresh/removal, every disabled reason and open-rent Mortgage/Sell versus Redeem/Build; run client typecheck.
 
 ## 2. Debt notices
 
@@ -20,9 +20,9 @@
 
 ## 4. Mock and acceptance evidence
 
-- [ ] 4.1 Extend existing dev mock scripts/builders for mortgage, redeem, expiry, liquidation, bankruptcy and finish (all new client/game-screen sections). Verify scripted socket tests through protocol decoders and document mock invocation in existing client documentation or script comments; no literal protocol version.
-- [ ] 4.2 Run the mock and capture screenshots for the required states to /srv/agents/evidence/TASK-s5-client/ without committing evidence. Verify screenshots demonstrate terms, notices, eliminated viewing and final result after reload.
-- [ ] 4.3 Rebase after TASK-s5-server merges; run pnpm build, pnpm test, pnpm --filter @game/client build:bundle, openspec validate --all --strict and git diff --check over the committed base..HEAD range. Compare final diff against handoff criteria 1-11 and record concrete evidence with agentctl.
+- [x] 4.1 Extend existing dev mock scripts/builders for mortgage, redeem, expiry, liquidation, bankruptcy and finish (all new client/game-screen sections). Verify scripted socket tests through protocol decoders and document mock invocation in existing client documentation or script comments; no literal protocol version.
+- [x] 4.2 Run the mock and capture screenshots for the required states to /srv/agents/evidence/TASK-s5-client/ without committing evidence. Verify screenshots demonstrate terms, notices, eliminated viewing and final result after reload.
+- [x] 4.3 Rebase after TASK-s5-server merges; run pnpm build, pnpm test, pnpm --filter @game/client build:bundle, openspec validate --all --strict and git diff --check over the committed base..HEAD range. Compare final diff against handoff criteria 1-11 and record concrete evidence with agentctl.
 
 ## Workflow follow-up
 

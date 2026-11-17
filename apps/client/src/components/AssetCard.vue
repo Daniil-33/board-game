@@ -4,7 +4,7 @@ import { energyRentFor, type BoardCell, type GeneratedBoard, type PlayerId, type
 import type { ClientCommandType } from '@game/protocol';
 import { houseControls } from '../game/houses';
 import { mortgageControls, mortgageTerms } from '../game/mortgages';
-import type { Intent } from '../game/view';
+import type { AssetCommandType, Intent } from '../game/view';
 const props = defineProps<{
   cell: BoardCell; board: GeneratedBoard; owner?: string | undefined;
   /** The current server view; houses, quote and controls follow it. */
@@ -32,7 +32,7 @@ const mortgage = computed(() => (assetId.value === undefined || actionContext.va
 const terms = computed(() => mortgageTerms(props.view, assetId.value));
 const pendingNames = computed(() => terms.value?.pending.map(id => props.nameOf?.(id) ?? id).join(', ') ?? '');
 const buildsLeft = computed(() => (props.me != null && props.view?.turn?.playerId === props.me ? props.view.turn.quotas.builds : null));
-function send(type: 'BuildHouse' | 'SellHouse'): void {
+function send(type: AssetCommandType): void {
   if (assetId.value !== undefined) emit('command', { type, payload: { assetId: assetId.value } });
 }
 function keydown(event: KeyboardEvent): void { if (event.key === 'Escape') emit('close'); }
@@ -75,11 +75,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
     </div>
     <div v-if="mortgage" data-test="mortgage-controls">
       <div class="house-control">
-        <button data-test="mortgage" :disabled="!mortgage.mortgage.enabled">Mortgage: +{{ mortgage.mortgage.advance }}</button>
+        <button data-test="mortgage" :disabled="!mortgage.mortgage.enabled" @click="send('Mortgage')">Mortgage: +{{ mortgage.mortgage.advance }}</button>
         <span v-if="mortgage.mortgage.reason" class="reason" data-test="mortgage-reason">{{ mortgage.mortgage.reason }}</span>
       </div>
       <div class="house-control">
-        <button data-test="redeem" :disabled="!mortgage.redeem.enabled">Redeem: {{ mortgage.redeem.amount }}</button>
+        <button data-test="redeem" :disabled="!mortgage.redeem.enabled" @click="send('Redeem')">Redeem: {{ mortgage.redeem.amount }}</button>
         <span v-if="mortgage.redeem.reason" class="reason" data-test="redeem-reason">{{ mortgage.redeem.reason }}</span>
       </div>
     </div>

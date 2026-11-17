@@ -2,10 +2,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import {
   buildLegality, mortgageAdvance, mortgageLegality, projectState, redeemLegality, saleLegality, seedRng,
-  type AssetId, type AssetsReleased, type GameState, type LiquidationApplied, type Money, type MortgageErrorCode,
+  type AssetId, type AssetsReleased, type CommandId, type GameState, type LiquidationApplied, type Money, type MortgageErrorCode,
   type PlayerBankrupt, type RentPaid, type StateView, type Timestamp,
 } from '@game/game-core';
-import type { ClientCommandType } from '@game/protocol';
+import { decodeClientFrame, type ClientCommandType } from '@game/protocol';
 import App from '../App.vue';
 import AssetCard from '../components/AssetCard.vue';
 import DebtNotices from '../components/DebtNotices.vue';
@@ -101,7 +101,7 @@ describe('mortgage controls', () => {
     expect(stored.redeem).toMatchObject({ enabled: true, amount: 370 });
     const view = project(s);
     expect(mortgageControls(ctx(view, { connected: false }), at(s, 9))!.mortgage).toMatchObject({ enabled: false, code: null, reason: 'Disconnected: reconnecting…' });
-    expect(mortgageControls(ctx(view, { pending: ['Mortgage'] as unknown as ClientCommandType[] }), at(s, 9))!.mortgage.reason).toBe('Waiting for the server…');
+    expect(mortgageControls(ctx(view, { pending: ['Mortgage'] }), at(s, 9))!.mortgage.reason).toBe('Waiting for the server…');
     expect(mortgageControls(ctx(view, { now: 100_000 }), at(s, 9))!.mortgage.reason).toBe('The turn time is over.');
     expect(mortgageControls(ctx(view, { pending: ['BuildHouse'] }), at(s, 9))!.mortgage.enabled).toBe(true);
   });
@@ -124,6 +124,18 @@ describe('mortgage controls', () => {
 });
 
 describe('asset card: mortgage', () => {
+  it('emits Mortgage and Redeem intents with the asset and nothing from a disabled control', async () => {
+    const s = owning();
+    const free = card(project(s), 9);
+    await free.get('[data-test="mortgage"]').trigger('click');
+    await free.get('[data-test="redeem"]').trigger('click'); // disabled: NOT_MORTGAGED
+    expect(free.emitted('command')).toEqual([[{ type: 'Mortgage', payload: { assetId: at(s, 9) } }]]);
+    const held = card(project(mortgaged(s, 9)), 9);
+    await held.get('[data-test="redeem"]').trigger('click');
+    await held.get('[data-test="mortgage"]').trigger('click'); // disabled: ALREADY_MORTGAGED
+    expect(held.emitted('command')).toEqual([[{ type: 'Redeem', payload: { assetId: at(s, 9) } }]]);
+  });
+
   it('shows Mortgage and Redeem with amounts on every kind of own asset and none on another player\'s', () => {
     const s = owning(); const view = project(s);
     for (const cell of [1, 9, 12]) {
@@ -184,6 +196,48 @@ describe('asset card: mortgage', () => {
     expect(energy.get('[data-test="asset-rent"]').text()).toBe('0');
     expect(energy.find('[data-test="asset-energy"]').exists()).toBe(false);
     expect(mortgageTerms(project(s), at(s, 9))).toBeNull();
+  });
+});
+
+describe('mortgage intents', () => {
+  it('sends Mortgage and Redeem with the asset to the projected turn through the protocol decoder, once while pending', () => {
+    const h = harness({ stored: storedSession(THREE) });
+    h.client.start(); h.sockets.last().open();
+    const s = mortgaged(owning(), 3); const view = project(s); h.sockets.last().receive(welcome(view));
+    h.client.sendCommand({ type: 'Mortgage', payload: { assetId: at(s, 9) } });
+    h.client.sendCommand({ type: 'Redeem', payload: { assetId: at(s, 3) } });
+    const target = { kind: 'target', target: { kind: 'turn', id: view.turn!.turnId } };
+    expect(h.sockets.last().sent.slice(-2)).toEqual([
+      { t: 'Command', commandId: 'c1', type: 'Mortgage', expected: target, payload: { assetId: at(s, 9) } },
+      { t: 'Command', commandId: 'c2', type: 'Redeem', expected: target, payload: { assetId: at(s, 3) } },
+    ]);
+    for (const frame of h.sockets.last().sent.slice(-2)) expect(decodeClientFrame(JSON.stringify(frame)).ok).toBe(true);
+    const sent = h.sockets.last().sent.length;
+    h.client.sendCommand({ type: 'Mortgage', payload: { assetId: at(s, 1) } }); // Mortgage still pending
+    expect(h.sockets.last().sent).toHaveLength(sent);
+    expect(mortgageControls(ctx(view, { pending: h.client.game.pending.map(f => f.type) }), at(s, 1))!.mortgage.reason).toBe('Waiting for the server…');
+    h.client.returnToLobby();
+  });
+
+  it('shows a rejected Ack with its code, message and mortgage reason and changes nothing locally on either outcome', () => {
+    const h = harness({ stored: storedSession(THREE) });
+    h.client.start(); h.sockets.last().open();
+    const s = owning(); const view = project(s); h.sockets.last().receive(welcome(view));
+    h.client.sendCommand({ type: 'Mortgage', payload: { assetId: at(s, 6) } });
+    h.sockets.last().receive({ t: 'Ack', commandId: 'c1' as CommandId, outcome: 'rejected', revision: view.revision, error: { code: 'HAS_HOUSES', message: 'HAS_HOUSES' } });
+    expect(h.client.game.messages.at(-1)).toMatchObject({ code: 'HAS_HOUSES', message: 'HAS_HOUSES', commandType: 'Mortgage' });
+    h.client.sendCommand({ type: 'Mortgage', payload: { assetId: at(s, 9) } });
+    h.sockets.last().receive({ t: 'Ack', commandId: 'c2' as CommandId, outcome: 'accepted', revision: view.revision });
+    expect(h.client.game.view!.mortgages).toEqual({}); expect(h.client.game.view!.balances).toEqual(view.balances);
+    expect(h.client.game.view!.rentQuotes).toEqual(view.rentQuotes);
+    h.client.sendCommand({ type: 'Redeem', payload: { assetId: at(s, 9) } });
+    h.sockets.last().receive({ t: 'Ack', commandId: 'c3' as CommandId, outcome: 'rejected', revision: view.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'INSUFFICIENT_FUNDS' } });
+    const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view };
+    const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-test="message"]').map(m => m.text());
+    expect(texts[0]).toContain(`HAS_HOUSES: HAS_HOUSES — ${MORTGAGE_REASONS.HAS_HOUSES}`);
+    expect(texts[1]).toContain(`INSUFFICIENT_FUNDS: INSUFFICIENT_FUNDS — ${MORTGAGE_REASONS.INSUFFICIENT_FUNDS}`);
+    expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
+    h.client.returnToLobby();
   });
 });
 

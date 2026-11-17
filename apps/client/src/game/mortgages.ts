@@ -29,7 +29,7 @@ export const MORTGAGE_REASONS: Readonly<Record<MortgageErrorCode, string>> = {
  * The reason text for a rejected Mortgage or Redeem with a mortgage error
  * code. Other commands share some codes and get no mortgage text.
  */
-export function mortgageReason(code: string, commandType: ClientCommandType | MortgageCommandType | undefined): string | null {
+export function mortgageReason(code: string, commandType: ClientCommandType | undefined): string | null {
   if (commandType !== 'Mortgage' && commandType !== 'Redeem') return null;
   return Object.hasOwn(MORTGAGE_REASONS, code) ? MORTGAGE_REASONS[code as MortgageErrorCode] : null;
 }
