@@ -34,7 +34,7 @@ After a roll that does not send the player to jail, the player SHALL move forwar
 - **THEN** the player SHALL be on cell 3 and `PlayerMoved` SHALL report from 36, to 3, steps 7, followed by one lap-reward BalanceChanged event
 
 ### Requirement: Ending a turn
-`EndTurn` SHALL be accepted only after the turn's roll; before it the engine SHALL reject it with `ROLL_REQUIRED`. With a pending purchase, EndTurn SHALL instead open an auction with reason end-turn and defer closure until settlement. Closing a turn SHALL clear the purchase, run mandatory settlement, emit `TurnEnded` with a reason, and start the next turn: a bonus turn for the same player if one is pending, otherwise a turn for the next player in order, wrapping around.
+`EndTurn` SHALL require a roll (`ROLL_REQUIRED` otherwise). A pending purchase SHALL open an end-turn auction and defer closure. Closure SHALL clear purchase, settle mandatory debt, emit `TurnEnded` with a reason, then start a pending bonus or the cyclic successor. Bankruptcy SHALL override the reason to bankrupt, cancel bonus and close once; play SHALL pass using old order or finish immediately with one survivor, without lap processing.
 
 #### Scenario: End turn passes play
 - **WHEN** a, first of order [a, b], rolls a non-double, has no purchase pending and issues `EndTurn`
@@ -43,6 +43,14 @@ After a roll that does not send the player to jail, the player SHALL move forwar
 #### Scenario: End turn before rolling
 - **WHEN** the turn owner issues `EndTurn` without having rolled
 - **THEN** the engine SHALL reject it with `ROLL_REQUIRED`
+
+#### Scenario: Bankruptcy overrides a bonus
+- **WHEN** mandatory payment bankrupts a payer with a pending bonus
+- **THEN** exactly one TurnEnded with reason bankrupt SHALL occur and the next survivor SHALL start a regular turn unless the game finishes
+
+#### Scenario: Terminal bankruptcy skips boundary
+- **WHEN** mandatory payment eliminates the second-to-last player
+- **THEN** TurnEnded reason bankrupt SHALL precede GameEnded, with no mortgage lap processing or TurnStarted
 
 ### Requirement: Doubles grant a bonus turn
 A double outside jail that is not the third consecutive one SHALL mark a bonus turn as pending. When the turn closes, by `EndTurn` or by `Timeout`, the same player SHALL start a new turn with a fresh deadline and fresh build and offer quotas, and `TurnStarted` SHALL carry `bonus: true`. The count of consecutive doubles carries into the bonus turn and resets when a non-double is rolled or play passes to another player.

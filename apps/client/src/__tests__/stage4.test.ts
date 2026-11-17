@@ -220,11 +220,11 @@ describe('house markers', () => {
 });
 
 describe('rent payment animation', () => {
-  const paid = (over: Record<string, unknown> = {}) => ({ type: 'RentPaid', payload: { payerId: 'a', ownerId: 'b', assetId: 'x', amount: 120, paid: 120, shortfall: 0, auto: false, ...over } });
+  const paid = (over: Record<string, unknown> = {}) => ({ type: 'RentPaid', payload: { payerId: 'a', ownerId: 'b', assetId: 'x', amount: 120, auto: false, ...over } });
   it('maps a paid RentPaid to one step in event order and nothing for zero or malformed payloads', () => {
     expect(stepsForEvent(paid(), 40)).toEqual([{ kind: 'rentPayment', from: 'a', to: 'b', amount: 120 }]);
-    expect(stepsForEvent(paid({ paid: 0, shortfall: 120 }), 40)).toEqual([]);
-    for (const bad of [{ paid: '120' }, { paid: 1.5 }, { payerId: 3 }, { ownerId: null }, { paid: -10 }]) expect(stepsForEvent(paid(bad), 40)).toEqual([]);
+    expect(stepsForEvent(paid({ amount: 0 }), 40)).toEqual([]);
+    for (const bad of [{ amount: '120' }, { amount: 1.5 }, { payerId: 3 }, { ownerId: null }, { amount: -10 }]) expect(stepsForEvent(paid(bad), 40)).toEqual([]);
     expect(stepsForEvent({ type: 'RentPaid', payload: null }, 40)).toEqual([]);
     expect(stepsForEvents([{ type: 'RentDue', payload: {} }, paid(), { type: 'TurnStarted', payload: { playerId: 'b' } }], 40))
       .toEqual([{ kind: 'rentPayment', from: 'a', to: 'b', amount: 120 }, { kind: 'highlight', playerId: 'b' }]);
@@ -234,7 +234,7 @@ describe('rent payment animation', () => {
     h.client.start(); h.sockets.last().open();
     const open = project(withRent(owning())); h.sockets.last().receive(welcome(open)); h.client.attachBoard(h.board);
     const settled = { ...project(owning()), revision: (open.revision + 1) as StateView['revision'] };
-    h.sockets.last().receive(update(settled, [paid({ paid: 170 })])); await flushPromises();
+    h.sockets.last().receive(update(settled, [paid({ amount: 170 })])); await flushPromises();
     expect(h.board.steps).toEqual([{ kind: 'rentPayment', from: 'a', to: 'b', amount: 170 }]);
     h.sockets.last().receive(welcome(settled)); await flushPromises();
     expect(h.board.steps).toHaveLength(1);

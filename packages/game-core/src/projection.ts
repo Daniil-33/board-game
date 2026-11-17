@@ -1,3 +1,4 @@
+import type { DebtEvent } from './debt.js';
 import type { MortgageEvent } from './mortgage.js';
 import { rentQuotes, type RentQuote, type RentEvent } from './rent.js';
 import type { HouseEvent } from './houses.js';
@@ -94,6 +95,7 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
  * type missing at runtime fails closed in `projectEvents`.
  */
 export const EVENT_VISIBILITY = {
+  LiquidationApplied: 'public', PlayerBankrupt: 'public',
   AssetMortgaged: 'public', AssetRedeemed: 'public', MortgageExpired: 'public', AssetsReleased: 'public',
   RentDue: 'public', RentPaid: 'public', HouseBuilt: 'public', HouseSold: 'public',
   PurchaseOffered: 'public', AssetPurchased: 'public', AuctionStarted: 'public',
@@ -121,7 +123,7 @@ export const EVENT_VISIBILITY = {
 } as const satisfies Record<CoreEvent['type'], Visibility>;
 
 /** Every event type this rules version emits. */
-export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | HouseEvent | MortgageEvent;
+export type CoreEvent = DebtEvent | LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | HouseEvent | MortgageEvent;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

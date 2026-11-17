@@ -60,12 +60,12 @@ describe('rent formula tables across prices-1', () => {
   });
 });
 describe('settlement and movement',()=>{
-  it.each([0,10,10000])('pays bounded balance %i with zero events suppressed',balance=>{
-    const s0=due(), s={...s0,balances:{...s0.balances,a:balance as Money}}, amount=s.rent!.amount;
+  it('pays full rent from cash',()=>{
+    const s=due(), amount=s.rent!.amount;
     const r=accept(s,command(s,'PayRent'));
     expect(r.state.rent).toBeNull();
-    expect(r.events.map(e=>e.type)).toEqual(balance===0?['RentPaid']:['BalanceChanged','BalanceChanged','RentPaid']);
-    expect(r.events.at(-1)!.payload).toMatchObject({amount,paid:Math.min(balance,amount),shortfall:Math.max(0,amount-balance),auto:false});
+    expect(r.events.map(e=>e.type)).toEqual(['BalanceChanged','BalanceChanged','RentPaid']);
+    expect(r.events.at(-1)!.payload).toEqual({payerId:pid('a'),ownerId:pid('b'),assetId:s.rent!.assetId,amount,auto:false});
   });
   it.each(['EndTurn','Timeout'])('automatically settles %s before closure',type=>{
     const s=due(); const c=type==='Timeout'?cmd(type,null,{target:{kind:'turn',id:s.turn!.turnId}}):command(s,type);
@@ -304,7 +304,7 @@ describe('houseCost and houseRefund display helpers', () => {
       const built = accept(s, command(s, 'BuildHouse', { assetId: asset.assetId }));
       expect(built.events.find(e => e.type === 'HouseBuilt')!.payload).toMatchObject({ cost: houseCost(asset.price) });
       const sold = accept(built.state, command(built.state, 'SellHouse', { assetId: asset.assetId }));
-      expect(sold.events.find(e => e.type === 'HouseSold')!.payload).toMatchObject({ refund: houseRefund(houseCost(asset.price)) });
+      expect(sold.events.find(e => e.type === 'HouseSold')!.payload).toMatchObject({ refund: houseRefund(houseCost(asset.price)), auto: false });
     }
   });
 });

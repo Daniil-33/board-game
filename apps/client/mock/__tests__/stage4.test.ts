@@ -92,7 +92,7 @@ describe('mock stage 4 scenario', () => {
     expect(g.view().balances[g.guestId]).toBe(before[g.guestId]! - due.amount);
     expect(g.view().balances[bot]).toBe(before[bot]! + due.amount);
     const paid = g.eventsSince(mark);
-    expect(paid.find((e) => e.type === 'RentPaid')!.payload).toMatchObject({ paid: due.amount, auto: false });
+    expect(paid.find((e) => e.type === 'RentPaid')!.payload).toMatchObject({ amount: due.amount, auto: false });
     expect(stepsForEvents(paid, 40)).toEqual([{ kind: 'rentPayment', from: g.guestId, to: bot, amount: due.amount }]);
 
     // 2. An illegal (uneven) build is rejected; a legal build and a sale are accepted.
@@ -121,7 +121,7 @@ describe('mock stage 4 scenario', () => {
     g.timers.advance(BOT_DELAY_MS);
     const auto = g.eventsSince(mark);
     expect(auto.map((e) => e.type)).toEqual(expect.arrayContaining(['RentDue', 'RentPaid', 'TurnEnded', 'TurnStarted']));
-    expect(auto.find((e) => e.type === 'RentPaid')!.payload).toMatchObject({ payerId: bot, ownerId: g.guestId, paid: botDue.amount, auto: true });
+    expect(auto.find((e) => e.type === 'RentPaid')!.payload).toMatchObject({ payerId: bot, ownerId: g.guestId, amount: botDue.amount, auto: true });
     expect(g.view().rent).toBeNull();
     expect(g.view().turn!.playerId).toBe(g.guestId);
 

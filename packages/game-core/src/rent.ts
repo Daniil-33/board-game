@@ -1,7 +1,9 @@
 import type { AssetId, Money, PlayerId } from './types.js';
 import type { GameState, RentSettlement } from './state.js';
 import type { GameCommand, GameEvent } from './engine.js';
-import { creditBalance, debitBalance } from './money.js';
+import { settleDebt, type DebtResult } from './debt.js';
+import { scheduleAfterSettlement } from './turns.js';
+import type { Timestamp } from './types.js';
 import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
 
 /** All rent and building callers share the persisted mortgage flag. */
@@ -34,7 +36,7 @@ export function rentQuotes(state: GameState): Readonly<Record<string, RentQuote>
   return Object.fromEntries(Object.keys(state.owners).map(id => [id, quoteFor(state, id as AssetId)]));
 }
 export type RentDue = GameEvent<Omit<RentSettlement, 'cell'>, 'RentDue'>;
-export type RentPaid = GameEvent<Pick<RentSettlement, 'payerId' | 'ownerId' | 'assetId' | 'amount'> & { readonly paid: Money; readonly shortfall: Money; readonly auto: boolean }, 'RentPaid'>;
+export type RentPaid = GameEvent<Pick<RentSettlement, 'payerId' | 'ownerId' | 'assetId' | 'amount'> & { readonly auto: boolean }, 'RentPaid'>;
 export type RentEvent = RentDue | RentPaid;
 export type PayRentCommand = GameCommand<null, 'PayRent'>;
 export function offerRent(state: GameState, diceSum: number): { state: GameState; events: GameEvent[] } {
@@ -48,20 +50,10 @@ export function offerRent(state: GameState, diceSum: number): { state: GameState
   const { cell: _cell, ...payload } = rent;
   return { state: { ...state, rent }, events: [{ type: 'RentDue', payload } satisfies RentDue] };
 }
-export function settleRent(state: GameState, auto: boolean): { state: GameState; events: GameEvent[] } {
-  if (!state.rent) return { state, events: [] };
+export function settleRent(state: GameState, auto: boolean, now: Timestamp): DebtResult {
+  if (!state.rent) return { state, events: [], bankrupt: false };
   const { payerId, ownerId, assetId, amount } = state.rent;
-  const paid = Math.min(amount, state.balances[payerId]!) as Money;
-  let balances = state.balances;
-  const events: GameEvent[] = [];
-  if (paid > 0) {
-    const debit = debitBalance(balances, payerId, paid, 'rent');
-    const credit = creditBalance(debit.balances, ownerId, paid, 'rent');
-    balances = credit.balances;
-    events.push(debit.event, credit.event);
-  }
-  events.push({ type: 'RentPaid', payload: { payerId, ownerId, assetId, amount, paid, shortfall: amount - paid as Money, auto } } satisfies RentPaid);
-  return { state: { ...state, balances, rent: null }, events };
+  return settleDebt(state, {payerId, creditorId: ownerId, amount, cause: {kind: 'rent', assetId, auto}}, now);
 }
 /** Provisional R1/R2; ROADMAP decision is a merge gate. */
 export function resignDuringRent(state: GameState, playerId: PlayerId, terminal: boolean): GameState {
@@ -76,7 +68,11 @@ export const rentCommands: CommandRegistry = {
       if (command.actor.kind !== 'player' || command.actor.id !== state.turn!.playerId) return fail('NOT_ACTIVE_PLAYER', 'Not your turn');
       if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
       if (!state.rent) return fail('NO_RENT', 'No pending rent');
-      const result = settleRent(state, false);
+      const result = settleRent(state, false, context.now);
+      if (result.bankrupt) {
+        const closed = scheduleAfterSettlement(result.state, 'bankrupt', context.now, state.turn!, state.order!);
+        return ok(closed.state, [...result.events, ...closed.events]);
+      }
       return ok(result.state, result.events);
     },
   },

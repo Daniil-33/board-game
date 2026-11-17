@@ -22,7 +22,7 @@ it('round-trips public stage 4 settlement, houses, quotes and event payloads', a
   }, rentQuotes: { a1: { kind: 'fixed', amount: 100 } }, balances: { a: 900, b: 1100 } };
   const events = [
     { type: 'RentDue', payload: { payerId: 'a', ownerId: 'b', assetId: 'a1', kind: 'regular', amount: 100, diceSum: null } },
-    { type: 'RentPaid', payload: { payerId: 'a', ownerId: 'b', assetId: 'a1', amount: 100, paid: 100, shortfall: 0, auto: false } },
+    { type: 'RentPaid', payload: { payerId: 'a', ownerId: 'b', assetId: 'a1', amount: 100, auto: false } },
     { type: 'HouseBuilt', payload: { playerId: 'b', assetId: 'a1', houses: 1, cost: 100 } },
     { type: 'HouseSold', payload: { playerId: 'b', assetId: 'a1', houses: 0, refund: 50 } },
     { type: 'BalanceChanged', payload: { playerId: 'a', before: 1000, after: 900, reason: 'rent' } },
