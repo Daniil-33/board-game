@@ -5,6 +5,7 @@ import { runtimeApi } from '../shared/api/index';
 import { BoardScene, mountBoard } from '../widgets/board/index';
 import { BOARD_MOUNT_KEY, CLIENT_KEY, createClient, type BoardMount } from '../features/client-session/index';
 import { browserSocketFactory } from '../shared/api/index';
+import './fonts.css';
 import './style.css';
 
 registerLocales();

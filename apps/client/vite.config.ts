@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 import { fileURLToPath } from 'node:url';
 
@@ -7,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const backend = process.env.GAME_BACKEND ?? 'http://127.0.0.1:8787';
 
 export default defineConfig({
-  plugins: [vue(), VueI18nPlugin({ include: fileURLToPath(new URL('./src/shared/i18n/locales/**', import.meta.url)), compositionOnly: true, fullInstall: false, dropMessageCompiler: true })],
+  plugins: [vue(), tailwindcss(), VueI18nPlugin({ include: fileURLToPath(new URL('./src/shared/i18n/locales/**', import.meta.url)), compositionOnly: true, fullInstall: false, dropMessageCompiler: true })],
   define: { __VUE_I18N_FULL_INSTALL__: false, __VUE_I18N_LEGACY_API__: false },
   build: {
     assetsInlineLimit: (filePath) =>

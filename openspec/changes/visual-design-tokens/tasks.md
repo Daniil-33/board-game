@@ -3,10 +3,10 @@
 ## 1. Theme foundation
 
 - [ ] 1.1 Extract desktop computed token styles in Chromium, confirm mobile and save script/output in evidence; verify all design token categories are captured (design-system: Shared design tokens).
-- [ ] 1.2 Add exact eligible Tailwind package; verify installation and typecheck (design-system: Shared design tokens).
-- [ ] 1.3 Add exact eligible Tailwind Vite plugin; verify build and typecheck (design-system: Shared design tokens).
-- [ ] 1.4 Add exact eligible Inter variable font; verify only Latin and Cyrillic subsets are imported once (design-system: Shared design tokens).
-- [ ] 1.5 Add exact eligible Unbounded variable font; verify only Latin and Cyrillic subsets are imported once (design-system: Shared design tokens).
+- [x] 1.2 Add exact eligible Tailwind package; verify installation and typecheck (design-system: Shared design tokens).
+- [x] 1.3 Add exact eligible Tailwind Vite plugin; verify build and typecheck (design-system: Shared design tokens).
+- [x] 1.4 Add exact eligible Inter variable font; verify only Latin and Cyrillic subsets are imported once (design-system: Shared design tokens).
+- [x] 1.5 Add exact eligible Unbounded variable font; verify only Latin and Cyrillic subsets are imported once (design-system: Shared design tokens).
 - [ ] 1.6 Implement CSS tokens and Tailwind theme; test designated text/surface pairs for AA and escalate failures (design-system: Shared design tokens, Contrast and evidence).
 - [ ] 1.7 Implement Pixi theme adapter and verify values match computed CSS tokens (design-system: Shared design tokens).
 - [ ] 1.8 Enforce raw-color lint and retain positive and negative probes; run client lint (design-system: Shared design tokens).
@@ -14,7 +14,7 @@
 
 ## 2. Primitives
 
-- [ ] 2.1 Add exact eligible Reka dependency and verify installation and typecheck (design-system: Accessible shared primitives).
+- [x] 2.1 Add exact eligible Reka dependency and verify installation and typecheck (design-system: Accessible shared primitives).
 - [ ] 2.2 Implement Button and disabled reason tests for desktop and mobile (design-system: Accessible shared primitives).
 - [ ] 2.3 Implement Badge and verify component rendering (design-system: Accessible shared primitives).
 - [ ] 2.4 Implement Money and verify tabular figures and locale formatting (design-system: Accessible shared primitives).
