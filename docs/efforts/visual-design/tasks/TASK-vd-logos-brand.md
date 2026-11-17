@@ -5,7 +5,7 @@ id: TASK-vd-logos-brand
 revision: 1
 effort: EFF-visual-design
 project: economic-board-game
-source_commit: TBD # main after TASK-vd-chat PR #80
+source_commit: 9c4ae33 # main after TASK-vd-chat PR #80
 owner: team-lead
 status: proposed
 ```
