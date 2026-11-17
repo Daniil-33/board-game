@@ -23,8 +23,8 @@
 - **THEN** no frame SHALL be sent and the outgoing entry SHALL be rejected with `EMPTY`
 
 ### Requirement: Event log store
-`entities/event` SHALL hold the viewer's projected events in order: replaced by `Welcome.history.events` on every `Welcome` and extended by each `Update`'s events. Loading the history SHALL NOT queue animations.
+`entities/event` SHALL hold the viewer's log entries `{ revision, at, events }` in order: replaced by `Welcome.history.entries` on every `Welcome` and extended by one entry per `Update` that carries events. Loading the history SHALL NOT queue animations.
 
 #### Scenario: Reload
-- **WHEN** a `Welcome` with history events arrives
-- **THEN** the event store SHALL hold exactly those events and no animation step SHALL be queued
+- **WHEN** a `Welcome` with history entries arrives
+- **THEN** the event store SHALL hold exactly those entries and no animation step SHALL be queued

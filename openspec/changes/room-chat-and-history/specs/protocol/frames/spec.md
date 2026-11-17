@@ -27,7 +27,9 @@ Client frames SHALL be exactly:
 
 Server frames SHALL be exactly:
 - `Welcome { t, protocolVersion, playerId, revision, view, history }` where
-  `history` is `{ events, chat }`, `events` an array of events and `chat` an
+  `history` is `{ entries, chat }`, `entries` an array of
+  `{ revision, at, events }` (`revision` a positive revision, `at` a
+  non-negative integer timestamp, `events` an array of events) and `chat` an
   array of chat messages;
 - `Ack { t, commandId, outcome, revision, error? }` with `outcome` one of
   `accepted`, `rejected`; `error { code, message }` SHALL be present exactly

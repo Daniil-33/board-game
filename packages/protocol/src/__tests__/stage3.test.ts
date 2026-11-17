@@ -44,7 +44,7 @@ it('round-trips authentic purchase and auction projections and their public even
   const roundTrip = (events: readonly unknown[]) => {
     const view = projectState(session.state, { kind: 'spectator' });
     for (const frame of [
-      { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: 'a', revision: view.revision, view },
+      { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: 'a', revision: view.revision, view, history: { entries: [], chat: [] } },
       { t: 'Update', revision: view.revision, view, events },
     ]) expect(decodeServerFrame(JSON.stringify(frame))).toEqual({ ok: true, frame });
   };

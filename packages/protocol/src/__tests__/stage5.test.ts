@@ -39,7 +39,7 @@ it('round-trips core-7 mortgages, debts, bankruptcy and the final result unchang
     { type: 'GameEnded', payload: { winner: 'b', at: 1767225700000, eliminations, finalBalances: { a: 0, b: 1510, c: 0 } } },
   ];
   for (const frame of [
-    { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: 'a', revision: 9, view: finished },
+    { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: 'a', revision: 9, view: finished, history: { entries: [], chat: [] } },
     { t: 'Update', revision: 9, view: finished, events },
   ]) expect(decodeServerFrame(JSON.stringify(frame))).toEqual({ ok: true, frame });
 });

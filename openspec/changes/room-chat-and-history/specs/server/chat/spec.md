@@ -34,11 +34,11 @@ The room SHALL assign `seq` as one more than the room's highest stored `seq`, pe
 - **THEN** the `chat_messages` row with that `seq` SHALL already be committed
 
 ### Requirement: Welcome history
-`Welcome.history.events` SHALL hold, in log order, the events of the room's last 200 log entries up to the Welcome revision, filtered for the viewer by the event projection the `Update` path uses. `Welcome.history.chat` SHALL hold the last 200 chat messages by ascending `seq`. History SHALL be served after a restart and for finished rooms.
+`Welcome.history.entries` SHALL hold, in log order, the room's last 200 log entries up to the Welcome revision as `{ revision, at, events }`, where `at` is the entry's transition time (`LogEntry.now`) and `events` are filtered for the viewer by the event projection the `Update` path uses; entries whose filtered events are empty SHALL be dropped. `Welcome.history.chat` SHALL hold the last 200 chat messages by ascending `seq`. History SHALL be served after a restart and for finished rooms.
 
 #### Scenario: Reload
 - **WHEN** a guest reconnects after chat and moves
-- **THEN** its `Welcome` SHALL carry those events and messages
+- **THEN** its `Welcome` SHALL carry those log entries with their revisions and times, and those messages
 
 #### Scenario: Restart
 - **WHEN** the server restarts and a guest reconnects
@@ -56,4 +56,4 @@ History events SHALL be filtered by the same per-viewer projection function as `
 
 #### Scenario: Projection hides events
 - **WHEN** the event projection hides an event type from a viewer
-- **THEN** that viewer's `Welcome.history.events` SHALL NOT contain it, as its `Update` events do not
+- **THEN** that viewer's `Welcome.history.entries` SHALL NOT contain it, and an entry left with no events SHALL be omitted,, as its `Update` events do not

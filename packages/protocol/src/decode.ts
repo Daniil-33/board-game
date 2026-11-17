@@ -3,6 +3,9 @@ import { TypeCompiler, type TypeCheck } from '@sinclair/typebox/compiler';
 import { MAX_FRAME_LENGTH } from './common.js';
 import {
   AckFrameSchema,
+  ChatAckFrameSchema,
+  ChatFrameSchema,
+  ChatSendFrameSchema,
   CommandFrameSchema,
   ErrorFrameSchema,
   HelloFrameSchema,
@@ -29,6 +32,7 @@ const compile = (entries: [string, TSchema][]): Checkers =>
 const CLIENT_CHECKERS = compile([
   ['Hello', HelloFrameSchema],
   ['Command', CommandFrameSchema],
+  ['ChatSend', ChatSendFrameSchema],
 ]);
 
 const SERVER_CHECKERS = compile([
@@ -36,6 +40,8 @@ const SERVER_CHECKERS = compile([
   ['Ack', AckFrameSchema],
   ['Update', UpdateFrameSchema],
   ['Error', ErrorFrameSchema],
+  ['Chat', ChatFrameSchema],
+  ['ChatAck', ChatAckFrameSchema],
 ]);
 
 const malformed = (message: string): { ok: false; error: MalformedFrameError } => ({

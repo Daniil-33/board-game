@@ -28,7 +28,7 @@ it('round-trips public stage 4 settlement, houses, quotes and event payloads', a
     { type: 'BalanceChanged', payload: { playerId: 'a', before: 1000, after: 900, reason: 'rent' } },
   ];
   for (const frame of [
-    { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: 'a', revision: 7, view: publicView },
+    { t: 'Welcome', protocolVersion: PROTOCOL_VERSION, playerId: 'a', revision: 7, view: publicView, history: { entries: [], chat: [] } },
     { t: 'Update', revision: 7, view: publicView, events },
   ]) expect(decodeServerFrame(JSON.stringify(frame))).toEqual({ ok: true, frame });
 });
