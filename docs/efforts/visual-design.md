@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-visual-design
-revision: 1
+revision: 2
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-17T11:50:00Z
@@ -92,21 +92,50 @@ projection and the core rules.
      write.
    - **Visibility:** the log and chat show nothing that the viewer's
      projection hides.
-8. **Language:** the interface is Russian, as in the design. Every string
-   lives in one place, ready for later localization (CTO interpretation; the
-   owner may choose another language).
+8. **Language and localization** (owner decision 2026-11-17):
+   - the interface is Russian by default;
+   - multilingual support is built in now: every UI string is a translation
+     key, and the language can be switched by adding a locale file without
+     code changes;
+   - numbers, money and times are formatted per locale;
+   - game event texts in the log come from the same keys, not from server
+     strings;
+   - company names come from the catalog and are not translated.
+   Only the Russian locale is required in this effort.
 9. **No behavior change:**
    - every stage 1-5 rule, command and projection stays as it is;
    - existing browser scenarios keep passing, with selectors updated as
      needed;
    - disabled controls still give their reason.
-10. **Quality:**
+10. **Sound** (owner decision 2026-11-17). Interface sound effects in a
+    "medium" character: not soft lo-fi, not loud arcade. Sounds:
+    - dice roll and double;
+    - token steps;
+    - purchase;
+    - money in and money out;
+    - auction: new bid, last seconds of the response timer, win;
+    - your turn starts, your turn time runs out;
+    - house built, asset mortgaged;
+    - bankruptcy or elimination, victory;
+    - new chat message.
+    Requirements:
+    - sources are CC0 libraries only (for example Kenney or Freesound CC0);
+      each file's source and license are recorded;
+    - a global mute and volume control is remembered per browser;
+    - nothing plays before the user first interacts with the page;
+    - one's own events sound different from other players' events, so the
+      game is not noisy;
+    - audio files are small and loaded lazily;
+    - leave named slots for stage 6-7 sounds (casino, chance, jail, trade
+      offer).
+    This can be the last task of the effort.
+11. **Quality:**
     - keyboard focus and Esc work in dialogs;
     - text contrast is readable;
     - no layout breaks from 360 px to 1920 px;
     - the client bundle does not grow without reason. State the size in the
       design.
-11. **CI headroom:** `compose-browser` was at 21 of 35 minutes after stage 5.
+12. **CI headroom:** `compose-browser` was at 21 of 35 minutes after stage 5.
     Split or shard it in this effort so that stages 6-7 have room.
 
 ## Scope and non-goals
@@ -214,12 +243,19 @@ Escalate to the CTO:
   - the turn-order roll.
 - **Logo coverage:** a list of companies with a logo or a monogram and the
   source of each logo.
+- **Sound list:** each sound with its trigger, source and license; a short
+  screen recording or a test that sounds fire on the right events and
+  respect mute.
+- **Localization:** all strings go through translation keys. A test fails
+  when a string is hard-coded or a key is missing.
 - **CI timing** of the browser jobs after the split.
 - ROADMAP.md "Сделано" is updated.
 
 ## Revision history
 
 - 1: initial handoff.
+- 2: owner decisions 2026-11-17: interface sound effects (criterion 10);
+  Russian by default with multilingual support built in (criterion 8).
 
 ## Acceptance
 
