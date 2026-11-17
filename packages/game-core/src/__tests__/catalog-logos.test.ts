@@ -70,7 +70,7 @@ function validateSvg(svg: string): void {
   expect(svg).not.toMatch(/<\?|<!|&|\\/);
   const paint = '(?:fill:#[0-9a-fA-F]{3,8}|(?:fill-rule|clip-rule):evenodd)';
   const rule = `\\.[\\w-]+\\s*\\{\\s*${paint}(?:\\s*;\\s*${paint})*\\s*;?\\s*\\}\\s*`;
-  const safeCss = new RegExp(`^\\s*(?:${rule}|@media\\s*\\(prefers-color-scheme:\\s*dark\\)\\s*\\{\\s*(?:${rule})+\\}\\s*)+$`);
+  const safeCss = new RegExp(`^\\s*(?:${rule})+$`);
   const withoutStyles = svg.replace(/<style(?: type="text\/css")?>([^<]*)<\/style>/g, (_, css: string) => {
     expect(css, 'SVG stylesheet uses only local paint rules').toMatch(safeCss);
     return '';
@@ -193,7 +193,8 @@ describe('SVG safety guard', () => {
     '<use href="&#104;ttps://example.com"/>', '<path fill="url(https://example.com)"/>',
     '<path fill="url(//example.com)"/>', '<path style="fill:url(https://example.com)"/>',
     '<style>.a{fill:url(https://example.com)}</style>',
-    '<style>@media (prefers-color-scheme:dark){.a{fill:url(#a)}}</style>',
+    '<style>@media (prefers-color-scheme:dark){.a{fill:#fff}}</style>',
+    '<style>@media print{.a{fill:#fff}}</style>',
     '<style>@import "https://example.com";</style>', '<foreignObject/>',
     '<image href="x.png"/>', '<animate attributeName="href"/>',
   ])('rejects unsafe markup: %s', (markup) => {
