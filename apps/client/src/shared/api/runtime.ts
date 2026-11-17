@@ -3,7 +3,7 @@ import { socketUrl } from './routes';
 
 declare global {
   interface Window {
-    __GAME_CONFIG__?: { API_ORIGIN?: string };
+    __GAME_CONFIG__?: { API_ORIGIN?: string; logoSet?: 'brand' | 'geometric' };
   }
 }
 

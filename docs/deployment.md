@@ -70,8 +70,14 @@ separately (including certificate issuance and first staging deploy).
        with os.fdopen(fd, 'w') as file:
            file.write(f'POSTGRES_PASSWORD={secrets.token_hex(32)}\n'
                       f'DEPLOY_ENV={env}\nALLOWED_ORIGINS=https://{web}\n'
-                      f'API_ORIGIN=https://{api}\nWEB_HOST={web}\nAPI_HOST={api}\n')
+                      f'API_ORIGIN=https://{api}\nWEB_HOST={web}\nAPI_HOST={api}\n'
+                      'LOGO_SET=brand\n')
    ```
+
+   Both staging and production default to `brand` when `LOGO_SET` is absent.
+   Set `LOGO_SET=geometric` in the environment's Compose env file and recreate
+   the web container through the normal deployment workflow to select the
+   fallback. The existing image can serve either set.
 
    Verify owner and mode using `stat`, never `cat`. Do not commit env files or
    include rendered Compose configs with real passwords in logs/evidence.

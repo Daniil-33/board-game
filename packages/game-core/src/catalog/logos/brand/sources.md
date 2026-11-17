@@ -1,0 +1,69 @@
+# Источники и способ подготовки
+
+- `banks-1` — ПриватБанк: source-vector; https://privatbank.ua/
+- `banks-2` — Ощадбанк: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.oschadbank.ua&sz=128
+- `banks-3` — monobank: simplified-mascot; https://monobank.ua/ — Авторская упрощённая иконка головы маскота mono, не официальный мастер-логотип.
+- `banks-4` — ПУМБ: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.pumb.ua&sz=128
+- `banks-5` — Укргазбанк: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.ukrgasbank.com&sz=128
+- `banks-6` — Райффайзен Банк: source-vector; https://raiffeisen.ua/img/universal/svg/logo_v2_ua.svg
+- `banks-7` — Sense Bank: vectorized-brand-reference; https://sensebank.ua/favicon/apple-touch-icon.png
+- `banks-8` — А-Банк: source-vector; https://a-bank.com.ua/assets/img/f39f15d41b34d7381219cec3cc509b10.svg
+- `insurance-1` — ARX: source-vector; https://arx.com.ua/images/logo_red.svg
+- `insurance-2` — ТАС: source-vector; https://sgtas.ua/styles/img/logo.svg
+- `insurance-3` — Оранта: vectorized-brand-reference; https://oranta.ua/icons/apple-touch-icon.png
+- `insurance-4` — Universalna: vectorized-brand-reference; https://universalna.com/favicon.ico
+- `insurance-5` — ІНГО: source-vector; https://ingo.ua/cms/image/uploads/logo_bf892fbbf4.svg
+- `insurance-6` — USG: vectorized-brand-reference; https://www.usg.ua/favicons/apple-touch-icon.png
+- `microfinance-1` — Moneyveo: source-vector; https://moneyveo.ua/logo.svg
+- `microfinance-2` — CreditPlus: vectorized-brand-reference; https://creditplus.ua/
+- `microfinance-3` — ШвидкоГроші: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=sgroshi.com.ua&sz=128
+- `microfinance-4` — Миттєві Гроші: unconfirmed-identity; источник бренда не подтверждён — Компания не подтверждена: нейтральная заглушка, не логотип бренда.
+- `microfinance-5` — Credit7: source-vector; https://credit7.ua/
+- `microfinance-6` — Miloan: vectorized-brand-reference; https://miloan.ua/favicon-miloan.ico?v=2
+- `technology-1` — SoftServe: vectorized-brand-reference; https://www.softserveinc.com/
+- `technology-2` — GlobalLogic: vectorized-brand-reference; https://www.globallogic.com/wp-content/uploads/2024/07/cropped-Group-2085664684-180x180.png
+- `technology-3` — Grammarly: source-vector; https://simpleicons.org/?q=grammarly
+- `technology-4` — MacPaw: source-vector; https://cdn3.macpaw.com/images/favicons/safari-pinned-tab.svg?id=1816947d3ae62ee64edea762148178fc
+- `technology-5` — Readdle: vectorized-brand-reference; https://cdn-rdstaticassets.readdle.com/assets/readdle/common/icons/logo/rd-fav-114.png?1794589562
+- `technology-6` — Ajax Systems: vectorized-brand-reference; https://ajax.systems/assets/images/favicons/apple-touch-icon.png
+- `technology-7` — Preply: source-vector; https://static.preply.com/ds/icons/rebrand-23-v0/favicon.svg
+- `technology-8` — Genesis: source-vector; https://www.gen.tech/
+- `telecom-1` — Київстар: source-vector; https://kyivstar.ua/assets/cms/uploads/kyivstar_logo_full_d905270219.svg
+- `telecom-2` — Vodafone Україна: source-vector; https://www.vodafone.ua/assets/logos/vf-red-logo.svg
+- `telecom-3` — lifecell: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.lifecell.ua&sz=128
+- `telecom-4` — Укртелеком: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=ukrtelecom.ua&sz=128
+- `telecom-5` — Datagroup-Volia: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.datagroup.ua&sz=128
+- `mobility-1` — Uklon: source-vector; https://uklon.com.ua/app/uploads/2023/08/uklon_logo_tiny-20230701-203320.svg
+- `mobility-2` — OnTaxi: source-vector; https://ontaxi.com.ua/assets/images/favicons/OnTaxi/favicon.svg
+- `mobility-3` — Bolt Україна: source-vector; https://assets.homepage.bolt.eu/1.24.33/public/common-assets/icon.svg
+- `mobility-4` — Uber Україна: source-vector; https://simpleicons.org/?q=uber
+- `commerce-1` — Rozetka: source-vector; https://rozetka.com.ua/h-3cb47be2/assets/img/design/logo_smile.svg
+- `commerce-2` — Prom.ua: vectorized-brand-reference; https://prom.ua/cloud-cgi/static/catalog-ui/js/build/portal-portable/apple-touch-icon-180x180-da9a6139.png
+- `commerce-3` — OLX Україна: vectorized-brand-reference; https://www.olx.ua/favicon.ico?v=8
+- `commerce-4` — Епіцентр: vectorized-brand-reference; https://epicentrk.ua/upload/nuxt/manifest/icon-64x64.png
+- `commerce-5` — Comfy: source-vector; https://cdn.comfy.ua/media/media/icons/comfy-logo-mbl.svg
+- `commerce-6` — Фокстрот: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.foxtrot.com.ua&sz=128
+- `groceries-1` — АТБ: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=www.atbmarket.com&sz=128
+- `groceries-2` — Сільпо: vectorized-brand-reference; https://staticv2.silpo.ua/apps/sf-shop-silpo-green/release-2-114-54/assets/images/logo-small.svg
+- `groceries-3` — Novus: vectorized-brand-reference; https://novus.ua/media/favicon/stores/1/favicon_2.ico
+- `groceries-4` — Varus: source-vector; https://static.varus.ua/azgwc-blob-static-varus-prod-01/vsf/assets/1116-vbc18ecae/images/logo/logo-small.svg
+- `groceries-5` — Фора: source-vector; https://fora.ua/images/fora/logo.svg
+- `fuel-1` — WOG: vectorized-brand-reference; https://wog.ua/favicon.ico
+- `fuel-2` — ОККО: source-vector; https://www.okko.ua/
+- `fuel-3` — UPG: vectorized-brand-reference; https://upg.ua/wp-content/uploads/2024/03/cropped-favicon-180x180.png
+- `fuel-4` — БРСМ-Нафта: vectorized-brand-reference; https://imc.ua/projects/brsm-nafta
+- `fuel-5` — SOCAR Україна: vectorized-brand-reference; https://socar.ua/favicon/apple-touch-icon.png
+- `media-1` — Megogo: source-vector; https://megogo.net/favicon.svg
+- `media-2` — Sweet.tv: vectorized-brand-reference; https://sweet.tv/apple-touch-icon.png
+- `media-3` — 1+1 Media: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=media.1plus1.ua&sz=128
+- `media-4` — StarLightMedia: vectorized-brand-reference; https://www.google.com/s2/favicons?domain=starlight.media&sz=128
+- `logistics-1` — Нова пошта: source-vector; https://novaposhta.ua/_np-app-static/favicon.svg
+- `logistics-2` — Укрпошта: source-vector; https://www.ukrposhta.ua/content/images/site-ua-logo.svg
+- `logistics-3` — Meest: vectorized-brand-reference; https://ua.meest.com/apple-touch-icon.png
+- `logistics-4` — Укрзалізниця: source-vector; https://booking.uz.gov.ua/
+- `logistics-5` — Delivery: vectorized-brand-reference; https://www.delivery-auto.com/Images/third_decade/system/icon/favicon.ico
+- `logistics-6` — САТ: vectorized-brand-reference; https://www.sat.ua/wp-content/uploads/2022/08/cropped-favicon-180x180.png
+- `energy-1` — ДТЕК: vectorized-brand-reference; https://dtek.com/favicon.ico
+- `energy-2` — Укренерго: vectorized-brand-reference; https://reform.energy/uploads/Logotypy/ukrenergo_logo.jpg
+- `energy-3` — Нафтогаз: source-vector; https://www.naftogaz.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBelJ4QVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--0a1b833af49b5ec568510820132bd7ab433f2dfa/logo-color-uk.svg
+- `energy-4` — Укргідроенерго: source-vector; https://uhe.gov.ua/themes/basic/images/source/Logo_UHE1.svg

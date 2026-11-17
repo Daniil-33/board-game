@@ -8,11 +8,18 @@ import subprocess
 root = Path(__file__).resolve().parents[2]
 env = {**os.environ, 'POSTGRES_PASSWORD': 'ephemeral-test-only', 'GIT_SHA': 'a' * 40,
        'ALLOWED_ORIGINS': 'https://stage.focusima.space', 'API_ORIGIN': 'https://stage-api.focusima.space'}
+env.pop('LOGO_SET', None)
+
+def app_config(name, **overrides):
+    return json.loads(subprocess.check_output(['docker', 'compose', '-p', f'game-{name}', '-f',
+                      str(root / 'deploy/app/compose.yml'), 'config', '--format', 'json'],
+                      env={**env, 'DEPLOY_ENV': name, **overrides}))
+
 for name in ('staging', 'production'):
-    config = json.loads(subprocess.check_output(['docker', 'compose', '-p', f'game-{name}', '-f',
-                        str(root / 'deploy/app/compose.yml'), 'config', '--format', 'json'],
-                        env={**env, 'DEPLOY_ENV': name}))
+    config = app_config(name)
     services = config['services']
+    assert services['web']['environment']['LOGO_SET'] == 'brand'
+    assert app_config(name, LOGO_SET='geometric')['services']['web']['environment']['LOGO_SET'] == 'geometric'
     assert all(not s.get('ports') and s['restart'] == 'unless-stopped' for s in services.values())
     assert set(services['db']['networks']) == {'internal'}
     assert config['networks']['internal']['internal']

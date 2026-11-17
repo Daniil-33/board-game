@@ -38,6 +38,8 @@ services:
       dockerfile: apps/client/Dockerfile
       args:
         GIT_SHA: ${GIT_SHA:-unknown}
+    environment:
+      LOGO_SET: ${LOGO_SET-brand}
     ports:
       - 127.0.0.1:${WEB_PORT:-8080}:80
     depends_on:

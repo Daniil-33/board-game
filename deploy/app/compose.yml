@@ -52,6 +52,7 @@ services:
         GIT_SHA: ${GIT_SHA:?required}
     environment:
       API_ORIGIN: ${API_ORIGIN:?required}
+      LOGO_SET: ${LOGO_SET-brand}
     networks:
       edge:
         aliases: ["${DEPLOY_ENV:?required}-web"]
