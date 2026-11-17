@@ -260,7 +260,9 @@ describe('resignation, spectator and game over', () => {
     const h = harness({ stored: storedSession(TWO) }); h.client.start(); h.sockets.last().open();
     const before = phase === 'setup' ? setupView(['a', 'b']) : playingView(['a', 'b']);
     h.sockets.last().receive(welcome(before)); const wrapper = mount(App, provide(h)); await flushPromises();
-    const finished: StateView = { ...before, revision: 20 as never, phase: 'finished', eliminated: [pid('a')], winner: pid('b'), setup: null, turn: null };
+    const eliminations = [{ playerId: pid('a'), reason: 'resigned' as const, at: 15 as never, creditorId: null }];
+    const finished: StateView = { ...before, revision: 20 as never, phase: 'finished', eliminated: [pid('a')], winner: pid('b'), setup: null, turn: null,
+      eliminations, finishedAt: 15 as never, result: { winner: pid('b'), finishedAt: 15 as never, eliminations, finalBalances: before.balances } };
     h.sockets.last().receive(update(finished)); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('finished'); expect(wrapper.get('[data-test="winner"]').text()).toBe('Winner: Bob');
     await wrapper.get('[data-test="return-lobby"]').trigger('click'); await flushPromises();

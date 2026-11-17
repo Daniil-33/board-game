@@ -9,6 +9,7 @@ import type { Board } from '../client';
 import PurchaseDialog from '../components/PurchaseDialog.vue';
 import AuctionPanel from '../components/AuctionPanel.vue';
 import RentPanel from '../components/RentPanel.vue';
+import DebtNotices from '../components/DebtNotices.vue';
 import Hud from '../components/Hud.vue';
 
 const TICK_MS = 250;
@@ -81,12 +82,13 @@ onBeforeUnmount(() => {
       <p v-if="boardError" class="error" data-test="board-error">{{ boardError }}</p>
     </div>
     <div class="game-panel">
+      <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
       <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />
       <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
       <AssetCard
         v-if="selectedCell && client.game.view?.board"
         :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board"
-        :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now"
+        :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf"
         @close="selectedIndex = null" @command="client.sendCommand"
       />
       <PurchaseDialog v-if="client.game.view?.purchase" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />

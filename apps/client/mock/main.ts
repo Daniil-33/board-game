@@ -2,7 +2,9 @@
  * DEV-ONLY entry point: `pnpm --filter @game/client mock`.
  * Serves the mock lobby over HTTP and the mock room over WebSocket on
  * MOCK_PORT (8787). MOCK_TURN_MS shortens turns to watch timeouts;
- * MOCK_SCENARIO=stage4 seeds owners and houses for rent and building.
+ * MOCK_SCENARIO=stage4 seeds owners and houses for rent and building;
+ * MOCK_SCENARIO=stage5 seats three players for mortgages, liquidation,
+ * bankruptcy and the game result (see STAGE5_SEED in script.ts).
  * POST /mock/drop closes every socket, to watch the client reconnect.
  */
 import { createServer } from 'node:http';
@@ -12,8 +14,8 @@ import { MockServer, type MockPeer } from './server';
 
 const port = Number(process.env.MOCK_PORT ?? 8787);
 const turnMs = Number(process.env.MOCK_TURN_MS ?? 45_000);
-/** MOCK_SCENARIO=stage4 seeds owners and houses to demo rent and building. */
-const scenario = process.env.MOCK_SCENARIO === 'stage4' ? 'stage4' : undefined;
+/** MOCK_SCENARIO=stage4 seeds owners and houses to demo rent and building; stage5 demos debts. */
+const scenario = process.env.MOCK_SCENARIO === 'stage4' || process.env.MOCK_SCENARIO === 'stage5' ? process.env.MOCK_SCENARIO : undefined;
 
 const mock = new MockServer({
   turnMs,

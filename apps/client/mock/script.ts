@@ -58,3 +58,40 @@ export const STAGE4_TURN_DICE: readonly (readonly [number, number])[] = [
   [3, 6],
   [1, 4],
 ];
+
+/**
+ * `MOCK_SCENARIO=stage5`: three seats in join order (the creator, Bot Ada,
+ * Bot Ben). The order dice keep that order; the seed below and the turn dice
+ * play out, through game-core: the creator's own mortgage (Mortgage/Redeem on
+ * the asset card), Ben's tiered liquidation to Ada, the expiry of Ada's
+ * mortgage at the end of the first lap, the creator's bankruptcy (watching
+ * afterwards), then Ben's bankruptcy, which ends the game with Ada winning.
+ */
+export const STAGE5_ORDER_DICE: readonly number[] = [6, 4, 2];
+
+/** Per seat: cash, position, owned cells, houses and mortgaged cells (laps already completed). */
+export const STAGE5_SEED: readonly {
+  readonly cash: number;
+  readonly position: number;
+  readonly owners: readonly number[];
+  readonly houses: Readonly<Record<number, number>>;
+  readonly mortgages: Readonly<Record<number, number>>;
+}[] = [
+  // Creator: M1 complete, energy 12 mortgaged with the whole term ahead; total value too small for Ada's 29.
+  { cash: 1000, position: 15, owners: [1, 3, 12], houses: {}, mortgages: { 12: 0 } },
+  // Ada: M6 and M8 with 4 houses each; logistics 35 mortgaged, expiring at the end of this lap.
+  { cash: 5000, position: 0, owners: [26, 27, 29, 35, 37, 39], houses: { 26: 4, 27: 4, 29: 4, 37: 4, 39: 4 }, mortgages: { 35: 7 } },
+  // Ben: tier 1 (M4 asset 16), tier 2 (M2 complete) and tier 3 (M3 with one house each).
+  { cash: 100, position: 20, owners: [16, 6, 8, 9, 11, 13, 14], houses: { 11: 1, 13: 1, 14: 1 }, mortgages: {} },
+];
+
+export const STAGE5_TURN_DICE: readonly (readonly [number, number])[] = [
+  [3, 4], // creator 15 -> 22: nothing due; mortgage or redeem now
+  [3, 4], // Ada 0 -> 7: nothing due
+  [4, 5], // Ben 20 -> 29: Ada's rent 2870, liquidation in all tiers; the lap ends and Ada's mortgage expires
+  [2, 5], // creator 22 -> 29: Ada's rent 2870 exceeds everything the creator has: bankrupt, watching
+  [4, 6], // Ada 7 -> 17: nothing due
+  [3, 5], // Ben 29 -> 37: Ada's rent 4360: bankrupt, Ada wins
+  [1, 2],
+  [2, 3],
+];

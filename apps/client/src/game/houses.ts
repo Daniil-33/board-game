@@ -39,12 +39,12 @@ export function houseReason(code: string, commandType: ClientCommandType | undef
 
 /**
  * The view as the legality helpers' input. `StateView` holds every
- * `GameState` field except the secret `rng`, which neither helper reads;
+ * `GameState` field except the secret `rng`, which no legality helper reads;
  * the assignment below fails to compile if the view ever lacks another field.
  * A parity test checks the helpers give the same codes on a core state and on
  * its projection.
  */
-function legalityInput(view: StateView): GameState {
+export function legalityInput(view: StateView): GameState {
   const withoutRng: Omit<GameState, 'rng'> = view;
   return withoutRng as GameState;
 }
