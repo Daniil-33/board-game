@@ -56,4 +56,4 @@ History events SHALL be filtered by the same per-viewer projection function as `
 
 #### Scenario: Projection hides events
 - **WHEN** the event projection hides an event type from a viewer
-- **THEN** that viewer's `Welcome.history.entries` SHALL NOT contain it, and an entry left with no events SHALL be omitted,, as its `Update` events do not
+- **THEN** that viewer's `Welcome.history.entries` SHALL NOT contain it, as its `Update` events do not, and an entry left with no events SHALL be omitted
