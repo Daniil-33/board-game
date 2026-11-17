@@ -122,13 +122,15 @@ jobs:
         run: docker compose -p s4-fixtures -f docker-compose.yml -f docker-compose.fixtures.yml up --build -d --wait
         env:
           WEB_PORT: '8082'
-      - name: Stage 4 three-client fixture scenarios
+      - name: Stage 4 and 5 three-client fixture scenarios
         id: fixtures
-        run: pnpm test:e2e e2e/stage4.spec.ts --output=test-results/fixtures
+        run: pnpm test:e2e e2e/stage4.spec.ts e2e/stage5.spec.ts --output=test-results/fixtures
         env:
           E2E_FIXTURES: '1'
           E2E_BASE_URL: http://127.0.0.1:8082
           E2E_FIXTURE_RESTART_COMMAND: docker compose -p s4-fixtures -f docker-compose.yml -f docker-compose.fixtures.yml restart server
+          # Read-only SELECT of the game_results row (stage 5 winner scenario).
+          E2E_FIXTURE_SQL_COMMAND: docker compose -p s4-fixtures -f docker-compose.yml -f docker-compose.fixtures.yml exec -T -e PGOPTIONS=-cdefault_transaction_read_only=on db psql -U game -d game -At
           WEB_PORT: '8082'
       - name: Preserve fixture report and logs
         if: always()

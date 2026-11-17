@@ -1,11 +1,12 @@
 import {
-  checkInvariants, createSession, CURRENT_RULES_VERSION, entropy, gameEngine, mortgageAdvance,
+  checkInvariants, createSession, CURRENT_RULES_VERSION, entropy, gameEngine, houseCost, houseRefund, mortgageAdvance,
   rentFor, timestamp, type BoardCell, type GameState, type Mortgage, type PlayerId, type Money,
 } from '@game/game-core';
 
 /** Stage 5 scenarios: mortgage terms, debt liquidation tiers and bankruptcy. */
 export const STAGE5_FIXTURE_NAMES = ['mortgage-expiry', 'liquidation-tier-1', 'liquidation-tier-2',
-  'liquidation-tier-3', 'bankruptcy', 'final-bankruptcy', 'mortgage-restart'] as const;
+  'liquidation-tier-3', 'bankruptcy', 'final-bankruptcy', 'mortgage-restart',
+  'liquidation-multi-tier', 'bankruptcy-houses'] as const;
 type Stage5FixtureName = typeof STAGE5_FIXTURE_NAMES[number];
 
 export const FIXTURE_NAMES = ['regular-rent', 'full-group-rent', 'logistics-rent', 'energy-rent',
@@ -135,18 +136,40 @@ function stage5Fixture(name: Stage5FixtureName, session: FixtureSession, now: nu
     return state;
   }
 
-  // An open rent on the creditor's complete group, due from the payer.
+  // An open rent on the creditor's complete group, due from the payer. The
+  // browser-only multi-step scenarios put one house on the rent asset so the
+  // debt exceeds what several liquidation steps raise.
   const rentCell = creditorGroup[0]!;
   const rentAsset = rentCell.asset!;
-  state = { ...state, owners: own(creditorGroup, creditor),
+  const multiStep = name === 'liquidation-multi-tier' || name === 'bankruptcy-houses';
+  const creditorHouses: Record<string, number> = multiStep ? { [rentAsset.assetId]: 1 } : {};
+  state = { ...state, owners: own(creditorGroup, creditor), houses: creditorHouses,
     positions: { ...state.positions, [payer]: rentCell.index },
     turn: { ...state.turn!, rolled: true } };
   const amount = rentFor(state, rentAsset.assetId, null);
-  let houses: Record<string, number> = {};
+  let houses: Record<string, number> = { ...creditorHouses };
   let mortgages: Record<string, Mortgage> = {};
   let holdings: readonly BoardCell[];
   let balance: number;
-  if (name === 'bankruptcy' || name === 'final-bankruptcy') {
+  if (multiStep) {
+    // The payer's complete cheapest group: one house on its first asset, every
+    // sibling already mortgaged. `liquidation-multi-tier` adds one bare asset
+    // of an incomplete group, so the order is tier 1 mortgage, tier 3 house
+    // sale, tier 3 mortgage of the now bare asset. `bankruptcy-houses` holds
+    // less than the debt even after selling the house and mortgaging the asset.
+    const [built, ...siblings] = payerGroup;
+    const loose = groupCells(groups[1]!)[0]!;
+    holdings = name === 'liquidation-multi-tier' ? [...payerGroup, loose] : payerGroup;
+    houses = { ...houses, [built!.asset!.assetId]: 1 };
+    mortgages = Object.fromEntries(siblings.map(c => [c.asset!.assetId, term(c, 0, [...state.order!])]));
+    const refund = houseRefund(houseCost(built!.asset!.price));
+    balance = name === 'liquidation-multi-tier'
+      ? amount - mortgageAdvance(loose.asset!.price) - refund - 10
+      : 10;
+    if (name === 'bankruptcy-houses' && balance + refund + mortgageAdvance(built!.asset!.price) >= amount) {
+      throw new Error('Fixture bankruptcy-houses must stay insolvent');
+    }
+  } else if (name === 'bankruptcy' || name === 'final-bankruptcy') {
     // Cash 10 and one already mortgaged asset: nothing left to raise, so the
     // creditor receives 10 and the asset returns to the bank.
     holdings = [payerGroup[0]!];
