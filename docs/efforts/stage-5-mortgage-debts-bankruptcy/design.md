@@ -162,6 +162,11 @@ deleted. Liquidation is atomic, inside the one command that pays.
 
 ### Liquidation search and proof of optimality (C6, C7)
 
+> **Superseded (2026-11-17).** The owner replaces C6-C7 with a fixed tiered
+> priority (handoff revision 2, pending). This section and I2 are kept only
+> as history; `TASK-s5-planner` is parked. The design will be revised
+> against revision 2.
+
 **Model.** The payer `P`'s assets are partitioned into rent groups:
 - each monopoly group;
 - the logistics group;
