@@ -330,7 +330,8 @@ by an always step. Rotation follows the same recorded sequence: add replacement,
 upload its secret, verify restriction/deploy, remove the old public entry, and
 delete temporary private files. Retain the authorized_keys backup securely.
 
-CI has independent `compose-browser` (production entropy/recovery) and
+CI has independent, parallel `compose-browser` (production entropy/recovery),
+`compose-browser-fixtures` (isolated stage 4-5 fixture stack) and
 `compose-browser-seeded` (deterministic fixture) jobs, each limited to 35 minutes.
 Both cache Playwright browsers by OS, architecture and lockfile; system browser
 dependencies are still installed. Each job sanitizes evidence before its own
