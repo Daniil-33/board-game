@@ -44,10 +44,10 @@ export function stepsForEvent(event: GameEvent, ringSize: number): AnimationStep
   const p = record(event.payload);
   if (p === null) return [];
   if (event.type === 'RentPaid') {
-    // Only a payment that moved money; an interim shortfall with an empty balance shows nothing.
-    const { payerId, ownerId, paid } = p;
-    if (typeof payerId !== 'string' || typeof ownerId !== 'string' || typeof paid !== 'number' || !Number.isInteger(paid) || paid <= 0) return [];
-    return [{ kind: 'rentPayment', from: payerId, to: ownerId, amount: paid }];
+    // Successful rent payments move the full amount between tokens.
+    const { payerId, ownerId, amount } = p;
+    if (typeof payerId !== 'string' || typeof ownerId !== 'string' || typeof amount !== 'number' || !Number.isInteger(amount) || amount <= 0) return [];
+    return [{ kind: 'rentPayment', from: payerId, to: ownerId, amount }];
   }
   if (typeof p.playerId !== 'string') return [];
   const playerId = p.playerId;

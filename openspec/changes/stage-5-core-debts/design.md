@@ -29,8 +29,7 @@ See proposal.md for motivation and sources. At base 34d8c29 rent.ts implements i
 - [Nested or repeated closure] → use an explicit settlement outcome and a post-settlement scheduler shared by PayRent and closeTurn; assert one TurnEnded/revision and no bonus after bankruptcy.
 - [Partial house groups after expiry] → include all built payer groups in tier 3 and enforce even sales with unowned siblings counted as zero.
 - [Fresh mortgages age on the paying turn] → initialize pending with the pre-elimination active order, then use the ordinary boundary once on successful or nonterminal debt closure; successful PayRent alone is not a boundary.
-- [Out-of-core tests depend on removed fields] → two client mock assertions currently match RentPaid.paid. Request Team Lead authorization for mechanical assertion updates to amount; no UI feature work is proposed. Literal historical shortfall scenarios outside core belong to later stage 5 integration tasks.
-- [Existing UI animation reads paid] → report to TASK-s5-client; changing client behavior exceeds this task. Protocol uses generic event envelopes, so runtime integration must be verified in downstream work.
+- [Existing consumers assert the removed payment shape] → Team Lead authorized the minimal client animation, client/mock test, protocol test fixture and stage 4 browser assertion updates listed in proposal.md. Bankruptcy browser checks use only projected state/events; stage 5 UI remains downstream.
 
 ## Migration Plan
 

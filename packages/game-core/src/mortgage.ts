@@ -42,6 +42,15 @@ export type AssetRedeemed = GameEvent<{ readonly playerId: PlayerId; readonly as
 export type MortgageExpired = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly advance: Money }, 'MortgageExpired'>;
 export type MortgageEvent = AssetMortgaged | AssetRedeemed | MortgageExpired;
 
+/** Apply one legal mortgage; command guards belong to the caller. */
+export function applyMortgage(state: GameState, playerId: PlayerId, assetId: AssetId, auto: boolean) {
+  const advance = mortgageAdvance(state.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!.price);
+  const balance = creditBalance(state.balances, playerId, advance, 'mortgage');
+  const event: AssetMortgaged = {type: 'AssetMortgaged', payload: {playerId, assetId, advance, auto}};
+  return {state: {...state, balances: balance.balances, mortgages: {...state.mortgages,
+    [assetId]: {advance, lapsCompleted: 0, pending: [...state.order!]}}}, events: [balance.event, event]};
+}
+
 export const mortgageCommands: CommandRegistry = Object.fromEntries(['Mortgage', 'Redeem'].map(type => [type, {
   guard: targetGuard('turn', s => s.turn?.turnId ?? null), allowedActors: ['player'], allowedPhases: ['playing'],
   handle(state, command, context) {
@@ -55,12 +64,12 @@ export const mortgageCommands: CommandRegistry = Object.fromEntries(['Mortgage',
     const redeem = type === 'Redeem';
     const error = (redeem ? redeemLegality : mortgageLegality)(state, playerId, assetId);
     if (error) return fail(error, error);
+    if (!redeem) { const result = applyMortgage(state, playerId, assetId, false); return ok(result.state, result.events); }
     const mortgages = { ...state.mortgages };
-    const amount = redeem ? mortgages[assetId]!.advance : mortgageAdvance(state.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!.price);
-    const balance = redeem ? debitBalance(state.balances, playerId, amount, 'redeem') : creditBalance(state.balances, playerId, amount, 'mortgage');
-    if (redeem) delete mortgages[assetId];
-    else mortgages[assetId] = { advance: amount, lapsCompleted: 0, pending: [...state.order!] };
-    const event: MortgageEvent = redeem ? {type: 'AssetRedeemed', payload: {playerId, assetId, amount}} : {type: 'AssetMortgaged', payload: {playerId, assetId, advance: amount, auto: false}};
+    const amount = mortgages[assetId]!.advance;
+    const balance = debitBalance(state.balances, playerId, amount, 'redeem');
+    delete mortgages[assetId];
+    const event: AssetRedeemed = {type: 'AssetRedeemed', payload: {playerId, assetId, amount}};
     return ok({ ...state, mortgages, balances: balance.balances }, [balance.event, event]);
   },
 } satisfies CommandSpec]));

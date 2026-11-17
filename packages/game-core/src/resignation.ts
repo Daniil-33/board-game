@@ -18,6 +18,15 @@ export type AssetsReleased = GameEvent<{readonly playerId: PlayerId; readonly as
 export function cancelOffersOf(state: GameState, _playerId: PlayerId): GameState { return state; }
 export type ResignationEvent = PlayerResignedEvent | GameEndedEvent | AssetsReleased;
 
+/** Release the portfolio in board order; empty portfolios emit no event. */
+export function releaseAssets(state: GameState, playerId: PlayerId, reason: AssetsReleased['payload']['reason']) {
+  const owners = {...state.owners}, houses = {...state.houses}, mortgages = {...state.mortgages};
+  const assetIds = state.board!.cells.flatMap(c => c.asset && Object.hasOwn(owners,c.asset.assetId) && owners[c.asset.assetId] === playerId ? [c.asset.assetId] : []);
+  for (const id of assetIds) { delete owners[id]; delete houses[id]; delete mortgages[id]; }
+  const events: AssetsReleased[] = assetIds.length ? [{type:'AssetsReleased',payload:{playerId,assetIds,reason}}] : [];
+  return {state:{...state,owners,houses,mortgages},events};
+}
+
 export const resignationCommands: CommandRegistry = {
   Resign: {
     guard: revisionGuard,
@@ -37,15 +46,13 @@ export const resignationCommands: CommandRegistry = {
         positions: Object.fromEntries(Object.entries(state.positions).filter(([p]) => p !== playerId)),
         jail: Object.fromEntries(Object.entries(state.jail).filter(([p]) => p !== playerId)),
       };
-      const owners = { ...next.owners }, houses = { ...next.houses }, mortgages = { ...next.mortgages };
-      const assetIds = state.board!.cells.flatMap(c => c.asset && Object.hasOwn(owners, c.asset.assetId) && owners[c.asset.assetId] === playerId ? [c.asset.assetId] : []);
-      for (const id of assetIds) { delete owners[id]; delete houses[id]; delete mortgages[id]; }
-      next = cancelOffersOf(removeMortgageParticipant({ ...next, owners, houses, mortgages,
+      const released = releaseAssets(next, playerId, 'resigned');
+      next = cancelOffersOf(removeMortgageParticipant({ ...released.state,
         eliminations: [...state.eliminations, {playerId, reason: 'resigned', at: context.now, creditorId: null}],
       }, playerId), playerId);
       next = resignDuringRent(next, playerId, winner !== null);
       const events: GameEvent[] = [{ type: 'PlayerResigned', payload: { playerId } } satisfies PlayerResignedEvent];
-      if (assetIds.length > 0) events.push({type: 'AssetsReleased', payload: {playerId, assetIds, reason: 'resigned'}} satisfies AssetsReleased);
+      events.push(...released.events);
       if (state.phase === 'playing') {
         const order = state.order!;
         next = { ...next, order: order.filter((p) => p !== playerId), turn: state.turn!.playerId === playerId ? { ...state.turn!, pendingBonus: false } : state.turn };

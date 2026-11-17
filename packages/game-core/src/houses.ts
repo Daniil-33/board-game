@@ -46,8 +46,19 @@ export function saleLegality(state: GameState, playerId: PlayerId, assetId: Asse
 export type BuildHouseCommand = GameCommand<{ readonly assetId: AssetId }, 'BuildHouse'>;
 export type SellHouseCommand = GameCommand<{ readonly assetId: AssetId }, 'SellHouse'>;
 export type HouseBuilt = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly cost: Money }, 'HouseBuilt'>;
-export type HouseSold = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly refund: Money }, 'HouseSold'>;
+export type HouseSold = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly refund: Money; readonly auto: boolean }, 'HouseSold'>;
 export type HouseEvent = HouseBuilt | HouseSold;
+/** Sell one house selected in legal even order, without changing quotas. */
+export function applyHouseSale(state: GameState, playerId: PlayerId, assetId: AssetId, auto: boolean) {
+  const asset = state.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!;
+  const refund = houseRefund(houseCost(asset.price));
+  const balance = creditBalance(state.balances, playerId, refund, 'house-sale');
+  const houses = {...state.houses};
+  const count = houses[assetId]! - 1;
+  if (count) houses[assetId] = count; else delete houses[assetId];
+  const event: HouseSold = {type: 'HouseSold', payload: {playerId, assetId, houses: count, refund, auto}};
+  return {state: {...state, houses, balances: balance.balances}, events: [balance.event, event]};
+}
 export const houseCommands: CommandRegistry = Object.fromEntries(['BuildHouse', 'SellHouse'].map(type => [type, {
   guard: targetGuard('turn', (s: GameState) => s.turn?.turnId ?? null), allowedActors: ['player'], allowedPhases: ['playing'],
   handle(state, command, context) {
@@ -60,15 +71,13 @@ export const houseCommands: CommandRegistry = Object.fromEntries(['BuildHouse', 
     if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
     const error = (type === 'BuildHouse' ? buildLegality : saleLegality)(state, playerId, assetId);
     if (error) return fail(error, error);
+    if (type === 'SellHouse') { const result = applyHouseSale(state, playerId, assetId, false); return ok(result.state, result.events); }
     const asset = state.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!;
     const cost = houseCost(asset.price);
-    const build = type === 'BuildHouse';
-    const refund = houseRefund(cost);
-    const balance = build ? debitBalance(state.balances, playerId, cost, 'build') : creditBalance(state.balances, playerId, refund, 'house-sale');
-    const houses = { ...state.houses };
-    const count = (houses[assetId] ?? 0) + (build ? 1 : -1);
-    if (count) houses[assetId] = count; else delete houses[assetId];
-    const event: HouseEvent = build ? {type: 'HouseBuilt', payload: {playerId, assetId, houses: count, cost}} : {type: 'HouseSold', payload: {playerId, assetId, houses: count, refund}};
-    return ok({ ...state, houses, balances: balance.balances, turn: { ...state.turn!, quotas: { ...state.turn!.quotas, builds: state.turn!.quotas.builds - (build ? 1 : 0) } } }, [balance.event, event]);
+    const balance = debitBalance(state.balances, playerId, cost, 'build');
+    const count = (state.houses[assetId] ?? 0) + 1;
+    const event: HouseBuilt = {type: 'HouseBuilt', payload: {playerId, assetId, houses: count, cost}};
+    return ok({ ...state, houses: {...state.houses, [assetId]: count}, balances: balance.balances,
+      turn: { ...state.turn!, quotas: { ...state.turn!.quotas, builds: state.turn!.quotas.builds - 1 } } }, [balance.event, event]);
   },
 } satisfies import('./registry.js').CommandSpec]));

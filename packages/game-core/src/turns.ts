@@ -34,7 +34,7 @@ export type TurnErrorCode =
   | 'ALREADY_ROLLED'
   | 'ROLL_REQUIRED';
 
-export type TurnEndReason = 'end-turn' | 'timeout' | 'sent-to-jail' | 'resigned';
+export type TurnEndReason = 'end-turn' | 'timeout' | 'sent-to-jail' | 'resigned' | 'bankrupt';
 
 export type TurnStartedEvent = GameEvent<
   { readonly turnId: string; readonly playerId: PlayerId; readonly deadline: Timestamp; readonly bonus: boolean },
@@ -101,38 +101,37 @@ export function startPlay(state: GameState, order: readonly PlayerId[], now: Tim
   return startTurn({ ...state, phase: 'playing', order, positions, jail: {} }, order[0]!, false, 0, now);
 }
 
-/**
- * Mandatory settlement before every turn closure; stage 5 adds debt handling here.
- */
-function settleMandatory(state: GameState): Step {
-  return settleRent(state, true);
+/** Mandatory settlement before every turn closure. */
+function settleMandatory(state: GameState, now: Timestamp) { return settleRent(state, true, now); }
+
+export function closeTurn(state: GameState, reason: TurnEndReason, now: Timestamp,
+  resignation?: { readonly nextPlayer: PlayerId | null }): Step {
+  const turn = state.turn!, order = state.order!;
+  const settled = settleMandatory({...state, purchase: null}, now);
+  const closed = scheduleAfterSettlement(settled.state, settled.bankrupt ? 'bankrupt' : reason, now, turn, order, resignation);
+  return {state: closed.state, events: [...settled.events, ...closed.events]};
 }
 
-/** Close a turn through settlement; resignation selects a survivor or terminal closure. */
-export function closeTurn(
-  state: GameState, reason: TurnEndReason, now: Timestamp,
-  resignation?: { readonly nextPlayer: PlayerId | null },
-): Step {
-  const settled = settleMandatory({ ...state, purchase: null });
-  const turn = settled.state.turn!;
-  const events: GameEvent[] = [
-    ...settled.events,
-    { type: 'TurnEnded', payload: { turnId: turn.turnId, playerId: turn.playerId, reason } },
-  ];
-  if (resignation?.nextPlayer === null) return { state: { ...settled.state, turn: null }, events };
-  const boundary = processMortgageBoundary(settled.state, turn.playerId);
+/** Schedule exactly once after settlement, retaining the pre-elimination order. */
+export function scheduleAfterSettlement(state: GameState, reason: TurnEndReason, now: Timestamp,
+  turn: TurnState, oldOrder: readonly PlayerId[], resignation?: {readonly nextPlayer: PlayerId | null}): Step {
+  const events: GameEvent[] = [{type:'TurnEnded',payload:{turnId:turn.turnId,playerId:turn.playerId,reason}}];
+  if (reason === 'bankrupt' && state.order!.length === 1) {
+    const winner = state.order![0]!;
+    events.push({type:'GameEnded',payload:{winner,at:now,eliminations:state.eliminations,finalBalances:{...state.balances}}} satisfies import('./resignation.js').GameEndedEvent);
+    return {state:{...state,phase:'finished',winner,finishedAt:now,setup:null,order:null,turn:null,purchase:null,auction:null,rent:null},events};
+  }
+  if (resignation?.nextPlayer === null) return {state:{...state,turn:null},events};
+  const boundary = processMortgageBoundary(state,turn.playerId);
   events.push(...boundary.events);
   let next: Step;
-  if (resignation !== undefined) {
-    next = startTurn(boundary.state, resignation.nextPlayer, false, 0, now);
-  } else if (turn.pendingBonus) {
-    next = startTurn(boundary.state, turn.playerId, true, turn.doublesStreak, now);
-  } else {
-    const order = settled.state.order!;
-    const following = order[(order.indexOf(turn.playerId) + 1) % order.length]!;
-    next = startTurn(boundary.state, following, false, 0, now);
+  if (resignation !== undefined) next = startTurn(boundary.state,resignation.nextPlayer,false,0,now);
+  else if (reason !== 'bankrupt' && turn.pendingBonus) next = startTurn(boundary.state,turn.playerId,true,turn.doublesStreak,now);
+  else {
+    const following = oldOrder[(oldOrder.indexOf(turn.playerId)+1)%oldOrder.length]!;
+    next = startTurn(boundary.state,following,false,0,now);
   }
-  return { state: next.state, events: [...events, ...next.events] };
+  return {state:next.state,events:[...events,...next.events]};
 }
 
 /**

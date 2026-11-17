@@ -30,4 +30,12 @@ Sources: TASK-s5-core-debts revision 1; effort handoff revision 2; Team Lead des
 
 Core rent, turn closure, house/mortgage mutation helpers, elimination helpers, event exports and projection; focused core tests and replay/restore tests. No new dependencies or rules version beyond core-7 introduced by PR #60.
 
-Out of scope: protocol/server/client features, migrations, stage 6, trades, parked liquidation planner, changes to resignation or auction policy. Only mechanical build fixes outside core are authorized by the handoff. Existing client mock tests still assert removed RentPaid.paid; Team Lead must confirm permission for minimal assertion updates if required by pnpm test. UI payment animation migration belongs to TASK-s5-client.
+Out of scope: protocol/server/client features, migrations, stage 6, trades, parked liquidation planner, changes to resignation or auction policy.
+
+Team Lead scope extensions authorize only compatibility updates outside core:
+- apps/client/src/game/animation.ts reads successful RentPaid.amount with existing guards.
+- apps/client/src/__tests__/stage4.test.ts and apps/client/mock/__tests__/stage4.test.ts use the current payment payload.
+- e2e/stage4.spec.ts uses current RentPaid/HouseSold payloads and replaces the interim partial-payment assertion with bankruptcy through projected events/state only.
+- packages/protocol/src/__tests__/stage4.test.ts uses the current RentPaid fixture.
+
+No server fixture builder or stage 5 client UI changes are included.

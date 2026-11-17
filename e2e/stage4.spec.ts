@@ -143,15 +143,35 @@ for (const fixture of ['regular-rent', 'full-group-rent', 'logistics-rent', 'ene
     await click(players, mover, 'pay-rent');
     const paid = Math.min(rent.amount, view.balances[mover.id]!);
     const expectedBalances = { ...view.balances, [mover.id]: view.balances[mover.id]! - paid, [rent.ownerId]: view.balances[rent.ownerId]! + paid };
-    await balances(players, expectedBalances);
-    for (const p of players) {
-      expect(p.view!.rent).toBeNull();
-      expect(p.events.findLast(e => e.event.type === 'RentPaid')!.event.payload).toEqual({
-        payerId: mover.id, ownerId: rent.ownerId, assetId: rent.assetId, amount: rent.amount, paid, shortfall: rent.amount - paid, auto: false,
-      });
-      await expect(p.page.locator(sel('rent'))).toHaveCount(0);
+    if (fixture === 'shortfall') {
+      expect(paid).toBeGreaterThan(0); expect(paid).toBeLessThan(rent.amount);
+      const owned = Object.keys(view.owners).filter(id => view.owners[id] === mover.id);
+      for (const p of players) {
+        expect(p.view!.balances).toEqual(expectedBalances);
+        expect(p.view!.rent).toBeNull();
+        expect(p.events.findLast(e => e.event.type === 'PlayerBankrupt')!.event.payload).toEqual({
+          playerId: mover.id, creditorId: rent.ownerId, debt: rent.amount, paid, writtenOff: rent.amount - paid,
+        });
+        expect(p.view!.eliminations.find(e => e.playerId === mover.id)).toMatchObject({ playerId: mover.id, reason: 'bankrupt', creditorId: rent.ownerId });
+        expect(p.view!.order).not.toContain(mover.id);
+        expect(Object.values(p.view!.owners)).not.toContain(mover.id);
+        for (const id of owned) {
+          expect(p.view!.owners[id]).toBeUndefined();
+          expect(p.view!.houses[id]).toBeUndefined();
+          expect(p.view!.mortgages[id]).toBeUndefined();
+        }
+        expect(p.events.some(e => e.event.type === 'RentPaid')).toBe(false);
+      }
+    } else {
+      await balances(players, expectedBalances);
+      for (const p of players) {
+        expect(p.view!.rent).toBeNull();
+        expect(p.events.findLast(e => e.event.type === 'RentPaid')!.event.payload).toEqual({
+          payerId: mover.id, ownerId: rent.ownerId, assetId: rent.assetId, amount: rent.amount, auto: false,
+        });
+        await expect(p.page.locator(sel('rent'))).toHaveCount(0);
+      }
     }
-    if (fixture === 'shortfall') { expect(paid).toBeGreaterThan(0); expect(paid).toBeLessThan(rent.amount); expect(mover.view!.balances[mover.id]).toBe(0); }
     await shoot(players, info, fixture);
   });
 }
@@ -239,7 +259,7 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   await balances(players, { ...beforeSale.balances, [mover.id]: beforeSale.balances[mover.id]! + refund });
   for (const p of players) {
     expect(p.view!.houses[firstId]).toBeUndefined(); expect(p.view!.houses[secondId]).toBe(1);
-    expect(p.events.findLast(e => e.event.type === 'HouseSold')!.event.payload).toEqual({ playerId: mover.id, assetId: firstId, houses: 0, refund });
+    expect(p.events.findLast(e => e.event.type === 'HouseSold')!.event.payload).toEqual({ playerId: mover.id, assetId: firstId, houses: 0, refund, auto: false });
     await card(p, firstCell);
     await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4'); await close(p);
     await card(p, secondCell);
@@ -275,7 +295,7 @@ test('stage 4: reload and server restart preserve open rent; real deadline auto-
     const paid = p.events.findLast(e => e.event.type === 'RentPaid')!;
     expect(paid.at).toBeGreaterThanOrEqual(before.turn!.deadline);
     expect(paid.at - before.turn!.deadline).toBeLessThan(2_000);
-    expect(paid.event.payload).toEqual({ payerId: rent.payerId, ownerId: rent.ownerId, assetId: rent.assetId, amount: rent.amount, paid: rent.amount, shortfall: 0, auto: true });
+    expect(paid.event.payload).toEqual({ payerId: rent.payerId, ownerId: rent.ownerId, assetId: rent.assetId, amount: rent.amount, auto: true });
     expect(p.view!.rent).toBeNull(); expect(p.view!.turn!.turnId).not.toBe(before.turn!.turnId);
     await expect(p.page.locator(sel('rent'))).toHaveCount(0);
   }

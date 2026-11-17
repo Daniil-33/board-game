@@ -140,3 +140,6 @@ export { mortgageAdvance, mortgageLegality, redeemLegality } from './mortgage.js
 export type { MortgageCommand, RedeemCommand, MortgageErrorCode, AssetMortgaged, AssetRedeemed, MortgageExpired, MortgageEvent } from './mortgage.js';
 export type { Mortgage, Elimination } from './state.js';
 export type { AssetsReleased } from './resignation.js';
+
+export { settleDebt } from './debt.js';
+export type { Debt, DebtResult, DebtEvent, LiquidationApplied, LiquidationStep, PlayerBankrupt } from './debt.js';

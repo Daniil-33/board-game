@@ -97,7 +97,7 @@ describe('core-7 mortgage commands',()=>{
     const amount=s.rent!.amount; s=accept(s,command(s,'Mortgage',c!.assetId)).state;
     reject(s,command(s,'Redeem',c!.assetId),'RENT_PENDING');reject(s,command(s,'BuildHouse',c!.assetId),'RENT_PENDING');
     s=accept(s,command(s,'SellHouse',a!.assetId)).state;expect(s.rent!.amount).toBe(amount);
-    expect(accept(s,command(s,'PayRent')).events.at(-1)!.payload).toMatchObject({amount,paid:amount,shortfall:0});
+    expect(accept(s,command(s,'PayRent')).events.at(-1)!.payload).toMatchObject({amount});
   });
 });
 
