@@ -1,4 +1,5 @@
 import { reactive } from 'vue';
+import type { DebtNotice } from '../game/debts';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType, CommandFrame } from '@game/protocol';
 
@@ -21,6 +22,7 @@ export interface GameState {
   /** Commands sent and not yet acknowledged, oldest first. */
   pending: CommandFrame[];
   messages: HudMessage[];
+  notices: DebtNotice[];
   /** A transient connection problem (malformed frame). */
   problem: string | null;
   /** A terminal connection notice; reconnecting has stopped. */
@@ -36,6 +38,7 @@ export function createGameState(): GameState {
     view: null,
     pending: [],
     messages: [],
+    notices: [],
     problem: null,
     fatal: null,
   });

@@ -22,6 +22,8 @@ export const BANNER_MS = 1300;
 export const RENT_MS = 900;
 /** House marker fill. */
 export const HOUSE_COLOR = 0x7ee06a;
+/** Mortgage marker colour: a cell frame and an "M" badge. */
+export const MORTGAGE_COLOR = 0xffc857;
 
 const TOKEN_RADIUS = 7;
 const DIE_SIZE = 54;
@@ -50,7 +52,7 @@ const PIPS: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
 };
 
 /** The slice of the view the board draws. */
-export type BoardView = Pick<StateView, 'owners' | 'board' | 'players' | 'positions' | 'jail' | 'eliminated' | 'houses'>;
+export type BoardView = Pick<StateView, 'owners' | 'board' | 'players' | 'positions' | 'jail' | 'eliminated' | 'houses' | 'mortgages'>;
 
 export interface SceneClock {
   /** Run `frame(t)` with t from 0 to 1 over `ms`; resolves early (false) when `cancelled()` turns true. */
@@ -90,6 +92,8 @@ export class BoardScene {
   readonly ownership = new Container();
   /** House markers, 1-4 per asset cell, from `view.houses`. */
   readonly housing = new Container();
+  /** Mortgage markers, one per mortgaged asset cell, from `view.mortgages`. */
+  readonly mortgages = new Container();
   private boardKey = '';
   private selectAsset: ((index: number) => void) | null = null;
   /** The marker of the jail cell's "in jail" box. */
@@ -113,7 +117,7 @@ export class BoardScene {
     const ring = CLASSIC_40;
     this.root.addChild(new Graphics().rect(0, 0, size, size).fill(COLORS.board));
 
-    this.root.addChild(this.cells, this.ownership, this.housing);
+    this.root.addChild(this.cells, this.ownership, this.housing, this.mortgages);
 
     const jb = jailBox(cellRect(ring.jailCell, size));
     this.jailMarker.rect(jb.x, jb.y, jb.width, jb.height).fill(COLORS.jailBox).stroke({ width: 1, color: COLORS.cellEdge });
@@ -137,9 +141,10 @@ export class BoardScene {
     this.root.addChild(this.tokens, this.activeRing);
   }
 
-  /** Redraw the view-driven cell layers (owners and houses) without touching tokens or a step in flight. */
+  /** Redraw the view-driven cell layers (owners, houses and mortgages) without touching tokens or a step in flight. */
   refreshOwnership(view: BoardView): void {
     this.refreshHouses(view);
+    this.refreshMortgages(view);
     for (const child of this.ownership.removeChildren()) child.destroy();
     for (const cell of view.board?.cells ?? []) {
       if (cell.asset === null) continue;
@@ -152,6 +157,22 @@ export class BoardScene {
       marker.tint = TOKEN_COLORS[index % TOKEN_COLORS.length]!;
       marker.label = `owner-${cell.index}-${owner}`;
       this.ownership.addChild(marker);
+    }
+  }
+
+  refreshMortgages(view: BoardView): void {
+    for (const child of this.mortgages.removeChildren()) child.destroy();
+    const mortgages = view.mortgages ?? {};
+    for (const cell of view.board?.cells ?? []) {
+      if (cell.asset === null || !Object.hasOwn(mortgages, cell.asset.assetId)) continue;
+      const r = cellRect(cell.index, this.size);
+      const marker = new Container();
+      marker.addChild(new Graphics().rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2).fill({ color: MORTGAGE_COLOR, alpha: 0.18 }).stroke({ width: 2, color: MORTGAGE_COLOR }));
+      const mark = label('M', 12, MORTGAGE_COLOR, true);
+      mark.position.set(r.x + r.width - 16, r.y + 3);
+      marker.addChild(mark);
+      marker.label = `mortgage-${cell.index}`;
+      this.mortgages.addChild(marker);
     }
   }
 

@@ -97,7 +97,11 @@ export class MockServer {
       const accessCode = (body as { accessCode?: string } | undefined)?.accessCode;
       const room = this.createRoom(guest, accessCode);
       // Nobody else is here in a mock: a bot joins so the game can be started.
-      if (this.options.automateSeats !== false) this.options.timers.setTimeout(() => this.join(room, this.addGuest('Bot Ada', true)), LOBBY_BOT_DELAY_MS);
+      if (this.options.automateSeats !== false) this.options.timers.setTimeout(() => {
+        this.join(room, this.addGuest('Bot Ada', true));
+        // The stage 5 scenario needs a third seat, so a bankrupt viewer can keep watching.
+        if (this.options.scenario === 'stage5') this.join(room, this.addGuest('Bot Ben', true));
+      }, LOBBY_BOT_DELAY_MS);
       return { status: 200, body: { room: summaryOf(room), ...(accessCode !== undefined && { accessCode, inviteLink: `/?room=${encodeURIComponent(room.summary.roomId)}&code=${encodeURIComponent(accessCode)}` }) } };
     }
 

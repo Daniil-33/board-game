@@ -68,8 +68,8 @@ describe('house legality adapter', () => {
       expect(saleLegality(state, pid('a'), at(state, cell))).toBe(code);
       expect(houseControls(ctx(project(state)), at(state, cell))!.sell.code).toBe(code); seen.add(code);
     }
-    // NOT_A_BUILDABLE_ASSET and NOT_OWNER assets show no controls at all; GROUP_MORTGAGED is unreachable until
-    // stage 5 (isMortgaged is always false). Every other code reaches a control.
+    // NOT_A_BUILDABLE_ASSET and NOT_OWNER assets show no controls at all; GROUP_MORTGAGED is covered in
+    // stage5.test.ts. Every other code reaches a control.
     const unreachable = ['NOT_A_BUILDABLE_ASSET', 'NOT_OWNER', 'GROUP_MORTGAGED'];
     expect([...seen].filter(c => c !== null).sort()).toEqual(Object.keys(HOUSE_REASONS).filter(c => !unreachable.includes(c)).sort());
     expect(houseControls(ctx(project(s)), at(s, 5))).toBeNull();

@@ -4,6 +4,8 @@ import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { actionAvailability, activeDeadline, activePlayerId, turnOrder, type NullPayloadType } from '../game/view';
 import { houseReason } from '../game/houses';
+import { mortgageReason } from '../game/mortgages';
+import { eliminationText } from '../game/debts';
 import type { HudMessage } from '../store/game';
 import ResignControl from './ResignControl.vue';
 import ActionButtons from './ActionButtons.vue';
@@ -30,6 +32,8 @@ const active = computed(() => activePlayerId(props.view));
 const available = computed(() =>
   actionAvailability({ view: props.view, me: props.me, connected: props.connected, pending: props.pending, now: props.now }),
 );
+const out = computed(() => (props.me !== null && props.view?.eliminated.includes(props.me) ? eliminationText(props.view, props.me) : null));
+const reasonFor = (message: HudMessage): string | null => houseReason(message.code, message.commandType) ?? mortgageReason(message.code, message.commandType);
 const headline = computed(() => {
   if (props.view === null || active.value === null) return 'Waiting for the server';
   const name = active.value === props.me ? 'You' : props.nameOf(active.value);
@@ -48,7 +52,7 @@ const headline = computed(() => {
     <h2 data-test="headline">{{ headline }}</h2>
     <TurnTimer :paused="view?.turn?.pausedRemainingMs != null" :deadline="activeDeadline(view)" :now="now" />
 
-    <p v-if="me && view?.eliminated.includes(me)" class="warn-box" data-test="spectator">You are out. Watching the game.</p>
+    <p v-if="out" class="warn-box" data-test="spectator">{{ out }} Watching the game.</p>
     <ActionButtons :available="available" @command="(type) => emit('command', type)" />
     <p v-if="me && view?.rent?.payerId === me" class="note" data-test="auto-pay-note">
       Ending the turn pays the open rent automatically.
@@ -61,7 +65,7 @@ const headline = computed(() => {
 
     <ul v-if="messages.length > 0" class="messages">
       <li v-for="message in messages" :key="message.id" class="error" data-test="message">
-        <span><strong>{{ message.code }}</strong>: {{ message.message }}<template v-if="houseReason(message.code, message.commandType)"> — {{ houseReason(message.code, message.commandType) }}</template></span>
+        <span><strong>{{ message.code }}</strong>: {{ message.message }}<template v-if="reasonFor(message)"> — {{ reasonFor(message) }}</template></span>
         <button class="link" aria-label="Dismiss" @click="emit('dismiss', message.id)">×</button>
       </li>
     </ul>

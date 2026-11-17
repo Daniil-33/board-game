@@ -8,6 +8,7 @@ import { CLASSIC_40 } from '@game/game-core';
 import { AccessCodeSchema, RoomIdSchema, type RoomSummary } from '@game/protocol';
 import { Value } from '@sinclair/typebox/value';
 import { LobbyRequestError, createLobbyApi, type FetchLike, type LobbyApi } from './api/lobby';
+import { appendNotices, debtNotices } from './game/debts';
 import { AnimationQueue, type AnimationStep } from './game/animation';
 import { activePlayerId, type IntentRequest } from './game/view';
 import { createConnection, type Connection, type Timers } from './net/connection';
@@ -128,6 +129,7 @@ export function createClient(deps: ClientDeps): Client {
     connection.disconnect();
     queue.clear();
     session.clearRoom();
+    game.notices.splice(0);
     lobby.creatorAccess = null;
     lobby.busy = false;
     lobby.error = null;
@@ -182,6 +184,8 @@ export function createClient(deps: ClientDeps): Client {
       resolveNames();
     },
     onUpdate(view, events) {
+      // Before animation handling: a terminal update cancels the queue, and its bankruptcy must still show.
+      appendNotices(game.notices, debtNotices(events));
       board?.refreshOwnership?.(view);
       const nextEliminated = JSON.stringify(view.eliminated);
       if (nextEliminated !== eliminatedKey || view.phase === 'finished' || events.some((e) => e.type === 'PlayerResigned' || e.type === 'GameEnded')) {
@@ -238,6 +242,7 @@ export function createClient(deps: ClientDeps): Client {
   }
 
   function enterRoom(room: RoomSummary): void {
+    game.notices.splice(0);
     entry++;
     namesFlight = null;
     lobby.creatorAccess = null;

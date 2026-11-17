@@ -4,10 +4,10 @@
  * the shapes game-core defines, enough to demo every screen. The real server
  * runs `@game/game-core`; nothing here ships in the client bundle.
  */
-import { gameEngine, projectState, rentFor, rentQuotes, timestamp, entropy, CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward, creditBalance, CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
-import type { AssetId, CommandId, Expectation, GameEvent, GameState, PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
+import { gameEngine, projectState, mortgageAdvance, rentFor, rentQuotes, timestamp, entropy, CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward, creditBalance, CLASSIC_40, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
+import type { AssetId, CommandId, Expectation, GameEvent, GameState, Money, PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
 import type { ClientCommandType, ErrorBody } from '@game/protocol';
-import { ORDER_DICE, TURN_DICE, STAGE4_ORDER_DICE, STAGE4_TURN_DICE, STAGE4_SEED } from './script';
+import { ORDER_DICE, TURN_DICE, STAGE4_ORDER_DICE, STAGE4_TURN_DICE, STAGE4_SEED, STAGE5_ORDER_DICE, STAGE5_SEED, STAGE5_TURN_DICE } from './script';
 
 export interface MockGameOptions {
   /** Length of an order roll and of a turn. */
@@ -17,9 +17,11 @@ export interface MockGameOptions {
   /**
    * `stage4`: once play starts, the first two players get the owners and
    * houses of `STAGE4_SEED` and the dice of `STAGE4_TURN_DICE`, to demo rent
-   * and building.
+   * and building. `stage5`: three seats get `STAGE5_SEED` and the dice of
+   * `STAGE5_TURN_DICE` for mortgages, liquidation, bankruptcy and the end;
+   * every EndTurn then runs in game-core, which closes mortgage laps.
    */
-  readonly scenario?: 'stage4';
+  readonly scenario?: 'stage4' | 'stage5';
 }
 
 export type MockResult =
@@ -126,8 +128,8 @@ export class MockGame {
   /** A player's command: checks the target, whose turn it is and the deadline, then plays the script. */
   command(playerId: string, type: ClientCommandType, expected: Expectation, now: number, payload: unknown = null): MockResult {
     const { setup, turn } = this.state;
-    const coreTypes: readonly string[] = ['BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse'];
-    const settling = this.state.purchase !== null || this.state.rent !== null;
+    const coreTypes: readonly string[] = ['BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem'];
+    const settling = this.state.purchase !== null || this.state.rent !== null || (this.options.scenario === 'stage5' && this.state.turn !== null);
     if (this.state.auction !== null || coreTypes.includes(type) || ((type === 'EndTurn' || type === 'Resign') && settling)) return this.coreCommand(playerId, type, expected, now, payload);
     if (type === 'Resign') return this.resign(playerId as PlayerId, expected, now);
     if (this.state.eliminated.includes(playerId as PlayerId)) return reject('PLAYER_ELIMINATED', 'You are out');
@@ -226,6 +228,26 @@ export class MockGame {
     this.state.houses = Object.fromEntries(Object.entries(STAGE4_SEED.houses).map(([index, n]) => [assetAt(Number(index)), n]));
   }
 
+  /** The `stage5` scenario: cash, positions, owners, houses and mortgages for the first three players. */
+  private seedStage5(): void {
+    const seats = this.state.players.map((p) => p.id).slice(0, STAGE5_SEED.length);
+    if (seats.length < STAGE5_SEED.length) return;
+    const cellAt = (index: number) => this.state.board!.cells[index]!.asset!;
+    const order = this.state.order!;
+    this.state.owners = {}; this.state.houses = {}; this.state.mortgages = {};
+    STAGE5_SEED.forEach((seed, i) => {
+      const id = seats[i]!;
+      this.state.balances = { ...this.state.balances, [id]: seed.cash as Money };
+      this.state.positions = { ...this.state.positions, [id]: seed.position };
+      for (const index of seed.owners) this.state.owners = { ...this.state.owners, [cellAt(index).assetId]: id };
+      for (const [index, n] of Object.entries(seed.houses)) this.state.houses = { ...this.state.houses, [cellAt(Number(index)).assetId]: n };
+      for (const [index, laps] of Object.entries(seed.mortgages)) {
+        const asset = cellAt(Number(index));
+        this.state.mortgages = { ...this.state.mortgages, [asset.assetId]: { advance: mortgageAdvance(asset.price), lapsCompleted: laps, pending: [...order], remainingLaps: 8 - laps } };
+      }
+    });
+  }
+
   private accept(events: GameEvent[]): MockResult {
     return { ok: true, events: this.bumped(events) };
   }
@@ -260,7 +282,7 @@ export class MockGame {
 
   private rollForOrder(now: number, auto: boolean): GameEvent[] {
     const setup = this.state.setup!;
-    const orderDice = this.options.scenario === 'stage4' ? STAGE4_ORDER_DICE : ORDER_DICE;
+    const orderDice = this.options.scenario === 'stage4' ? STAGE4_ORDER_DICE : this.options.scenario === 'stage5' ? STAGE5_ORDER_DICE : ORDER_DICE;
     const value = orderDice[this.orderDie++ % orderDice.length]!;
     const playerId = setup.playerId;
     const events: GameEvent[] = [{ type: 'OrderDieRolled', payload: { playerId, value, auto } }];
@@ -292,6 +314,7 @@ export class MockGame {
     this.state.positions = Object.fromEntries(order.map((p) => [p, CLASSIC_40.startCell]));
     this.state.jail = {};
     if (this.options.scenario === 'stage4') this.seedStage4();
+    if (this.options.scenario === 'stage5') this.seedStage5();
     events.push(this.startTurn(order[0]!, false, 0, now));
     return events;
   }
@@ -342,7 +365,7 @@ export class MockGame {
   private roll(now: number, auto: boolean): { events: GameEvent[]; closed: boolean } {
     const turn = this.state.turn!;
     const playerId = turn.playerId;
-    const turnDice = this.options.scenario === 'stage4' ? STAGE4_TURN_DICE : TURN_DICE;
+    const turnDice = this.options.scenario === 'stage4' ? STAGE4_TURN_DICE : this.options.scenario === 'stage5' ? STAGE5_TURN_DICE : TURN_DICE;
     const dice = turnDice[this.turnDie++ % turnDice.length]!;
     const double = dice[0] === dice[1];
     const events: GameEvent[] = [{ type: 'DiceRolled', payload: { turnId: turn.turnId, playerId, dice, double, auto } }];
