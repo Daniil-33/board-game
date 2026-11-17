@@ -1,0 +1,7 @@
+# Isolated disposable e2e project/volume only; never staging or production.
+# Unlike the seeded regression stack, dice use the server CSPRNG.
+services:
+  server:
+    environment:
+      NODE_ENV: test
+      E2E_FIXTURES: '1'
