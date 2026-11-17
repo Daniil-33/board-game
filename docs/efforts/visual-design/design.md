@@ -192,8 +192,9 @@ needs no code change.
 - `logos/brand/` holds the v2 brand icons, the default.
 - `logos/geometric/` holds the v1 set, the fallback. The brand set's
   `microfinance-4` uses the geometric icon.
-- The runtime config `logoSet` (`LOGO_SET`) selects the set: staging uses
-  `brand`; production uses `geometric` until the owner clears trademark use.
+- The runtime config `logoSet` (`LOGO_SET`) selects the set. `brand` is
+  the default in every environment, production included (owner decision
+  2026-11-17). `geometric` is only a fallback.
 - Logos are always lazily loaded URLs and never inlined into JS. See
   `TASK-vd-logos-brand`.
 
