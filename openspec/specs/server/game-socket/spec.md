@@ -19,8 +19,9 @@ seconds. The server SHALL check, in order, the protocol version
 (`ROOM_CLOSED` for a closed row before opening, `ROOM_UNAVAILABLE` when unknown or opening fails, including core-3 and core-4 games) and
 membership in the committed game state (`NOT_A_PARTICIPANT`), answering a
 failure with an `Error` frame and closing the socket. On success it SHALL
-answer `Welcome` with the guest id as `playerId`, the current revision and
-the guest's projection. Rooms in `lobby`, `playing` and `finished` SHALL be
+answer `Welcome` with the guest id as `playerId`, the current revision,
+the guest's projection and the room's history for that guest (server/chat
+"Welcome history"). Rooms in `lobby`, `playing` and `finished` SHALL be
 accepted.
 
 #### Scenario: Non-member
@@ -29,7 +30,7 @@ accepted.
 
 #### Scenario: Finished room
 - **WHEN** a member sends `Hello` for a finished room, also after a server restart
-- **THEN** the server SHALL answer `Welcome` with a view in phase `finished` naming the winner
+- **THEN** the server SHALL answer `Welcome` with a view in phase `finished` naming the winner and the room's history
 
 #### Scenario: Command before Hello
 - **WHEN** the first frame is a `Command` or malformed
@@ -46,7 +47,6 @@ accepted.
 #### Scenario: Finished stage 1 game
 - **WHEN** an authenticated guest sends a version 3 Hello for a finished core-3 game untouched by migration 0003
 - **THEN** opening SHALL fail and the server SHALL send ROOM_UNAVAILABLE and close the socket without changing stored game data
-
 
 #### Scenario: Stage 2 protocol rejected
 - **WHEN** a client sends a version 2 Hello

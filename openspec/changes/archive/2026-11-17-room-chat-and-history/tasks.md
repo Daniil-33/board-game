@@ -16,4 +16,4 @@
 - [x] 3.3 Store and connection tests; lint boundaries
 
 ## 4. Verify
-- [ ] 4.1 build, test, test:integration, client lint, openspec strict, diff check, CI green
+- [x] 4.1 build, test, test:integration, client lint, openspec strict, diff check, CI green
