@@ -8,6 +8,7 @@ import {
   type Viewer,
 } from '@game/game-core';
 import {
+  MAX_FRAME_LENGTH,
   PROTOCOL_VERSION,
   decodeClientFrame,
   type AckFrame,
@@ -18,6 +19,7 @@ import {
   type HelloFrame,
   type History,
   type ServerFrame,
+  type WelcomeFrame,
 } from '@game/protocol';
 import type { WebSocket } from 'ws';
 import type { GuestStore } from '../auth/guests.js';
@@ -54,7 +56,7 @@ export interface ConnectionDeps {
    * The per-viewer event filter for `Update` and `Welcome.history`. Default:
    * game-core `projectEvents`. Tests only: every core event is public today.
    */
-  readonly projectEvents?: (events: readonly GameEvent[], viewer: Viewer) => GameEvent[];
+  readonly projectEvents?: ProjectEvents;
 }
 
 type Phase = 'awaitingHello' | 'authenticating' | 'ready' | 'closed';
@@ -64,6 +66,38 @@ const OPEN = 1;
 const isMember = (state: GameState, guestId: string): boolean => state.players.some((p) => p.id === guestId);
 
 const chatMessage = (m: StoredChatMessage): ChatMessage => ({ seq: m.seq, authorId: m.authorId as PlayerId, text: m.text, at: m.at });
+
+/** A Welcome longer than this (UTF-16 units) is logged: 75% of the client's decode limit. */
+export const WELCOME_WARN_LENGTH = Math.floor(MAX_FRAME_LENGTH * 0.75);
+
+type ProjectEvents = (events: readonly GameEvent[], viewer: Viewer) => GameEvent[];
+
+/** The stored history as `viewer` may see it: projected events, empty entries dropped, oldest first. */
+export function viewerHistory(stored: StoredHistory, viewer: Viewer, project: ProjectEvents = projectEvents): History {
+  const entries: History['entries'] = [];
+  for (const entry of stored.entries) {
+    const events = project(entry.events, viewer);
+    if (events.length > 0) entries.push({ revision: entry.revision, at: entry.now, events });
+  }
+  return { entries, chat: stored.chat.map(chatMessage) };
+}
+
+/** The `Welcome` a player receives for `state` and the room's stored history. */
+export function welcomeFrame(
+  state: GameState,
+  viewer: { readonly kind: 'player'; readonly id: PlayerId },
+  stored: StoredHistory,
+  project: ProjectEvents = projectEvents,
+): WelcomeFrame {
+  return {
+    t: 'Welcome',
+    protocolVersion: PROTOCOL_VERSION,
+    playerId: viewer.id,
+    revision: state.revision,
+    view: projectState(state, viewer),
+    history: viewerHistory(stored, viewer, project),
+  };
+}
 
 /**
  * One game socket: `Hello` -> `Welcome`, then `Command` -> `Ack` and room
@@ -224,17 +258,18 @@ export class GameConnection implements Replaceable {
       this.fail('NOT_A_PARTICIPANT', 'You are not a member of this room', CLOSE.policy);
       return;
     }
-    const history = this.history(attached.history, viewer);
+    const welcome = JSON.stringify(welcomeFrame(state, viewer, attached.history, this.deps.projectEvents ?? projectEvents));
+    if (welcome.length > WELCOME_WARN_LENGTH) {
+      this.deps.logger.warn('Welcome frame nears the client frame limit', {
+        roomId: room.gameId,
+        guestId: guest.guestId,
+        length: welcome.length,
+        limit: MAX_FRAME_LENGTH,
+      });
+    }
     this.sentRevision = state.revision;
     this.phase = 'ready';
-    this.send({
-      t: 'Welcome',
-      protocolVersion: PROTOCOL_VERSION,
-      playerId: viewer.id,
-      revision: state.revision,
-      view: projectState(state, viewer),
-      history,
-    });
+    this.sendText(welcome);
     const early = this.early;
     this.early = null;
     for (const event of early) this.onRoomEvent(event);
@@ -280,17 +315,6 @@ export class GameConnection implements Replaceable {
     this.send(ack);
   }
 
-  /** The stored history as this viewer may see it: projected events, empty entries dropped. */
-  private history(stored: StoredHistory, viewer: Viewer): History {
-    const project = this.deps.projectEvents ?? projectEvents;
-    const entries: History['entries'] = [];
-    for (const entry of stored.entries) {
-      const events = project(entry.events, viewer);
-      if (events.length > 0) entries.push({ revision: entry.revision, at: entry.now, events });
-    }
-    return { entries, chat: stored.chat.map(chatMessage) };
-  }
-
   // ---- Room events ----------------------------------------------------------
 
   private onRoomEvent(event: RoomEvent): void {
@@ -332,6 +356,10 @@ export class GameConnection implements Replaceable {
   // ---- Outbound -------------------------------------------------------------
 
   private send(frame: ServerFrame): void {
+    this.sendText(JSON.stringify(frame));
+  }
+
+  private sendText(text: string): void {
     if (this.socket.readyState !== OPEN) return;
     if (this.socket.bufferedAmount > MAX_BUFFERED_BYTES) {
       this.deps.logger.warn('game socket too slow; dropped', { roomId: this.room?.gameId, guestId: this.guestId });
@@ -339,7 +367,7 @@ export class GameConnection implements Replaceable {
       this.cleanup();
       return;
     }
-    this.socket.send(JSON.stringify(frame));
+    this.socket.send(text);
   }
 
   /** Send `Error { code }` and close. Idempotent. */

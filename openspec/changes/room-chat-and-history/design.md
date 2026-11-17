@@ -38,4 +38,4 @@ Migration `0007_chat.sql`: `chat_messages(room_id text REFERENCES rooms(id), seq
 
 ## Risks
 - A resent message after `CONNECTION_LOST` can duplicate one that landed; the user sees both in history. Idempotent `clientMsgId` would need a stored column; out of scope.
-- 200 log entries can hold many events (an auction or liquidation); size is bounded by the frame limit of the server send path only. Event payloads are small; 200 entries stay well under 1 MB.
+- 200 log entries can hold many events (an auction or liquidation). Measured worst case (RVW-003): the heaviest stage 5 view with 200 copies of the heaviest stage 5 log entry and 200 messages of 300 astral code points is 395,238 UTF-16 units, under half of the client's 1 MiB `MAX_FRAME_LENGTH` (asserted in `welcome-size.test.ts`). The server logs a warning when a Welcome exceeds 75% of that limit.

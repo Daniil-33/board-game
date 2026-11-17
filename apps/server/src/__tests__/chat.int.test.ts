@@ -1,4 +1,5 @@
-import { PROTOCOL_VERSION, type ChatAckFrame, type ChatFrame, type UpdateFrame } from '@game/protocol';
+import { MAX_FRAME_LENGTH, PROTOCOL_VERSION, type ChatAckFrame, type ChatFrame, type UpdateFrame } from '@game/protocol';
+import { WELCOME_WARN_LENGTH } from '../ws/connection.js';
 import { projectEvents, type GameEvent, type Viewer } from '@game/game-core';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -383,6 +384,27 @@ describe('Welcome history', () => {
     expectStatus(await http(s, 'POST', `/api/rooms/${roomId}/join`, { token: late.token }), 200);
     const update = await socket.nextOf('Update');
     expect(update.events.some((e) => e.type === hidden)).toBe(false);
+  });
+
+  it('a Welcome above 75% of the client frame limit is logged as a warning, and one below is not', async () => {
+    // Pad each projected entry so the lobby's few entries fill about 80% of the limit.
+    let pad = 0;
+    const project = (events: readonly GameEvent[], viewer: Viewer) =>
+      pad === 0 ? projectEvents(events, viewer) : [...projectEvents(events, viewer), { type: 'Pad', payload: 'x'.repeat(pad) }];
+    const s = await startServer(h, { projectEvents: project });
+    const { roomId, guests } = await lobbyWith(s, ['a', 'b']);
+    const warned = () => s.logger.lines.filter((l) => l.level === 'warn' && l.message === 'Welcome frame nears the client frame limit');
+
+    await connect(s, guests[0]!, roomId);
+    expect(warned()).toEqual([]);
+
+    const entries = (await logEntries(h.db, roomId)).length;
+    pad = Math.floor((MAX_FRAME_LENGTH * 0.8) / entries);
+    const { welcome } = await connect(s, guests[1]!, roomId);
+    expect(JSON.stringify(welcome).length).toBeGreaterThan(WELCOME_WARN_LENGTH);
+    expect(warned()).toEqual([
+      expect.objectContaining({ fields: expect.objectContaining({ roomId, guestId: guests[1]!.guestId, limit: MAX_FRAME_LENGTH }) }),
+    ]);
   });
 
   it('history holds at most the last 200 log entries and 200 messages', async () => {
