@@ -1,3 +1,4 @@
+import { TOKEN_COLORS, HOUSE_COLOR, MORTGAGE_COLOR, COLORS } from '../../shared/config/index';
 import { formatMoney } from '../../shared/lib/index';
 import { t } from '../../shared/i18n/index';
 /**
@@ -15,34 +16,16 @@ import { cellRect, jailBox, jailVisitorSlot, tokenSlot, type Point } from './lay
 
 export const BOARD_SIZE = 660;
 
-/** Token colours by index in `view.players` (at most six players). */
-export const TOKEN_COLORS = [0xe4572e, 0x29a3a3, 0xf3a712, 0x7d5ba6, 0x5aa02c, 0xd6589f] as const;
+export { TOKEN_COLORS, HOUSE_COLOR, MORTGAGE_COLOR };
 
 export const DIE_MS = 600;
 export const HOP_MS = 150;
 export const JUMP_MS = 450;
 export const BANNER_MS = 1300;
 export const RENT_MS = 900;
-/** House marker fill. */
-export const HOUSE_COLOR = 0x7ee06a;
-/** Mortgage marker colour: a cell frame and an "M" badge. */
-export const MORTGAGE_COLOR = 0xffc857;
 
 const TOKEN_RADIUS = 7;
 const DIE_SIZE = 54;
-const COLORS = {
-  board: 0x14202b,
-  cell: 0x22384a,
-  cellEdge: 0x3d5a73,
-  start: 0x2e6b4a,
-  jail: 0x6b3a2e,
-  jailBox: 0x3a1f18,
-  text: 0xdbe6ee,
-  muted: 0x8fa5b5,
-  die: 0xf5f1e6,
-  pip: 0x1b2630,
-  active: 0xffffff,
-};
 
 /** Pip positions (in thirds of the die face) for each die value. */
 const PIPS: Readonly<Record<number, readonly (readonly [number, number])[]>> = {
@@ -153,7 +136,7 @@ export class BoardScene {
       if (index < 0) continue;
       const r = cellRect(cell.index, this.size);
       const marker = new Graphics().roundRect(r.x + r.width - 14, r.y + r.height - 14, 10, 10, 2)
-        .fill(0xffffff).stroke({ width: 1, color: 0xffffff });
+        .fill(COLORS.active).stroke({ width: 1, color: COLORS.active });
       marker.tint = TOKEN_COLORS[index % TOKEN_COLORS.length]!;
       marker.label = `owner-${cell.index}-${owner}`;
       this.ownership.addChild(marker);
@@ -184,7 +167,7 @@ export class BoardScene {
       if (!Number.isInteger(count) || count < 1) continue;
       const r = cellRect(cell.index, this.size);
       for (let i = 0; i < Math.min(count, 4); i++) {
-        const marker = new Graphics().rect(r.x + 4 + i * 11, r.y + r.height - 27, 9, 9).fill(HOUSE_COLOR).stroke({ width: 1, color: 0x0b1218 });
+        const marker = new Graphics().rect(r.x + 4 + i * 11, r.y + r.height - 27, 9, 9).fill(HOUSE_COLOR).stroke({ width: 1, color: COLORS.outline });
         marker.label = `house-${cell.index}-${i + 1}`;
         this.housing.addChild(marker);
       }
@@ -209,7 +192,7 @@ export class BoardScene {
         .fill(cell.kind === 'start' ? COLORS.start : COLORS.cell).stroke({ width: 1, color: COLORS.cellEdge }));
       if (display.color !== null) {
         box.addChild(new Graphics().rect(r.x + 2, r.y + 2, r.width - 4, 11).fill(display.color));
-        const group = label(display.group!, 8, 0x101820, true);
+        const group = label(display.group!, 8, COLORS.groupText, true);
         group.anchor.set(0.5, 0); group.position.set(r.x + r.width / 2, r.y + 2);
         box.addChild(group);
       }
@@ -297,7 +280,7 @@ export class BoardScene {
         const from = this.tokenById.get(step.from);
         const to = this.tokenById.get(step.to);
         if (from === undefined || to === undefined) return;
-        const amount = label(formatMoney(step.amount), 15, 0xffe08a, true);
+        const amount = label(formatMoney(step.amount), 15, COLORS.rent, true);
         amount.anchor.set(0.5);
         amount.label = 'rent-payment';
         const start = { x: from.x, y: from.y - 14 };
@@ -362,7 +345,7 @@ export class BoardScene {
       const token = new Graphics()
         .circle(0, 0, TOKEN_RADIUS)
         .fill(TOKEN_COLORS[index % TOKEN_COLORS.length]!)
-        .stroke({ width: 1.5, color: 0x0b1218 });
+        .stroke({ width: 1.5, color: COLORS.outline });
       token.label = `token-${player.id}`;
       this.tokenById.set(player.id, token);
       this.tokens.addChild(token);

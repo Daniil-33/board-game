@@ -2,15 +2,15 @@
 
 ## 1. Theme foundation
 
-- [ ] 1.1 Extract desktop computed token styles in Chromium, confirm mobile and save script/output in evidence; verify all design token categories are captured (design-system: Shared design tokens).
+- [x] 1.1 Extract desktop computed token styles in Chromium, confirm mobile and save script/output in evidence; verify all design token categories are captured (design-system: Shared design tokens).
 - [x] 1.2 Add exact eligible Tailwind package; verify installation and typecheck (design-system: Shared design tokens).
 - [x] 1.3 Add exact eligible Tailwind Vite plugin; verify build and typecheck (design-system: Shared design tokens).
 - [x] 1.4 Add exact eligible Inter variable font; verify only Latin and Cyrillic subsets are imported once (design-system: Shared design tokens).
 - [x] 1.5 Add exact eligible Unbounded variable font; verify only Latin and Cyrillic subsets are imported once (design-system: Shared design tokens).
-- [ ] 1.6 Implement CSS tokens and Tailwind theme; test designated text/surface pairs for AA and escalate failures (design-system: Shared design tokens, Contrast and evidence).
+- [x] 1.6 Implement CSS tokens and Tailwind theme; test designated text/surface pairs for AA and escalate failures (design-system: Shared design tokens, Contrast and evidence).
 - [ ] 1.7 Implement Pixi theme adapter and verify values match computed CSS tokens (design-system: Shared design tokens).
-- [ ] 1.8 Enforce raw-color lint and retain positive and negative probes; run client lint (design-system: Shared design tokens).
-- [ ] 1.9 Correct shared-segment dependency lint and its probes; run client lint (structure: Enforced client boundaries).
+- [x] 1.8 Enforce raw-color lint and retain positive and negative probes; run client lint (design-system: Shared design tokens).
+- [x] 1.9 Correct shared-segment dependency lint and its probes; run client lint (structure: Enforced client boundaries).
 
 ## 2. Primitives
 
