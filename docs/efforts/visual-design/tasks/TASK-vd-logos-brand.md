@@ -49,7 +49,11 @@ logo resolver, so `TASK-vd-board` and the asset lists use it.
    - SVG safety (no script, no `on*`, no external refs, no `<image>`);
    - a per-file size limit of 40 KB after svgo. If a traced file cannot
      reach 40 KB without visible change, raise its limit individually with a
-     recorded reason; the total brand set is at most 1.2 MB.
+     recorded reason; the total brand set is at most 2.2 MB raw and 0.8 MB
+     summed gzip (revision 2), with every file pixel-identical in Chromium at
+     24 and 64 px;
+   - no `prefers-color-scheme` (or other environment-dependent) CSS in any
+     logo file.
 5. **Client resolver** in `shared/lib/logos` (or `entities/asset`, per the
    FSD rules):
    - `logoUrl(companyId, { dark }) → string | null` for the active set;
