@@ -15,7 +15,7 @@ function run(state: GameState, type: string): { state: GameState; events: readon
   return result;
 }
 const steps = (events: readonly GameEvent[]) =>
-  (events.find(e => e.type === 'LiquidationApplied')?.payload as { steps: { tier: number; kind: string }[] } | undefined)?.steps;
+  (events.find(e => e.type === 'LiquidationApplied')?.payload as { steps: { tier: number; kind: string; assetId: string }[] } | undefined)?.steps;
 
 it.each(STAGE5_FIXTURE_NAMES)('%s is a core-7 state for three guests', name => {
   const state = buildFixture(name, ids, NOW);
