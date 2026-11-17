@@ -1,306 +1,471 @@
 {
   "banks-1": {
-    "file": null,
-    "reason": "restricted: https://static.privatbank.ua/files/0000003515410882.pdf requires written consent for logo uses outside its stated terms"
+    "file": "banks-1.svg",
+    "darkFile": "banks-1-dark.svg",
+    "monogram": "ПБ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.); no logo file with verified brand/press provenance retrieved"
+    "file": "banks-2.svg",
+    "darkFile": "banks-2-dark.svg",
+    "monogram": "ОЩ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-3": {
-    "file": null,
-    "reason": "Commons file identified, but original SVG download returned HTTP 403/429; no file retrieved"
+    "file": "banks-3.svg",
+    "darkFile": "banks-3-dark.svg",
+    "monogram": "m",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-4": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "banks-4.svg",
+    "darkFile": "banks-4-dark.svg",
+    "monogram": "ПУ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-5": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "banks-5.svg",
+    "darkFile": "banks-5-dark.svg",
+    "monogram": "УГ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-6": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "banks-6.svg",
+    "darkFile": "banks-6-dark.svg",
+    "monogram": "R",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-7": {
     "file": "banks-7.svg",
-    "source": "official press page",
-    "sourceUrl": "https://sensebank.ua/news",
-    "license": "© АТ «Сенс Банк». No separate reuse license stated on the press page; logo extracted from its header.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "banks-7-dark.svg",
+    "monogram": "S",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "banks-8": {
     "file": "banks-8.svg",
-    "source": "official brand page",
-    "sourceUrl": "https://a-bank.com.ua/forpartners",
-    "license": "Використовуйте логотип у наданому вигляді: без зміни пропорцій, кольорів, нахилу або форми. Official downloadable logo kit; no open-content license stated.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "banks-8-dark.svg",
+    "monogram": "A",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "insurance-1": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "insurance-1.svg",
+    "darkFile": "insurance-1-dark.svg",
+    "monogram": "AX",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "insurance-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "insurance-2.svg",
+    "darkFile": "insurance-2-dark.svg",
+    "monogram": "ТА",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "insurance-3": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "insurance-3.svg",
+    "darkFile": "insurance-3-dark.svg",
+    "monogram": "О",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "insurance-4": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "insurance-4.svg",
+    "darkFile": "insurance-4-dark.svg",
+    "monogram": "U",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "insurance-5": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "insurance-5.svg",
+    "darkFile": "insurance-5-dark.svg",
+    "monogram": "ІН",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "insurance-6": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "insurance-6.svg",
+    "darkFile": "insurance-6-dark.svg",
+    "monogram": "US",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "microfinance-1": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "microfinance-1.svg",
+    "darkFile": "microfinance-1-dark.svg",
+    "monogram": "MV",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "microfinance-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "microfinance-2.svg",
+    "darkFile": "microfinance-2-dark.svg",
+    "monogram": "C+",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "microfinance-3": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "microfinance-3.svg",
+    "darkFile": "microfinance-3-dark.svg",
+    "monogram": "ШГ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "microfinance-4": {
-    "file": null,
-    "reason": "catalog company identity unverified"
+    "file": "microfinance-4.svg",
+    "darkFile": "microfinance-4-dark.svg",
+    "monogram": "МГ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "microfinance-5": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "microfinance-5.svg",
+    "darkFile": "microfinance-5-dark.svg",
+    "monogram": "C7",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "microfinance-6": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "microfinance-6.svg",
+    "darkFile": "microfinance-6-dark.svg",
+    "monogram": "M",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-1": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.); no logo file with verified brand/press provenance retrieved"
+    "file": "technology-1.svg",
+    "darkFile": "technology-1-dark.svg",
+    "monogram": "SS",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-2": {
     "file": "technology-2.svg",
-    "source": "official brand page",
-    "sourceUrl": "https://www.globallogic.com/hr/brand-identity-guidelines/",
-    "license": "© 2026 Copyright GlobalLogic Inc. All rights reserved. Brand guide requires the GlobalLogic wordmark and Hitachi endorsement to appear together; both are preserved.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "technology-2-dark.svg",
+    "monogram": "GL",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-3": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "technology-3.svg",
+    "darkFile": "technology-3-dark.svg",
+    "monogram": "G",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-4": {
-    "file": null,
-    "reason": "official press page returned HTTP 403; no verifiable logo file retrieved"
+    "file": "technology-4.svg",
+    "darkFile": "technology-4-dark.svg",
+    "monogram": "MP",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-5": {
-    "file": null,
-    "reason": "inspected press kits are for individual products; no company-logo file with clear press-kit provenance retrieved"
+    "file": "technology-5.svg",
+    "darkFile": "technology-5-dark.svg",
+    "monogram": "R",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-6": {
     "file": "technology-6.svg",
-    "source": "official press page",
-    "sourceUrl": "https://ajax.systems/press-page/",
-    "license": "© 2026 AJAX SYSTEMS CH. All rights reserved. No separate reuse license stated on the press page; logo extracted from its header.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "technology-6-dark.svg",
+    "monogram": "AJ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-7": {
-    "file": null,
-    "reason": "official media-kit page returned HTTP 403; no verifiable logo file retrieved"
+    "file": "technology-7.svg",
+    "darkFile": "technology-7-dark.svg",
+    "monogram": "P",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "technology-8": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "technology-8.svg",
+    "darkFile": "technology-8-dark.svg",
+    "monogram": "GX",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "telecom-1": {
-    "file": null,
-    "reason": "restricted: press-page footer requires prior written consent to reuse site materials"
+    "file": "telecom-1.svg",
+    "darkFile": "telecom-1-dark.svg",
+    "monogram": "K",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "telecom-2": {
     "file": "telecom-2.svg",
-    "source": "official press page",
-    "sourceUrl": "https://www.vodafone.ua/news/all",
-    "license": "© 2026 Vodafone Ukraine. No separate reuse license stated on the press page; logo from its header.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "telecom-2-dark.svg",
+    "monogram": "V",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "telecom-3": {
     "file": "telecom-3.svg",
-    "source": "official press page",
-    "sourceUrl": "https://www.lifecell.ua/uk/pro_lifecell/pres-tsentr/",
-    "license": "© 2004-2026, ТОВ «лайфселл». Усі права захищено. No separate reuse license stated on the press page; logo from its header.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "telecom-3-dark.svg",
+    "monogram": "L",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "telecom-4": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "telecom-4.svg",
+    "darkFile": "telecom-4-dark.svg",
+    "monogram": "УТ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "telecom-5": {
-    "file": null,
-    "reason": "no verified combined Datagroup-Volia logo retrieved; separate Datagroup and Volia marks not substituted"
+    "file": "telecom-5.svg",
+    "darkFile": "telecom-5-dark.svg",
+    "monogram": "DV",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "mobility-1": {
-    "file": null,
-    "reason": "official brand page links an external Drive kit; no individual logo file with verified provenance retrieved"
+    "file": "mobility-1.svg",
+    "darkFile": "mobility-1-dark.svg",
+    "monogram": "U",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "mobility-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "mobility-2.svg",
+    "darkFile": "mobility-2-dark.svg",
+    "monogram": "OT",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "mobility-3": {
-    "file": null,
-    "reason": "restricted: brand guidelines require written permission before publishing assets"
+    "file": "mobility-3.svg",
+    "darkFile": "mobility-3-dark.svg",
+    "monogram": "B",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "mobility-4": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 406: Not Acceptable); no logo file with verified brand/press provenance retrieved"
+    "file": "mobility-4.svg",
+    "darkFile": "mobility-4-dark.svg",
+    "monogram": "U",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "commerce-1": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "commerce-1.svg",
+    "darkFile": "commerce-1-dark.svg",
+    "monogram": "R",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "commerce-2": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "commerce-2.svg",
+    "darkFile": "commerce-2-dark.svg",
+    "monogram": "P",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "commerce-3": {
     "file": "commerce-3.svg",
-    "source": "official brand page",
-    "sourceUrl": "https://www.olxgroup.com/brands/",
-    "license": "No explicit reuse license stated on the official brands page. OLX logo from its OLX brand listing; not an open-content license.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "commerce-3-dark.svg",
+    "monogram": "OX",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "commerce-4": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "commerce-4.svg",
+    "darkFile": "commerce-4-dark.svg",
+    "monogram": "Е",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "commerce-5": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "commerce-5.svg",
+    "darkFile": "commerce-5-dark.svg",
+    "monogram": "C",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "commerce-6": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "commerce-6.svg",
+    "darkFile": "commerce-6-dark.svg",
+    "monogram": "Ф",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "groceries-1": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "groceries-1.svg",
+    "darkFile": "groceries-1-dark.svg",
+    "monogram": "АТ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "groceries-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "groceries-2.svg",
+    "darkFile": "groceries-2-dark.svg",
+    "monogram": "С",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "groceries-3": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 404: Not Found); no logo file with verified brand/press provenance retrieved"
+    "file": "groceries-3.svg",
+    "darkFile": "groceries-3-dark.svg",
+    "monogram": "N",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "groceries-4": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "groceries-4.svg",
+    "darkFile": "groceries-4-dark.svg",
+    "monogram": "V",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "groceries-5": {
-    "file": null,
-    "reason": "inspected route returned a JavaScript application shell; could not verify it as a press or brand source"
+    "file": "groceries-5.svg",
+    "darkFile": "groceries-5-dark.svg",
+    "monogram": "Ф",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "fuel-1": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "fuel-1.svg",
+    "darkFile": "fuel-1-dark.svg",
+    "monogram": "W",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "fuel-2": {
     "file": "fuel-2.svg",
-    "source": "official press page",
-    "sourceUrl": "https://www.okko.ua/news",
-    "license": "© 2026. No separate reuse license stated on the OKKO news page; logo extracted from its header.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "fuel-2-dark.svg",
+    "monogram": "O",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "fuel-3": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "fuel-3.svg",
+    "darkFile": "fuel-3-dark.svg",
+    "monogram": "UP",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "fuel-4": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "fuel-4.svg",
+    "darkFile": "fuel-4-dark.svg",
+    "monogram": "БН",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "fuel-5": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "fuel-5.svg",
+    "darkFile": "fuel-5-dark.svg",
+    "monogram": "S",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "media-1": {
-    "file": "media-1.png",
-    "source": "official press page",
-    "sourceUrl": "https://megogo.net/ua/about-UA/materials",
-    "license": "© 2026 MEGOGO. Всі права захищені. Official media page supplies a downloadable logo kit; no open-content license stated.",
-    "retrievedAt": "2026-11-17"
+    "file": "media-1.svg",
+    "darkFile": "media-1-dark.svg",
+    "monogram": "M",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "media-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "media-2.svg",
+    "darkFile": "media-2-dark.svg",
+    "monogram": "S",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "media-3": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "media-3.svg",
+    "darkFile": "media-3-dark.svg",
+    "monogram": "1+",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "media-4": {
     "file": "media-4.svg",
-    "source": "official press page",
-    "sourceUrl": "https://starlight.media/news/",
-    "license": "2015 © ТОВ «СТАРЛАЙТ МЕДІА». Всі права захищено. No separate reuse license stated on the news page.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "media-4-dark.svg",
+    "monogram": "SL",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "logistics-1": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "logistics-1.svg",
+    "darkFile": "logistics-1-dark.svg",
+    "monogram": "НП",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "logistics-2": {
-    "file": null,
-    "reason": "official press-assets page identified but returned HTTP 403; no logo file retrieved"
+    "file": "logistics-2.svg",
+    "darkFile": "logistics-2-dark.svg",
+    "monogram": "УП",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "logistics-3": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "logistics-3.svg",
+    "darkFile": "logistics-3-dark.svg",
+    "monogram": "M",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "logistics-4": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "logistics-4.svg",
+    "darkFile": "logistics-4-dark.svg",
+    "monogram": "УЗ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "logistics-5": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "logistics-5.svg",
+    "darkFile": "logistics-5-dark.svg",
+    "monogram": "D",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "logistics-6": {
     "file": "logistics-6.svg",
-    "source": "official press page",
-    "sourceUrl": "https://www.sat.ua/news/",
-    "license": "© 2023-2026 Транспортна компанія SAT. Всі права захищені. No separate reuse license stated on the news page.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "logistics-6-dark.svg",
+    "monogram": "СА",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "energy-1": {
-    "file": null,
-    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+    "file": "energy-1.svg",
+    "darkFile": "energy-1-dark.svg",
+    "monogram": "Д",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "energy-2": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "energy-2.svg",
+    "darkFile": "energy-2-dark.svg",
+    "monogram": "УЕ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "energy-3": {
-    "file": null,
-    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+    "file": "energy-3.svg",
+    "darkFile": "energy-3-dark.svg",
+    "monogram": "НГ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   },
   "energy-4": {
     "file": "energy-4.svg",
-    "source": "official press page",
-    "sourceUrl": "https://uhe.gov.ua/media_tsentr/novyny",
-    "license": "Creative Commons Attribution 4.0 International license, unless otherwise stated (site-wide notice). Attribution: ПрАТ «Укргідроенерго», https://uhe.gov.ua/; SVG sanitized and optimized.",
-    "retrievedAt": "2026-11-17"
+    "darkFile": "energy-4-dark.svg",
+    "monogram": "УГ",
+    "source": "owner-commissioned set, 2026-11-17",
+    "license": "see FONT-LICENSE.txt"
   }
 }
