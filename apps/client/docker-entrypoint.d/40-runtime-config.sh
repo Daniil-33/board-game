@@ -22,4 +22,9 @@ case "${api_origin#*://}" in
     fi
     ;;
 esac
-printf 'window.__GAME_CONFIG__ = {"API_ORIGIN":"%s"};\n' "$api_origin" > /usr/share/nginx/html/config.js
+logo_set=${LOGO_SET-brand}
+case "$logo_set" in
+  brand|geometric) ;;
+  *) echo 'LOGO_SET must be brand or geometric' >&2; exit 1 ;;
+esac
+printf 'window.__GAME_CONFIG__ = {"API_ORIGIN":"%s","logoSet":"%s"};\n' "$api_origin" "$logo_set" > /usr/share/nginx/html/config.js

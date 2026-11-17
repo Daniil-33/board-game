@@ -1,0 +1,471 @@
+{
+  "banks-1": {
+    "file": "banks-1.svg",
+    "darkFile": "banks-1-dark.svg",
+    "source": "https://privatbank.ua/",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "banks-2": {
+    "file": "banks-2.svg",
+    "darkFile": "banks-2-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.oschadbank.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "banks-3": {
+    "file": "banks-3.svg",
+    "darkFile": "banks-3-dark.svg",
+    "source": "https://monobank.ua/",
+    "construction": "simplified-mascot",
+    "sourceRef": "sources.md"
+  },
+  "banks-4": {
+    "file": "banks-4.svg",
+    "darkFile": "banks-4-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.pumb.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "banks-5": {
+    "file": "banks-5.svg",
+    "darkFile": "banks-5-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.ukrgasbank.com&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "banks-6": {
+    "file": "banks-6.svg",
+    "darkFile": "banks-6-dark.svg",
+    "source": "https://raiffeisen.ua/img/universal/svg/logo_v2_ua.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "banks-7": {
+    "file": "banks-7.svg",
+    "darkFile": "banks-7-dark.svg",
+    "source": "https://sensebank.ua/favicon/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "banks-8": {
+    "file": "banks-8.svg",
+    "darkFile": "banks-8-dark.svg",
+    "source": "https://a-bank.com.ua/assets/img/f39f15d41b34d7381219cec3cc509b10.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "insurance-1": {
+    "file": "insurance-1.svg",
+    "darkFile": "insurance-1-dark.svg",
+    "source": "https://arx.com.ua/images/logo_red.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "insurance-2": {
+    "file": "insurance-2.svg",
+    "darkFile": "insurance-2-dark.svg",
+    "source": "https://sgtas.ua/styles/img/logo.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "insurance-3": {
+    "file": "insurance-3.svg",
+    "darkFile": "insurance-3-dark.svg",
+    "source": "https://oranta.ua/icons/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "insurance-4": {
+    "file": "insurance-4.svg",
+    "darkFile": "insurance-4-dark.svg",
+    "source": "https://universalna.com/favicon.ico",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "insurance-5": {
+    "file": "insurance-5.svg",
+    "darkFile": "insurance-5-dark.svg",
+    "source": "https://ingo.ua/cms/image/uploads/logo_bf892fbbf4.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "insurance-6": {
+    "file": "insurance-6.svg",
+    "darkFile": "insurance-6-dark.svg",
+    "source": "https://www.usg.ua/favicons/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "microfinance-1": {
+    "file": "microfinance-1.svg",
+    "darkFile": "microfinance-1-dark.svg",
+    "source": "https://moneyveo.ua/logo.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "microfinance-2": {
+    "file": "microfinance-2.svg",
+    "darkFile": "microfinance-2-dark.svg",
+    "source": "https://creditplus.ua/",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "microfinance-3": {
+    "file": "microfinance-3.svg",
+    "darkFile": "microfinance-3-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=sgroshi.com.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "microfinance-4": {
+    "file": "microfinance-4.svg",
+    "darkFile": "microfinance-4-dark.svg",
+    "source": "geometric fallback",
+    "construction": "geometric-fallback",
+    "sourceRef": "../geometric/logos.json"
+  },
+  "microfinance-5": {
+    "file": "microfinance-5.svg",
+    "darkFile": "microfinance-5-dark.svg",
+    "source": "https://credit7.ua/",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "microfinance-6": {
+    "file": "microfinance-6.svg",
+    "darkFile": "microfinance-6-dark.svg",
+    "source": "https://miloan.ua/favicon-miloan.ico?v=2",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "technology-1": {
+    "file": "technology-1.svg",
+    "darkFile": "technology-1-dark.svg",
+    "source": "https://www.softserveinc.com/",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "technology-2": {
+    "file": "technology-2.svg",
+    "darkFile": "technology-2-dark.svg",
+    "source": "https://www.globallogic.com/wp-content/uploads/2024/07/cropped-Group-2085664684-180x180.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "technology-3": {
+    "file": "technology-3.svg",
+    "darkFile": "technology-3-dark.svg",
+    "source": "https://simpleicons.org/?q=grammarly",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "technology-4": {
+    "file": "technology-4.svg",
+    "darkFile": "technology-4-dark.svg",
+    "source": "https://cdn3.macpaw.com/images/favicons/safari-pinned-tab.svg?id=1816947d3ae62ee64edea762148178fc",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "technology-5": {
+    "file": "technology-5.svg",
+    "darkFile": "technology-5-dark.svg",
+    "source": "https://cdn-rdstaticassets.readdle.com/assets/readdle/common/icons/logo/rd-fav-114.png?1794589562",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "technology-6": {
+    "file": "technology-6.svg",
+    "darkFile": "technology-6-dark.svg",
+    "source": "https://ajax.systems/assets/images/favicons/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "technology-7": {
+    "file": "technology-7.svg",
+    "darkFile": "technology-7-dark.svg",
+    "source": "https://static.preply.com/ds/icons/rebrand-23-v0/favicon.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "technology-8": {
+    "file": "technology-8.svg",
+    "darkFile": "technology-8-dark.svg",
+    "source": "https://www.gen.tech/",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "telecom-1": {
+    "file": "telecom-1.svg",
+    "darkFile": "telecom-1-dark.svg",
+    "source": "https://kyivstar.ua/assets/cms/uploads/kyivstar_logo_full_d905270219.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "telecom-2": {
+    "file": "telecom-2.svg",
+    "darkFile": "telecom-2-dark.svg",
+    "source": "https://www.vodafone.ua/assets/logos/vf-red-logo.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "telecom-3": {
+    "file": "telecom-3.svg",
+    "darkFile": "telecom-3-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.lifecell.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "telecom-4": {
+    "file": "telecom-4.svg",
+    "darkFile": "telecom-4-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=ukrtelecom.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "telecom-5": {
+    "file": "telecom-5.svg",
+    "darkFile": "telecom-5-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.datagroup.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "mobility-1": {
+    "file": "mobility-1.svg",
+    "darkFile": "mobility-1-dark.svg",
+    "source": "https://uklon.com.ua/app/uploads/2023/08/uklon_logo_tiny-20230701-203320.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "mobility-2": {
+    "file": "mobility-2.svg",
+    "darkFile": "mobility-2-dark.svg",
+    "source": "https://ontaxi.com.ua/assets/images/favicons/OnTaxi/favicon.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "mobility-3": {
+    "file": "mobility-3.svg",
+    "darkFile": "mobility-3-dark.svg",
+    "source": "https://assets.homepage.bolt.eu/1.24.33/public/common-assets/icon.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "mobility-4": {
+    "file": "mobility-4.svg",
+    "darkFile": "mobility-4-dark.svg",
+    "source": "https://simpleicons.org/?q=uber",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "commerce-1": {
+    "file": "commerce-1.svg",
+    "darkFile": "commerce-1-dark.svg",
+    "source": "https://rozetka.com.ua/h-3cb47be2/assets/img/design/logo_smile.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "commerce-2": {
+    "file": "commerce-2.svg",
+    "darkFile": "commerce-2-dark.svg",
+    "source": "https://prom.ua/cloud-cgi/static/catalog-ui/js/build/portal-portable/apple-touch-icon-180x180-da9a6139.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "commerce-3": {
+    "file": "commerce-3.svg",
+    "darkFile": "commerce-3-dark.svg",
+    "source": "https://www.olx.ua/favicon.ico?v=8",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "commerce-4": {
+    "file": "commerce-4.svg",
+    "darkFile": "commerce-4-dark.svg",
+    "source": "https://epicentrk.ua/upload/nuxt/manifest/icon-64x64.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "commerce-5": {
+    "file": "commerce-5.svg",
+    "darkFile": "commerce-5-dark.svg",
+    "source": "https://cdn.comfy.ua/media/media/icons/comfy-logo-mbl.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "commerce-6": {
+    "file": "commerce-6.svg",
+    "darkFile": "commerce-6-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.foxtrot.com.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "groceries-1": {
+    "file": "groceries-1.svg",
+    "darkFile": "groceries-1-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=www.atbmarket.com&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "groceries-2": {
+    "file": "groceries-2.svg",
+    "darkFile": "groceries-2-dark.svg",
+    "source": "https://staticv2.silpo.ua/apps/sf-shop-silpo-green/release-2-114-54/assets/images/logo-small.svg",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "groceries-3": {
+    "file": "groceries-3.svg",
+    "darkFile": "groceries-3-dark.svg",
+    "source": "https://novus.ua/media/favicon/stores/1/favicon_2.ico",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "groceries-4": {
+    "file": "groceries-4.svg",
+    "darkFile": "groceries-4-dark.svg",
+    "source": "https://static.varus.ua/azgwc-blob-static-varus-prod-01/vsf/assets/1116-vbc18ecae/images/logo/logo-small.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "groceries-5": {
+    "file": "groceries-5.svg",
+    "darkFile": "groceries-5-dark.svg",
+    "source": "https://fora.ua/images/fora/logo.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "fuel-1": {
+    "file": "fuel-1.svg",
+    "darkFile": "fuel-1-dark.svg",
+    "source": "https://wog.ua/favicon.ico",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "fuel-2": {
+    "file": "fuel-2.svg",
+    "darkFile": "fuel-2-dark.svg",
+    "source": "https://www.okko.ua/",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "fuel-3": {
+    "file": "fuel-3.svg",
+    "darkFile": "fuel-3-dark.svg",
+    "source": "https://upg.ua/wp-content/uploads/2024/03/cropped-favicon-180x180.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "fuel-4": {
+    "file": "fuel-4.svg",
+    "darkFile": "fuel-4-dark.svg",
+    "source": "https://imc.ua/projects/brsm-nafta",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "fuel-5": {
+    "file": "fuel-5.svg",
+    "darkFile": "fuel-5-dark.svg",
+    "source": "https://socar.ua/favicon/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "media-1": {
+    "file": "media-1.svg",
+    "darkFile": "media-1-dark.svg",
+    "source": "https://megogo.net/favicon.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "media-2": {
+    "file": "media-2.svg",
+    "darkFile": "media-2-dark.svg",
+    "source": "https://sweet.tv/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "media-3": {
+    "file": "media-3.svg",
+    "darkFile": "media-3-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=media.1plus1.ua&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "media-4": {
+    "file": "media-4.svg",
+    "darkFile": "media-4-dark.svg",
+    "source": "https://www.google.com/s2/favicons?domain=starlight.media&sz=128",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "logistics-1": {
+    "file": "logistics-1.svg",
+    "darkFile": "logistics-1-dark.svg",
+    "source": "https://novaposhta.ua/_np-app-static/favicon.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "logistics-2": {
+    "file": "logistics-2.svg",
+    "darkFile": "logistics-2-dark.svg",
+    "source": "https://www.ukrposhta.ua/content/images/site-ua-logo.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "logistics-3": {
+    "file": "logistics-3.svg",
+    "darkFile": "logistics-3-dark.svg",
+    "source": "https://ua.meest.com/apple-touch-icon.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "logistics-4": {
+    "file": "logistics-4.svg",
+    "darkFile": "logistics-4-dark.svg",
+    "source": "https://booking.uz.gov.ua/",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "logistics-5": {
+    "file": "logistics-5.svg",
+    "darkFile": "logistics-5-dark.svg",
+    "source": "https://www.delivery-auto.com/Images/third_decade/system/icon/favicon.ico",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "logistics-6": {
+    "file": "logistics-6.svg",
+    "darkFile": "logistics-6-dark.svg",
+    "source": "https://www.sat.ua/wp-content/uploads/2022/08/cropped-favicon-180x180.png",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "energy-1": {
+    "file": "energy-1.svg",
+    "darkFile": "energy-1-dark.svg",
+    "source": "https://dtek.com/favicon.ico",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "energy-2": {
+    "file": "energy-2.svg",
+    "darkFile": "energy-2-dark.svg",
+    "source": "https://reform.energy/uploads/Logotypy/ukrenergo_logo.jpg",
+    "construction": "vectorized-brand-reference",
+    "sourceRef": "sources.md"
+  },
+  "energy-3": {
+    "file": "energy-3.svg",
+    "darkFile": "energy-3-dark.svg",
+    "source": "https://www.naftogaz.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBelJ4QVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--0a1b833af49b5ec568510820132bd7ab433f2dfa/logo-color-uk.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  },
+  "energy-4": {
+    "file": "energy-4.svg",
+    "darkFile": "energy-4-dark.svg",
+    "source": "https://uhe.gov.ua/themes/basic/images/source/Logo_UHE1.svg",
+    "construction": "source-vector",
+    "sourceRef": "sources.md"
+  }
+}

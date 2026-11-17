@@ -21,7 +21,7 @@ The stack SHALL preserve database data across server and stack restarts unless t
 - **THEN** clients reconnect to the restored game and can continue from persisted state with recomputed deadlines
 
 ### Requirement: Web container runtime configuration
-At startup the web service SHALL generate `/config.js` exposing only `API_ORIGIN`, using a shell script without a Node runtime. Values SHALL be empty or match `^https?://[a-z0-9.-]+(:[0-9]{1,5})?$`, with explicit ports numerically restricted to 1..65535. This whitelist provides JavaScript/HTML safety without escaping. Invalid input SHALL fail startup naming `API_ORIGIN`. Empty or absent input SHALL select same-origin operation.
+At startup the web service SHALL generate `/config.js` exposing only `API_ORIGIN` and `logoSet`, using a shell script without a Node runtime. `API_ORIGIN` SHALL be empty or match `^https?://[a-z0-9.-]+(:[0-9]{1,5})?$`, with explicit ports numerically restricted to 1..65535. This whitelist provides JavaScript/HTML safety without escaping. Invalid input SHALL fail startup naming `API_ORIGIN`. Empty or absent input SHALL select same-origin operation.
 
 #### Scenario: Configured startup
 - **WHEN** the web container starts with a valid `API_ORIGIN`
@@ -60,3 +60,21 @@ The web service SHALL serve `/index.html`, `/config.js` and `/version.txt` with 
 #### Scenario: Hashed asset
 - **WHEN** a browser requests a hashed build asset
 - **THEN** the response SHALL permit caching
+
+### Requirement: Runtime logo set selection
+
+The web container SHALL publish the logo set in runtime config and SHALL accept brand or geometric through LOGO_SET. Brand SHALL be the default in all environments.
+
+#### Scenario: Operator selects geometric
+
+- **WHEN** the web container starts with LOGO_SET set to geometric
+- **THEN** its config.js declares the geometric set without an image rebuild
+
+### Requirement: Compressed SVG delivery
+
+The web container SHALL gzip hashed SVG assets for clients that accept gzip and SHALL retain their immutable caching policy.
+
+#### Scenario: Request a compressed logo
+
+- **WHEN** a client requests a hashed logo SVG with gzip support
+- **THEN** the response is gzip encoded and has an immutable Cache-Control header
