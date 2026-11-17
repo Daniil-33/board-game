@@ -19,7 +19,7 @@
 
 ## 4. Integration and delivery
 
-- [ ] 4.1 Compare final diff with all 13 handoff acceptance criteria, reconcile parallel index.ts exports and report every mechanical out-of-core type fix or seeded fixture repin; verify pnpm build, pnpm test, openspec validate --all --strict and git diff --check pass.
+- [x] 4.1 Compare final diff with all 13 handoff acceptance criteria, reconcile parallel index.ts exports and report every mechanical out-of-core type fix or seeded fixture repin; verify pnpm build, pnpm test, openspec validate --all --strict and git diff --check pass.
 - [ ] 4.2 Commit/push assigned branch and open PR using agentctl operation intent/verification/confirmation; start independent review with agentctl review start, resolve supported findings and verify required CI jobs pass for the exact reviewed head.
 
 ## Workflow follow-up
