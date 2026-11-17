@@ -79,8 +79,8 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="game">
-    <div ref="host" class="board" data-test="board">
-      <p v-if="boardError" class="error" data-test="board-error">{{ boardError }}</p>
+    <div ref="host" class="board" data-testid="board">
+      <p v-if="boardError" class="error" data-testid="board-error">{{ boardError }}</p>
     </div>
     <div class="game-panel">
       <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />

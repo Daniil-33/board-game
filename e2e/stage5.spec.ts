@@ -313,10 +313,10 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
     for (const p of players) {
       expect(p.view!.phase).toBe('finished');
       expect(p.view!.result).toEqual(result);
-      await expect(p.page.locator('[data-screen="finished"]')).toBeVisible();
+      await expect(p.page.locator(sel('screen-finished'))).toBeVisible();
       await expect(p.page.locator(sel('winner'))).toHaveText(`Winner: ${name(players, creditor.id)}`);
-      await expect(p.page.locator(sel('eliminations')).locator('li')).toHaveText(lines.eliminations);
-      await expect(p.page.locator(sel('final-balances')).locator('li')).toHaveText(lines.balances);
+      await expect(p.page.locator(sel('elimination-row'))).toHaveText(lines.eliminations);
+      await expect(p.page.locator(sel('final-balance-row'))).toHaveText(lines.balances);
       const spectator = p.page.locator(sel('spectator'));
       if (p === creditor) await expect(spectator).toHaveCount(0);
       else await expect(spectator).toHaveText(p === payer ? 'You are out: you went bankrupt.' : 'You are out: you resigned.');

@@ -101,32 +101,32 @@ describe('rent settlement', () => {
   it('offers Pay rent with amount and owner only to the payer and shows the line to everyone', async () => {
     const view = project(withRent(owning()));
     const w = mount(RentPanel, { props: props(view) });
-    expect(w.get('[data-test="rent-line"]').text()).toBe(`Alice owes Bob 170 for ${view.board!.cells[5]!.asset!.name}.`);
-    expect(w.get('[data-test="pay-rent"]').text()).toBe('Pay rent: 170 to Bob');
-    await w.get('[data-test="pay-rent"]').trigger('click'); expect(w.emitted('command')).toEqual([['PayRent']]);
+    expect(w.get('[data-testid="rent-line"]').text()).toBe(`Alice owes Bob 170 for ${view.board!.cells[5]!.asset!.name}.`);
+    expect(w.get('[data-testid="pay-rent"]').text()).toBe('Pay rent: 170 to Bob');
+    await w.get('[data-testid="pay-rent"]').trigger('click'); expect(w.emitted('command')).toEqual([['PayRent']]);
     for (const me of [pid('b'), pid('c'), null]) {
-      await w.setProps({ me }); expect(w.find('[data-test="pay-rent"]').exists()).toBe(false); expect(w.find('[data-test="rent-line"]').exists()).toBe(true);
+      await w.setProps({ me }); expect(w.find('[data-testid="pay-rent"]').exists()).toBe(false); expect(w.find('[data-testid="rent-line"]').exists()).toBe(true);
     }
-    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-test="pay-rent"]').exists()).toBe(false);
+    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-testid="pay-rent"]').exists()).toBe(false);
   });
   it('disables Pay rent while disconnected, pending or expired, and shows an energy dice sum', async () => {
     const view = project(withRent(owning()));
     expect(canIssue(ctx(view), 'PayRent')).toBe(true);
     for (const over of [{ connected: false }, { pending: ['PayRent'] as ClientCommandType[] }, { now: 100_000 }]) {
-      const w = mount(RentPanel, { props: props(view, over) }); expect(w.get('[data-test="pay-rent"]').attributes('disabled')).toBeDefined();
+      const w = mount(RentPanel, { props: props(view, over) }); expect(w.get('[data-testid="pay-rent"]').attributes('disabled')).toBeDefined();
     }
     const energy = project(withRent(owning(), 'a', 'b', 28, 'energy', 9));
-    expect(mount(RentPanel, { props: props(energy) }).get('[data-test="rent-line"]').text()).toContain('(dice sum 9)');
+    expect(mount(RentPanel, { props: props(energy) }).get('[data-testid="rent-line"]').text()).toContain('(dice sum 9)');
   });
   it('keeps EndTurn enabled with an open settlement and tells the payer it pays automatically', async () => {
     const view = project(withRent(owning()));
     expect(actionAvailability(ctx(view))).toMatchObject({ EndTurn: true, PayRent: true, RollDice: false });
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, messages: [], problem: null, fatal: null, nameOf, colorOf };
     const w = mount(Hud, { props: { ...base, view } });
-    expect(w.get('[data-test="EndTurn"]').attributes('disabled')).toBeUndefined();
-    expect(w.get('[data-test="auto-pay-note"]').text()).toBe('Ending the turn pays the open rent automatically.');
-    await w.setProps({ me: pid('b') }); expect(w.find('[data-test="auto-pay-note"]').exists()).toBe(false);
-    await w.setProps({ me: pid('a'), view: project(owning()) }); expect(w.find('[data-test="auto-pay-note"]').exists()).toBe(false);
+    expect(w.get('[data-testid="EndTurn"]').attributes('disabled')).toBeUndefined();
+    expect(w.get('[data-testid="auto-pay-note"]').text()).toBe('Ending the turn pays the open rent automatically.');
+    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="auto-pay-note"]').exists()).toBe(false);
+    await w.setProps({ me: pid('a'), view: project(owning()) }); expect(w.find('[data-testid="auto-pay-note"]').exists()).toBe(false);
   });
 });
 
@@ -136,41 +136,41 @@ describe('asset card: houses, quotes and controls', () => {
   it('shows fixed regular and logistics quotes and an energy formula with helper examples', () => {
     const view = project(owning());
     const regular = card(view, 1);
-    expect(regular.get('[data-test="asset-houses"]').text()).toBe('0 / 4');
-    expect(regular.get('[data-test="asset-rent"]').text()).toBe(String((view.rentQuotes[at(view, 1)] as { amount: number }).amount));
+    expect(regular.get('[data-testid="asset-houses"]').text()).toBe('0 / 4');
+    expect(regular.get('[data-testid="asset-rent"]').text()).toBe(String((view.rentQuotes[at(view, 1)] as { amount: number }).amount));
     const logistics = card(view, 5);
-    expect(logistics.find('[data-test="asset-houses"]').exists()).toBe(false);
-    expect(logistics.get('[data-test="asset-rent"]').text()).toBe(String((view.rentQuotes[at(view, 5)] as { amount: number }).amount));
-    expect(logistics.find('[data-test="house-controls"]').exists()).toBe(false);
+    expect(logistics.find('[data-testid="asset-houses"]').exists()).toBe(false);
+    expect(logistics.get('[data-testid="asset-rent"]').text()).toBe(String((view.rentQuotes[at(view, 5)] as { amount: number }).amount));
+    expect(logistics.find('[data-testid="house-controls"]').exists()).toBe(false);
     const quote = view.rentQuotes[at(view, 12)]!;
     if (quote.kind !== 'energy') throw new Error('energy quote expected');
     const energy = card(view, 12);
-    expect(energy.get('[data-test="asset-energy"]').text()).toContain(`Rent = Q(${quote.sumPrices} × dice sum × ${quote.holdings} / (200 × ${quote.groupSize}))`);
-    expect(energy.get('[data-test="energy-examples"]').text()).toBe(`dice 2: ${energyRentFor(quote, 2)}, dice 7: ${energyRentFor(quote, 7)}, dice 12: ${energyRentFor(quote, 12)}`);
-    expect(energy.find('[data-test="asset-rent"]').exists()).toBe(false);
-    expect(card(view, 13).find('[data-test="asset-rent"]').exists()).toBe(false); // free asset: no quote
+    expect(energy.get('[data-testid="asset-energy"]').text()).toContain(`Rent = Q(${quote.sumPrices} × dice sum × ${quote.holdings} / (200 × ${quote.groupSize}))`);
+    expect(energy.get('[data-testid="energy-examples"]').text()).toBe(`dice 2: ${energyRentFor(quote, 2)}, dice 7: ${energyRentFor(quote, 7)}, dice 12: ${energyRentFor(quote, 12)}`);
+    expect(energy.find('[data-testid="asset-rent"]').exists()).toBe(false);
+    expect(card(view, 13).find('[data-testid="asset-rent"]').exists()).toBe(false); // free asset: no quote
     const settled = project(withRent(owning({ owner: 'b' }), 'b', 'a', 12, 'energy', 9));
-    expect(card(settled, 12).get('[data-test="asset-settlement"]').text()).toBe('Open rent: 170 (dice sum 9)');
+    expect(card(settled, 12).get('[data-testid="asset-settlement"]').text()).toBe('Open rent: 170 (dice sum 9)');
   });
   it('follows new views on an open card: houses and quote', async () => {
     const s = owning(); const w = card(project(s), 6);
-    expect(w.get('[data-test="asset-houses"]').text()).toBe('1 / 4');
+    expect(w.get('[data-testid="asset-houses"]').text()).toBe('1 / 4');
     const next = project({ ...s, houses: { [at(s, 6)]: 2, [at(s, 8)]: 1, [at(s, 9)]: 1 } });
     await w.setProps({ view: next });
-    expect(w.get('[data-test="asset-houses"]').text()).toBe('2 / 4');
-    expect(w.get('[data-test="asset-rent"]').text()).toBe(String((next.rentQuotes[at(s, 6)] as { amount: number }).amount));
+    expect(w.get('[data-testid="asset-houses"]').text()).toBe('2 / 4');
+    expect(w.get('[data-testid="asset-rent"]').text()).toBe(String((next.rentQuotes[at(s, 6)] as { amount: number }).amount));
   });
   it('shows Build and Sell with cost, refund, quota and one reason per code, and emits the asset intent', async () => {
     const view = project(owning()); const price = view.board!.cells[9]!.asset!.price;
     const w = card(view, 9);
-    expect(w.get('[data-test="build-house"]').text()).toBe(`Build a house: ${houseCost(price)}`);
-    expect(w.get('[data-test="sell-house"]').text()).toBe(`Sell a house: +${houseRefund(houseCost(price))}`);
-    expect(w.get('[data-test="builds-left"]').text()).toBe('Builds left this turn: 1');
-    expect(w.find('[data-test="build-reason"]').exists()).toBe(false);
-    expect(w.get('[data-test="sell-reason"]').text()).toBe(HOUSE_REASONS.NO_HOUSES);
-    await w.get('[data-test="build-house"]').trigger('click');
+    expect(w.get('[data-testid="build-house"]').text()).toBe(`Build a house: ${houseCost(price)}`);
+    expect(w.get('[data-testid="sell-house"]').text()).toBe(`Sell a house: +${houseRefund(houseCost(price))}`);
+    expect(w.get('[data-testid="builds-left"]').text()).toBe('Builds left this turn: 1');
+    expect(w.find('[data-testid="build-reason"]').exists()).toBe(false);
+    expect(w.get('[data-testid="sell-reason"]').text()).toBe(HOUSE_REASONS.NO_HOUSES);
+    await w.get('[data-testid="build-house"]').trigger('click');
     expect(w.emitted('command')).toEqual([[{ type: 'BuildHouse', payload: { assetId: at(view, 9) } }]]);
-    await w.get('[data-test="sell-house"]').trigger('click'); expect(w.emitted('command')).toHaveLength(1); // disabled
+    await w.get('[data-testid="sell-house"]').trigger('click'); expect(w.emitted('command')).toHaveLength(1); // disabled
     const s = owning();
     const states: [GameState, HouseErrorCode][] = [
       [{ ...s, auction: {} as never }, 'AUCTION_IN_PROGRESS'], [{ ...s, turn: { ...s.turn!, playerId: pid('b') } }, 'NOT_ACTIVE_PLAYER'],
@@ -181,20 +181,20 @@ describe('asset card: houses, quotes and controls', () => {
     ];
     for (const [state, code] of states) {
       await w.setProps({ view: project(state) });
-      expect(w.get('[data-test="build-house"]').attributes('disabled'), code).toBeDefined();
-      expect(w.get('[data-test="build-reason"]').text()).toBe(HOUSE_REASONS[code]);
+      expect(w.get('[data-testid="build-house"]').attributes('disabled'), code).toBeDefined();
+      expect(w.get('[data-testid="build-reason"]').text()).toBe(HOUSE_REASONS[code]);
     }
-    const uneven = card(project(s), 6); expect(uneven.get('[data-test="build-reason"]').text()).toBe(HOUSE_REASONS.UNEVEN_BUILD);
+    const uneven = card(project(s), 6); expect(uneven.get('[data-testid="build-reason"]').text()).toBe(HOUSE_REASONS.UNEVEN_BUILD);
     const incomplete = { ...s, owners: { ...s.owners, [at(s, 9)]: pid('b') }, houses: {} };
-    expect(card(project(incomplete), 6).get('[data-test="build-reason"]').text()).toBe(HOUSE_REASONS.GROUP_INCOMPLETE);
-    expect(card(project({ ...s, houses: { [at(s, 6)]: 1, [at(s, 8)]: 2, [at(s, 9)]: 1 } }), 6).get('[data-test="sell-reason"]').text()).toBe(HOUSE_REASONS.UNEVEN_SALE);
+    expect(card(project(incomplete), 6).get('[data-testid="build-reason"]').text()).toBe(HOUSE_REASONS.GROUP_INCOMPLETE);
+    expect(card(project({ ...s, houses: { [at(s, 6)]: 1, [at(s, 8)]: 2, [at(s, 9)]: 1 } }), 6).get('[data-testid="sell-reason"]').text()).toBe(HOUSE_REASONS.UNEVEN_SALE);
     const offline = card(view, 9, { connected: false });
-    expect(offline.get('[data-test="build-reason"]').text()).toBe('Disconnected: reconnecting…');
+    expect(offline.get('[data-testid="build-reason"]').text()).toBe('Disconnected: reconnecting…');
   });
   it('shows no controls on another player\'s or a non-monopoly asset', () => {
     const view = project(owning());
-    for (const cell of [11, 5, 12, 13]) expect(card(view, cell).find('[data-test="house-controls"]').exists(), `cell ${cell}`).toBe(false);
-    expect(card(view, 9, { me: pid('b') }).find('[data-test="house-controls"]').exists()).toBe(false);
+    for (const cell of [11, 5, 12, 13]) expect(card(view, cell).find('[data-testid="house-controls"]').exists(), `cell ${cell}`).toBe(false);
+    expect(card(view, 9, { me: pid('b') }).find('[data-testid="house-controls"]').exists()).toBe(false);
   });
 });
 
@@ -282,7 +282,7 @@ describe('rent and building intents', () => {
     expect(h.client.game.view!.houses).toEqual(view.houses); expect(h.client.game.view!.balances).toEqual(view.balances);
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view };
     const w = mount(Hud, { props: { ...base, messages: h.client.game.messages } });
-    expect(w.get('[data-test="message"]').text()).toContain(`UNEVEN_BUILD: UNEVEN_BUILD — ${HOUSE_REASONS.UNEVEN_BUILD}`);
+    expect(w.get('[data-testid="message"]').text()).toContain(`UNEVEN_BUILD: UNEVEN_BUILD — ${HOUSE_REASONS.UNEVEN_BUILD}`);
     h.client.returnToLobby();
   });
   it('shows no house reason for a rejected purchase or bid with a shared code (RVW-001)', () => {
@@ -303,7 +303,7 @@ describe('rent and building intents', () => {
     h.sockets.last().receive({ t: 'Ack', commandId: 'c3' as CommandId, outcome: 'rejected', revision: auction.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'INSUFFICIENT_FUNDS' } });
     expect(h.client.game.messages.map(m => m.commandType)).toEqual(['BuyAsset', 'Bid', 'BuildHouse']);
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view: auction };
-    const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-test="message"]').map(m => m.text());
+    const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-testid="message"]').map(m => m.text());
     expect(texts[0]).toContain('INSUFFICIENT_FUNDS: Purchase exceeds balance'); expect(texts[0]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
     expect(texts[1]).toContain('INSUFFICIENT_FUNDS: Bid exceeds balance'); expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
     expect(texts[2]).toContain(`INSUFFICIENT_FUNDS: INSUFFICIENT_FUNDS — ${HOUSE_REASONS.INSUFFICIENT_FUNDS}`);

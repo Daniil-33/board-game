@@ -45,14 +45,14 @@
 
 ## 5. Test hooks (client/structure — Stable browser hooks)
 
-- [ ] 5.1 Migrate data-test to data-testid, add hooks for remaining selected elements and update component selector helpers only; verify unchanged component assertions pass.
+- [x] 5.1 Migrate data-test to data-testid, add hooks for remaining selected elements and update component selector helpers only; verify unchanged component assertions pass.
 - [ ] 5.2 Update e2e selector helpers and remaining text/structure selectors to hooks, preserving behavior assertions; verify e2e typecheck and stage 1–5 production/seeded/fixture suites, then commit hooks separately.
 
 ## 6. Integration and delivery
 
 - [ ] 6.1 Verify pnpm build, pnpm test, client build:bundle, client lint, browser typecheck and openspec validate --all --strict; save concrete command evidence.
 - [ ] 6.2 Measure final gzip bundle with baseline method; verify aggregate JS/CSS growth at most 15,000 bytes and save per-file/totals evidence.
-- [ ] 6.3 Inspect acceptance coverage and final diff, run git diff --check 75f8f9d HEAD; verify no server/protocol/core changes and no unintended text/style changes.
+- [ ] 6.3 Inspect acceptance coverage and final diff, run git diff --check 59921ca HEAD; verify no server/protocol/core changes and no unintended text/style changes.
 - [ ] 6.4 Record agentctl external-operation intents, push feature branch, create PR with before/after sizes and residual risks, verify external state and confirm operations; verify all CI jobs on exact PR head.
 - [ ] 6.5 Start independent exact-range review using engineer-to-reviewer template, address supported findings and verify affected checks plus independent approval on final code head.
 

@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createI18n } from 'vue-i18n';
 
 type LocaleResource = { [key: string]: string | LocaleResource };

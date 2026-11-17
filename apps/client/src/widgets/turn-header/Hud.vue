@@ -46,16 +46,16 @@ const headline = computed(() => {
 
 <template>
   <aside class="hud">
-    <p v-if="fatal" class="error" data-test="fatal">{{ fatal }}</p>
-    <p v-else-if="!connected" class="warn-box" data-test="offline">{{ t('hud.connection_lost_reconnecting') }}</p>
-    <p v-if="problem" class="warn-box" data-test="problem">{{ problem }}</p>
+    <p v-if="fatal" class="error" data-testid="fatal">{{ fatal }}</p>
+    <p v-else-if="!connected" class="warn-box" data-testid="offline">{{ t('hud.connection_lost_reconnecting') }}</p>
+    <p v-if="problem" class="warn-box" data-testid="problem">{{ problem }}</p>
 
-    <h2 data-test="headline">{{ headline }}</h2>
+    <h2 data-testid="headline">{{ headline }}</h2>
     <TurnTimer :paused="view?.turn?.pausedRemainingMs != null" :deadline="activeDeadline(view)" :now="now" />
 
-    <p v-if="out" class="warn-box" data-test="spectator">{{ t('hud.watching_the_game', { value0: out }) }}</p>
+    <p v-if="out" class="warn-box" data-testid="spectator">{{ t('hud.watching_the_game', { value0: out }) }}</p>
     <ActionButtons :available="available" @command="(type) => emit('command', type)" />
-    <p v-if="me && view?.rent?.payerId === me" class="note" data-test="auto-pay-note"> {{ t('hud.ending_the_turn') }} </p>
+    <p v-if="me && view?.rent?.payerId === me" class="note" data-testid="auto-pay-note"> {{ t('hud.ending_the_turn') }} </p>
 
     <ResignControl :available="available.Resign" @confirm="emit('command', 'Resign')" />
 
@@ -63,9 +63,9 @@ const headline = computed(() => {
     <TurnOrder :entries="entries" :me="me" :name-of="nameOf" :color-of="colorOf" />
 
     <ul v-if="messages.length > 0" class="messages">
-      <li v-for="message in messages" :key="message.id" class="error" data-test="message">
+      <li v-for="message in messages" :key="message.id" class="error" data-testid="message" :data-code="message.code">
         <span><strong>{{ message.code }}</strong>{{ t('common.symbol', { value0: message.message }) }}<template v-if="reasonFor(message)"> {{ t('hud.symbol_2', { value0: reasonFor(message) }) }}</template></span>
-        <button class="link" :aria-label="t('common.dismiss')" @click="emit('dismiss', message.id)">{{ t('common.symbol_2') }}</button>
+        <button data-testid="message-dismiss" class="link" :aria-label="t('common.dismiss')" @click="emit('dismiss', message.id)">{{ t('common.symbol_2') }}</button>
       </li>
     </ul>
   </aside>

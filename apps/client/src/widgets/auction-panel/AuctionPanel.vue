@@ -13,7 +13,7 @@ const asset = computed(() => props.view.board?.cells.find(c => c.index === props
 const responding = computed(() => props.view.auction?.responder === props.me && props.me !== null && !props.view.eliminated.includes(props.me));
 </script>
 <template>
-  <section v-if="view.auction" class="asset-card decision-panel" :aria-label="t('auction_panel.auction')" data-test="auction">
+  <section v-if="view.auction" class="asset-card decision-panel" :aria-label="t('auction_panel.auction')" data-testid="auction">
     <h2>{{ t('auction_panel.auction_2', { value0: asset?.name }) }}</h2>
     <dl>
       <dt>{{ t('auction_panel.start_bid') }}</dt><dd>{{ formatMoney(view.auction.startBid) }}</dd>
@@ -23,10 +23,10 @@ const responding = computed(() => props.view.auction?.responder === props.me && 
       <dt>{{ t('auction_panel.passed') }}</dt><dd>{{ view.auction.passed.map(nameOf).join(', ') || t('auction_panel.none') }}</dd>
       <dt>{{ t('auction_panel.responder') }}</dt><dd>{{ nameOf(view.auction.responder) }}</dd>
     </dl>
-    <p data-test="auction-timer">{{ t('common.s', { value0: formatSeconds(remainingSeconds(view.auction.responseDeadline, now)) }) }}</p>
+    <p data-testid="auction-timer">{{ t('common.s', { value0: formatSeconds(remainingSeconds(view.auction.responseDeadline, now)) }) }}</p>
     <template v-if="responding">
-      <button data-test="bid" :disabled="!canIssue(props, 'Bid')" @click="emit('command', 'Bid')">{{ t('auction_panel.bid', { value0: formatMoney(nextBidAmount(view.auction)) }) }}</button>
-      <button data-test="pass" :disabled="!canIssue(props, 'PassAuction')" @click="emit('command', 'PassAuction')">{{ t('auction_panel.pass') }}</button>
+      <button data-testid="bid" :disabled="!canIssue(props, 'Bid')" @click="emit('command', 'Bid')">{{ t('auction_panel.bid', { value0: formatMoney(nextBidAmount(view.auction)) }) }}</button>
+      <button data-testid="pass" :disabled="!canIssue(props, 'PassAuction')" @click="emit('command', 'PassAuction')">{{ t('auction_panel.pass') }}</button>
     </template>
   </section>
 </template>

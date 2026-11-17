@@ -21,10 +21,10 @@ const screen = computed(() => {
 </script>
 
 <template>
-  <main class="app" :data-screen="screen">
+  <main class="app" :data-screen="screen" :data-testid="`screen-${screen}`">
     <header class="app-header">
       <h1>{{ t('app.board_game') }}</h1>
-      <span v-if="client.session.state.guest" class="who" data-test="who">{{ client.session.state.guest.nickname }}</span>
+      <span v-if="client.session.state.guest" class="who" data-testid="who">{{ client.session.state.guest.nickname }}</span>
     </header>
     <LoginScreen v-if="screen === 'login'" />
     <LobbyScreen v-else-if="screen === 'lobby'" />

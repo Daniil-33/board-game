@@ -24,30 +24,30 @@ onBeforeUnmount(() => clearInterval(timer));
     <div class="row">
       <h2>{{ t('lobby.rooms') }}</h2>
       <span class="spacer" />
-      <button data-test="refresh" :disabled="client.lobby.busy" @click="client.refreshRooms()">{{ t('lobby.refresh') }}</button>
-      <button data-test="create" class="primary" :disabled="client.lobby.busy" @click="client.createRoom(createCode)"> {{ t('lobby.create_room') }} </button>
+      <button data-testid="refresh" :disabled="client.lobby.busy" @click="client.refreshRooms()">{{ t('lobby.refresh') }}</button>
+      <button data-testid="create" class="primary" :disabled="client.lobby.busy" @click="client.createRoom(createCode)"> {{ t('lobby.create_room') }} </button>
     </div>
-    <label>{{ t('lobby.optional_room_access') }} <input v-model="createCode" data-test="create-code" autocomplete="off" /></label>
-    <div v-if="client.lobby.inviteRoomId" class="warn-box" data-test="invite"> {{ t('lobby.invite_to_room', { value0: client.lobby.inviteRoomId }) }} <button :disabled="client.lobby.busy" data-test="retry-invite" @click="client.retryInvite()">{{ t('lobby.retry_invite') }}</button>
-      <button :disabled="client.lobby.busy" data-test="dismiss-invite" @click="client.dismissInvite()">{{ t('lobby.dismiss_invite') }}</button>
+    <label>{{ t('lobby.optional_room_access') }} <input v-model="createCode" data-testid="create-code" autocomplete="off" /></label>
+    <div v-if="client.lobby.inviteRoomId" class="warn-box" data-testid="invite"> {{ t('lobby.invite_to_room', { value0: client.lobby.inviteRoomId }) }} <button :disabled="client.lobby.busy" data-testid="retry-invite" @click="client.retryInvite()">{{ t('lobby.retry_invite') }}</button>
+      <button :disabled="client.lobby.busy" data-testid="dismiss-invite" @click="client.dismissInvite()">{{ t('lobby.dismiss_invite') }}</button>
     </div>
-    <p v-if="client.lobby.notice" class="warn-box" data-test="notice">{{ client.lobby.notice }}</p>
-    <p v-if="client.lobby.error" class="error" data-test="error">{{ client.lobby.error }}</p>
-    <p v-if="client.lobby.rooms.length === 0" class="muted" data-test="empty">{{ t('lobby.no_rooms_to') }}</p>
+    <p v-if="client.lobby.notice" class="warn-box" data-testid="notice">{{ client.lobby.notice }}</p>
+    <p v-if="client.lobby.error" class="error" data-testid="error">{{ client.lobby.error }}</p>
+    <p v-if="client.lobby.rooms.length === 0" class="muted" data-testid="empty">{{ t('lobby.no_rooms_to') }}</p>
     <ul v-else class="rooms">
-      <li v-for="room in client.lobby.rooms" :key="room.roomId" class="room" data-test="room">
+      <li v-for="room in client.lobby.rooms" :key="room.roomId" class="room" data-testid="room" :data-room-id="room.roomId">
         <div>
           <strong>{{ t('common.room', { value0: room.roomId }) }}</strong>
-          <span class="tag" data-test="room-status">{{ room.status === 'playing' ? t('lobby.in_play') : room.status !== 'lobby' ? room.status : room.members.length >= 6 ? t('lobby.full') : room.locked ? t('lobby.locked') : t('lobby.open') }}</span>
-          <div class="muted" data-test="room-members">
+          <span class="tag" data-testid="room-status">{{ room.status === 'playing' ? t('lobby.in_play') : room.status !== 'lobby' ? room.status : room.members.length >= 6 ? t('lobby.full') : room.locked ? t('lobby.locked') : t('lobby.open') }}</span>
+          <div class="muted" data-testid="room-members">
             {{ room.members.map((m) => m.nickname).join(', ') || t('lobby.empty') }}
           </div>
         </div>
-        <form v-if="room.locked && room.status === 'lobby' && room.members.length < 6" @submit.prevent="client.joinRoom(room.roomId, codes[room.roomId])">
-          <label>{{ t('lobby.access_code') }} <input v-model="codes[room.roomId]" :aria-label="t('lobby.access_code_for', { roomId: room.roomId })" data-test="join-code" autocomplete="off" required /></label>
-          <button data-test="join" :disabled="client.lobby.busy">{{ t('lobby.join_with_code') }}</button>
+        <form data-testid="join-form" v-if="room.locked && room.status === 'lobby' && room.members.length < 6" @submit.prevent="client.joinRoom(room.roomId, codes[room.roomId])">
+          <label>{{ t('lobby.access_code') }} <input v-model="codes[room.roomId]" :aria-label="t('lobby.access_code_for', { roomId: room.roomId })" data-testid="join-code" autocomplete="off" required /></label>
+          <button data-testid="join" :disabled="client.lobby.busy">{{ t('lobby.join_with_code') }}</button>
         </form>
-        <button v-else data-test="join" :disabled="client.lobby.busy || !room.joinable" @click="client.joinRoom(room.roomId)">{{ t('lobby.join') }}</button>
+        <button v-else data-testid="join" :disabled="client.lobby.busy || !room.joinable" @click="client.joinRoom(room.roomId)">{{ t('lobby.join') }}</button>
       </li>
     </ul>
   </section>

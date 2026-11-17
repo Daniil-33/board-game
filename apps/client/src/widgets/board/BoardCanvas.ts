@@ -395,6 +395,7 @@ export async function mountBoard(host: HTMLElement, scene: BoardScene): Promise<
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   app.canvas.classList.add('board-canvas');
+  app.canvas.dataset.testid = 'board-canvas';
   // autoDensity pins the canvas to a pixel size; let the page scale it instead.
   app.canvas.style.width = '100%';
   app.canvas.style.height = 'auto';

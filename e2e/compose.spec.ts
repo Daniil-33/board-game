@@ -29,7 +29,7 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   const beforeReload = structuredClone(current.view!);
   const welcomeCount = current.welcomes.length;
   await current.page.reload();
-  await expect(current.page.locator('[data-screen="game"]')).toBeVisible();
+  await expect(current.page.locator(sel('screen-game'))).toBeVisible();
   await expect.poll(() => current.view?.revision).toBe(revision);
   await expect.poll(() => current.welcomes.length).toBeGreaterThan(welcomeCount);
   expect(current.welcomes.at(-1)!.playerId).toBe(id);
@@ -57,7 +57,7 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   await action(resumed, resumed.view!.turn!.rolled ? 'EndTurn' : 'RollDice');
   await resign(players[2]!); await resign(players[1]!);
   for (const p of players) {
-    await expect(p.page.getByRole('heading', { name: 'Game over', exact: true })).toBeVisible();
+    await expect(p.page.locator(sel('game-over-title'))).toBeVisible();
     await expect(p.page.locator(sel('winner'))).toHaveText('Winner: Player 1');
   }
 });
@@ -69,16 +69,16 @@ test('locked code and invite, participant leave and creator closes room', async 
   await join(guest!, room, 'browser-fixture-code');
   const invite = await host!.page.locator(sel('invite-link')).inputValue();
   const [third] = await actors(1, invite);
-  await expect(third!.page.locator('[data-screen="room"]')).toBeVisible();
+  await expect(third!.page.locator(sel('screen-room'))).toBeVisible();
   await expect(host!.page.locator(sel('member'))).toHaveCount(3);
   await guest!.page.locator(sel('leave')).click();
-  await expect(guest!.page.locator('[data-screen="lobby"]')).toBeVisible();
+  await expect(guest!.page.locator(sel('screen-lobby'))).toBeVisible();
   await expect(host!.page.locator(sel('member'))).toHaveCount(2);
   await host!.page.locator(sel('leave')).click();
-  await expect(host!.page.locator('[data-screen="lobby"]')).toBeVisible();
-  await expect(third!.page.locator('[data-screen="lobby"]')).toBeVisible();
+  await expect(host!.page.locator(sel('screen-lobby'))).toBeVisible();
+  await expect(third!.page.locator(sel('screen-lobby'))).toBeVisible();
   await third!.page.locator(sel('refresh')).click();
-  await expect(third!.page.locator(sel('room')).filter({ hasText: room })).toHaveCount(0);
+  await expect(third!.page.locator(`${sel('room')}[data-room-id="${room}"]`)).toHaveCount(0);
   // Read Docker's raw runtime logs before the artifact sanitizer can redact them.
   const rawWebLogs = execFileSync('bash', ['-lc', process.env['E2E_WEB_LOGS_COMMAND']
     ?? "sg docker -c 'docker compose -p s1-e2e logs --no-color web'"], { encoding: 'utf8' });
@@ -229,9 +229,8 @@ async function endTurn(actor: import('./helpers').Actor, players: import('./help
 async function panels(players: import('./helpers').Actor[]): Promise<void> {
   for (const p of players) {
     for (const player of p.view!.players) {
-      const name = `Player ${players.findIndex(a => a.id === player.id) + 1}`;
-      const row = p.page.locator(sel('player-balance')).filter({ has: p.page.getByText(name, { exact: true }) });
-      await expect(row.locator('span').first()).toHaveText(String(p.view!.balances[player.id]));
+      const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);
+      await expect(row.locator(sel('player-balance-value'))).toHaveText(String(p.view!.balances[player.id]));
     }
   }
 }
@@ -242,20 +241,20 @@ async function stage2(players: import('./helpers').Actor[], capital: number): Pr
   for (const p of players) {
     await expect.poll(() => p.view?.board).toEqual(board);
     await expect.poll(() => Object.values(p.view!.balances)).toEqual(players.map(() => capital));
-    const canvas = p.page.locator(sel('board')).locator('canvas');
+    const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
     await expect(canvas).toBeVisible();
     const box = (await canvas.boundingBox())!;
     const cell = board.cells.find(c => c.asset)!;
     const rect = cellRect(cell.index, box.width);
     await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
     const card = p.page.locator(sel('asset-card'));
-    await expect(card.getByRole('heading', { level: 2 })).toHaveText(cell.asset!.name);
+    await expect(card.locator(sel('asset-title'))).toHaveText(cell.asset!.name);
     await expect(card).toContainText(cell.asset!.categoryName);
     await expect(card).toContainText(String(cell.asset!.price));
     for (const other of board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === cell.asset!.groupId)) {
       await expect(card).toContainText(other.asset!.name);
     }
-    await p.page.getByRole('button', { name: 'Close asset card' }).click();
+    await p.page.locator(sel('asset-close')).click();
   }
   await panels(players);
 }

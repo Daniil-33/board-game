@@ -18,7 +18,7 @@ const BUTTONS: readonly { type: TurnCommandType; label: string }[] = [
       v-for="button in BUTTONS"
       :key="button.type"
       class="primary"
-      :data-test="button.type"
+      :data-testid="button.type"
       :disabled="!available[button.type]"
       @click="emit('command', button.type)"
     >

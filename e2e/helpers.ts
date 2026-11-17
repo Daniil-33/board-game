@@ -4,7 +4,7 @@ import { appendFileSync, writeFileSync } from 'node:fs';
 import type { StateView, GameEvent } from '../packages/game-core/src/index';
 
 const roomCode = 'browser-fixture-code';
-export const sel = (name: string) => `[data-test="${name}"]`;
+export const sel = (name: string) => `[data-testid="${name}"]`;
 export interface Actor {
   page: Page;
   context: BrowserContext;
@@ -63,9 +63,9 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
           }
         }));
         await page.goto(invite ?? '/');
-        await page.getByLabel('Nickname', { exact: true }).fill(`Player ${actors.length}`);
-        await page.getByRole('button', { name: 'Enter', exact: true }).click();
-        await expect(page.locator('[data-screen="login"]')).toHaveCount(0);
+        await page.locator(sel('nickname')).fill(`Player ${actors.length}`);
+        await page.locator(sel('login-enter')).click();
+        await expect(page.locator(sel('screen-login'))).toHaveCount(0);
       }
       return added;
     });
@@ -91,23 +91,23 @@ export { expect };
 export async function createRoom(host: Actor, code?: string): Promise<string> {
   if (code) await host.page.locator(sel('create-code')).fill(code);
   await host.page.locator(sel('create')).click();
-  await expect(host.page.locator('[data-screen="room"]')).toBeVisible();
+  await expect(host.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => host.view?.phase).toBe('lobby');
-  return (await host.page.getByRole('heading', { name: /^Room r_/ }).innerText()).replace('Room ', '');
+  return (await host.page.locator(sel('room-title')).innerText()).replace('Room ', '');
 }
 export async function join(actor: Actor, roomId: string, code?: string): Promise<void> {
   await actor.page.locator(sel('refresh')).click();
-  const row = actor.page.locator(sel('room')).filter({ hasText: roomId });
+  const row = actor.page.locator(`${sel('room')}[data-room-id="${roomId}"]`);
   await expect(row).toBeVisible();
   if (code) await row.locator(sel('join-code')).fill(code);
   await row.locator(sel('join')).click();
-  await expect(actor.page.locator('[data-screen="room"]')).toBeVisible();
+  await expect(actor.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => actor.view?.phase).toBe('lobby');
 }
 export async function start(players: Actor[]): Promise<void> {
   await expect(players[0]!.page.locator(sel('member'))).toHaveCount(players.length);
   await players[0]!.page.locator(sel('start')).click();
-  for (const p of players) await expect(p.page.locator('[data-screen="game"]')).toBeVisible();
+  for (const p of players) await expect(p.page.locator(sel('screen-game'))).toBeVisible();
 }
 export async function action(actor: Actor, type: string): Promise<void> {
   const revision = actor.view!.revision;
@@ -129,7 +129,7 @@ export async function setup(players: Actor[]): Promise<number> {
   expect(orderEvent.event.payload).toEqual({ order: host.view!.order });
   const names = new Map(players.map(p => [p.id, `Player ${players.indexOf(p) + 1}`]));
   await expect(host.page.locator(sel('order-name'))).toHaveText(host.view!.order!.map(id => names.get(id)!));
-  await expect(host.page.locator(sel('board')).locator('canvas')).toBeVisible();
+  await expect(host.page.locator(sel('board')).locator(sel('board-canvas'))).toBeVisible();
   return rolls;
 }
 export async function active(players: Actor[]): Promise<Actor> {

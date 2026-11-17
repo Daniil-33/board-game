@@ -23,13 +23,13 @@ async function submit(): Promise<void> {
 <template>
   <section class="panel login">
     <h2>{{ t('login.play_as_a') }}</h2>
-    <form @submit.prevent="submit">
+    <form data-testid="login-form" @submit.prevent="submit">
       <label for="nickname">{{ t('login.nickname') }}</label>
-      <input id="nickname" v-model="nickname" name="nickname" autocomplete="nickname" autofocus />
-      <button type="submit" :disabled="client.lobby.busy">{{ t('login.enter') }}</button>
+      <input data-testid="nickname" id="nickname" v-model="nickname" name="nickname" autocomplete="nickname" autofocus />
+      <button data-testid="login-enter" type="submit" :disabled="client.lobby.busy">{{ t('login.enter') }}</button>
     </form>
-    <p v-if="client.lobby.notice" class="warn-box" data-test="notice">{{ client.lobby.notice }}</p>
-    <p v-if="invalid" class="error" data-test="invalid">{{ invalid }}</p>
-    <p v-else-if="client.lobby.error" class="error" data-test="error">{{ client.lobby.error }}</p>
+    <p v-if="client.lobby.notice" class="warn-box" data-testid="notice">{{ client.lobby.notice }}</p>
+    <p v-if="invalid" class="error" data-testid="invalid">{{ invalid }}</p>
+    <p v-else-if="client.lobby.error" class="error" data-testid="error">{{ client.lobby.error }}</p>
   </section>
 </template>
