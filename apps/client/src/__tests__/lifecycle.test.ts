@@ -120,7 +120,7 @@ describe('invites and creator secrets', () => {
     expect(wrapper.get('[data-testid="access-code"]').text()).toBe('abcd');
     expect((wrapper.get('[data-testid="invite-link"]').element as HTMLInputElement).value).toContain('/?room=r1&code=abcd');
     await wrapper.get('[data-testid="copy-invite"]').trigger('click'); await flushPromises();
-    expect(wrapper.text()).toContain('Select and copy');
+    expect(wrapper.text()).toContain('Выделите и скопируйте');
     expect([...h.storage.data.values()].join()).not.toContain('abcd');
     wrapper.unmount();
   });
@@ -136,7 +136,7 @@ describe('lobby availability and recovery', () => {
       : c.path.includes('/locked/') ? { status: 403, body: { code: 'ACCESS_CODE_INVALID', message: 'Wrong code' } } : { body: { room: open } } });
     const wrapper = mount(App, provide(h)); await flushPromises();
     const rows = wrapper.findAll('[data-testid="room"]');
-    expect(rows.map((r) => r.get('[data-testid="room-status"]').text())).toEqual(['open', 'locked', 'in play', 'full']);
+    expect(rows.map((r) => r.get('[data-testid="room-status"]').text())).toEqual(['Открытая', 'Закрытая', 'Идёт партия', 'Мест нет']);
     expect(rows[2]!.get('[data-testid="join"]').attributes('disabled')).toBeDefined();
     expect(rows[3]!.get('[data-testid="join"]').attributes('disabled')).toBeDefined();
     await rows[1]!.get('[data-testid="join-code"]').setValue('abcd'); await rows[1]!.get('[data-testid="join-form"]').trigger('submit'); await flushPromises();
@@ -196,10 +196,10 @@ describe('roster and room entry lifetime', () => {
   it('closed get-room and socket closure return to lobby with a notice', async () => {
     const h = clientWithFetch(async () => response({ room: { ...TWO, status: 'closed', joinable: false } }));
     h.client.start(); await flushPromises();
-    expect(h.client.session.state.room).toBeNull(); expect(h.client.lobby.notice).toContain('closed');
+    expect(h.client.session.state.room).toBeNull(); expect(h.client.lobby.notice).toContain('закрыта');
     const another = harness({ stored: storedSession(TWO) }); another.client.start();
     another.sockets.last().receive({ t: 'Error', code: 'ROOM_CLOSED', message: 'The host closed the room' });
-    expect(another.client.session.state.room).toBeNull(); expect(another.client.lobby.notice).toContain('closed');
+    expect(another.client.session.state.room).toBeNull(); expect(another.client.lobby.notice).toContain('The host closed the room');
   });
 
   it('leave failure retains the room; successful leave clears local state with a message', async () => {
@@ -209,7 +209,7 @@ describe('roster and room entry lifetime', () => {
     h.client.start(); await flushPromises();
     await h.client.leaveRoom(); expect(h.client.session.state.room).not.toBeNull(); expect(h.client.lobby.error).toContain('PHASE_NOT_ALLOWED');
     fail = false; await h.client.leaveRoom();
-    expect(h.client.session.state.room).toBeNull(); expect(h.client.lobby.notice).toContain('left'); expect(h.sockets.last().closed).toBe(true);
+    expect(h.client.session.state.room).toBeNull(); expect(h.client.lobby.notice).toContain('вышли'); expect(h.sockets.last().closed).toBe(true);
   });
 });
 
@@ -220,7 +220,7 @@ describe('resignation, spectator and game over', () => {
     sock.receive({ ...welcome(view), revision: 12 } as never);
     const wrapper = mount(App, provide(h)); await flushPromises();
     await wrapper.get('[data-testid="Resign"]').trigger('click');
-    expect(wrapper.text()).toContain('permanent');
+    expect(wrapper.text()).toContain('нельзя отменить');
     await wrapper.get('[data-testid="cancel-resign"]').trigger('click');
     expect(sock.sent.filter((f) => f.t === 'Command')).toHaveLength(0);
     await wrapper.get('[data-testid="Resign"]').trigger('click');
@@ -248,9 +248,9 @@ describe('resignation, spectator and game over', () => {
     const wrapper = mount(App, provide(h)); await flushPromises();
     const next = { ...playingView(['a', 'b', 'c'], { revision: 10, owner: 'b' }), order: [pid('b'), pid('c')], eliminated: [pid('a')] };
     h.sockets.last().receive(update(next, [{ type: 'PlayerResigned', payload: { playerId: 'a' } }])); await flushPromises();
-    expect(h.client.game.connected).toBe(true); expect(wrapper.get('[data-testid="spectator"]').text()).toContain('You are out');
+    expect(h.client.game.connected).toBe(true); expect(wrapper.get('[data-testid="spectator"]').text()).toContain('Вы выбыли');
     expect(turnOrder(next).map((e) => [e.playerId, e.eliminated])).toEqual([['b', false], ['c', false], ['a', true]]);
-    expect(wrapper.get('[data-testid="out"]').text()).toBe('out');
+    expect(wrapper.get('[data-testid="out"]').text()).toBe('выбыл');
     expect(wrapper.get('[data-testid="Resign"]').attributes('disabled')).toBeDefined();
     h.sockets.last().receive(update({ ...next, revision: 11 as never, positions: { b: 5, c: 7 } })); await flushPromises();
     expect(h.client.game.view?.positions.b).toBe(5); wrapper.unmount();
@@ -264,7 +264,7 @@ describe('resignation, spectator and game over', () => {
     const finished: StateView = { ...before, revision: 20 as never, phase: 'finished', eliminated: [pid('a')], winner: pid('b'), setup: null, turn: null,
       eliminations, finishedAt: 15 as never, result: { winner: pid('b'), finishedAt: 15 as never, eliminations, finalBalances: before.balances } };
     h.sockets.last().receive(update(finished)); await flushPromises();
-    expect(wrapper.attributes('data-screen')).toBe('finished'); expect(wrapper.get('[data-testid="winner"]').text()).toBe('Winner: Bob');
+    expect(wrapper.attributes('data-screen')).toBe('finished'); expect(wrapper.get('[data-testid="winner"]').text()).toBe('Победитель: Bob');
     await wrapper.get('[data-testid="return-lobby"]').trigger('click'); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('lobby'); expect(h.calls.some((c) => c.path.endsWith('/leave'))).toBe(false);
     expect(h.sockets.last().closed).toBe(true); wrapper.unmount();
@@ -274,7 +274,7 @@ describe('resignation, spectator and game over', () => {
     vi.useFakeTimers(); const h = harness({ stored: storedSession(TWO) }); h.client.start(); const sock = h.sockets.last(); sock.open(); sock.receive(welcome(playingView(['a', 'b'])));
     h.client.sendCommand('Resign'); sock.receive({ t: 'Error', code: 'CONNECTION_REPLACED', message: 'Other tab' }); sock.drop();
     vi.advanceTimersByTime(60000); expect(h.sockets.sockets).toHaveLength(1); expect(h.client.game.pending).toEqual([]);
-    expect(h.client.game.fatal).toContain('another tab'); expect(h.storage.getItem('game.room')).not.toBeNull(); expect(h.storage.getItem('game.guest')).not.toBeNull();
+    expect(h.client.game.fatal).toContain('другой вкладке'); expect(h.storage.getItem('game.room')).not.toBeNull(); expect(h.storage.getItem('game.guest')).not.toBeNull();
     await flushPromises();
   });
 });
@@ -297,7 +297,7 @@ describe('own leave socket and HTTP ordering', () => {
     await flushPromises();
     expect(h.client.session.state.room).toBeNull();
     expect(h.client.lobby.error).toBeNull();
-    expect(h.client.lobby.notice).toMatch(/left|closed/);
+    expect(h.client.lobby.notice).toMatch(/вышли|закрыта/);
     expect(h.client.lobby.notice).not.toContain('NOT_A_PARTICIPANT');
   });
 });

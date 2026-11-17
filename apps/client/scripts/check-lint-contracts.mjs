@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 
 const eslint = new ESLint();
 const cases = [
+  ['src/shared/api/color-probe.ts', "export const ink = '#123456';", 'design/no-raw-color'],
+  ['src/pages/game/color-probe.vue', '<style>p { color: rgb(1 2 3); }</style>', 'design/no-raw-color'],
+  ['src/shared/config/color-probe.ts', "export const ink = '#123456';", null],
+  ['src/shared/api/probe.ts', "export * from '../lib/index';", null],
   ['src/widgets/board/probe.ts', "s.banner.text = 'Bankrupt';", 'no-restricted-syntax'],
   ['src/widgets/board/probe.ts', 's.banner.text = `Out: ${player}`;', 'no-restricted-syntax'],
   ['src/pages/game/probe.vue', '<template><i18n-t keypath="missing.probe" /></template>', '@intlify/vue-i18n/no-missing-keys'],
@@ -36,3 +40,13 @@ for (const [filePath, source, expected] of cases) {
   else assert.deepEqual(errors, [], `${filePath}: permitted dependency`);
   console.log(`PASS ${filePath}: ${expected ?? 'permitted import'}`);
 }
+
+const { findSharedCycle } = await import('./design-rules.mjs');
+const { resolve } = await import('node:path');
+const shared = resolve('src/shared');
+assert.equal(findSharedCycle(shared), undefined, 'Shared segment dependencies must be acyclic');
+const cycle = new Map([
+  [resolve(shared, 'api/cycle-probe.ts'), 'export * from "../lib/index";'],
+  [resolve(shared, 'lib/cycle-probe.ts'), 'import type { Session } from "../api/index";'],
+]);
+assert.deepEqual(findSharedCycle(shared, cycle), ['api', 'lib', 'api']);

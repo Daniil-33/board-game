@@ -211,7 +211,7 @@ describe('RoomScreen', () => {
     await flushPromises();
     expect(wrapper.find('[data-testid="message"]').text()).toContain('MALFORMED_FRAME');
     expect(wrapper.find('[data-testid="message"]').text()).toContain('bad hello');
-    expect(wrapper.find('[data-testid="problem"]').text()).toContain('Unreadable');
+    expect(wrapper.find('[data-testid="problem"]').text()).toContain('Не удалось прочитать');
     await wrapper.find('[data-testid="message-dismiss"]').trigger('click');
     expect(wrapper.find('[data-testid="message"]').exists()).toBe(false);
   });
@@ -261,8 +261,8 @@ describe('App screen selection', () => {
     h.sockets.last().receive(update(setupView(['a', 'b'], { revision: 4, roller: 'a', deadline: 95_000 })));
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');
-    expect(wrapper.find('[data-testid="timer"]').text()).toBe('45 s');
-    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Rolling for turn order: Alice');
+    expect(wrapper.find('[data-testid="timer"]').text()).toBe('45 с');
+    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Розыгрыш порядка ходов: Alice');
     expect(h.board.snaps.length).toBeGreaterThan(0);
   });
 
@@ -275,7 +275,7 @@ describe('App screen selection', () => {
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');
     expect(wrapper.findAll('[data-testid="order-name"]').map((n) => n.text())).toEqual(['Bob', 'Alice']);
-    expect(wrapper.find('[data-testid="timer"]').text()).toBe('13 s');
+    expect(wrapper.find('[data-testid="timer"]').text()).toBe('13 с');
   });
 
   it('pressing Roll sends one command and disables the button until the Ack', async () => {

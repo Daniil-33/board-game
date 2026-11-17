@@ -1,3 +1,4 @@
+const money = (value: number): string => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F');
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { Text } from 'pixi.js';
@@ -16,8 +17,8 @@ describe('stage 2 display', () => {
     expect(new Set(Object.values(GROUP_COLORS)).size).toBe(10);
     for (const cell of board.cells) {
       const display = cellDisplay(cell);
-      if (cell.asset) expect(display).toEqual({ name: cell.asset.name, group: cell.asset.groupId, price: String(cell.asset.price), color: GROUP_COLORS[cell.asset.groupId] });
-      else expect(display).toEqual({ name: { start: 'Start', jail: 'Jail', casino: 'Casino', 'go-to-jail': 'Go to jail', chance: 'Chance' }[cell.kind as 'start'], group: null, color: null, price: null });
+      if (cell.asset) expect(display).toEqual({ name: cell.asset.name, group: cell.asset.groupId, price: money(cell.asset.price), color: GROUP_COLORS[cell.asset.groupId] });
+      else expect(display).toEqual({ name: { start: 'Старт', jail: 'Тюрьма', casino: 'Казино', 'go-to-jail': 'В тюрьму', chance: 'Шанс' }[cell.kind as 'start'], group: null, color: null, price: null });
     }
   });
   it('draws projected labels and only selects assets', () => {
@@ -27,7 +28,7 @@ describe('stage 2 display', () => {
       const box = scene.cells.children[cell.index]!;
       const texts = box.children.filter(c => c instanceof Text).map(c => (c as Text).text);
       if (cell.asset) {
-        expect(texts).toContain(String(cell.asset.price)); expect(texts).toContain(cell.asset.groupId);
+        expect(texts).toContain(money(cell.asset.price)); expect(texts).toContain(cell.asset.groupId);
         box.emit('pointertap', {} as never); expect(select).toHaveBeenLastCalledWith(cell.index);
       } else { select.mockClear(); box.emit('pointertap', {} as never); expect(select).not.toHaveBeenCalled(); }
     }
@@ -43,18 +44,18 @@ describe('stage 2 display', () => {
     const panel = mount(PlayerPanel, { props: { view, nameOf: id => id } });
     expect(panel.findAll('[data-testid="player-balance"]')).toHaveLength(3);
     await panel.setProps({ view: { ...view, balances: { a: 12340 as never, b: 45670 as never, c: 890 as never }, eliminated: [pid('b')], order: [pid('a'), pid('c')] }, nameOf: id => `New ${id}` });
-    expect(panel.findAll('[data-testid="player-balance"]').map(x => x.text())).toEqual(['New a12340Active turn', 'New b45670Out', 'New c890']);
+    expect(panel.findAll('[data-testid="player-balance"]').map(x => x.text())).toEqual(['New a12\u202F340Ходит', 'New b45\u202F670Выбыл', 'New c890']);
     panel.unmount();
   });
   it.each(['M1', 'logistics', 'energy'])('shows projected %s details and group peers', group => {
     const cell = board.cells.find(c => c.asset?.groupId === group)!;
     const card = mount(AssetCard, { props: { cell, board } });
     expect(card.text()).toContain(cell.asset!.name); expect(card.text()).toContain(cell.asset!.categoryName);
-    expect(card.text()).toContain(String(cell.asset!.price));
-    expect(card.text().includes('Rank')).toBe(cell.asset!.rank !== null);
+    expect(card.text()).toContain(money(cell.asset!.price));
+    expect(card.text().includes('Ранг')).toBe(cell.asset!.rank !== null);
     const peers = board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === group);
     expect(card.findAll('[data-testid="asset-group-member"]')).toHaveLength(peers.length);
-    peers.forEach(c => { expect(card.text()).toContain(c.asset!.name); expect(card.text()).toContain(`cell ${c.index}`); expect(card.text()).toContain(String(c.asset!.price)); });
+    peers.forEach(c => { expect(card.text()).toContain(c.asset!.name); expect(card.text()).toContain(`клетка ${c.index}`); expect(card.text()).toContain(money(c.asset!.price)); });
     card.unmount();
   });
   it('shows an Update balance while movement animation is still pending', async () => {
@@ -70,7 +71,7 @@ describe('stage 2 display', () => {
       { type: 'BalanceChanged', payload: { playerId: 'a', balance: 98760, delta: 100, reason: 'lap-reward' } },
     ]));
     await flushPromises();
-    expect(wrapper.find('[data-testid="player-balance"]').text()).toContain('98760');
+    expect(wrapper.find('[data-testid="player-balance"]').text()).toContain('98\u202F760');
     expect(finish).toBeTypeOf('function'); finish(); await flushPromises();
     wrapper.unmount(); h.client.returnToLobby();
   });
@@ -89,7 +90,7 @@ describe('stage 2 display', () => {
     await click(1);
     h.sockets.last().receive(update({ ...playingView(['a', 'b']), revision: 10 as never, balances: { a: 98760 as never, b: 120 as never }, owners: { [board.cells[1]!.asset!.assetId]: pid('b') } }));
     await flushPromises(); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="player-balance"]').text()).toContain('98760');
+    expect(wrapper.find('[data-testid="player-balance"]').text()).toContain('98\u202F760');
     expect(wrapper.get('[data-testid="asset-owner"]').text()).toBe('Bob');
     h.client.game.view = { ...h.client.game.view!, board: generateBoard(seedRng(43)).board }; await flushPromises(); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(false);
     wrapper.unmount(); expect(select).toBeNull(); h.client.returnToLobby();

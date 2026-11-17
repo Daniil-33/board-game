@@ -41,19 +41,19 @@ describe('purchase and auction projection', () => {
       const context = { ...props(view), ...extra };
       expect(canIssue(context, 'StartAuction')).toBe(false);
     }
-    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false); expect(w.text()).toContain('Player a is deciding');
+    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false); expect(w.text()).toContain('Player a решает');
     await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
   });
   it('auction roles, projected amounts, deadlines and restored leader', async () => {
     const view = auction(); const a = view.auction!;
     const w = mount(AuctionPanel, { props: props(view) });
-    expect(w.get('[data-testid="bid"]').text()).toBe(`Bid ${a.startBid}`);
+    expect(w.get('[data-testid="bid"]').text()).toBe(`Поднять до ${a.startBid}`);
     await w.get('[data-testid="pass"]').trigger('click'); expect(w.emitted('command')).toEqual([['PassAuction']]);
     const raised = { ...view, auction: { ...a, leader: pid('b'), leadingBid: Q(a.startBid + a.step), passed: [pid('c')], responseId: 'r2', responseDeadline: timestamp(52_400) } };
     await w.setProps({ view: raised }); expect(w.text()).toContain('Player b'); expect(w.text()).toContain('Player c');
-    expect(w.get('[data-testid="bid"]').text()).toBe(`Bid ${nextBidAmount(raised.auction)}`); expect(w.get('[data-testid="auction-timer"]').text()).toBe('3 s');
+    expect(w.get('[data-testid="bid"]').text()).toBe(`Поднять до ${nextBidAmount(raised.auction)}`); expect(w.get('[data-testid="auction-timer"]').text()).toBe('3 с');
     await w.setProps({ view: { ...raised, balances: { a: Q(0) } } }); expect(w.get('[data-testid="bid"]').attributes('disabled')).toBeDefined();
-    await w.setProps({ now: 53_000 }); expect(w.get('[data-testid="auction-timer"]').text()).toBe('0 s'); expect(w.get('[data-testid="pass"]').attributes('disabled')).toBeDefined(); expect(w.find('[data-testid="auction"]').exists()).toBe(true);
+    await w.setProps({ now: 53_000 }); expect(w.get('[data-testid="auction-timer"]').text()).toBe('0 с'); expect(w.get('[data-testid="pass"]').attributes('disabled')).toBeDefined(); expect(w.find('[data-testid="auction"]').exists()).toBe(true);
     await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
     await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
     for (const extra of [{ connected: false }, { now: 60_000 }, { pending: ['Bid', 'PassAuction'] }] satisfies Partial<ActionContext>[]) {
@@ -63,13 +63,13 @@ describe('purchase and auction projection', () => {
     expect(canIssue(props(view), 'EndTurn')).toBe(false); expect(canIssue(props(view), 'RollDice')).toBe(false);
   });
   it('shows paused even at zero and follows a resumed deadline', async () => {
-    const w = mount(TurnTimer, { props: { deadline: 10, now: 50_000, paused: true } }); expect(w.text()).toBe('paused');
-    await w.setProps({ paused: false, deadline: 62_400 }); expect(w.text()).toBe('13 s');
+    const w = mount(TurnTimer, { props: { deadline: 10, now: 50_000, paused: true } }); expect(w.text()).toBe('таймер хода на паузе');
+    await w.setProps({ paused: false, deadline: 62_400 }); expect(w.text()).toBe('13 с');
   });
   it('refreshes markers and an open card without regenerating cells', async () => {
     const v = purchase(); const p = v.purchase!; const cell = v.board!.cells[p.cell]!;
     const scene = new BoardScene(); scene.snap(v, 'a'); const first = scene.cells.children[0];
-    const w = mount(AssetCard, { props: { cell, board: v.board! } }); expect(w.text()).toContain('free');
+    const w = mount(AssetCard, { props: { cell, board: v.board! } }); expect(w.text()).toContain('свободно');
     scene.refreshOwnership({ ...v, owners: { [p.assetId]: pid('b') } });
     expect(scene.ownership.children[0]!.tint).toBe(TOKEN_COLORS[1]);
     expect(scene.ownership.children.map(c => c.label)).toEqual([`owner-${p.cell}-b`]); expect(scene.cells.children[0]).toBe(first);

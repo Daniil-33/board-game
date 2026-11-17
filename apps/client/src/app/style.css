@@ -1,14 +1,17 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "../shared/config/tokens.css";
+@import "tailwindcss/utilities.css" layer(utilities);
+
 :root {
   color-scheme: dark;
-  --bg: #0f1820;
-  --panel: #18242f;
-  --edge: #2c4052;
-  --text: #dbe6ee;
-  --muted: #8fa5b5;
-  --accent: #2f9e8f;
-  --danger: #e0685a;
-  --warn: #e0a83a;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --bg: var(--bg-base);
+  --panel: var(--surface-1);
+  --edge: var(--border-strong);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+  --accent: var(--accent-mint);
+  --warn: var(--warning-text);
+  font-family: var(--design-font-ui);
   font-size: 16px;
 }
 * { box-sizing: border-box; }
@@ -26,12 +29,13 @@ h3 { font-size: 0.85rem; margin: 20px 0 8px; color: var(--muted); text-transform
 form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 label { flex-basis: 100%; color: var(--muted); font-size: 0.9rem; }
 input { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 6px; border: 1px solid var(--edge); background: var(--bg); color: var(--text); font: inherit; }
-button { padding: 9px 14px; border-radius: 6px; border: 1px solid var(--edge); background: #223342; color: var(--text); font: inherit; cursor: pointer; }
-button.primary { background: var(--accent); border-color: var(--accent); color: #06231f; font-weight: 600; }
-button:disabled { opacity: 0.4; cursor: not-allowed; }
+button { padding: 9px 14px; border-radius: 6px; border: 1px solid var(--edge); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
+button.primary { background: var(--gradient-action); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.primary:disabled { background: var(--surface-1); border-color: var(--edge); }
+button:disabled { color: var(--text-disabled); cursor: not-allowed; }
 button.link { border: 0; background: none; padding: 0 4px; color: inherit; }
-button:focus-visible, input:focus-visible { outline: 2px solid #9fe3d8; outline-offset: 2px; }
-.error { color: var(--danger); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.error { color: var(--danger-text); }
 .muted { color: var(--muted); }
 .warn-box { margin: 12px 0; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--warn); color: var(--warn); }
 .tag { margin-left: 6px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--edge); color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
@@ -49,7 +53,7 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .timer.low { color: var(--warn); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .order-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 7px 8px; border-radius: 6px; border: 1px solid transparent; }
-.order-entry.active { border-color: var(--accent); background: rgba(47, 158, 143, 0.12); }
+.order-entry.active { border-color: var(--accent); background: var(--gradient-panel-active); }
 .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; flex: none; }
 .messages { margin-top: 16px; }
 .messages li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: 0.9rem; overflow-wrap: anywhere; }
@@ -64,7 +68,7 @@ input[readonly] { width: 100%; }
 .room form label { display: flex; flex-direction: column; gap: 6px; }
 
 .game-panel { min-width: 260px; max-width: 420px; }
-.player-panel, .asset-card { padding: 1rem; margin-bottom: 1rem; background: #22384a; border-radius: 8px; }
+.player-panel, .asset-card { padding: 1rem; margin-bottom: 1rem; background: var(--surface-2); border-radius: 8px; }
 .player-panel ul, .asset-card ul { list-style: none; padding: 0; }
 .player-panel li { display: flex; gap: .6rem; flex-wrap: wrap; padding: .4rem 0; }
 .player-panel li strong { flex: 1; }
@@ -82,8 +86,45 @@ input[readonly] { width: 100%; }
 .asset-card .house-control button { float: none; }
 .house-control .reason { display: block; margin-top: 4px; color: var(--muted); font-size: 0.85rem; }
 
-.debt-notices { padding: 1rem; margin-bottom: 1rem; background: #22384a; border-radius: 8px; max-height: 360px; overflow-y: auto; }
+.debt-notices { padding: 1rem; margin-bottom: 1rem; background: var(--surface-2); border-radius: 8px; max-height: 360px; overflow-y: auto; }
 .debt-notices h3 { margin-top: 0; }
 .debt-notices h4 { margin: .6rem 0 .3rem; }
 .debt-notices p { margin: .3rem 0; }
-.debt-notices article + article { border-top: 1px solid #36506a; }
+.debt-notices article + article { border-top: 1px solid var(--border-strong); }
+
+.ds-button.danger { color: var(--danger-text); border-color: var(--danger); }
+.ds-button:disabled { color: var(--text-disabled); }
+.ds-disabled-trigger { display: inline-flex; flex-direction: column; align-items: start; }
+.ds-disabled-trigger button { pointer-events: none; }
+.ds-disabled-reason { display: none; color: var(--text-muted); font-size: .85em; }
+.ds-badge { border-radius: var(--design-radius-pill); background: var(--surface-2); padding: 2px var(--space-2); }
+.ds-number { font-variant-numeric: tabular-nums; }
+.ds-overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 20; }
+.ds-dialog, .ds-float, .ds-toast {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-deep);
+  padding: var(--space-4);
+  border-radius: var(--design-radius-md);
+  color: var(--text-primary);
+  z-index: 21;
+}
+.ds-dialog {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(32rem, calc(100% - var(--space-4) * 2));
+  max-height: 90dvh;
+  overflow: auto;
+  border-radius: var(--design-radius-2xl);
+  box-shadow: var(--design-shadow-3);
+}
+.ds-toast-viewport { position: fixed; bottom: var(--space-4); right: var(--space-4); z-index: 22; }
+@media (width < 1024px) {
+  .ds-disabled-reason { display: block; }
+  .ds-dialog.ds-responsive {
+    inset: auto 0 0;
+    transform: none;
+    width: 100%;
+    border-radius: var(--design-radius-2xl) var(--design-radius-2xl) 0 0;
+  }
+}

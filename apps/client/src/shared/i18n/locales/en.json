@@ -1,6 +1,10 @@
 {
   "app": {
-    "board_game": "Board game"
+    "board_game": "Board game",
+    "design_system": "Design system and tokens",
+    "language": "Language",
+    "notification": "Notification",
+    "notifications": "Notifications ({hotkey})"
   },
   "animation": {
     "jail_attempt_failed": "{player} stays in jail: attempt {attempts} failed (interim rule)",
@@ -55,6 +59,8 @@
     "no_winner_reported": "No winner reported.",
     "finished_at": "Finished at: {time}",
     "elimination_order": "Elimination order",
+    "resigned": "resigned",
+    "bankrupt": "bankrupt",
     "elimination_entry": "{player}: {reason} at {time}",
     "final_balances": "Final balances",
     "balance_entry": "{player}: {amount}",

@@ -1,21 +1,22 @@
 import { i18n } from '../i18n/index';
 
-/** Preserve the existing ungrouped integer display without currency conversion. */
+/** Format integer money with locale grouping and narrow no-break spaces in Russian. */
 export function formatMoney(value: number | undefined): string {
   if (value === undefined) return '';
-  return new Intl.NumberFormat(i18n.global.locale.value, { useGrouping: false, maximumFractionDigits: 0 }).format(value);
+  const locale = i18n.global.locale.value;
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).formatToParts(value)
+    .map(part => locale.startsWith('ru') && part.type === 'group' ? '\u202F' : part.value).join('');
 }
 export function formatSeconds(seconds: number): string {
   return new Intl.NumberFormat(i18n.global.locale.value, { useGrouping: false, maximumFractionDigits: 0 }).format(seconds);
 }
-/** Server epoch time, retaining the existing UTC date/time presentation. */
+/** Format server epoch time in the active locale, keeping the displayed zone in UTC. */
 export function formatTime(at: number): string {
   const date = new Date(at);
   if (Number.isNaN(date.getTime())) return String(at);
-  const parts = new Intl.DateTimeFormat(i18n.global.locale.value, {
+  const formatted = new Intl.DateTimeFormat(i18n.global.locale.value, {
     timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
-  }).formatToParts(date);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)!.value;
-  return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:${part('second')} UTC`;
+  }).format(date);
+  return `${formatted} UTC`;
 }

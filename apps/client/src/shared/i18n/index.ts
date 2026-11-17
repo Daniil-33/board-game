@@ -3,7 +3,7 @@ import { createI18n } from 'vue-i18n';
 
 type LocaleResource = { [key: string]: string | LocaleResource };
 export const messages: Record<string, LocaleResource> = {};
-export const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages });
+export const i18n = createI18n({ legacy: false, locale: 'ru', fallbackLocale: 'ru', messages });
 /** Called by browser composition; keeps geometry imports usable by Node tooling. */
 export function registerLocales(): void {
   const resources = import.meta.glob<{ default: LocaleResource }>('./locales/*.json', { eager: true });

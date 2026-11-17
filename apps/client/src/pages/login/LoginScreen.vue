@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { t } from '../../shared/i18n/index';
 import { ref } from 'vue';
 import { NICKNAME_MAX_CODE_POINTS, normalizeNickname } from '@game/protocol';
@@ -26,7 +27,7 @@ async function submit(): Promise<void> {
     <form data-testid="login-form" @submit.prevent="submit">
       <label for="nickname">{{ t('login.nickname') }}</label>
       <input data-testid="nickname" id="nickname" v-model="nickname" name="nickname" autocomplete="nickname" autofocus />
-      <button data-testid="login-enter" type="submit" :disabled="client.lobby.busy">{{ t('login.enter') }}</button>
+      <Button data-testid="login-enter" type="submit" :disabled="client.lobby.busy">{{ t('login.enter') }}</Button>
     </form>
     <p v-if="client.lobby.notice" class="warn-box" data-testid="notice">{{ client.lobby.notice }}</p>
     <p v-if="invalid" class="error" data-testid="invalid">{{ invalid }}</p>

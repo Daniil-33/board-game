@@ -6,7 +6,7 @@ Keep client dependencies reviewable and automation stable during incremental vis
 ## Requirements
 
 ### Requirement: Enforced client boundaries
-The client SHALL use app, pages, widgets, features, entities and shared layers in descending dependency order. Cross-slice imports SHALL target public index.ts APIs and SHALL target lower layers only. Shared consists of segments rather than slices: shared/api and shared/lib MAY import shared/i18n through its public index.ts. shared/i18n SHALL import no other Shared segment, and Shared dependencies SHALL remain acyclic. CI SHALL reject violations, including type-only imports.
+The client SHALL use app, pages, widgets, features, entities and shared layers in descending dependency order. Cross-slice imports SHALL target public index.ts APIs and SHALL target lower layers only. Shared consists of segments rather than slices: Shared segments MAY import other shared segments through their public index.ts APIs. shared/i18n SHALL import no other Shared segment, and Shared dependencies SHALL remain acyclic. CI SHALL reject violations, including type-only imports.
 
 #### Scenario: Forbidden dependency
 - **WHEN** a lower layer imports a higher layer or an import crosses a slice through a private file

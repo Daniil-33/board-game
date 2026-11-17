@@ -10,6 +10,7 @@ import vueParser from 'vue-eslint-parser';
 import ts from 'typescript-eslint';
 import { i18n, messages, t } from '../shared/i18n/index';
 import { formatMoney, formatSeconds, formatTime } from '../shared/lib/index';
+import russian from '../shared/i18n/locales/ru.json';
 import english from '../shared/i18n/locales/en.json';
 
 const root = resolve(import.meta.dirname, '..');
@@ -63,15 +64,16 @@ function difference(used: Set<string>, defined: Set<string>) {
 }
 
 describe('localization contracts', () => {
-  it('discovers JSON locales and falls back from the empty Russian skeleton to English', () => {
+  it('discovers both locales and defaults and falls back to Russian', () => {
     expect(Object.keys(messages).sort()).toEqual(['en', 'ru']);
-    expect(i18n.global.locale.value).toBe('en');
-    i18n.global.locale.value = 'ru';
-    try { expect(t('login.nickname')).toBe('Nickname'); }
-    finally { i18n.global.locale.value = 'en'; }
+    expect(i18n.global.locale.value).toBe('ru');
+    expect(i18n.global.fallbackLocale.value).toBe('ru');
+    expect(t('login.nickname')).toBe('Ник');
   });
-  it('has exact equality between parser-discovered template/TS/map keys and English definitions', () => {
-    expect(difference(inventory(), new Set(flatten(english)))).toEqual({ missing: [], unused: [] });
+  it('has exact equality between used keys and both locale definitions', () => {
+    const used = inventory();
+    expect(difference(used, new Set(flatten(russian)))).toEqual({ missing: [], unused: [] });
+    expect(difference(used, new Set(flatten(english)))).toEqual({ missing: [], unused: [] });
   });
   it('detects both missing and unused key probes', () => {
     expect(difference(new Set(['used']), new Set(['unused']))).toEqual({ missing: ['used'], unused: ['unused'] });
@@ -81,7 +83,7 @@ describe('localization contracts', () => {
     const cell = view.board!.cells.find(cell => cell.asset !== null)!;
     const rent = { payerId: pid('a'), ownerId: pid('b'), assetId: cell.asset!.assetId, cell: cell.index, kind: 'energy' as const, amount: 120 as Money, diceSum: 7 };
     const wrapper = mount(RentPanel, { props: { view: { ...view, rent }, me: pid('a'), connected: true, pending: [], now: 0, nameOf: id => id === 'a' ? 'Alice' : 'Bob' } });
-    expect(wrapper.get('[data-testid="rent-line"]').text()).toBe(`Alice owes Bob 120 for ${cell.asset!.name} (dice sum 7).`);
+    expect(wrapper.get('[data-testid="rent-line"]').text()).toBe(`Alice должен игроку Bob 120 за «${cell.asset!.name}» (сумма костей 7).`);
     i18n.global.setLocaleMessage('fr', { rent_panel: { energy_sentence: '{asset} : {amount}; {owner} ← {payer}; {diceSum}' } });
     i18n.global.locale.value = 'fr';
     try {
@@ -89,12 +91,15 @@ describe('localization contracts', () => {
       expect(wrapper.get('[data-testid="rent-line"]').text()).toBe(`${cell.asset!.name} : 120; Bob ← Alice; 7`);
       expect(wrapper.get('[data-testid="rent-amount"]').text()).toBe('120');
       expect(wrapper.get('[data-testid="rent-amount"]').element.tagName).toBe('STRONG');
-    } finally { i18n.global.locale.value = 'en'; wrapper.unmount(); }
+    } finally { i18n.global.locale.value = 'ru'; wrapper.unmount(); }
   });
   it('preserves integer money, countdown and UTC timestamp fixtures', () => {
-    expect([0, 10, 123450, -10].map(formatMoney)).toEqual(['0', '10', '123450', '-10']);
+    expect([0, 10, 123450, -10].map(formatMoney)).toEqual(['0', '10', '123\u202F450', '-10']);
+    i18n.global.locale.value = 'en';
+    try { expect(formatMoney(123450)).toBe('123,450'); }
+    finally { i18n.global.locale.value = 'ru'; }
     expect(formatSeconds(9)).toBe('9');
-    expect(formatTime(Date.UTC(2026, 0, 2, 0, 3, 4, 567))).toBe('2026-01-02 00:03:04 UTC');
+    expect(formatTime(Date.UTC(2026, 0, 2, 0, 3, 4, 567))).toBe('02.01.2026, 00:03:04 UTC');
     expect(formatTime(NaN)).toBe('NaN');
   });
 });

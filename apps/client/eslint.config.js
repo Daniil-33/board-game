@@ -3,6 +3,8 @@ import ts from 'typescript-eslint';
 import vue from 'vue-eslint-parser';
 import i18nLint from '@intlify/eslint-plugin-vue-i18n';
 
+import { designRules } from './scripts/design-rules.mjs';
+
 const layers = ['app', 'pages', 'widgets', 'features', 'entities', 'shared'];
 
 // TS-side presentation checks complement template raw-text lint. Imports, console
@@ -37,13 +39,13 @@ export default [
     languageOptions: { parser: ts.parser },
     plugins: { boundaries, '@intlify/vue-i18n': i18nLint },
     settings: {
-      'vue-i18n': { localeDir: './src/shared/i18n/locales/en.json', messageSyntaxVersion: '^11.0.0' },
+      'vue-i18n': { localeDir: './src/shared/i18n/locales/ru.json', messageSyntaxVersion: '^11.0.0' },
       'import/resolver': { node: { extensions: ['.ts', '.vue', '.js', '.json'] } },
       'boundaries/dependency-nodes': ['import', 'export', 'dynamic-import'],
       'boundaries/elements': layers.map(type => ({ type, pattern: type === 'app' ? 'src/app' : `src/${type}/*`, mode: 'folder', capture: ['slice'] })),
     },
     rules: {
-      'boundaries/element-types': ['error', { default: 'disallow', rules: [...layers.map((from, i) => ({ from, allow: layers.slice(i + 1) })), { from: [['shared', { slice: 'api' }], ['shared', { slice: 'lib' }]], allow: [['shared', { slice: 'i18n' }]] }] }],
+      'boundaries/element-types': ['error', { default: 'disallow', rules: [...layers.map((from, i) => ({ from, allow: layers.slice(i + 1) })), { from: 'shared', allow: ['shared'] }, { from: [['shared', { slice: 'i18n' }]], disallow: ['shared'] }] }],
       'boundaries/entry-point': ['error', { default: 'disallow', rules: [{ target: layers, allow: ['index.ts'] }] }],
       '@intlify/vue-i18n/no-missing-keys': 'error',
       'no-restricted-syntax': ['error', ...rawTextChecks],
@@ -51,5 +53,6 @@ export default [
       'boundaries/no-unknown-files': 'error',
     },
   },
+  { files: ['src/**/*.ts', 'src/**/*.vue'], ignores: ['src/shared/config/**'], plugins: { design: designRules }, rules: { 'design/no-raw-color': 'error' } },
   { files: ['src/**/*.vue'], rules: { '@intlify/vue-i18n/no-raw-text': ['error', { attributes: { '/.*/': ['aria-label', 'title', 'placeholder', 'alt'] } }] }, languageOptions: { parser: vue, parserOptions: { parser: ts.parser, extraFileExtensions: ['.vue'], sourceType: 'module' } } },
 ];

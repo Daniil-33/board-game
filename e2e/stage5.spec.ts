@@ -1,3 +1,4 @@
+import { money } from './ru-text';
 import { execFileSync } from 'node:child_process';
 import type { StateView } from '../packages/game-core/src/index';
 import { test, expect, sel, active, resign, type Actor } from './helpers';
@@ -49,7 +50,7 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
       const c = p.page.locator(sel('asset-card'));
       expect(p.view!.rentQuotes[assetId]).toEqual({ kind: 'fixed', amount: quote });
       await expect(c.locator(sel('asset-owner'))).toHaveText(name(players, owner.id));
-      await expect(c.locator(sel('asset-rent'))).toHaveText(String(quote));
+      await expect(c.locator(sel('asset-rent'))).toHaveText(money(quote));
       if (mortgage) await expect(c.locator(sel('asset-mortgage'))).toHaveText(mortgage);
       else await expect(c.locator(sel('asset-mortgage'))).toHaveCount(0);
       await expect(c.locator(sel('mortgage-controls'))).toHaveCount(p === owner ? 1 : 0);
@@ -57,12 +58,12 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   }
   const projected = (expected: Readonly<Record<string, number>>) => { for (const p of players) expect(p.view!.balances).toEqual(expected); };
   const mortgageButton = owner.page.locator(sel('mortgage')), redeemButton = owner.page.locator(sel('redeem'));
-  await cards(`mortgaged, advance ${adv}, 1 laps left`, 0);
+  await cards(`В залоге: получено ${money(adv)}, осталось кругов: 1`, 0);
   await expect(mortgageButton).toBeDisabled();
-  await expect(mortgageButton).toHaveText(`Mortgage: +${adv}`);
-  await expect(owner.page.locator(sel('mortgage-reason'))).toHaveText('This asset is already mortgaged.');
+  await expect(mortgageButton).toHaveText(`Заложить · +${money(adv)}`);
+  await expect(owner.page.locator(sel('mortgage-reason'))).toHaveText('Актив уже в залоге.');
   await expect(redeemButton).toBeEnabled();
-  await expect(redeemButton).toHaveText(`Redeem: ${adv}`);
+  await expect(redeemButton).toHaveText(`Выкупить · ${money(adv)}`);
 
   inWindow(owner.view!, 'redeem');
   await click(players, owner, 'redeem');
@@ -71,7 +72,7 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   projected({ ...start.balances, [owner.id]: start.balances[owner.id]! - adv });
   await cards(null, rent);
   await expect(redeemButton).toBeDisabled();
-  await expect(owner.page.locator(sel('redeem-reason'))).toHaveText('This asset is not mortgaged.');
+  await expect(owner.page.locator(sel('redeem-reason'))).toHaveText('Актив не находится в залоге.');
   await expect(mortgageButton).toBeEnabled();
 
   inWindow(owner.view!, 'mortgage');
@@ -82,7 +83,7 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(start.order!.map(id => name(players, id)).join(', '));
   }));
   projected(start.balances);
-  await cards(`mortgaged, advance ${adv}, 8 laps left`, 0);
+  await cards(`В залоге: получено ${money(adv)}, осталось кругов: 8`, 0);
   await expect(mortgageButton).toBeDisabled();
 
   inWindow(owner.view!, 'second redeem');
@@ -103,7 +104,7 @@ test('stage 5: a mortgage expires after its eighth collective lap', async ({ act
   // Seven laps are counted in the fixture; the owner is the last player the eighth lap waits for.
   for (const p of players) {
     await card(p, cell.index);
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`mortgaged, advance ${adv}, 1 laps left`);
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(adv)}, осталось кругов: 1`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(name(players, owner.id));
   }
   inWindow(owner.view!, 'final turn of the lap');
@@ -114,7 +115,7 @@ test('stage 5: a mortgage expires after its eighth collective lap', async ({ act
     expect(p.view!.mortgages).toEqual({});
     expect(p.view!.owners[assetId]).toBeUndefined();
     expect(p.view!.turn!.playerId).not.toBe(owner.id);
-    await expect(p.page.locator(sel('asset-owner'))).toHaveText('free');
+    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
     await expect(p.page.locator(sel('asset-rent'))).toHaveCount(0);
   }
@@ -139,7 +140,7 @@ for (const [fixture, expectedSteps] of Object.entries(LIQUIDATION)) {
     const cash = before.balances[payer.id]!;
     expect(cash).toBeLessThan(rent.amount);
     for (const p of players) {
-      await expect(p.page.locator(sel('rent-line'))).toContainText(String(rent.amount));
+      await expect(p.page.locator(sel('rent-line'))).toContainText(money(rent.amount));
       await expect(p.page.locator(sel('pay-rent'))).toHaveCount(p === payer ? 1 : 0);
     }
     if (fixture === 'liquidation-multi-tier') {
@@ -147,7 +148,7 @@ for (const [fixture, expectedSteps] of Object.entries(LIQUIDATION)) {
       const mortgaged = Object.keys(before.mortgages).find(id => before.owners[id] === payer.id)!;
       await card(payer, cellOf(before, mortgaged).index);
       await expect(payer.page.locator(sel('redeem'))).toBeDisabled();
-      await expect(payer.page.locator(sel('redeem-reason'))).toHaveText('Pay the rent first.');
+      await expect(payer.page.locator(sel('redeem-reason'))).toHaveText('Сначала оплатите ренту.');
       await close(payer);
     }
     inWindow(payer.view!, 'payment');
@@ -184,10 +185,10 @@ for (const [fixture, expectedSteps] of Object.entries(LIQUIDATION)) {
           .toEqual({ playerId: payer.id, assetId: s.assetId, advance: s.amount, auto: true });
       }
       const notice = p.page.locator(sel('debt-notices')).locator(sel('liquidation')).last();
-      await expect(notice.locator(sel('liquidation-debt'))).toHaveText(`Owes ${name(players, rent.ownerId)} ${rent.amount}.`);
+      await expect(notice.locator(sel('liquidation-debt'))).toHaveText(`Долг игроку ${name(players, rent.ownerId)}: ${money(rent.amount)}.`);
       await expect(notice.locator(sel('liquidation-step'))).toHaveText(steps.map(s =>
-        `Tier ${s.tier}: ${s.kind === 'mortgage' ? 'mortgage' : 'house sale'} of ${cellOf(before, s.assetId).asset!.name}, +${s.amount}`));
-      await expect(notice.locator(sel('liquidation-total'))).toHaveText(`Raised ${raised}. Paid ${rent.amount}.`);
+        `Этап ${s.tier}: ${s.kind === 'mortgage' ? 'заложен актив' : 'продан дом на активе'} «${cellOf(before, s.assetId).asset!.name}», +${money(s.amount)}`));
+      await expect(notice.locator(sel('liquidation-total'))).toHaveText(`Собрано ${money(raised)}. Оплачено ${money(rent.amount)}.`);
       await expect(p.page.locator(sel('rent'))).toHaveCount(0);
     }
     await balances(players, { ...before.balances, [payer.id]: cash + raised - rent.amount, [rent.ownerId]: before.balances[rent.ownerId]! + rent.amount });
@@ -208,7 +209,7 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   const mortgaged = Object.keys(before.mortgages).find(id => before.owners[id] === payer.id)!;
   await card(payer, cellOf(before, mortgaged).index);
   await expect(payer.page.locator(sel('redeem'))).toBeDisabled();
-  await expect(payer.page.locator(sel('redeem-reason'))).toHaveText('Pay the rent first.');
+  await expect(payer.page.locator(sel('redeem-reason'))).toHaveText('Сначала оплатите ренту.');
   await close(payer);
   for (const p of players) await card(p, builtCell.index);
 
@@ -229,15 +230,15 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
       expect(p.view!.houses[id]).toBeUndefined();
       expect(p.view!.mortgages[id]).toBeUndefined();
     }
-    await expect(p.page.locator(sel('asset-owner'))).toHaveText('free');
+    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
     await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
     const notice = p.page.locator(sel('debt-notices')).locator(sel('bankruptcy')).last();
     await expect(notice.locator(sel('bankruptcy-amounts'))).toHaveText(
-      `Owed ${name(players, creditor.id)} ${rent.amount}: paid ${paid}, written off ${rent.amount - paid}.`);
+      `Долг игроку ${name(players, creditor.id)}: ${money(rent.amount)}. Оплачено ${money(paid)}, списано ${money(rent.amount - paid)}.`);
     await expect(notice.locator(sel('bankruptcy-assets'))).toHaveText(
-      `Freed assets: ${portfolio.map(id => cellOf(before, id).asset!.name).join(', ')}`);
-    if (p === payer) await expect(p.page.locator(sel('spectator'))).toHaveText('You are out: you went bankrupt. Watching the game.');
+      `Освобождены активы: ${portfolio.map(id => cellOf(before, id).asset!.name).join(', ')}`);
+    if (p === payer) await expect(p.page.locator(sel('spectator'))).toHaveText('Вы обанкротились и теперь наблюдаете за партией.');
     else await expect(p.page.locator(sel('spectator'))).toHaveCount(0);
   }
   await balances(players, { ...before.balances, [payer.id]: 0, [creditor.id]: before.balances[creditor.id]! + paid });
@@ -280,10 +281,10 @@ test('stage 5: resignation frees the resigned player\'s assets on every client',
       expect(p.view!.owners[id]).toBeUndefined();
       expect(p.view!.houses[id]).toBeUndefined();
     }
-    await expect(p.page.locator(sel('asset-owner'))).toHaveText('free');
+    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
     await expect(p.page.locator(sel('rent'))).toHaveCount(0);
-    if (p === payer) await expect(p.page.locator(sel('spectator'))).toHaveText('You are out: you resigned. Watching the game.');
+    if (p === payer) await expect(p.page.locator(sel('spectator'))).toHaveText('Вы сдались и теперь наблюдаете за партией.');
   }
   await balances(players, before.balances);
   await shoot(players, info, 'resigned');
@@ -297,7 +298,7 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
   const creditor = players.find(p => p.id === rent.ownerId)!;
   const resigned = players.find(p => (before.eliminated as readonly string[]).includes(p.id))!;
   expect(before.order).toHaveLength(2);
-  await expect(resigned.page.locator(sel('spectator'))).toHaveText('You are out: you resigned. Watching the game.');
+  await expect(resigned.page.locator(sel('spectator'))).toHaveText('Вы сдались и теперь наблюдаете за партией.');
   inWindow(payer.view!, 'final payment');
   await click(players, payer, 'pay-rent');
   const ended = same(players, 'GameEnded');
@@ -306,20 +307,20 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
   expect(ended.eliminations.map((e: Payload) => [e.playerId, e.reason])).toEqual([[resigned.id, 'resigned'], [payer.id, 'bankrupt']]);
   const result = { winner: creditor.id, finishedAt: ended.at, eliminations: ended.eliminations, finalBalances: ended.finalBalances };
   const lines = {
-    eliminations: [new RegExp(`^${name(players, resigned.id)}: resigned at \\d{4}-`), new RegExp(`^${name(players, payer.id)}: bankrupt at \\d{4}-`)],
-    balances: players.map((p, i) => `Player ${i + 1}: ${ended.finalBalances[p.id]}`),
+    eliminations: [new RegExp(`^${name(players, resigned.id)}: сдача, \\d{2}\\.`), new RegExp(`^${name(players, payer.id)}: банкротство, \\d{2}\\.`)],
+    balances: players.map((p, i) => `Player ${i + 1}: ${money(ended.finalBalances[p.id])}`),
   };
   async function gameOver() {
     for (const p of players) {
       expect(p.view!.phase).toBe('finished');
       expect(p.view!.result).toEqual(result);
       await expect(p.page.locator(sel('screen-finished'))).toBeVisible();
-      await expect(p.page.locator(sel('winner'))).toHaveText(`Winner: ${name(players, creditor.id)}`);
+      await expect(p.page.locator(sel('winner'))).toHaveText(`Победитель: ${name(players, creditor.id)}`);
       await expect(p.page.locator(sel('elimination-row'))).toHaveText(lines.eliminations);
       await expect(p.page.locator(sel('final-balance-row'))).toHaveText(lines.balances);
       const spectator = p.page.locator(sel('spectator'));
       if (p === creditor) await expect(spectator).toHaveCount(0);
-      else await expect(spectator).toHaveText(p === payer ? 'You are out: you went bankrupt.' : 'You are out: you resigned.');
+      else await expect(spectator).toHaveText(p === payer ? 'Вы выбыли из-за банкротства.' : 'Вы выбыли: вы сдались.');
     }
   }
   await gameOver();
@@ -365,7 +366,7 @@ test('stage 5: a server restart keeps mortgages and terms; the next boundary sti
     expect(p.view!.owners).toEqual(before.owners);
     expect(p.view!.turn).toEqual(before.turn);
     expect(p.view!.balances).toEqual(before.balances);
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`mortgaged, advance ${before.mortgages[expiring]!.advance}, 1 laps left`);
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[expiring]!.advance)}, осталось кругов: 1`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(name(players, payer.id));
   }
   inWindow(payer.view!, 'restart completed and the boundary turn');
@@ -375,10 +376,10 @@ test('stage 5: a server restart keeps mortgages and terms; the next boundary sti
   for (const p of players) {
     expect(p.view!.mortgages).toEqual({ [later]: { ...before.mortgages[later]!, pending: remaining } });
     expect(p.view!.owners[expiring]).toBeUndefined();
-    await expect(p.page.locator(sel('asset-owner'))).toHaveText('free');
+    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await close(p);
     await card(p, laterCell.index);
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`mortgaged, advance ${before.mortgages[later]!.advance}, 5 laps left`);
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[later]!.advance)}, осталось кругов: 5`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(remaining.map(id => name(players, id)).join(', '));
   }
   await shoot(players, info, 'restart-boundary');

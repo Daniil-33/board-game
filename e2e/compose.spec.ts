@@ -1,3 +1,4 @@
+import { money } from './ru-text';
 import { AUCTION_RESPONSE_MS, CONTINUATION_MS } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
@@ -59,8 +60,8 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   for (const p of players) {
     await expect(p.page.locator(sel('game-over-title'))).toBeVisible();
     await expect(p.page.locator(sel('game-over-title'))).toHaveRole('heading');
-    await expect(p.page.locator(sel('game-over-title'))).toHaveText('Game over');
-    await expect(p.page.locator(sel('winner'))).toHaveText('Winner: Player 1');
+    await expect(p.page.locator(sel('game-over-title'))).toHaveText('Партия окончена');
+    await expect(p.page.locator(sel('winner'))).toHaveText('Победитель: Player 1');
   }
 });
 
@@ -143,7 +144,7 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
   expect(prisoner.view!.positions[prisoner.id]).toBe((events[1]!.payload as { to: number }).to);
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
   expect(prisoner.view!.turn!.doublesStreak).toBe(0);
-  await expect(prisoner.page.locator(sel('jail'))).toContainText('interim rule');
+  await expect(prisoner.page.locator(sel('jail'))).toContainText('временное правило');
   await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
   for (let i = 0; host.view!.turn!.playerId !== prisoner.id; i++) {
     expect(i).toBeLessThan(10);
@@ -160,7 +161,7 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
     expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 1 });
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailAttemptFailed']);
     expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
-    await expect(prisoner.page.locator(sel('jail'))).toContainText('1 attempts used');
+    await expect(prisoner.page.locator(sel('jail'))).toContainText('использовано попыток: 1');
   } else {
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
     expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });
@@ -234,7 +235,7 @@ async function panels(players: import('./helpers').Actor[]): Promise<void> {
       const name = `Player ${players.findIndex(a => a.id === player.id) + 1}`;
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);
       await expect(row.locator(sel('player-balance-name'))).toHaveText(name);
-      await expect(row.locator(sel('player-balance-value'))).toHaveText(String(p.view!.balances[player.id]));
+      await expect(row.locator(sel('player-balance-value'))).toHaveText(money(p.view!.balances[player.id]));
     }
   }
 }
@@ -254,11 +255,11 @@ async function stage2(players: import('./helpers').Actor[], capital: number): Pr
     const card = p.page.locator(sel('asset-card'));
     await expect(card.locator(sel('asset-title'))).toHaveText(cell.asset!.name);
     await expect(card).toContainText(cell.asset!.categoryName);
-    await expect(card).toContainText(String(cell.asset!.price));
+    await expect(card).toContainText(money(cell.asset!.price));
     for (const other of board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === cell.asset!.groupId)) {
       await expect(card).toContainText(other.asset!.name);
     }
-    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Закрыть карточку актива');
   await p.page.locator(sel('asset-close')).click();
   }
   await panels(players);

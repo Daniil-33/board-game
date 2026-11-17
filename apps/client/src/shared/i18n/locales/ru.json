@@ -1,1 +1,269 @@
-{}
+{
+  "app": {
+    "board_game": "Настольная игра",
+    "design_system": "Дизайн-система и токены",
+    "language": "Язык",
+    "notification": "Уведомление",
+    "notifications": "Уведомления ({hotkey})"
+  },
+  "animation": {
+    "jail_attempt_failed": "{player} остаётся в тюрьме: попытка {attempts} не удалась (временное правило)",
+    "jail_released_double": "{player} выходит из тюрьмы после дубля (временное правило)",
+    "jail_released": "{player} выходит из тюрьмы (временное правило)"
+  },
+  "debts": {
+    "resigned": "Вы выбыли: вы сдались.",
+    "bankrupt": "Вы выбыли из-за банкротства.",
+    "eliminated": "Вы выбыли.",
+    "mortgage_step": "Этап {tier}: заложен актив «{asset}», +{amount}",
+    "house_sale_step": "Этап {tier}: продан дом на активе «{asset}», +{amount}",
+    "spectator_resigned": "Вы сдались и теперь наблюдаете за партией.",
+    "spectator_bankrupt": "Вы обанкротились и теперь наблюдаете за партией.",
+    "spectator": "Вы выбыли и теперь наблюдаете за партией."
+  },
+  "view": {
+    "disconnected_reconnecting": "Соединение потеряно, переподключаемся…",
+    "inactive_player": "Вы не участвуете в игре.",
+    "pending_command": "Ждём ответа сервера…",
+    "deadline_passed": "Время хода вышло."
+  },
+  "client": {
+    "invalid_invite_link": "Ссылка-приглашение недействительна. Проверьте комнату и код доступа.",
+    "room_closed": "Комната закрыта. Вы вернулись в лобби.",
+    "room_left": "Вы вышли из комнаты.",
+    "room_unavailable": "Комната больше недоступна. Вы вернулись в лобби.",
+    "session_expired": "Сеанс завершён. Войдите снова.",
+    "return_reason": "Вы вернулись в лобби: {message} ({code})",
+    "error": "{message} ({code})",
+    "unexpected_error": "Неожиданная ошибка",
+    "joining_invite": "Входим в комнату по приглашению.",
+    "returned_to_lobby": "Вы вернулись в лобби."
+  },
+  "resign_control": {
+    "resign": "Сдаться",
+    "confirm_resignation": "Подтвердить сдачу",
+    "warning": "Сдачу нельзя отменить. Вы выбываете и продолжаете наблюдать за партией.",
+    "cancel": "Отмена"
+  },
+  "action_buttons": {
+    "roll_for_order": "Бросить кость",
+    "roll_dice": "Бросить кости",
+    "end_turn": "Завершить ход"
+  },
+  "game": {
+    "board_unavailable": "Не удалось отобразить поле в этом браузере. Игра продолжается в панели."
+  },
+  "game_over": {
+    "game_over": "Партия окончена",
+    "winner": "Победитель: {player}",
+    "no_winner_reported": "Победитель не указан.",
+    "finished_at": "Время завершения: {time}",
+    "elimination_order": "Порядок выбывания",
+    "resigned": "сдача",
+    "bankrupt": "банкротство",
+    "elimination_entry": "{player}: {reason}, {time}",
+    "final_balances": "Финальные балансы",
+    "balance_entry": "{player}: {amount}",
+    "back_to_lobby": "В лобби"
+  },
+  "lobby": {
+    "rooms": "Комнаты",
+    "refresh": "Обновить",
+    "create_room": "Создать комнату",
+    "optional_access_code": "Код доступа (необязательно)",
+    "invite_target": "Приглашение в комнату {roomId}",
+    "retry_invite": "Повторить вход",
+    "dismiss_invite": "Закрыть приглашение",
+    "empty_rooms": "Пока нет комнат. Создайте свою.",
+    "access_code": "Код доступа",
+    "join_with_code": "Ввести код",
+    "join": "Войти",
+    "network_error": "Не удалось связаться с сервером",
+    "unreadable_response": "Не удалось прочитать ответ (HTTP {status})",
+    "unexpected_response": "Неожиданный ответ об ошибке (HTTP {status})",
+    "protocol_mismatch": "Ответ сервера не соответствует протоколу",
+    "invalid_access_code": "Код доступа должен содержать от 4 до 32 букв, цифр, знаков подчёркивания или дефисов",
+    "in_play": "Идёт партия",
+    "full": "Мест нет",
+    "locked": "Закрытая",
+    "open": "Открытая",
+    "empty": "Пустая",
+    "access_code_for": "Код доступа для комнаты {roomId}"
+  },
+  "login": {
+    "invalid_nickname": "Введите ник длиной от 1 до {maxLength} видимых символов.",
+    "heading": "Играть как гость",
+    "nickname": "Ник",
+    "enter": "Войти"
+  },
+  "room": {
+    "invite_copied": "Приглашение скопировано.",
+    "copy_unavailable": "Не удалось скопировать. Выделите и скопируйте ссылку выше.",
+    "connecting": "Подключаемся…",
+    "access_code": "Код доступа:",
+    "invite_link": "Ссылка-приглашение",
+    "copy_invite": "Скопировать",
+    "leave_room": "Выйти",
+    "host": "создатель",
+    "start_game": "Начать партию",
+    "waiting_for_host": "Ждём, пока создатель начнёт партию.",
+    "waiting_for_player": "Ждём второго игрока."
+  },
+  "connection": {
+    "unreadable_frame": "Не удалось прочитать сообщение сервера: {message}",
+    "replaced": "Эта комната открыта в другой вкладке.",
+    "version_mismatch": "Версия страницы устарела. Обновите её, чтобы продолжить."
+  },
+  "asset_card": {
+    "house_count": "{houses} / 4",
+    "asset_details": "Карточка актива",
+    "close_asset_card": "Закрыть карточку актива",
+    "close": "Закрыть",
+    "category": "Категория",
+    "group": "Группа",
+    "rank": "Ранг",
+    "owner": "Владелец",
+    "price": "Цена",
+    "cell": "Клетка",
+    "houses": "Дома",
+    "mortgage": "Залог",
+    "mortgage_terms": "В залоге: получено {advance}, осталось кругов: {laps}",
+    "lap_waits_for": "Завершения круга ждут",
+    "energy_formula": "Рента = Q({sumPrices} × сумма костей × {holdings} / (200 × {groupSize}))",
+    "energy_example": "Сумма костей {diceSum}: {rent}",
+    "settlement": "Рента к оплате: {amount}",
+    "builds_remaining": "Можно построить в этом ходу: {builds}",
+    "build_action": "Построить · {cost}",
+    "sell_action": "Продать дом · +{refund}",
+    "mortgage_action": "Заложить · +{advance}",
+    "redeem_action": "Выкупить · {amount}",
+    "other_group_members": "Другие активы группы",
+    "group_member": "{name} — {price} (клетка {cell})",
+    "free": "свободно",
+    "nobody": "нет",
+    "energy_settlement": "Рента к оплате: {amount} (сумма костей {diceSum})"
+  },
+  "auction_panel": {
+    "auction": "Аукцион",
+    "title": "Аукцион: {asset}",
+    "start_bid": "Стартовая ставка",
+    "step": "Шаг",
+    "leading_bid": "Текущая ставка",
+    "leader": "Лидер",
+    "passed": "Спасовали",
+    "responder": "Отвечает",
+    "bid": "Поднять до {amount}",
+    "pass": "Пас",
+    "none": "Нет"
+  },
+  "board_canvas": {
+    "order_roll": "{player} бросает кость за порядок ходов",
+    "dice_roll": "{player} бросает кости",
+    "custom_banner": "{player} {text}",
+    "mortgage_marker": "З"
+  },
+  "display": {
+    "start": "Старт",
+    "jail": "Тюрьма",
+    "casino": "Казино",
+    "go_to_jail": "В тюрьму",
+    "chance": "Шанс"
+  },
+  "debt_notices": {
+    "debt_notices": "Уведомления о долгах",
+    "debt_settlements": "Расчёты по долгам",
+    "liquidation": "Продажа и залог активов: {player}",
+    "debt": "Долг игроку {creditor}: {debt}.",
+    "payment_summary": "Собрано {raised}. Оплачено {payment}.",
+    "bankruptcy": "Банкротство: {player}",
+    "bankruptcy_summary": "Долг игроку {creditor}: {debt}. Оплачено {paid}, списано {writtenOff}.",
+    "freed_assets": "Освобождены активы: {assets}",
+    "payment_unreported": "Собрано {raised}. Сумма оплаты не указана.",
+    "freed_assets_empty": "Освобождённых активов нет"
+  },
+  "player_panel": {
+    "active_turn": "Ходит",
+    "out": "Выбыл"
+  },
+  "purchase_dialog": {
+    "purchase_decision": "Покупка",
+    "price": "Цена: {price}",
+    "balance": "Ваш баланс: {balance}",
+    "buy": "Купить",
+    "start_auction": "На аукцион",
+    "deciding": "{player} решает."
+  },
+  "rent_panel": {
+    "rent_due": "Рента к оплате",
+    "pay": "Оплатить ренту {amount} игроку {owner}",
+    "sentence": "{payer} должен игроку {owner} {amount} за «{asset}».",
+    "energy_sentence": "{payer} должен игроку {owner} {amount} за «{asset}» (сумма костей {diceSum})."
+  },
+  "hud": {
+    "waiting": "Ждём ответа сервера",
+    "order_roll": "Кто ходит первым",
+    "your_turn": "Ваш ход",
+    "turn": "Ход: {player}",
+    "connection_lost_reconnecting": "Соединение потеряно, переподключаемся…",
+    "automatic_payment": "При завершении хода рента будет оплачена автоматически.",
+    "turn_order": "Порядок ходов",
+    "setup_you": "Розыгрыш порядка ходов: вы",
+    "setup_player": "Розыгрыш порядка ходов: {player}",
+    "your_bonus_turn": "Ваш ход (дополнительный ход после дубля)",
+    "player_bonus_turn": "Ход: {player} (дополнительный ход после дубля)",
+    "rejected_command": "{code}: {message} — {reason}"
+  },
+  "turn_order": {
+    "out": "выбыл",
+    "rolled": "выпало {roll}",
+    "jail_attempts": "в тюрьме, использовано попыток: {attempts} (временное правило)",
+    "tied": "ничья",
+    "undecided": "порядок не определён"
+  },
+  "turn_timer": {
+    "paused": "таймер хода на паузе"
+  },
+  "reasons": {
+    "house": {
+      "PHASE_NOT_ALLOWED": "Строить и продавать дома можно только во время партии.",
+      "AUCTION_IN_PROGRESS": "Действие недоступно во время аукциона.",
+      "NOT_ACTIVE_PLAYER": "Только в ваш ход.",
+      "DECISION_PENDING": "Сначала примите решение о покупке.",
+      "RENT_PENDING": "Сначала оплатите ренту.",
+      "NOT_A_BUILDABLE_ASSET": "Дома можно строить только на активах монополии.",
+      "NOT_OWNER": "Этот актив вам не принадлежит.",
+      "GROUP_INCOMPLETE": "Для строительства нужна полная группа.",
+      "GROUP_MORTGAGED": "Один из активов группы в залоге.",
+      "MAX_HOUSES": "На этом активе уже 4 дома.",
+      "UNEVEN_BUILD": "Сначала постройте на соседних активах группы.",
+      "BUILD_QUOTA_USED": "Дом уже построен в этом ходу.",
+      "INSUFFICIENT_FUNDS": "Не хватает денег на строительство.",
+      "NO_HOUSES": "Нет домов для продажи.",
+      "UNEVEN_SALE": "Сначала продайте дом на активе группы, где домов больше."
+    },
+    "mortgage": {
+      "PHASE_NOT_ALLOWED": "Закладывать и выкупать активы можно только во время партии.",
+      "AUCTION_IN_PROGRESS": "Действие недоступно во время аукциона.",
+      "NOT_ACTIVE_PLAYER": "Только в ваш ход.",
+      "DECISION_PENDING": "Сначала примите решение о покупке.",
+      "RENT_PENDING": "Сначала оплатите ренту.",
+      "NOT_AN_ASSET": "Эта клетка не является активом.",
+      "NOT_OWNER": "Этот актив вам не принадлежит.",
+      "ALREADY_MORTGAGED": "Актив уже в залоге.",
+      "HAS_HOUSES": "Заложить можно только актив без домов.",
+      "NOT_MORTGAGED": "Актив не находится в залоге.",
+      "INSUFFICIENT_FUNDS": "Не хватает денег на выкуп."
+    }
+  },
+  "common": {
+    "room": "Комната {roomId}",
+    "dismiss": "Закрыть",
+    "dismiss_icon": "×",
+    "players": "Игроки",
+    "you": "вы",
+    "rent": "Рента",
+    "seconds_remaining": "{seconds} с",
+    "unreported": "–",
+    "server_message": "{code}: {message}"
+  }
+}

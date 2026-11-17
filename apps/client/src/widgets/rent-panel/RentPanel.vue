@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { formatMoney } from '../../shared/lib/index';
 
 import { Translation as I18nT } from 'vue-i18n';
@@ -23,8 +24,8 @@ const paying = computed(() => props.me !== null && props.view.rent?.payerId === 
       <template #diceSum>{{ view.rent.kind === 'energy' ? view.rent.diceSum : '' }}</template>
     </i18n-t>
     <template v-if="paying">
-      <button class="primary" data-testid="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')"> {{ t('rent_panel.pay', { amount: formatMoney(view.rent.amount), owner: nameOf(view.rent.ownerId) }) }}
-      </button>
+      <Button variant="primary" data-testid="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')"> {{ t('rent_panel.pay', { amount: formatMoney(view.rent.amount), owner: nameOf(view.rent.ownerId) }) }}
+      </Button>
     </template>
   </section>
 </template>
