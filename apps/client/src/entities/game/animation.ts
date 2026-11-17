@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n/index';
 /**
  * Turns `Update.events` into animation steps and plays them strictly in the
  * order received. No PixiJS here: the queue is given a `play` function.
@@ -75,14 +76,14 @@ export function stepsForEvent(event: GameEvent, ringSize: number): AnimationStep
       return isCell(p.to, ringSize) ? [{ kind: 'jump', playerId, cell: p.to }] : [];
     case 'InterimJailAttemptFailed':
       return typeof p.attemptsUsed === 'number'
-        ? [{ kind: 'banner', playerId, text: `stays in jail: attempt ${p.attemptsUsed} failed (interim rule)` }]
+        ? [{ kind: 'banner', playerId, text: t('animation.stays_in_jail', { value0: p.attemptsUsed }) }]
         : [];
     case 'InterimJailReleased':
       return [
         {
           kind: 'banner',
           playerId,
-          text: p.reason === 'double' ? 'leaves jail on a double (interim rule)' : 'leaves jail (interim rule)',
+          text: p.reason === 'double' ? t('animation.leaves_jail_on') : t('animation.leaves_jail_interim'),
         },
       ];
     default:

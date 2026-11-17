@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../../shared/i18n/index';
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { boardDisplayKey } from '../../widgets/board/index';
 import { TOKEN_COLORS } from '../../widgets/board/index';
@@ -63,7 +64,7 @@ onMounted(async () => {
     client.attachBoard(mounted.board);
   } catch (error) {
     console.error(error);
-    boardError.value = 'The board could not be drawn in this browser. The game continues in the panel.';
+    boardError.value = t('game.the_board_could');
   }
 });
 

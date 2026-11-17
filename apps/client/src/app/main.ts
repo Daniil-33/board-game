@@ -1,3 +1,4 @@
+import { i18n, registerLocales } from '../shared/i18n/index';
 import { createApp } from 'vue';
 import App from './App.vue';
 import { runtimeApi } from '../shared/api/index';
@@ -5,6 +6,8 @@ import { BoardScene, mountBoard } from '../widgets/board/index';
 import { BOARD_MOUNT_KEY, CLIENT_KEY, createClient, type BoardMount } from '../features/client-session/index';
 import { browserSocketFactory } from '../shared/api/index';
 import './style.css';
+
+registerLocales();
 
 const api = runtimeApi(window.location, window.__GAME_CONFIG__?.API_ORIGIN);
 
@@ -25,4 +28,4 @@ const mount: BoardMount = async (host) => {
 };
 
 client.start();
-createApp(App).provide(CLIENT_KEY, client).provide(BOARD_MOUNT_KEY, mount).mount('#app');
+createApp(App).use(i18n).provide(CLIENT_KEY, client).provide(BOARD_MOUNT_KEY, mount).mount('#app');

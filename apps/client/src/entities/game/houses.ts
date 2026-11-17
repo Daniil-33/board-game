@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n/index';
 /**
  * Build and Sell controls of the asset card. Legality, cost and refund come
  * only from game-core's pure helpers; this module adds the connection checks
@@ -10,21 +11,21 @@ import { connectionReason, type ActionContext } from './view';
 
 /** One message per game-core house error code, for disabled controls and rejected Acks. */
 export const HOUSE_REASONS: Readonly<Record<HouseErrorCode, string>> = {
-  PHASE_NOT_ALLOWED: 'Houses can be built and sold only during play.',
-  AUCTION_IN_PROGRESS: 'Not while an auction is running.',
-  NOT_ACTIVE_PLAYER: 'Only on your turn.',
-  DECISION_PENDING: 'Decide on the purchase first.',
-  RENT_PENDING: 'Pay the rent first.',
-  NOT_A_BUILDABLE_ASSET: 'Houses can be built only on monopoly assets.',
-  NOT_OWNER: 'You do not own this asset.',
-  GROUP_INCOMPLETE: 'You need the whole group to build.',
-  GROUP_MORTGAGED: 'An asset of this group is mortgaged.',
-  MAX_HOUSES: 'This asset already has 4 houses.',
-  UNEVEN_BUILD: 'Build evenly: another asset of the group has fewer houses.',
-  BUILD_QUOTA_USED: 'You have already built a house this turn.',
-  INSUFFICIENT_FUNDS: 'Not enough money to build.',
-  NO_HOUSES: 'There is no house to sell.',
-  UNEVEN_SALE: 'Sell evenly: another asset of the group has more houses.',
+  get PHASE_NOT_ALLOWED() { return t('reasons.house.PHASE_NOT_ALLOWED'); },
+  get AUCTION_IN_PROGRESS() { return t('reasons.house.AUCTION_IN_PROGRESS'); },
+  get NOT_ACTIVE_PLAYER() { return t('reasons.house.NOT_ACTIVE_PLAYER'); },
+  get DECISION_PENDING() { return t('reasons.house.DECISION_PENDING'); },
+  get RENT_PENDING() { return t('reasons.house.RENT_PENDING'); },
+  get NOT_A_BUILDABLE_ASSET() { return t('reasons.house.NOT_A_BUILDABLE'); },
+  get NOT_OWNER() { return t('reasons.house.NOT_OWNER'); },
+  get GROUP_INCOMPLETE() { return t('reasons.house.GROUP_INCOMPLETE'); },
+  get GROUP_MORTGAGED() { return t('reasons.house.GROUP_MORTGAGED'); },
+  get MAX_HOUSES() { return t('reasons.house.MAX_HOUSES'); },
+  get UNEVEN_BUILD() { return t('reasons.house.UNEVEN_BUILD'); },
+  get BUILD_QUOTA_USED() { return t('reasons.house.BUILD_QUOTA_USED'); },
+  get INSUFFICIENT_FUNDS() { return t('reasons.house.INSUFFICIENT_FUNDS'); },
+  get NO_HOUSES() { return t('reasons.house.NO_HOUSES'); },
+  get UNEVEN_SALE() { return t('reasons.house.UNEVEN_SALE'); },
 };
 
 /**

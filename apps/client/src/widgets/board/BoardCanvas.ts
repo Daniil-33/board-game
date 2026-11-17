@@ -1,3 +1,5 @@
+import { formatMoney } from '../../shared/lib/index';
+import { t } from '../../shared/i18n/index';
 /**
  * PixiJS scene of the generated board: cells, tokens and dice.
  * It draws what it is told (the server view, animation steps) and keeps no
@@ -166,7 +168,7 @@ export class BoardScene {
       const r = cellRect(cell.index, this.size);
       const marker = new Container();
       marker.addChild(new Graphics().rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2).fill({ color: MORTGAGE_COLOR, alpha: 0.18 }).stroke({ width: 2, color: MORTGAGE_COLOR }));
-      const mark = label('M', 12, MORTGAGE_COLOR, true);
+      const mark = label(t('board_canvas.mortgage_marker'), 12, MORTGAGE_COLOR, true);
       mark.position.set(r.x + r.width - 16, r.y + 3);
       marker.addChild(mark);
       marker.label = `mortgage-${cell.index}`;
@@ -262,12 +264,12 @@ export class BoardScene {
         this.setActive(step.playerId);
         return;
       case 'orderDie':
-        this.diceLabel.text = `${this.nameOf(step.playerId)} rolls for order`;
+        this.diceLabel.text = t('board_canvas.rolls_for_order', { value0: this.nameOf(step.playerId) });
         this.dice[1].visible = false;
         await this.tumble([step.value], wait);
         return;
       case 'dice':
-        this.diceLabel.text = `${this.nameOf(step.playerId)} rolls`;
+        this.diceLabel.text = t('board_canvas.rolls', { value0: this.nameOf(step.playerId) });
         await this.tumble(step.dice, wait);
         return;
       case 'hop':
@@ -295,7 +297,7 @@ export class BoardScene {
         const from = this.tokenById.get(step.from);
         const to = this.tokenById.get(step.to);
         if (from === undefined || to === undefined) return;
-        const amount = label(`${step.amount}`, 15, 0xffe08a, true);
+        const amount = label(formatMoney(step.amount), 15, 0xffe08a, true);
         amount.anchor.set(0.5);
         amount.label = 'rent-payment';
         const start = { x: from.x, y: from.y - 14 };
@@ -311,7 +313,7 @@ export class BoardScene {
         return;
       }
       case 'banner':
-        this.banner.text = `${this.nameOf(step.playerId)} ${step.text}`;
+        this.banner.text = t('board_canvas.symbol', { value0: this.nameOf(step.playerId), value1: step.text });
         this.banner.visible = true;
         if (await wait(BANNER_MS)) this.banner.visible = false;
         return;

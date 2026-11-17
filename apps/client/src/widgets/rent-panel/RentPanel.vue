@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { formatMoney } from '../../shared/lib/index';
+
+import { t } from '../../shared/i18n/index';
 import { computed } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
@@ -9,15 +12,12 @@ const asset = computed(() => props.view.board?.cells.find(c => c.asset?.assetId 
 const paying = computed(() => props.me !== null && props.view.rent?.payerId === props.me && !props.view.eliminated.includes(props.me));
 </script>
 <template>
-  <section v-if="view.rent" class="asset-card decision-panel" aria-label="Rent" data-test="rent">
-    <h2>Rent due</h2>
+  <section v-if="view.rent" class="asset-card decision-panel" :aria-label="t('common.rent')" data-test="rent">
+    <h2>{{ t('rent_panel.rent_due') }}</h2>
     <p data-test="rent-line">
-      {{ nameOf(view.rent.payerId) }} owes {{ nameOf(view.rent.ownerId) }} <strong>{{ view.rent.amount }}</strong>
-      for {{ asset?.name ?? view.rent.assetId }}<template v-if="view.rent.kind === 'energy'"> (dice sum {{ view.rent.diceSum }})</template>.
-    </p>
+      {{ t('rent_panel.owes', { value0: nameOf(view.rent.payerId), value1: nameOf(view.rent.ownerId) }) }} <strong>{{ formatMoney(view.rent.amount) }}</strong> {{ t('rent_panel.for', { value0: asset?.name ?? view.rent.assetId }) }}<template v-if="view.rent.kind === 'energy'"> {{ t('common.dice_sum', { value0: view.rent.diceSum }) }}</template>{{ t('rent_panel.symbol') }} </p>
     <template v-if="paying">
-      <button class="primary" data-test="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')">
-        Pay rent: {{ view.rent.amount }} to {{ nameOf(view.rent.ownerId) }}
+      <button class="primary" data-test="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')"> {{ t('rent_panel.pay_rent_to', { value0: formatMoney(view.rent.amount), value1: nameOf(view.rent.ownerId) }) }}
       </button>
     </template>
   </section>

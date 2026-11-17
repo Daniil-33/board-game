@@ -3,7 +3,7 @@
 ## 1. Approval and baseline
 
 - [x] 1.1 Reconcile Team Lead approval, handoff revision and source design in a fresh Apply context; verify agentctl acknowledgement and clean agent/task-vd-fsd branch.
-- [ ] 1.2 Build the pristine base bundle and record raw/gzip JS/CSS per-file totals and tool versions in /srv/agents/evidence/TASK-vd-fsd/; verify reproducible baseline before dependency changes.
+- [x] 1.2 Build the pristine base bundle and record raw/gzip JS/CSS per-file totals and tool versions in /srv/agents/evidence/TASK-vd-fsd/; verify reproducible baseline before dependency changes.
 
 ## 2. Moves (client/structure — Enforced client boundaries)
 
@@ -36,12 +36,12 @@
 
 ## 4. Localization (client/localization)
 
-- [ ] 4.1 Add pinned vue-i18n 11 and shared/i18n provider with glob discovery, English default/fallback and JSON resources; verify discovery and English fallback tests (Discovered English locale).
-- [ ] 4.2 Migrate client-owned template/TS/Pixi text and reason maps to unchanged English keys in shared/i18n; document semantic key naming and data exceptions in README, and verify all existing exact English assertions (Complete unchanged English keys).
-- [ ] 4.3 Add shared/lib Intl formatting wrappers and migrate formatting calls; verify exact money/timer/timestamp fixtures and integer monetary behavior (Shared locale formatting).
-- [ ] 4.4 Add pinned @intlify/eslint-plugin-vue-i18n and configure raw-text/missing-key rules; verify temporary violations fail and the clean tree passes (Complete unchanged English keys).
-- [ ] 4.5 Add key-inventory parity unit test covering template, TypeScript and typed map references; verify unused and missing key probes fail (Complete unchanged English keys).
-- [ ] 4.6 Add shared/sound public no-op playSound and never SoundId without callers; verify no audio/network/storage side effects (client/structure — Inert sound slot), then commit localization separately.
+- [x] 4.1 Add pinned vue-i18n 11 and shared/i18n provider with glob discovery, English default/fallback and JSON resources; verify discovery and English fallback tests (Discovered English locale).
+- [x] 4.2 Migrate client-owned template/TS/Pixi text and reason maps to unchanged English keys in shared/i18n; document semantic key naming and data exceptions in README, and verify all existing exact English assertions (Complete unchanged English keys).
+- [x] 4.3 Add shared/lib Intl formatting wrappers and migrate formatting calls; verify exact money/timer/timestamp fixtures and integer monetary behavior (Shared locale formatting).
+- [x] 4.4 Add pinned @intlify/eslint-plugin-vue-i18n and configure raw-text/missing-key rules; verify temporary violations fail and the clean tree passes (Complete unchanged English keys).
+- [x] 4.5 Add key-inventory parity unit test covering template, TypeScript and typed map references; verify unused and missing key probes fail (Complete unchanged English keys).
+- [x] 4.6 Add shared/sound public no-op playSound and never SoundId without callers; verify no audio/network/storage side effects (client/structure — Inert sound slot), then commit localization separately.
 
 ## 5. Test hooks (client/structure — Stable browser hooks)
 

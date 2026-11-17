@@ -1,3 +1,4 @@
+import { t } from '../i18n/index';
 import type { CommandId, GameEvent, Revision, StateView } from '@game/game-core';
 import {
   PROTOCOL_VERSION,
@@ -131,7 +132,7 @@ export function createConnection(options: ConnectionOptions): Connection {
         const decoded = decodeServerFrame(data);
         if (!decoded.ok) {
           // Dropped, never applied.
-          state.problem = `Unreadable message from the server: ${decoded.error.message}`;
+          state.problem = t('connection.unreadable_message_from', { value0: decoded.error.message });
           console.warn('[connection] dropped frame:', decoded.error.message);
           return;
         }
@@ -203,12 +204,12 @@ export function createConnection(options: ConnectionOptions): Connection {
         options.onRoomLost?.(frame);
         return;
       case 'CONNECTION_REPLACED':
-        state.fatal = 'This room is open in another tab.';
+        state.fatal = t('connection.this_room_is');
         state.pending.splice(0);
         stop();
         return;
       case 'PROTOCOL_VERSION_UNSUPPORTED':
-        state.fatal = 'This page is out of date. Reload it to continue.';
+        state.fatal = t('connection.this_page_is');
         stop();
         return;
       default:

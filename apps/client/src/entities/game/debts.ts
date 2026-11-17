@@ -1,3 +1,5 @@
+import { t } from '../../shared/i18n/index';
+import { formatTime as sharedFormatTime } from '../../shared/lib/index';
 /**
  * Debt notices: presentation of the public LiquidationApplied and
  * PlayerBankrupt events of one accepted update. Every amount, step and freed
@@ -91,8 +93,8 @@ export function appendNotices(list: DebtNotice[], added: readonly DebtNotice[]):
 }
 
 export const STEP_KIND_TEXT: Readonly<Record<LiquidationStep['kind'], string>> = {
-  mortgage: 'mortgage',
-  'sell-house': 'house sale',
+  get mortgage() { return t('debts.mortgage'); },
+  get 'sell-house'() { return t('debts.house_sale'); },
 };
 
 /** The asset's projected name, or its id when the board does not list it. */
@@ -101,18 +103,17 @@ export function assetName(board: GeneratedBoard | null | undefined, assetId: str
 }
 
 const ELIMINATION_TEXT: Readonly<Record<'resigned' | 'bankrupt', string>> = {
-  resigned: 'You are out: you resigned.',
-  bankrupt: 'You are out: you went bankrupt.',
+  get resigned() { return t('debts.you_are_out'); },
+  get bankrupt() { return t('debts.you_are_out_2'); },
 };
 
 /** The eliminated viewer's line, with the projected reason when the view records one. */
 export function eliminationText(view: StateView, playerId: string): string {
   const entry = view.eliminations?.find(e => e.playerId === playerId);
-  return entry ? ELIMINATION_TEXT[entry.reason] : 'You are out.';
+  return entry ? ELIMINATION_TEXT[entry.reason] : t('debts.you_are_out_3');
 }
 
 /** A server timestamp (epoch milliseconds) as UTC time. */
 export function formatTime(at: number): string {
-  const date = new Date(at);
-  return Number.isNaN(date.getTime()) ? String(at) : date.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
+  return sharedFormatTime(at);
 }

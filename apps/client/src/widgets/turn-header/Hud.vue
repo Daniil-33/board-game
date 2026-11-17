@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../../shared/i18n/index';
 import { computed } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
@@ -35,38 +36,36 @@ const available = computed(() =>
 const out = computed(() => (props.me !== null && props.view?.eliminated.includes(props.me) ? eliminationText(props.view, props.me) : null));
 const reasonFor = (message: HudMessage): string | null => houseReason(message.code, message.commandType) ?? mortgageReason(message.code, message.commandType);
 const headline = computed(() => {
-  if (props.view === null || active.value === null) return 'Waiting for the server';
-  const name = active.value === props.me ? 'You' : props.nameOf(active.value);
-  if (props.view.phase === 'setup') return `Rolling for turn order: ${name}`;
-  const verb = active.value === props.me ? 'Your turn' : `Turn: ${name}`;
-  return props.view.turn?.bonus ? `${verb} (bonus turn after a double)` : verb;
+  if (props.view === null || active.value === null) return t('hud.waiting_for_the');
+  const name = active.value === props.me ? t('turn_header.you') : props.nameOf(active.value);
+  if (props.view.phase === 'setup') return t('hud.rolling_for_turn', { value0: name });
+  const verb = active.value === props.me ? t('hud.your_turn') : t('hud.turn', { value0: name });
+  return props.view.turn?.bonus ? t('hud.bonus_turn_after', { value0: verb }) : verb;
 });
 </script>
 
 <template>
   <aside class="hud">
     <p v-if="fatal" class="error" data-test="fatal">{{ fatal }}</p>
-    <p v-else-if="!connected" class="warn-box" data-test="offline">Connection lost. Reconnecting…</p>
+    <p v-else-if="!connected" class="warn-box" data-test="offline">{{ t('hud.connection_lost_reconnecting') }}</p>
     <p v-if="problem" class="warn-box" data-test="problem">{{ problem }}</p>
 
     <h2 data-test="headline">{{ headline }}</h2>
     <TurnTimer :paused="view?.turn?.pausedRemainingMs != null" :deadline="activeDeadline(view)" :now="now" />
 
-    <p v-if="out" class="warn-box" data-test="spectator">{{ out }} Watching the game.</p>
+    <p v-if="out" class="warn-box" data-test="spectator">{{ t('hud.watching_the_game', { value0: out }) }}</p>
     <ActionButtons :available="available" @command="(type) => emit('command', type)" />
-    <p v-if="me && view?.rent?.payerId === me" class="note" data-test="auto-pay-note">
-      Ending the turn pays the open rent automatically.
-    </p>
+    <p v-if="me && view?.rent?.payerId === me" class="note" data-test="auto-pay-note"> {{ t('hud.ending_the_turn') }} </p>
 
     <ResignControl :available="available.Resign" @confirm="emit('command', 'Resign')" />
 
-    <h3>{{ view?.phase === 'setup' ? 'Order roll' : 'Turn order' }}</h3>
+    <h3>{{ view?.phase === 'setup' ? t('hud.order_roll') : t('hud.turn_order') }}</h3>
     <TurnOrder :entries="entries" :me="me" :name-of="nameOf" :color-of="colorOf" />
 
     <ul v-if="messages.length > 0" class="messages">
       <li v-for="message in messages" :key="message.id" class="error" data-test="message">
-        <span><strong>{{ message.code }}</strong>: {{ message.message }}<template v-if="reasonFor(message)"> — {{ reasonFor(message) }}</template></span>
-        <button class="link" aria-label="Dismiss" @click="emit('dismiss', message.id)">×</button>
+        <span><strong>{{ message.code }}</strong>{{ t('common.symbol', { value0: message.message }) }}<template v-if="reasonFor(message)"> {{ t('hud.symbol_2', { value0: reasonFor(message) }) }}</template></span>
+        <button class="link" :aria-label="t('common.dismiss')" @click="emit('dismiss', message.id)">{{ t('common.symbol_2') }}</button>
       </li>
     </ul>
   </aside>

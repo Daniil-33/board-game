@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatSeconds } from '../../shared/lib/index';
+import { t } from '../../shared/i18n/index';
 import { computed } from 'vue';
 import { remainingSeconds } from '../../entities/game/index';
 
@@ -19,8 +21,8 @@ const seconds = computed(() => (props.paused || props.deadline === null ? null :
 
 <template>
   <div class="timer" :class="{ low: seconds !== null && seconds <= 10 }" data-test="timer">
-    <template v-if="paused">paused</template>
-    <template v-else-if="seconds !== null">{{ seconds }} s</template>
-    <template v-else>–</template>
+    <template v-if="paused">{{ t('turn_timer.paused') }}</template>
+    <template v-else-if="seconds !== null">{{ t('common.s', { value0: formatSeconds(seconds!) }) }}</template>
+    <template v-else>{{ t('common.unreported') }}</template>
   </div>
 </template>

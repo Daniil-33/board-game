@@ -1,0 +1,264 @@
+{
+  "app": {
+    "board_game": "Board game"
+  },
+  "animation": {
+    "stays_in_jail": "stays in jail: attempt {value0} failed (interim rule)",
+    "leaves_jail_on": "leaves jail on a double (interim rule)",
+    "leaves_jail_interim": "leaves jail (interim rule)"
+  },
+  "debts": {
+    "house_sale": "house sale",
+    "you_are_out": "You are out: you resigned.",
+    "you_are_out_2": "You are out: you went bankrupt.",
+    "you_are_out_3": "You are out.",
+    "mortgage": "mortgage"
+  },
+  "view": {
+    "disconnected_reconnecting": "Disconnected: reconnecting…",
+    "you_are_not": "You are not an active player.",
+    "waiting_for_the": "Waiting for the server…",
+    "the_turn_time": "The turn time is over."
+  },
+  "client": {
+    "invalid_invite_link": "Invalid invite link. Check the room and access code.",
+    "the_room_was": "The room was closed. You are back in the lobby.",
+    "you_left_the": "You left the room.",
+    "the_room_is": "The room is no longer available. You are back in the lobby.",
+    "your_session_is": "Your session is no longer valid. Log in again.",
+    "you_are_back": "You are back in the lobby: {value0} ({value1})",
+    "symbol": "{value0} ({value1})",
+    "unexpected_error": "Unexpected error",
+    "joining_the_invited": "Joining the invited room.",
+    "you_returned_to": "You returned to the lobby."
+  },
+  "resign_control": {
+    "resign": "Resign",
+    "confirm_resignation": "Confirm resignation",
+    "resigning_is_permanent": "Resigning is permanent. You will be out and keep watching the game.",
+    "cancel": "Cancel"
+  },
+  "action_buttons": {
+    "roll_for_order": "Roll for order",
+    "roll_dice": "Roll dice",
+    "end_turn": "End turn"
+  },
+  "game": {
+    "the_board_could": "The board could not be drawn in this browser. The game continues in the panel."
+  },
+  "game_over": {
+    "game_over": "Game over",
+    "winner": "Winner: {value0}",
+    "no_winner_reported": "No winner reported.",
+    "finished_at": "Finished at: {value0}",
+    "elimination_order": "Elimination order",
+    "at": "{value0}: {value1} at {value2}",
+    "final_balances": "Final balances",
+    "symbol": "{value0}: {value1}",
+    "back_to_lobby": "Back to lobby"
+  },
+  "lobby": {
+    "rooms": "Rooms",
+    "refresh": "Refresh",
+    "create_room": "Create room",
+    "optional_room_access": "Optional room access code",
+    "invite_to_room": "Invite to room {value0}",
+    "retry_invite": "Retry invite",
+    "dismiss_invite": "Dismiss invite",
+    "no_rooms_to": "No rooms to join yet. Create one.",
+    "access_code": "Access code",
+    "join_with_code": "Join with code",
+    "join": "Join",
+    "the_server_could": "The server could not be reached",
+    "unreadable_response_http": "Unreadable response (HTTP {value0})",
+    "unexpected_error_response": "Unexpected error response (HTTP {value0})",
+    "the_server_response": "The server response does not match the protocol",
+    "access_code_must": "Access code must have 4–32 letters, digits, underscores or hyphens",
+    "in_play": "in play",
+    "full": "full",
+    "locked": "locked",
+    "open": "open",
+    "empty": "empty",
+    "access_code_for": "Access code for {roomId}"
+  },
+  "login": {
+    "enter_a_nickname": "Enter a nickname of 1 to {value0} visible characters.",
+    "play_as_a": "Play as a guest",
+    "nickname": "Nickname",
+    "enter": "Enter"
+  },
+  "room": {
+    "invite_copied": "Invite copied.",
+    "copy_unavailable_select": "Copy unavailable. Select and copy the link above.",
+    "connecting": "Connecting…",
+    "access_code": "Access code:",
+    "invite_link": "Invite link",
+    "copy_invite": "Copy invite",
+    "leave_room": "Leave room",
+    "host": "host",
+    "start_game": "Start game",
+    "waiting_for_the": "Waiting for the host to start the game.",
+    "waiting_for_a": "Waiting for a second player."
+  },
+  "connection": {
+    "unreadable_message_from": "Unreadable message from the server: {value0}",
+    "this_room_is": "This room is open in another tab.",
+    "this_page_is": "This page is out of date. Reload it to continue."
+  },
+  "asset_card": {
+    "asset_details": "Asset details",
+    "close_asset_card": "Close asset card",
+    "close": "Close",
+    "category": "Category",
+    "group": "Group",
+    "rank": "Rank",
+    "owner": "Owner",
+    "price": "Price",
+    "cell": "Cell",
+    "houses": "Houses",
+    "4": "{value0} / 4",
+    "mortgage": "Mortgage",
+    "mortgaged_advance_laps": "mortgaged, advance {value0}, {value1} laps left",
+    "lap_waits_for": "Lap waits for",
+    "rent_q_dice": "Rent = Q({value0} × dice sum × {value1} / (200 × {value2}))",
+    "dice": "{value0}dice {value1}: {value2}",
+    "open_rent": "Open rent: {value0}",
+    "builds_left_this": "Builds left this turn: {value0}",
+    "build_a_house": "Build a house: {value0}",
+    "sell_a_house": "Sell a house: +{value0}",
+    "mortgage_2": "Mortgage: +{value0}",
+    "redeem": "Redeem: {value0}",
+    "other_group_members": "Other group members",
+    "cell_2": "{value0} — {value1} (cell {value2})",
+    "free": "free",
+    "nobody": "nobody"
+  },
+  "auction_panel": {
+    "auction": "Auction",
+    "auction_2": "Auction: {value0}",
+    "start_bid": "Start bid",
+    "step": "Step",
+    "leading_bid": "Leading bid",
+    "leader": "Leader",
+    "passed": "Passed",
+    "responder": "Responder",
+    "bid": "Bid {value0}",
+    "pass": "Pass",
+    "none": "None"
+  },
+  "board_canvas": {
+    "rolls_for_order": "{value0} rolls for order",
+    "rolls": "{value0} rolls",
+    "symbol": "{value0} {value1}",
+    "mortgage_marker": "M"
+  },
+  "display": {
+    "start": "Start",
+    "jail": "Jail",
+    "casino": "Casino",
+    "go_to_jail": "Go to jail",
+    "chance": "Chance"
+  },
+  "debt_notices": {
+    "debt_notices": "Debt notices",
+    "debt_settlements": "Debt settlements",
+    "liquidation": "Liquidation: {value0}",
+    "owes": "Owes {value0} {value1}.",
+    "tier_of": "Tier {value0}: {value1} of {value2}, +{value3}",
+    "raised_paid": "Raised {value0}. Paid {value1}.",
+    "bankruptcy": "Bankruptcy: {value0}",
+    "owed_paid_written": "Owed {value0} {value1}: paid {value2}, written off {value3}.",
+    "freed_assets": "Freed assets: {value0}",
+    "not_reported": "not reported",
+    "none": "none"
+  },
+  "player_panel": {
+    "active_turn": "Active turn",
+    "out": "Out"
+  },
+  "purchase_dialog": {
+    "purchase_decision": "Purchase decision",
+    "price": "Price: {value0}",
+    "your_balance": "Your balance: {value0}",
+    "buy": "Buy",
+    "start_auction": "Start auction",
+    "is_deciding": "{value0} is deciding."
+  },
+  "rent_panel": {
+    "rent_due": "Rent due",
+    "owes": "{value0} owes {value1}",
+    "for": "for {value0}",
+    "symbol": ".",
+    "pay_rent_to": "Pay rent: {value0} to {value1}"
+  },
+  "hud": {
+    "waiting_for_the": "Waiting for the server",
+    "rolling_for_turn": "Rolling for turn order: {value0}",
+    "your_turn": "Your turn",
+    "turn": "Turn: {value0}",
+    "bonus_turn_after": "{value0} (bonus turn after a double)",
+    "connection_lost_reconnecting": "Connection lost. Reconnecting…",
+    "watching_the_game": "{value0} Watching the game.",
+    "ending_the_turn": "Ending the turn pays the open rent automatically.",
+    "symbol_2": " — {value0}",
+    "order_roll": "Order roll",
+    "turn_order": "Turn order"
+  },
+  "turn_order": {
+    "out": "out",
+    "rolled": "rolled {value0}",
+    "in_jail_attempts": "in jail, {value0} attempts used (interim rule)"
+  },
+  "turn_timer": {
+    "paused": "paused"
+  },
+  "turn_header": {
+    "tied": "tied",
+    "order_undecided": "order undecided",
+    "you": "You"
+  },
+  "reasons": {
+    "house": {
+      "PHASE_NOT_ALLOWED": "Houses can be built and sold only during play.",
+      "AUCTION_IN_PROGRESS": "Not while an auction is running.",
+      "NOT_ACTIVE_PLAYER": "Only on your turn.",
+      "DECISION_PENDING": "Decide on the purchase first.",
+      "RENT_PENDING": "Pay the rent first.",
+      "NOT_A_BUILDABLE": "Houses can be built only on monopoly assets.",
+      "NOT_OWNER": "You do not own this asset.",
+      "GROUP_INCOMPLETE": "You need the whole group to build.",
+      "GROUP_MORTGAGED": "An asset of this group is mortgaged.",
+      "MAX_HOUSES": "This asset already has 4 houses.",
+      "UNEVEN_BUILD": "Build evenly: another asset of the group has fewer houses.",
+      "BUILD_QUOTA_USED": "You have already built a house this turn.",
+      "INSUFFICIENT_FUNDS": "Not enough money to build.",
+      "NO_HOUSES": "There is no house to sell.",
+      "UNEVEN_SALE": "Sell evenly: another asset of the group has more houses."
+    },
+    "mortgage": {
+      "PHASE_NOT_ALLOWED": "Assets can be mortgaged and redeemed only during play.",
+      "AUCTION_IN_PROGRESS": "Not while an auction is running.",
+      "NOT_ACTIVE_PLAYER": "Only on your turn.",
+      "DECISION_PENDING": "Decide on the purchase first.",
+      "RENT_PENDING": "Pay the rent first.",
+      "NOT_AN_ASSET": "This cell is not an asset.",
+      "NOT_OWNER": "You do not own this asset.",
+      "ALREADY_MORTGAGED": "This asset is already mortgaged.",
+      "HAS_HOUSES": "Sell the houses on this asset first.",
+      "NOT_MORTGAGED": "This asset is not mortgaged.",
+      "INSUFFICIENT_FUNDS": "Not enough money to redeem."
+    }
+  },
+  "common": {
+    "room": "Room {value0}",
+    "symbol": ": {value0}",
+    "dismiss": "Dismiss",
+    "symbol_2": "×",
+    "players": "Players",
+    "you": "you",
+    "rent": "Rent",
+    "dice_sum": " (dice sum {value0})",
+    "s": "{value0} s",
+    "unreported": "–"
+  }
+}

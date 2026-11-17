@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../../shared/i18n/index';
 import { ref } from 'vue';
 import { NICKNAME_MAX_CODE_POINTS, normalizeNickname } from '@game/protocol';
 import { useClient } from '../../features/client-session/index';
@@ -11,7 +12,7 @@ async function submit(): Promise<void> {
   const normalized = normalizeNickname(nickname.value);
   if (normalized === null) {
     // An invalid nickname is never sent.
-    invalid.value = `Enter a nickname of 1 to ${NICKNAME_MAX_CODE_POINTS} visible characters.`;
+    invalid.value = t('login.enter_a_nickname', { value0: NICKNAME_MAX_CODE_POINTS });
     return;
   }
   invalid.value = null;
@@ -21,11 +22,11 @@ async function submit(): Promise<void> {
 
 <template>
   <section class="panel login">
-    <h2>Play as a guest</h2>
+    <h2>{{ t('login.play_as_a') }}</h2>
     <form @submit.prevent="submit">
-      <label for="nickname">Nickname</label>
+      <label for="nickname">{{ t('login.nickname') }}</label>
       <input id="nickname" v-model="nickname" name="nickname" autocomplete="nickname" autofocus />
-      <button type="submit" :disabled="client.lobby.busy">Enter</button>
+      <button type="submit" :disabled="client.lobby.busy">{{ t('login.enter') }}</button>
     </form>
     <p v-if="client.lobby.notice" class="warn-box" data-test="notice">{{ client.lobby.notice }}</p>
     <p v-if="invalid" class="error" data-test="invalid">{{ invalid }}</p>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../shared/i18n/index';
 import { computed } from 'vue';
 import { useClient } from '../features/client-session/index';
 import { GameOverScreen } from '../pages/game-over/index';
@@ -22,7 +23,7 @@ const screen = computed(() => {
 <template>
   <main class="app" :data-screen="screen">
     <header class="app-header">
-      <h1>Board game</h1>
+      <h1>{{ t('app.board_game') }}</h1>
       <span v-if="client.session.state.guest" class="who" data-test="who">{{ client.session.state.guest.nickname }}</span>
     </header>
     <LoginScreen v-if="screen === 'login'" />

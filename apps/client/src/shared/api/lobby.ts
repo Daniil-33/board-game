@@ -1,3 +1,4 @@
+import { t } from '../i18n/index';
 import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import {
@@ -64,30 +65,30 @@ async function request<S extends TSchema>(fetchFn: FetchLike, schema: S, options
   try {
     response = await fetchFn(options.path, init);
   } catch {
-    throw new LobbyRequestError(NETWORK_ERROR, 'The server could not be reached');
+    throw new LobbyRequestError(NETWORK_ERROR, t('lobby.the_server_could'));
   }
 
   let payload: unknown;
   try {
     payload = await response.json();
   } catch {
-    throw new LobbyRequestError(BAD_RESPONSE, `Unreadable response (HTTP ${response.status})`);
+    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.unreadable_response_http', { value0: response.status }));
   }
 
   if (!response.ok) {
     if (Value.Check(LobbyErrorSchema, payload)) throw new LobbyRequestError(payload.code, payload.message);
-    throw new LobbyRequestError(BAD_RESPONSE, `Unexpected error response (HTTP ${response.status})`);
+    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.unexpected_error_response', { value0: response.status }));
   }
   // Never render a response that is not what the protocol defines.
   if (!Value.Check(schema, payload)) {
-    throw new LobbyRequestError(BAD_RESPONSE, 'The server response does not match the protocol');
+    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.the_server_response'));
   }
   return payload;
 }
 
 function codeBody(accessCode?: string): { accessCode: string } | undefined {
   if (accessCode === undefined || accessCode === '') return undefined;
-  if (!Value.Check(AccessCodeSchema, accessCode)) throw new LobbyRequestError('INVALID_REQUEST', 'Access code must have 4–32 letters, digits, underscores or hyphens');
+  if (!Value.Check(AccessCodeSchema, accessCode)) throw new LobbyRequestError('INVALID_REQUEST', t('lobby.access_code_must'));
   return { accessCode };
 }
 

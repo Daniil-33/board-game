@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { formatMoney } from '../../shared/lib/index';
+
+import { t } from '../../shared/i18n/index';
 import { computed } from 'vue';
 import { DebtNotices } from '../../widgets/debt-notices/index';
 import { useClient } from '../../features/client-session/index';
@@ -20,18 +23,18 @@ const balances = computed(() => {
 </script>
 <template>
   <section class="panel game-over">
-    <h2>Game over</h2>
-    <p v-if="result" data-test="winner">Winner: {{ client.nameOf(result.winner) }}</p>
-    <p v-else data-test="winner">No winner reported.</p>
+    <h2>{{ t('game_over.game_over') }}</h2>
+    <p v-if="result" data-test="winner">{{ t('game_over.winner', { value0: client.nameOf(result.winner) }) }}</p>
+    <p v-else data-test="winner">{{ t('game_over.no_winner_reported') }}</p>
     <p v-if="out" data-test="spectator">{{ out }}</p>
     <template v-if="result">
-      <p data-test="finished-at">Finished at: {{ formatTime(result.finishedAt) }}</p>
-      <h3>Elimination order</h3>
-      <ol data-test="eliminations"><li v-for="entry in result.eliminations" :key="entry.playerId">{{ client.nameOf(entry.playerId) }}: {{ entry.reason }} at {{ formatTime(entry.at) }}</li></ol>
-      <h3>Final balances</h3>
-      <ul data-test="final-balances"><li v-for="entry in balances" :key="entry.id">{{ client.nameOf(entry.id) }}: {{ entry.amount }}</li></ul>
+      <p data-test="finished-at">{{ t('game_over.finished_at', { value0: formatTime(result.finishedAt) }) }}</p>
+      <h3>{{ t('game_over.elimination_order') }}</h3>
+      <ol data-test="eliminations"><li v-for="entry in result.eliminations" :key="entry.playerId">{{ t('game_over.at', { value0: client.nameOf(entry.playerId), value1: entry.reason, value2: formatTime(entry.at) }) }}</li></ol>
+      <h3>{{ t('game_over.final_balances') }}</h3>
+      <ul data-test="final-balances"><li v-for="entry in balances" :key="entry.id">{{ t('game_over.symbol', { value0: client.nameOf(entry.id), value1: formatMoney(entry.amount) }) }}</li></ul>
     </template>
     <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
-    <button class="primary" data-test="return-lobby" @click="client.returnToLobby()">Back to lobby</button>
+    <button class="primary" data-test="return-lobby" @click="client.returnToLobby()">{{ t('game_over.back_to_lobby') }}</button>
   </section>
 </template>

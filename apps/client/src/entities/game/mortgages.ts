@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n/index';
 /**
  * Mortgage and Redeem controls of the asset card. Legality and the advance
  * come only from game-core's pure helpers and the projected mortgage terms;
@@ -12,17 +13,17 @@ import { connectionReason, type ActionContext, type MortgageCommandType } from '
 
 /** One message per game-core mortgage error code, for disabled controls and rejected Acks. */
 export const MORTGAGE_REASONS: Readonly<Record<MortgageErrorCode, string>> = {
-  PHASE_NOT_ALLOWED: 'Assets can be mortgaged and redeemed only during play.',
-  AUCTION_IN_PROGRESS: 'Not while an auction is running.',
-  NOT_ACTIVE_PLAYER: 'Only on your turn.',
-  DECISION_PENDING: 'Decide on the purchase first.',
-  RENT_PENDING: 'Pay the rent first.',
-  NOT_AN_ASSET: 'This cell is not an asset.',
-  NOT_OWNER: 'You do not own this asset.',
-  ALREADY_MORTGAGED: 'This asset is already mortgaged.',
-  HAS_HOUSES: 'Sell the houses on this asset first.',
-  NOT_MORTGAGED: 'This asset is not mortgaged.',
-  INSUFFICIENT_FUNDS: 'Not enough money to redeem.',
+  get PHASE_NOT_ALLOWED() { return t('reasons.mortgage.PHASE_NOT_ALLOWED'); },
+  get AUCTION_IN_PROGRESS() { return t('reasons.mortgage.AUCTION_IN_PROGRESS'); },
+  get NOT_ACTIVE_PLAYER() { return t('reasons.mortgage.NOT_ACTIVE_PLAYER'); },
+  get DECISION_PENDING() { return t('reasons.mortgage.DECISION_PENDING'); },
+  get RENT_PENDING() { return t('reasons.mortgage.RENT_PENDING'); },
+  get NOT_AN_ASSET() { return t('reasons.mortgage.NOT_AN_ASSET'); },
+  get NOT_OWNER() { return t('reasons.mortgage.NOT_OWNER'); },
+  get ALREADY_MORTGAGED() { return t('reasons.mortgage.ALREADY_MORTGAGED'); },
+  get HAS_HOUSES() { return t('reasons.mortgage.HAS_HOUSES'); },
+  get NOT_MORTGAGED() { return t('reasons.mortgage.NOT_MORTGAGED'); },
+  get INSUFFICIENT_FUNDS() { return t('reasons.mortgage.INSUFFICIENT_FUNDS'); },
 };
 
 /**

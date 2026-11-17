@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n/index';
 /**
  * Pure selectors over the server view. They decide what the HUD shows and
  * which buttons are enabled; they never change the view and never compute a
@@ -72,11 +73,11 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
  */
 export function connectionReason(ctx: ActionContext, type: ClientCommandType): string | null {
   const { view, me } = ctx;
-  if (!ctx.connected) return 'Disconnected: reconnecting…';
-  if (view === null || me === null || !view.players.some((p) => p.id === me) || view.eliminated.includes(me)) return 'You are not an active player.';
-  if (ctx.pending.includes(type)) return 'Waiting for the server…';
+  if (!ctx.connected) return t('view.disconnected_reconnecting');
+  if (view === null || me === null || !view.players.some((p) => p.id === me) || view.eliminated.includes(me)) return t('view.you_are_not');
+  if (ctx.pending.includes(type)) return t('view.waiting_for_the');
   const deadline = activeDeadline(view);
-  if (deadline === null || ctx.now >= deadline) return 'The turn time is over.';
+  if (deadline === null || ctx.now >= deadline) return t('view.the_turn_time');
   return null;
 }
 

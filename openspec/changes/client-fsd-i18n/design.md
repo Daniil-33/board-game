@@ -20,7 +20,7 @@ Meet the two delta capabilities without changing commands, timing, connection li
 - shared/api receives api and net. Connection input/state types must be defined structurally in shared/api, with entity game state satisfying that contract, rather than importing entities upward. The coordinator's Board contract belongs below widgets (entities/game); its signatures use core view and animation types, never widget implementation types. app composes the concrete board.
 - shared/lib owns formatting; shared/i18n owns locale provider and messages; shared/sound exports SoundId = never and no-op playSound(id, opts?).
 
-Every populated slice gets index.ts. Internal relative imports remain private within a slice. Cross-slice imports use only lower-layer public indexes. No compatibility directories remain. Move-only commit includes minimal contract relocation needed to preserve dependency direction and import fixes, without logic changes. Tests remain in src/__tests__ so existing Vitest discovery remains stable; external test imports use public indexes.
+Every populated slice gets index.ts. Internal relative imports remain private within a slice. Cross-slice imports use only lower-layer public indexes. Shared contains segments: api and lib may import i18n through index.ts; i18n imports no other Shared segment. These directed edges prevent cycles. All other peer-slice restrictions remain. No compatibility directories remain. Move-only commit includes minimal contract relocation needed to preserve dependency direction and import fixes, without logic changes. Tests remain in src/__tests__ so existing Vitest discovery remains stable; external test imports use public indexes.
 
 ### Enforcement
 
@@ -50,3 +50,7 @@ Capture pristine Vite build output before any dependency/product edit at the rec
 ## Migration Plan
 
 After Team Lead approval, start Apply in a fresh context. Capture baseline, then commit (a) moves and path fixes, (b) boundaries, (c) i18n/format/sound and (d) hooks. Run full acceptance checks and inspect final scope. Push and open one PR using agentctl operation intent/verification records, request independent exact-SHA review, resolve findings, archive OpenSpec in the PR after passing review and revalidate final head. Team Lead accepts delivery; Engineer does not merge. Rollback is a normal PR revert; no persisted schema migration is involved.
+
+### Production localization build
+
+Pin vue-i18n 11.1.12 and @intlify/unplugin-vue-i18n 11.2.8, both published before the two-week cutoff. Precompile discovered JSON locales and drop the runtime message compiler, legacy API and unused global components. The complete runtime remains the Composition API. This keeps the task inside its 15,000-byte gzip budget; the newer 11.4 runtime exceeded it. Register locales at browser composition (and test setup), allowing Node browser tooling to import public board geometry without invoking Vite-only discovery.

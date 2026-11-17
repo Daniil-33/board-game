@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { t } from '../../shared/i18n/index';
 import type { ActionAvailability, NullPayloadType, TurnCommandType } from '../../entities/game/index';
 
 defineProps<{ available: ActionAvailability }>();
 const emit = defineEmits<{ command: [type: NullPayloadType] }>();
 
 const BUTTONS: readonly { type: TurnCommandType; label: string }[] = [
-  { type: 'RollForOrder', label: 'Roll for order' },
-  { type: 'RollDice', label: 'Roll dice' },
-  { type: 'EndTurn', label: 'End turn' },
+  { type: 'RollForOrder', label: t('action_buttons.roll_for_order') },
+  { type: 'RollDice', label: t('action_buttons.roll_dice') },
+  { type: 'EndTurn', label: t('action_buttons.end_turn') },
 ];
 </script>
 

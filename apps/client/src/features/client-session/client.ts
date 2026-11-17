@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n/index';
 /**
  * Wires the stores, the lobby API, the connection and the animation queue.
  * Everything outside (storage, fetch, sockets, clock, canvas) is injected, so
@@ -104,7 +105,7 @@ export function createClient(deps: ClientDeps): Client {
       invite = { roomId, ...(accessCode !== null && { accessCode }) };
       lobby.inviteRoomId = roomId;
     } else if (roomId !== null || accessCode !== null) {
-      lobby.error = 'Invalid invite link. Check the room and access code.';
+      lobby.error = t('client.invalid_invite_link');
     }
     if (url.searchParams.has('room') || url.searchParams.has('code')) {
       url.searchParams.delete('room');
@@ -143,14 +144,14 @@ export function createClient(deps: ClientDeps): Client {
         try {
           const fresh = await api.getRoom(token, roomId);
           if (entry !== flight.entry || session.state.room?.roomId !== roomId) return;
-          if (fresh.status === 'closed') { cleanup('The room was closed. You are back in the lobby.'); return; }
+          if (fresh.status === 'closed') { cleanup(t('client.the_room_was')); return; }
           session.setRoom(fresh);
         } catch (error) {
           if (entry !== flight.entry) return;
           if (error instanceof LobbyRequestError && ['ROOM_CLOSED', 'NOT_A_PARTICIPANT', 'ROOM_UNAVAILABLE'].includes(error.code)) {
             cleanup(error.code === 'NOT_A_PARTICIPANT' && leavingEntry === entry
-              ? 'You left the room.'
-              : 'The room is no longer available. You are back in the lobby.'); return;
+              ? t('client.you_left_the')
+              : t('client.the_room_is')); return;
           }
           if (error instanceof LobbyRequestError && error.code === 'UNAUTHENTICATED') { report(error); return; }
           // A later Welcome or membership event can retry a transient failed lookup.
@@ -190,12 +191,12 @@ export function createClient(deps: ClientDeps): Client {
     onAuthLost() {
       cleanup('');
       session.clearGuest();
-      lobby.notice = 'Your session is no longer valid. Log in again.';
+      lobby.notice = t('client.your_session_is');
     },
     onRoomLost(error) {
       cleanup(error.code === 'NOT_A_PARTICIPANT' && leavingEntry === entry
-        ? 'You left the room.'
-        : `You are back in the lobby: ${error.message} (${error.code})`);
+        ? t('client.you_left_the')
+        : t('client.you_are_back', { value0: error.message, value1: error.code }));
     },
   });
 
@@ -223,12 +224,12 @@ export function createClient(deps: ClientDeps): Client {
   function report(error: unknown): void {
     if (error instanceof LobbyRequestError) {
       if (error.code === 'UNAUTHENTICATED') {
-        cleanup('Your session is no longer valid. Log in again.');
+        cleanup(t('client.your_session_is'));
         session.clearGuest();
       }
-      lobby.error = `${error.message} (${error.code})`;
+      lobby.error = t('client.symbol', { value0: error.message, value1: error.code });
     } else {
-      lobby.error = 'Unexpected error';
+      lobby.error = t('client.unexpected_error');
       // Never log request bodies or URLs: they may contain invite secrets.
     }
   }
@@ -264,7 +265,7 @@ export function createClient(deps: ClientDeps): Client {
     nameOf,
     start() {
       if (invite !== null) {
-        cleanup('Joining the invited room.');
+        cleanup(t('client.joining_the_invited'));
         void joinInvite();
       } else {
         const room = session.state.room;
@@ -329,9 +330,9 @@ export function createClient(deps: ClientDeps): Client {
       leavingEntry = entry;
       const result = await run((token) => api.leaveRoom(token, room.roomId));
       leavingEntry = null;
-      if (result !== undefined) cleanup(result.status === 'closed' ? 'The room was closed. You are back in the lobby.' : 'You left the room.');
+      if (result !== undefined) cleanup(result.status === 'closed' ? t('client.the_room_was') : t('client.you_left_the'));
     },
-    returnToLobby() { cleanup('You returned to the lobby.'); },
+    returnToLobby() { cleanup(t('client.you_returned_to')); },
     async startGame() {
       const roomId = session.state.room?.roomId;
       if (roomId === undefined) return;
