@@ -59,6 +59,8 @@
     "no_winner_reported": "No winner reported.",
     "finished_at": "Finished at: {time}",
     "elimination_order": "Elimination order",
+    "resigned": "resigned",
+    "bankrupt": "bankrupt",
     "elimination_entry": "{player}: {reason} at {time}",
     "final_balances": "Final balances",
     "balance_entry": "{player}: {amount}",

@@ -36,7 +36,7 @@
 ## 4. Integration evidence
 
 - [x] 4.1 Add dev-only design-system page and verify production excludes it; capture both viewport screenshots next to the reference frame in the evidence directory (design-system: Contrast and evidence).
-- [ ] 4.2 Run build, unit tests, client lint, bundle and strict OpenSpec validation; compare gzip sizes with TASK-vd-fsd baseline and record evidence.
+- [x] 4.2 Run build, unit tests, client lint, bundle and strict OpenSpec validation; compare gzip sizes with TASK-vd-fsd baseline and record evidence.
 - [ ] 4.3 Inspect diff against the handoff, run git diff --check against base, and verify browser behavior and CI on the PR head.
 
 ## Workflow follow-up

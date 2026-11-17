@@ -307,7 +307,7 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
   expect(ended.eliminations.map((e: Payload) => [e.playerId, e.reason])).toEqual([[resigned.id, 'resigned'], [payer.id, 'bankrupt']]);
   const result = { winner: creditor.id, finishedAt: ended.at, eliminations: ended.eliminations, finalBalances: ended.finalBalances };
   const lines = {
-    eliminations: [new RegExp(`^${name(players, resigned.id)}: resigned, \\d{4}-`), new RegExp(`^${name(players, payer.id)}: bankrupt, \\d{4}-`)],
+    eliminations: [new RegExp(`^${name(players, resigned.id)}: сдача, \\d{2}\\.`), new RegExp(`^${name(players, payer.id)}: банкротство, \\d{2}\\.`)],
     balances: players.map((p, i) => `Player ${i + 1}: ${money(ended.finalBalances[p.id])}`),
   };
   async function gameOver() {

@@ -99,7 +99,7 @@ describe('localization contracts', () => {
     try { expect(formatMoney(123450)).toBe('123,450'); }
     finally { i18n.global.locale.value = 'ru'; }
     expect(formatSeconds(9)).toBe('9');
-    expect(formatTime(Date.UTC(2026, 0, 2, 0, 3, 4, 567))).toBe('2026-01-02 00:03:04 UTC');
+    expect(formatTime(Date.UTC(2026, 0, 2, 0, 3, 4, 567))).toBe('02.01.2026, 00:03:04 UTC');
     expect(formatTime(NaN)).toBe('NaN');
   });
 });

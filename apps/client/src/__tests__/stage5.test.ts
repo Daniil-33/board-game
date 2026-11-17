@@ -382,7 +382,7 @@ describe('elimination and game over', () => {
       expect(w.attributes('data-screen')).toBe('finished');
       expect(w.get('[data-testid="winner"]').text()).toBe('Победитель: Bob');
       expect(w.get('[data-testid="finished-at"]').text()).toBe(`Время завершения: ${formatTime(61_000)}`);
-      expect(w.findAll('[data-testid="elimination-row"]').map(li => li.text())).toEqual([`Carol: resigned, ${formatTime(1_000)}`, `Alice: bankrupt, ${formatTime(61_000)}`]);
+      expect(w.findAll('[data-testid="elimination-row"]').map(li => li.text())).toEqual([`Carol: сдача, ${formatTime(1_000)}`, `Alice: банкротство, ${formatTime(61_000)}`]);
       expect(w.findAll('[data-testid="final-balance-row"]').map(li => li.text())).toEqual(['Alice: 0', 'Bob: 4 200', 'Carol: 0']);
       expect(w.get('[data-testid="spectator"]').text()).toBe('Вы выбыли из-за банкротства.');
       for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-testid="${sel}"]`).exists(), sel).toBe(false);
@@ -390,7 +390,7 @@ describe('elimination and game over', () => {
       expect(w.find('[data-testid="debt-notices"]').exists()).toBe(false);
       w.unmount(); h.client.returnToLobby();
     }
-    expect(formatTime(0)).toBe('1970-01-01 00:00:00 UTC');
+    expect(formatTime(0)).toBe('01.01.1970, 00:00:00 UTC');
   });
 });
 

@@ -59,6 +59,8 @@
     "no_winner_reported": "Победитель не указан.",
     "finished_at": "Время завершения: {time}",
     "elimination_order": "Порядок выбывания",
+    "resigned": "сдача",
+    "bankrupt": "банкротство",
     "elimination_entry": "{player}: {reason}, {time}",
     "final_balances": "Финальные балансы",
     "balance_entry": "{player}: {amount}",
