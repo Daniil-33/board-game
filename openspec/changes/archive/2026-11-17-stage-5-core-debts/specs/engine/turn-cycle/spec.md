@@ -18,4 +18,3 @@
 #### Scenario: Terminal bankruptcy skips boundary
 - **WHEN** mandatory payment eliminates the second-to-last player
 - **THEN** TurnEnded reason bankrupt SHALL precede GameEnded, with no mortgage lap processing or TurnStarted
-
