@@ -5,7 +5,7 @@ id: TASK-s5-core-debts
 revision: 1
 effort: EFF-stage-5-mortgage-debts-bankruptcy
 project: economic-board-game
-source_commit: TBD # main after TASK-s5-core-mortgage (PR #60) merges
+source_commit: 34d8c29 # main after TASK-s5-core-mortgage (PR #60)
 owner: team-lead
 status: proposed
 ```
