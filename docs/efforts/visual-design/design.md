@@ -9,8 +9,7 @@ designs; the rules come from `ROADMAP.md`.
 ## Design sources and how to read them
 
 - **Desktop:** `docs/design/ui-mvp-v1.html` (main).
-- **Mobile:** `docs/design/ui-mvp-mobile-v1.html`, in docs PR #70 (branch
-  `docs/ui-design-mobile-v1`) until it merges.
+- **Mobile:** `docs/design/ui-mvp-mobile-v1.html` (main, merged in PR #70).
 - **Format of the desktop file.** It is a self-unpacking bundle:
   - `<script type="__bundler/manifest">` holds gzip+base64 HTML frames, one
     per screen, and `__bundler/template` maps the frame ids to titles;
