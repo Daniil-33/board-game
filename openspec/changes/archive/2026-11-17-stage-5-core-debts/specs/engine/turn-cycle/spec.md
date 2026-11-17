@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Ending a turn
-`EndTurn` SHALL be accepted only after the turn's roll; before it the engine SHALL reject it with `ROLL_REQUIRED`. With a pending purchase, EndTurn SHALL instead open an auction with reason end-turn and defer closure until settlement. Closing a turn SHALL clear the purchase, run mandatory settlement, emit `TurnEnded` with a reason, and start the next turn: a bonus turn for the same player if one is pending, otherwise a turn for the next player in order, wrapping around. Bankruptcy during mandatory settlement SHALL instead close once with reason bankrupt, cancel bonus entitlement, and pass to the successor in the old order or finish immediately without lap processing when one active player remains.
+`EndTurn` SHALL require a roll (`ROLL_REQUIRED` otherwise). A pending purchase SHALL open an end-turn auction and defer closure. Closure SHALL clear purchase, settle mandatory debt, emit `TurnEnded` with a reason, then start a pending bonus or the cyclic successor. Bankruptcy SHALL override the reason to bankrupt, cancel bonus and close once; play SHALL pass using old order or finish immediately with one survivor, without lap processing.
 
 #### Scenario: End turn passes play
 - **WHEN** a, first of order [a, b], rolls a non-double, has no purchase pending and issues `EndTurn`

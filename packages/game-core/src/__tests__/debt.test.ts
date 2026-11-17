@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { settleDebt, mortgageAdvance, houseCost, houseRefund, rentFor, checkInvariants, gameEngine, createSession, restoreSession, projectEvents, pendingDeadlines, type GameState, type Money, type AssetId, type LiquidationApplied } from '../index.js';
+import { absorbEntropy } from '../rng.js';
 import { forceEntropy } from './helpers/dice.js';
 import { playingGame } from './helpers/game.js';
 import { cmd, ctx, pid, player, deepFreeze } from './helpers/fixtures.js';
@@ -112,6 +113,24 @@ describe('tiered debt',()=>{
 });
 
 describe('bankruptcy and scheduling',()=>{
+  it('PayRent liquidates in one revision while keeping the current turn open (RVW-001)',()=>{
+    const s=due(fixture([1,3,6],{1:1,3:1}),1000);
+    const r=gameEngine.execute(deepFreeze(s),command(s,'PayRent'),ctx());
+    if(r.kind!=='accepted')throw new Error(r.error.code);
+    checkInvariants(r.state);
+    expect(r.state.revision).toBe(s.revision+1);
+    expect(r.state.rent).toBeNull();
+    expect(r.state.turn).toEqual(s.turn);
+    expect(r.state.order).toEqual(s.order);
+    expect(r.state.rng).toEqual(absorbEntropy(s.rng!,ctx().entropy));
+    expect(r.events.filter(e=>e.type==='TurnEnded'||e.type==='TurnStarted'||e.type==='PlayerBankrupt')).toEqual([]);
+    const summary=r.events.findIndex(e=>e.type==='LiquidationApplied');
+    expect(summary).toBeGreaterThan(0);
+    expect(r.events.slice(summary).map(e=>e.type)).toEqual(['LiquidationApplied','BalanceChanged','BalanceChanged','RentPaid']);
+    expect(r.events.at(-1)!.payload).toEqual({payerId:'a',ownerId:'b',assetId:s.rent!.assetId,amount:1000,auto:false});
+    expect(pendingDeadlines(r.state)).toEqual(pendingDeadlines(s));
+    for(const term of Object.values(r.state.mortgages)) expect(term).toMatchObject({lapsCompleted:0,pending:s.order});
+  });
   it('distinguishes exact full value from ten less and takes no advances',()=>{
     const s=fixture([1],{1:1});const full=houseRefund(houseCost(asset(s,1).price))+mortgageAdvance(asset(s,1).price);
     expect(debt(s,full).bankrupt).toBe(false);
