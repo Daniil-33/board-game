@@ -68,7 +68,7 @@ describe('frames go through the protocol', () => {
       h.sockets.last().receive(raw);
     }
     expect(h.client.game.view).toEqual(before);
-    expect(h.client.game.problem).toMatch(/Unreadable message/);
+    expect(h.client.game.problem).toMatch(/Не удалось прочитать сообщение/);
     expect(h.client.game.connected).toBe(true);
   });
 
@@ -316,7 +316,7 @@ describe('server errors', () => {
   it('PROTOCOL_VERSION_UNSUPPORTED stops reconnecting and asks for a reload', () => {
     const h = joined();
     h.sockets.last().receive(error('PROTOCOL_VERSION_UNSUPPORTED'));
-    expect(h.client.game.fatal).toMatch(/Reload/);
+    expect(h.client.game.fatal).toMatch(/Обновите/);
     expect(h.sockets.last().closed).toBe(true);
     vi.advanceTimersByTime(10_000);
     expect(h.sockets.sockets).toHaveLength(1);

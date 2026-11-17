@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { t } from '../shared/i18n/index';
+import { i18n, t } from '../shared/i18n/index';
+import { UiProvider } from '../shared/ui/index';
 import { computed } from 'vue';
 import { useClient } from '../features/client-session/index';
 import { GameOverScreen } from '../pages/game-over/index';
@@ -9,6 +10,9 @@ import { LoginScreen } from '../pages/login/index';
 import { RoomScreen } from '../pages/room/index';
 
 const client = useClient();
+const locale = i18n.global.locale;
+const locales = i18n.global.availableLocales;
+const showLanguageSelector = locales.some(code => code !== 'ru' && code !== 'en');
 
 /** No router: the screen follows the session and the server view's phase. */
 const screen = computed(() => {
@@ -22,14 +26,22 @@ const screen = computed(() => {
 
 <template>
   <main class="app" :data-screen="screen" :data-testid="`screen-${screen}`">
-    <header class="app-header">
-      <h1>{{ t('app.board_game') }}</h1>
-      <span v-if="client.session.state.guest" class="who" data-testid="who">{{ client.session.state.guest.nickname }}</span>
-    </header>
-    <LoginScreen v-if="screen === 'login'" />
-    <LobbyScreen v-else-if="screen === 'lobby'" />
-    <RoomScreen v-else-if="screen === 'room'" />
-    <GameOverScreen v-else-if="screen === 'finished'" />
-    <GameScreen v-else />
+    <UiProvider>
+      <header class="app-header">
+        <h1>{{ t('app.board_game') }}</h1>
+        <span v-if="client.session.state.guest" class="who" data-testid="who">{{ client.session.state.guest.nickname }}</span>
+        <label v-if="showLanguageSelector">
+          {{ t('app.language') }}
+          <select v-model="locale">
+            <option v-for="code in locales" :key="code" :value="code">{{ code }}</option>
+          </select>
+        </label>
+      </header>
+      <LoginScreen v-if="screen === 'login'" />
+      <LobbyScreen v-else-if="screen === 'lobby'" />
+      <RoomScreen v-else-if="screen === 'room'" />
+      <GameOverScreen v-else-if="screen === 'finished'" />
+      <GameScreen v-else />
+    </UiProvider>
   </main>
 </template>

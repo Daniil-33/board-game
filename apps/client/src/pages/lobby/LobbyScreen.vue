@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { t } from '../../shared/i18n/index';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useClient } from '../../features/client-session/index';
@@ -24,12 +25,12 @@ onBeforeUnmount(() => clearInterval(timer));
     <div class="row">
       <h2>{{ t('lobby.rooms') }}</h2>
       <span class="spacer" />
-      <button data-testid="refresh" :disabled="client.lobby.busy" @click="client.refreshRooms()">{{ t('lobby.refresh') }}</button>
-      <button data-testid="create" class="primary" :disabled="client.lobby.busy" @click="client.createRoom(createCode)"> {{ t('lobby.create_room') }} </button>
+      <Button data-testid="refresh" :disabled="client.lobby.busy" @click="client.refreshRooms()">{{ t('lobby.refresh') }}</Button>
+      <Button data-testid="create" variant="primary" :disabled="client.lobby.busy" @click="client.createRoom(createCode)"> {{ t('lobby.create_room') }} </Button>
     </div>
     <label>{{ t('lobby.optional_access_code') }} <input v-model="createCode" data-testid="create-code" autocomplete="off" /></label>
-    <div v-if="client.lobby.inviteRoomId" class="warn-box" data-testid="invite"> {{ t('lobby.invite_target', { roomId: client.lobby.inviteRoomId }) }} <button :disabled="client.lobby.busy" data-testid="retry-invite" @click="client.retryInvite()">{{ t('lobby.retry_invite') }}</button>
-      <button :disabled="client.lobby.busy" data-testid="dismiss-invite" @click="client.dismissInvite()">{{ t('lobby.dismiss_invite') }}</button>
+    <div v-if="client.lobby.inviteRoomId" class="warn-box" data-testid="invite"> {{ t('lobby.invite_target', { roomId: client.lobby.inviteRoomId }) }} <Button :disabled="client.lobby.busy" data-testid="retry-invite" @click="client.retryInvite()">{{ t('lobby.retry_invite') }}</Button>
+      <Button :disabled="client.lobby.busy" data-testid="dismiss-invite" @click="client.dismissInvite()">{{ t('lobby.dismiss_invite') }}</Button>
     </div>
     <p v-if="client.lobby.notice" class="warn-box" data-testid="notice">{{ client.lobby.notice }}</p>
     <p v-if="client.lobby.error" class="error" data-testid="error">{{ client.lobby.error }}</p>
@@ -45,9 +46,9 @@ onBeforeUnmount(() => clearInterval(timer));
         </div>
         <form data-testid="join-form" v-if="room.locked && room.status === 'lobby' && room.members.length < 6" @submit.prevent="client.joinRoom(room.roomId, codes[room.roomId])">
           <label>{{ t('lobby.access_code') }} <input v-model="codes[room.roomId]" :aria-label="t('lobby.access_code_for', { roomId: room.roomId })" data-testid="join-code" autocomplete="off" required /></label>
-          <button data-testid="join" :disabled="client.lobby.busy">{{ t('lobby.join_with_code') }}</button>
+          <Button data-testid="join" :disabled="client.lobby.busy">{{ t('lobby.join_with_code') }}</Button>
         </form>
-        <button v-else data-testid="join" :disabled="client.lobby.busy || !room.joinable" @click="client.joinRoom(room.roomId)">{{ t('lobby.join') }}</button>
+        <Button v-else data-testid="join" :disabled="client.lobby.busy || !room.joinable" @click="client.joinRoom(room.roomId)">{{ t('lobby.join') }}</Button>
       </li>
     </ul>
   </section>

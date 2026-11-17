@@ -1,3 +1,4 @@
+import { money } from './ru-text';
 import { execFileSync } from 'node:child_process';
 import { test, expect, sel, active, type Actor } from './helpers';
 import { fast, q, click, load, shoot, balances, card, close } from './fixture-helpers';
@@ -70,11 +71,11 @@ for (const fixture of ['regular-rent', 'full-group-rent', 'logistics-rent', 'ene
     for (const p of players) {
       expect(p.view!.rent).toEqual(rent);
       expect(p.events.findLast(e => e.event.type === 'RentDue')!.event).toEqual(due);
-      await expect(p.page.locator(sel('rent-line'))).toContainText(String(expected));
+      await expect(p.page.locator(sel('rent-line'))).toContainText(money(expected));
       await expect(p.page.locator(sel('pay-rent'))).toHaveCount(p === mover ? 1 : 0);
       if (fixture === 'energy-rent') {
         expect(rent.diceSum).toBe(sum);
-        await expect(p.page.locator(sel('rent-line'))).toContainText(`dice sum ${sum}`);
+        await expect(p.page.locator(sel('rent-line'))).toContainText(`сумма костей ${sum}`);
       }
     }
     expect(view.turn!.deadline - Date.now(), 'rent is still inside its saved turn window').toBeGreaterThan(2_000);
@@ -166,9 +167,9 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   await close(mover);
   await card(mover, secondCell);
   await expect(mover.page.locator(sel('build-house'))).toBeDisabled();
-  await expect(mover.page.locator(sel('build-reason'))).toHaveText('You have already built a house this turn.');
+  await expect(mover.page.locator(sel('build-reason'))).toHaveText('Дом уже построен в этом ходу.');
   await rejectedBuild(players, mover, secondId, 'BUILD_QUOTA_USED');
-  await expect(mover.page.locator(`${sel('message')}[data-code="BUILD_QUOTA_USED"]`)).toContainText('You have already built a house this turn.');
+  await expect(mover.page.locator(`${sel('message')}[data-code="BUILD_QUOTA_USED"]`)).toContainText('Дом уже построен в этом ходу.');
   await close(mover);
   const turn = mover.view!.turn!.turnId;
   await click(players, mover, 'EndTurn');
@@ -179,9 +180,9 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   // Fresh quota, but unevenness still forbids building twice on the same asset.
   await card(mover, firstCell);
   await expect(mover.page.locator(sel('build-house'))).toBeDisabled();
-  await expect(mover.page.locator(sel('build-reason'))).toHaveText('Build evenly: another asset of the group has fewer houses.');
+  await expect(mover.page.locator(sel('build-reason'))).toHaveText('Сначала постройте на соседних активах группы.');
   await rejectedBuild(players, mover, firstId, 'UNEVEN_BUILD');
-  await expect(mover.page.locator(`${sel('message')}[data-code="UNEVEN_BUILD"]`)).toContainText('Build evenly');
+  await expect(mover.page.locator(`${sel('message')}[data-code="UNEVEN_BUILD"]`)).toContainText('Сначала постройте');
   await close(mover);
   await card(mover, secondCell);
   await expect(mover.page.locator(sel('build-house'))).toBeEnabled();

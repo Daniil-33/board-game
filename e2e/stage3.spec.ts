@@ -1,3 +1,4 @@
+import { money } from './ru-text';
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
@@ -56,7 +57,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   }
   await respond(players, 'pass');
   const bidder = byId(players, players[0]!.view!.auction!.responder);
-  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Bid ${won.startBid}`);
+  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   await respond(players, 'bid');
   await respond(players, 'pass');
   // A chosen auction resumes the same turn. Read at settlement: the resumed
@@ -117,9 +118,9 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const poor = byId(players, players[0]!.view!.auction!.responder);
   await expect.poll(() => poor.view?.revision).toBe(players[0]!.view!.revision);
   const saved = structuredClone(poor.view!);
-  await expect(poor.page.locator(sel('bid'))).toHaveText(`Bid ${nextBidAmount(saved.auction!)}`);
+  await expect(poor.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(nextBidAmount(saved.auction!))}`);
   const label = await poor.page.locator(sel('bid')).innerText();
-  const amount = Number(label.replace('Bid ', ''));
+  const amount = Number(label.replace('Поднять до ', '').replace(/\s/g, ''));
   expect(amount).toBeGreaterThan(saved.balances[poor.id]!);
   await expect(poor.page.locator(sel('bid'))).toBeDisabled();
   await expect(poor.page.locator(sel('pass'))).toBeEnabled();
@@ -346,7 +347,7 @@ async function afkPass(players: Actor[], auction = players[0]!.view!.auction!, r
   // The UI checks below need the responder's window to be still open.
   expect(auction.responseDeadline - Date.now(), 'response window left for the AFK responder checks (ms)').toBeGreaterThanOrEqual(1_000);
   await expect(afk.page.locator(sel('pass'))).toBeEnabled();
-  await expect(afk.page.locator(sel('auction-timer'))).toHaveText(/^(10|[1-9]) s$/);
+  await expect(afk.page.locator(sel('auction-timer'))).toHaveText(/^(10|[1-9]) с$/);
   const isPass = (e: { event: { type: string; payload: unknown } }) => e.event.type === 'AuctionPassed'
     && (e.event.payload as { auctionId: string; playerId: string }).auctionId === auction.auctionId
     && (e.event.payload as { playerId: string }).playerId === afk.id;
@@ -365,7 +366,7 @@ async function expectBalances(players: Actor[], balances: Record<string, number>
     for (const [index, player] of players.entries()) {
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);
       await expect(row.locator(sel('player-balance-name'))).toHaveText(`Player ${index + 1}`);
-      await expect(row.locator(sel('player-balance-value'))).toHaveText(String(balances[player.id]));
+      await expect(row.locator(sel('player-balance-value'))).toHaveText(money(balances[player.id]));
     }
   }
 }
@@ -386,7 +387,7 @@ async function expectOwner(players: Actor[], cell: number, owner: Actor | null):
     await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
     const card = p.page.locator(sel('asset-card'));
     await expect(card.locator(sel('asset-title'))).toHaveText(assetAt(p, cell).name);
-    await expect(card.locator(sel('asset-owner'))).toHaveText(owner === null ? 'free' : `Player ${players.indexOf(owner) + 1}`);
+    await expect(card.locator(sel('asset-owner'))).toHaveText(owner === null ? 'свободно' : `Player ${players.indexOf(owner) + 1}`);
     await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
   await p.page.locator(sel('asset-close')).click();
   }

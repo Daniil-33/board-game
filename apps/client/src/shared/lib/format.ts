@@ -1,9 +1,11 @@
 import { i18n } from '../i18n/index';
 
-/** Preserve the existing ungrouped integer display without currency conversion. */
+/** Format integer money with locale grouping and a thin space in Russian. */
 export function formatMoney(value: number | undefined): string {
   if (value === undefined) return '';
-  return new Intl.NumberFormat(i18n.global.locale.value, { useGrouping: false, maximumFractionDigits: 0 }).format(value);
+  const locale = i18n.global.locale.value;
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).formatToParts(value)
+    .map(part => locale.startsWith('ru') && part.type === 'group' ? '\u2009' : part.value).join('');
 }
 export function formatSeconds(seconds: number): string {
   return new Intl.NumberFormat(i18n.global.locale.value, { useGrouping: false, maximumFractionDigits: 0 }).format(seconds);

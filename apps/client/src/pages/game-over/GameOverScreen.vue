@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { formatMoney } from '../../shared/lib/index';
 
 import { t } from '../../shared/i18n/index';
@@ -35,6 +36,6 @@ const balances = computed(() => {
       <ul data-testid="final-balances"><li data-testid="final-balance-row" :data-player-id="entry.id" v-for="entry in balances" :key="entry.id">{{ t('game_over.balance_entry', { player: client.nameOf(entry.id), amount: formatMoney(entry.amount) }) }}</li></ul>
     </template>
     <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
-    <button class="primary" data-testid="return-lobby" @click="client.returnToLobby()">{{ t('game_over.back_to_lobby') }}</button>
+    <Button variant="primary" data-testid="return-lobby" @click="client.returnToLobby()">{{ t('game_over.back_to_lobby') }}</Button>
   </section>
 </template>

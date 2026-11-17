@@ -93,7 +93,7 @@ describe('events to steps', () => {
       RING,
     );
     expect(steps.map((s) => s.kind)).toEqual(['banner', 'banner']);
-    for (const step of steps) expect(step.kind === 'banner' && step.text).toContain('interim rule');
+    for (const step of steps) expect(step.kind === 'banner' && step.text).toContain('временное правило');
   });
 
   it('skips unknown event types and malformed payloads without throwing', () => {

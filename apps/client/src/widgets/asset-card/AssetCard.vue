@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { formatMoney } from '../../shared/lib/index';
 
 import { t } from '../../shared/i18n/index';
@@ -45,7 +46,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
 </script>
 <template>
   <section v-if="cell.asset" class="asset-card" :aria-label="t('asset_card.asset_details')" data-testid="asset-card">
-    <button data-testid="asset-close" :aria-label="t('asset_card.close_asset_card')" @click="emit('close')">{{ t('asset_card.close') }}</button>
+    <Button data-testid="asset-close" :aria-label="t('asset_card.close_asset_card')" @click="emit('close')">{{ t('asset_card.close') }}</Button>
     <h2 data-testid="asset-title">{{ cell.asset.name }}</h2>
     <dl>
       <dt>{{ t('asset_card.category') }}</dt><dd>{{ cell.asset.categoryName }}</dd>
@@ -67,21 +68,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
     <div v-if="controls" data-testid="house-controls">
       <p v-if="buildsLeft !== null" class="note" data-testid="builds-left">{{ t('asset_card.builds_remaining', { builds: buildsLeft }) }}</p>
       <div class="house-control">
-        <button data-testid="build-house" :disabled="!controls.build.enabled" @click="send('BuildHouse')">{{ t('asset_card.build_action', { cost: formatMoney(controls.build.cost) }) }}</button>
+        <Button data-testid="build-house" :disabled="!controls.build.enabled" @click="send('BuildHouse')">{{ t('asset_card.build_action', { cost: formatMoney(controls.build.cost) }) }}</Button>
         <span v-if="controls.build.reason" class="reason" data-testid="build-reason">{{ controls.build.reason }}</span>
       </div>
       <div class="house-control">
-        <button data-testid="sell-house" :disabled="!controls.sell.enabled" @click="send('SellHouse')">{{ t('asset_card.sell_action', { refund: formatMoney(controls.sell.refund) }) }}</button>
+        <Button data-testid="sell-house" :disabled="!controls.sell.enabled" @click="send('SellHouse')">{{ t('asset_card.sell_action', { refund: formatMoney(controls.sell.refund) }) }}</Button>
         <span v-if="controls.sell.reason" class="reason" data-testid="sell-reason">{{ controls.sell.reason }}</span>
       </div>
     </div>
     <div v-if="mortgage" data-testid="mortgage-controls">
       <div class="house-control">
-        <button data-testid="mortgage" :disabled="!mortgage.mortgage.enabled" @click="send('Mortgage')">{{ t('asset_card.mortgage_action', { advance: formatMoney(mortgage.mortgage.advance) }) }}</button>
+        <Button data-testid="mortgage" :disabled="!mortgage.mortgage.enabled" @click="send('Mortgage')">{{ t('asset_card.mortgage_action', { advance: formatMoney(mortgage.mortgage.advance) }) }}</Button>
         <span v-if="mortgage.mortgage.reason" class="reason" data-testid="mortgage-reason">{{ mortgage.mortgage.reason }}</span>
       </div>
       <div class="house-control">
-        <button data-testid="redeem" :disabled="!mortgage.redeem.enabled" @click="send('Redeem')">{{ t('asset_card.redeem_action', { amount: formatMoney(mortgage.redeem.amount) }) }}</button>
+        <Button data-testid="redeem" :disabled="!mortgage.redeem.enabled" @click="send('Redeem')">{{ t('asset_card.redeem_action', { amount: formatMoney(mortgage.redeem.amount) }) }}</Button>
         <span v-if="mortgage.redeem.reason" class="reason" data-testid="redeem-reason">{{ mortgage.redeem.reason }}</span>
       </div>
     </div>

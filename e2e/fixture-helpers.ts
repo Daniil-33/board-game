@@ -1,3 +1,4 @@
+import { money } from './ru-text';
 /** Shared helpers of the isolated fixture-stack specs (stage 4 and later). */
 import type { TestInfo } from '@playwright/test';
 import { cellRect } from '../apps/client/src/widgets/board/index';
@@ -52,7 +53,7 @@ export async function balances(players: Actor[], expected: Readonly<Record<strin
     for (const [i, other] of players.entries()) {
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${other.id}"]`);
       await expect(row.locator(sel('player-balance-name'))).toHaveText(`Player ${i + 1}`);
-      await expect(row.locator(sel('player-balance-value'))).toHaveText(String(expected[other.id]));
+      await expect(row.locator(sel('player-balance-value'))).toHaveText(money(expected[other.id]));
     }
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { Translation as I18nT } from 'vue-i18n';
 import { i18n, t } from '../../shared/i18n/index';
 import { computed, ref } from 'vue';
@@ -45,10 +46,10 @@ const canStart = computed(() => client.game.connected && members.value.length >=
     <div v-if="isCreator && client.lobby.creatorAccess" class="warn-box" data-testid="creator-access">
       <p>{{ t('room.access_code') }} <strong data-testid="access-code">{{ client.lobby.creatorAccess.accessCode }}</strong></p>
       <label>{{ t('room.invite_link') }} <input :value="client.lobby.creatorAccess.inviteLink" readonly data-testid="invite-link" @focus="($event.target as HTMLInputElement).select()" /></label>
-      <button data-testid="copy-invite" @click="copyInvite">{{ t('room.copy_invite') }}</button>
+      <Button data-testid="copy-invite" @click="copyInvite">{{ t('room.copy_invite') }}</Button>
       <p v-if="copied" role="status">{{ copied }}</p>
     </div>
-    <button data-testid="leave" :disabled="client.lobby.busy || !!client.game.fatal" @click="client.leaveRoom()">{{ t('room.leave_room') }}</button>
+    <Button data-testid="leave" :disabled="client.lobby.busy || !!client.game.fatal" @click="client.leaveRoom()">{{ t('room.leave_room') }}</Button>
     <h3>{{ t('common.players') }}</h3>
     <ul class="members">
       <li v-for="member in members" :key="member.id" data-testid="member">
@@ -58,7 +59,7 @@ const canStart = computed(() => client.game.connected && members.value.length >=
       </li>
     </ul>
     <p v-if="client.lobby.error" class="error" data-testid="error">{{ client.lobby.error }}</p>
-    <button v-if="isCreator" data-testid="start" class="primary" :disabled="!canStart" @click="client.startGame()"> {{ t('room.start_game') }} </button>
+    <Button v-if="isCreator" data-testid="start" variant="primary" :disabled="!canStart" @click="client.startGame()"> {{ t('room.start_game') }} </Button>
     <p v-else class="muted" data-testid="waiting">{{ t('room.waiting_for_host') }}</p>
     <p v-if="isCreator && members.length < MEMBERS_TO_START" class="muted">{{ t('room.waiting_for_player') }}</p>
   </section>

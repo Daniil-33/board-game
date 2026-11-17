@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { t } from '../../shared/i18n/index';
 import { ref, watch } from 'vue';
 const props = defineProps<{ available: boolean }>();
@@ -13,11 +14,11 @@ function confirm(): void {
 </script>
 <template>
   <div class="resign">
-    <button v-if="!confirming" data-testid="Resign" :disabled="!available" @click="confirming = true">{{ t('resign_control.resign') }}</button>
+    <Button v-if="!confirming" data-testid="Resign" :disabled="!available" @click="confirming = true">{{ t('resign_control.resign') }}</Button>
     <div v-else role="group" :aria-label="t('resign_control.confirm_resignation')" class="warn-box">
       <p>{{ t('resign_control.warning') }}</p>
-      <button data-testid="confirm-resign" :disabled="!available" @click="confirm">{{ t('resign_control.confirm_resignation') }}</button>
-      <button data-testid="cancel-resign" @click="confirming = false">{{ t('resign_control.cancel') }}</button>
+      <Button data-testid="confirm-resign" :disabled="!available" @click="confirm">{{ t('resign_control.confirm_resignation') }}</Button>
+      <Button data-testid="cancel-resign" @click="confirming = false">{{ t('resign_control.cancel') }}</Button>
     </div>
   </div>
 </template>

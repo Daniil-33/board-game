@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { t } from '../../shared/i18n/index';
 import type { ActionAvailability, NullPayloadType, TurnCommandType } from '../../entities/game/index';
 
@@ -14,15 +15,15 @@ const BUTTONS: readonly { type: TurnCommandType; label: string }[] = [
 
 <template>
   <div class="actions">
-    <button
+    <Button
       v-for="button in BUTTONS"
       :key="button.type"
-      class="primary"
+      variant="primary"
       :data-testid="button.type"
       :disabled="!available[button.type]"
       @click="emit('command', button.type)"
     >
       {{ button.label }}
-    </button>
+    </Button>
   </div>
 </template>

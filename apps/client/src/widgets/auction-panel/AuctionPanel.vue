@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '../../shared/ui/index';
 import { formatSeconds } from '../../shared/lib/index';
 import { formatMoney } from '../../shared/lib/index';
 
@@ -25,8 +26,8 @@ const responding = computed(() => props.view.auction?.responder === props.me && 
     </dl>
     <p data-testid="auction-timer">{{ t('common.seconds_remaining', { seconds: formatSeconds(remainingSeconds(view.auction.responseDeadline, now)) }) }}</p>
     <template v-if="responding">
-      <button data-testid="bid" :disabled="!canIssue(props, 'Bid')" @click="emit('command', 'Bid')">{{ t('auction_panel.bid', { amount: formatMoney(nextBidAmount(view.auction)) }) }}</button>
-      <button data-testid="pass" :disabled="!canIssue(props, 'PassAuction')" @click="emit('command', 'PassAuction')">{{ t('auction_panel.pass') }}</button>
+      <Button data-testid="bid" :disabled="!canIssue(props, 'Bid')" @click="emit('command', 'Bid')">{{ t('auction_panel.bid', { amount: formatMoney(nextBidAmount(view.auction)) }) }}</Button>
+      <Button data-testid="pass" :disabled="!canIssue(props, 'PassAuction')" @click="emit('command', 'PassAuction')">{{ t('auction_panel.pass') }}</Button>
     </template>
   </section>
 </template>

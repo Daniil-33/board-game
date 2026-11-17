@@ -96,8 +96,8 @@ export async function createRoom(host: Actor, code?: string): Promise<string> {
   await expect(host.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => host.view?.phase).toBe('lobby');
   await expect(host.page.locator(sel('room-title'))).toHaveRole('heading');
-  await expect(host.page.locator(sel('room-title'))).toHaveText(/^Room r_/);
-  return (await host.page.locator(sel('room-title')).innerText()).replace('Room ', '');
+  await expect(host.page.locator(sel('room-title'))).toHaveText(/^Комната r_/);
+  return (await host.page.locator(sel('room-title')).innerText()).replace('Комната ', '');
 }
 export async function join(actor: Actor, roomId: string, code?: string): Promise<void> {
   await actor.page.locator(sel('refresh')).click();
