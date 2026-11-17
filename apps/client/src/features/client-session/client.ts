@@ -144,14 +144,14 @@ export function createClient(deps: ClientDeps): Client {
         try {
           const fresh = await api.getRoom(token, roomId);
           if (entry !== flight.entry || session.state.room?.roomId !== roomId) return;
-          if (fresh.status === 'closed') { cleanup(t('client.the_room_was')); return; }
+          if (fresh.status === 'closed') { cleanup(t('client.room_closed')); return; }
           session.setRoom(fresh);
         } catch (error) {
           if (entry !== flight.entry) return;
           if (error instanceof LobbyRequestError && ['ROOM_CLOSED', 'NOT_A_PARTICIPANT', 'ROOM_UNAVAILABLE'].includes(error.code)) {
             cleanup(error.code === 'NOT_A_PARTICIPANT' && leavingEntry === entry
-              ? t('client.you_left_the')
-              : t('client.the_room_is')); return;
+              ? t('client.room_left')
+              : t('client.room_unavailable')); return;
           }
           if (error instanceof LobbyRequestError && error.code === 'UNAUTHENTICATED') { report(error); return; }
           // A later Welcome or membership event can retry a transient failed lookup.
@@ -191,12 +191,12 @@ export function createClient(deps: ClientDeps): Client {
     onAuthLost() {
       cleanup('');
       session.clearGuest();
-      lobby.notice = t('client.your_session_is');
+      lobby.notice = t('client.session_expired');
     },
     onRoomLost(error) {
       cleanup(error.code === 'NOT_A_PARTICIPANT' && leavingEntry === entry
-        ? t('client.you_left_the')
-        : t('client.you_are_back', { value0: error.message, value1: error.code }));
+        ? t('client.room_left')
+        : t('client.return_reason', { message: error.message, code: error.code }));
     },
   });
 
@@ -224,10 +224,10 @@ export function createClient(deps: ClientDeps): Client {
   function report(error: unknown): void {
     if (error instanceof LobbyRequestError) {
       if (error.code === 'UNAUTHENTICATED') {
-        cleanup(t('client.your_session_is'));
+        cleanup(t('client.session_expired'));
         session.clearGuest();
       }
-      lobby.error = t('client.symbol', { value0: error.message, value1: error.code });
+      lobby.error = t('client.error', { message: error.message, code: error.code });
     } else {
       lobby.error = t('client.unexpected_error');
       // Never log request bodies or URLs: they may contain invite secrets.
@@ -265,7 +265,7 @@ export function createClient(deps: ClientDeps): Client {
     nameOf,
     start() {
       if (invite !== null) {
-        cleanup(t('client.joining_the_invited'));
+        cleanup(t('client.joining_invite'));
         void joinInvite();
       } else {
         const room = session.state.room;
@@ -330,9 +330,9 @@ export function createClient(deps: ClientDeps): Client {
       leavingEntry = entry;
       const result = await run((token) => api.leaveRoom(token, room.roomId));
       leavingEntry = null;
-      if (result !== undefined) cleanup(result.status === 'closed' ? t('client.the_room_was') : t('client.you_left_the'));
+      if (result !== undefined) cleanup(result.status === 'closed' ? t('client.room_closed') : t('client.room_left'));
     },
-    returnToLobby() { cleanup(t('client.you_returned_to')); },
+    returnToLobby() { cleanup(t('client.returned_to_lobby')); },
     async startGame() {
       const roomId = session.state.room?.roomId;
       if (roomId === undefined) return;

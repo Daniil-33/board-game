@@ -51,6 +51,7 @@ export async function balances(players: Actor[], expected: Readonly<Record<strin
     expect(p.view!.balances).toEqual(expected);
     for (const [i, other] of players.entries()) {
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${other.id}"]`);
+      await expect(row.locator(sel('player-balance-name'))).toHaveText(`Player ${i + 1}`);
       await expect(row.locator(sel('player-balance-value'))).toHaveText(String(expected[other.id]));
     }
   }
@@ -63,5 +64,6 @@ export async function card(p: Actor, cell: number) {
   await expect(p.page.locator(sel('asset-card'))).toBeVisible();
 }
 export async function close(p: Actor) {
+  await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
   await p.page.locator(sel('asset-close')).click();
 }

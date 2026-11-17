@@ -364,6 +364,7 @@ async function expectBalances(players: Actor[], balances: Record<string, number>
     await expect.poll(() => p.view?.balances).toEqual(balances);
     for (const [index, player] of players.entries()) {
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);
+      await expect(row.locator(sel('player-balance-name'))).toHaveText(`Player ${index + 1}`);
       await expect(row.locator(sel('player-balance-value'))).toHaveText(String(balances[player.id]));
     }
   }
@@ -386,7 +387,8 @@ async function expectOwner(players: Actor[], cell: number, owner: Actor | null):
     const card = p.page.locator(sel('asset-card'));
     await expect(card.locator(sel('asset-title'))).toHaveText(assetAt(p, cell).name);
     await expect(card.locator(sel('asset-owner'))).toHaveText(owner === null ? 'free' : `Player ${players.indexOf(owner) + 1}`);
-    await p.page.locator(sel('asset-close')).click();
+    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+  await p.page.locator(sel('asset-close')).click();
   }
 }
 

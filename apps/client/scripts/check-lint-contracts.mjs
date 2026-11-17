@@ -3,6 +3,18 @@ import assert from 'node:assert/strict';
 
 const eslint = new ESLint();
 const cases = [
+  ['src/pages/game/probe.vue', '<template><i18n-t keypath="missing.probe" /></template>', '@intlify/vue-i18n/no-missing-keys'],
+  ['src/widgets/board/probe.ts', "export const caption = 'Raw English caption';", 'no-restricted-syntax'],
+  ['src/widgets/board/probe.ts', "label('Caption', 12, 0xffffff);", 'no-restricted-syntax'],
+  ['src/pages/game/probe.vue', '<script setup lang="ts">const msg = \'Raw script text\';</script><template><p>{{ msg }}</p></template>', 'no-restricted-syntax'],
+  ['src/pages/game/probe.ts', "export { BoardScene } from '../../widgets/board/index';", null],
+  ['src/pages/game/probe.ts', "import('../../widgets/board/index');", null],
+  ['src/shared/api/probe.ts', "import('./routes');", null],
+  ['src/pages/game/probe.ts', "export { BoardScene } from '../../widgets/board/BoardCanvas';", 'boundaries/entry-point'],
+  ['src/pages/game/probe.ts', "export * from '../../widgets/board/BoardCanvas';", 'boundaries/entry-point'],
+  ['src/pages/game/probe.ts', "import('../../widgets/board/BoardCanvas');", 'boundaries/entry-point'],
+  ['src/entities/game/probe.ts', "import('../../features/resign/index');", 'boundaries/element-types'],
+  ['src/shared/i18n/probe.ts', "export * from '../lib/index';", 'boundaries/element-types'],
   ['src/shared/api/probe.ts', "import type { Board } from '../../entities/game/index';", 'boundaries/element-types'],
   ['src/widgets/board/probe.ts', "import { Hud } from '../turn-header/index';", 'boundaries/element-types'],
   ['src/pages/game/probe.ts', "import { BoardScene } from '../../widgets/board/BoardCanvas';", 'boundaries/entry-point'],

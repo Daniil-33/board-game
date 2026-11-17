@@ -16,7 +16,7 @@ export type AnimationStep =
   /** The token goes straight to `cell` (jail), without walking the ring. */
   | { readonly kind: 'jump'; readonly playerId: string; readonly cell: number }
   /** A short note about `playerId`. */
-  | { readonly kind: 'banner'; readonly playerId: string; readonly text: string }
+  | { readonly kind: 'banner'; readonly playerId: string; readonly text: string; readonly caption?: (player: string) => string }
   /** Mark the player whose roll or turn began. */
   | { readonly kind: 'highlight'; readonly playerId: string }
   /** A paid rent `amount` moves from the payer's token to the owner's. */
@@ -74,18 +74,18 @@ export function stepsForEvent(event: GameEvent, ringSize: number): AnimationStep
     }
     case 'SentToJail':
       return isCell(p.to, ringSize) ? [{ kind: 'jump', playerId, cell: p.to }] : [];
-    case 'InterimJailAttemptFailed':
-      return typeof p.attemptsUsed === 'number'
-        ? [{ kind: 'banner', playerId, text: t('animation.stays_in_jail', { value0: p.attemptsUsed }) }]
-        : [];
-    case 'InterimJailReleased':
-      return [
-        {
-          kind: 'banner',
-          playerId,
-          text: p.reason === 'double' ? t('animation.leaves_jail_on') : t('animation.leaves_jail_interim'),
-        },
-      ];
+    case 'InterimJailAttemptFailed': {
+      if (typeof p.attemptsUsed !== 'number') return [];
+      const attempts = p.attemptsUsed;
+      const caption = (player: string) => t('animation.jail_attempt_failed', { player, attempts });
+      return [{ kind: 'banner', playerId, text: caption(playerId), caption }];
+    }
+    case 'InterimJailReleased': {
+      const caption = p.reason === 'double'
+        ? (player: string) => t('animation.jail_released_double', { player })
+        : (player: string) => t('animation.jail_released', { player });
+      return [{ kind: 'banner', playerId, text: caption(playerId), caption }];
+    }
     default:
       return [];
   }

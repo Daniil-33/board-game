@@ -65,30 +65,30 @@ async function request<S extends TSchema>(fetchFn: FetchLike, schema: S, options
   try {
     response = await fetchFn(options.path, init);
   } catch {
-    throw new LobbyRequestError(NETWORK_ERROR, t('lobby.the_server_could'));
+    throw new LobbyRequestError(NETWORK_ERROR, t('lobby.network_error'));
   }
 
   let payload: unknown;
   try {
     payload = await response.json();
   } catch {
-    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.unreadable_response_http', { value0: response.status }));
+    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.unreadable_response', { status: response.status }));
   }
 
   if (!response.ok) {
     if (Value.Check(LobbyErrorSchema, payload)) throw new LobbyRequestError(payload.code, payload.message);
-    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.unexpected_error_response', { value0: response.status }));
+    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.unexpected_response', { status: response.status }));
   }
   // Never render a response that is not what the protocol defines.
   if (!Value.Check(schema, payload)) {
-    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.the_server_response'));
+    throw new LobbyRequestError(BAD_RESPONSE, t('lobby.protocol_mismatch'));
   }
   return payload;
 }
 
 function codeBody(accessCode?: string): { accessCode: string } | undefined {
   if (accessCode === undefined || accessCode === '') return undefined;
-  if (!Value.Check(AccessCodeSchema, accessCode)) throw new LobbyRequestError('INVALID_REQUEST', t('lobby.access_code_must'));
+  if (!Value.Check(AccessCodeSchema, accessCode)) throw new LobbyRequestError('INVALID_REQUEST', t('lobby.invalid_access_code'));
   return { accessCode };
 }
 

@@ -54,3 +54,20 @@ After Team Lead approval, start Apply in a fresh context. Capture baseline, then
 ### Production localization build
 
 Pin vue-i18n 11.1.12 and @intlify/unplugin-vue-i18n 11.2.8, both published before the two-week cutoff. Precompile discovered JSON locales and drop the runtime message compiler, legacy API and unused global components. The complete runtime remains the Composition API. This keeps the task inside its 15,000-byte gzip budget; the newer 11.4 runtime exceeded it. Register locales at browser composition (and test setup), allowing Node browser tooling to import public board geometry without invoking Vite-only discovery.
+
+### Review enforcement and complete messages
+
+Boundary analysis explicitly includes static imports, re-exports and dynamic
+imports, with negative and permitted-import probes for all three forms. Raw-text
+lint also checks TS/script-setup prose and known presentation contexts (Pixi
+captions, reason maps and presentation variables), exempting only imports,
+console diagnostics and ordinary Error/RangeError diagnostics as implementation
+data. Template text/attributes remain covered by the Intlify rule.
+
+Rich sentences use explicitly imported i18n-t with named slots and the shared
+Composer, retaining strong markup while permitting whole-sentence reordering.
+Conditional sentences and liquidation-step kinds have separate complete keys;
+parameters are semantic names. Key inventory includes component keypaths,
+including literal branches of conditional keypaths. Known animation banners
+carry complete-caption functions so player names still resolve at playback.
+Selector hooks retain independent text, role and accessible-name assertions.

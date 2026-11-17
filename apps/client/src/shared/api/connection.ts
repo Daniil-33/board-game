@@ -132,7 +132,7 @@ export function createConnection(options: ConnectionOptions): Connection {
         const decoded = decodeServerFrame(data);
         if (!decoded.ok) {
           // Dropped, never applied.
-          state.problem = t('connection.unreadable_message_from', { value0: decoded.error.message });
+          state.problem = t('connection.unreadable_frame', { message: decoded.error.message });
           console.warn('[connection] dropped frame:', decoded.error.message);
           return;
         }
@@ -204,12 +204,12 @@ export function createConnection(options: ConnectionOptions): Connection {
         options.onRoomLost?.(frame);
         return;
       case 'CONNECTION_REPLACED':
-        state.fatal = t('connection.this_room_is');
+        state.fatal = t('connection.replaced');
         state.pending.splice(0);
         stop();
         return;
       case 'PROTOCOL_VERSION_UNSUPPORTED':
-        state.fatal = t('connection.this_page_is');
+        state.fatal = t('connection.version_mismatch');
         stop();
         return;
       default:

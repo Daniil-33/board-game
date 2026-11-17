@@ -1,5 +1,5 @@
 import { t } from '../../shared/i18n/index';
-import { formatTime as sharedFormatTime } from '../../shared/lib/index';
+import { formatMoney, formatTime as sharedFormatTime } from '../../shared/lib/index';
 /**
  * Debt notices: presentation of the public LiquidationApplied and
  * PlayerBankrupt events of one accepted update. Every amount, step and freed
@@ -103,17 +103,24 @@ export function assetName(board: GeneratedBoard | null | undefined, assetId: str
 }
 
 const ELIMINATION_TEXT: Readonly<Record<'resigned' | 'bankrupt', string>> = {
-  get resigned() { return t('debts.you_are_out'); },
-  get bankrupt() { return t('debts.you_are_out_2'); },
+  get resigned() { return t('debts.resigned'); },
+  get bankrupt() { return t('debts.bankrupt'); },
 };
 
 /** The eliminated viewer's line, with the projected reason when the view records one. */
-export function eliminationText(view: StateView, playerId: string): string {
+export function eliminationText(view: StateView, playerId: string, watching = false): string {
   const entry = view.eliminations?.find(e => e.playerId === playerId);
-  return entry ? ELIMINATION_TEXT[entry.reason] : t('debts.you_are_out_3');
+  if (watching) return entry === undefined ? t('debts.spectator') : entry.reason === 'resigned' ? t('debts.spectator_resigned') : t('debts.spectator_bankrupt');
+  return entry ? ELIMINATION_TEXT[entry.reason] : t('debts.eliminated');
 }
 
 /** A server timestamp (epoch milliseconds) as UTC time. */
 export function formatTime(at: number): string {
   return sharedFormatTime(at);
+}
+
+/** Kind-specific whole messages let translations choose word order and grammar. */
+export function liquidationStepText(step: LiquidationStep, board?: GeneratedBoard | null): string {
+  const params = { tier: step.tier, asset: assetName(board, step.assetId), amount: formatMoney(step.amount) };
+  return step.kind === 'mortgage' ? t('debts.mortgage_step', params) : t('debts.house_sale_step', params);
 }

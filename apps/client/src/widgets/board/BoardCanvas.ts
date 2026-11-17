@@ -264,12 +264,12 @@ export class BoardScene {
         this.setActive(step.playerId);
         return;
       case 'orderDie':
-        this.diceLabel.text = t('board_canvas.rolls_for_order', { value0: this.nameOf(step.playerId) });
+        this.diceLabel.text = t('board_canvas.order_roll', { player: this.nameOf(step.playerId) });
         this.dice[1].visible = false;
         await this.tumble([step.value], wait);
         return;
       case 'dice':
-        this.diceLabel.text = t('board_canvas.rolls', { value0: this.nameOf(step.playerId) });
+        this.diceLabel.text = t('board_canvas.dice_roll', { player: this.nameOf(step.playerId) });
         await this.tumble(step.dice, wait);
         return;
       case 'hop':
@@ -313,7 +313,7 @@ export class BoardScene {
         return;
       }
       case 'banner':
-        this.banner.text = t('board_canvas.symbol', { value0: this.nameOf(step.playerId), value1: step.text });
+        this.banner.text = step.caption?.(this.nameOf(step.playerId)) ?? t('board_canvas.custom_banner', { player: this.nameOf(step.playerId), text: step.text });
         this.banner.visible = true;
         if (await wait(BANNER_MS)) this.banner.visible = false;
         return;

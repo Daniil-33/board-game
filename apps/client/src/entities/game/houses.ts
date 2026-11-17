@@ -16,7 +16,7 @@ export const HOUSE_REASONS: Readonly<Record<HouseErrorCode, string>> = {
   get NOT_ACTIVE_PLAYER() { return t('reasons.house.NOT_ACTIVE_PLAYER'); },
   get DECISION_PENDING() { return t('reasons.house.DECISION_PENDING'); },
   get RENT_PENDING() { return t('reasons.house.RENT_PENDING'); },
-  get NOT_A_BUILDABLE_ASSET() { return t('reasons.house.NOT_A_BUILDABLE'); },
+  get NOT_A_BUILDABLE_ASSET() { return t('reasons.house.NOT_A_BUILDABLE_ASSET'); },
   get NOT_OWNER() { return t('reasons.house.NOT_OWNER'); },
   get GROUP_INCOMPLETE() { return t('reasons.house.GROUP_INCOMPLETE'); },
   get GROUP_MORTGAGED() { return t('reasons.house.GROUP_MORTGAGED'); },

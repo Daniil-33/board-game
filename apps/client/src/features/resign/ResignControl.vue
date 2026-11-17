@@ -15,7 +15,7 @@ function confirm(): void {
   <div class="resign">
     <button v-if="!confirming" data-testid="Resign" :disabled="!available" @click="confirming = true">{{ t('resign_control.resign') }}</button>
     <div v-else role="group" :aria-label="t('resign_control.confirm_resignation')" class="warn-box">
-      <p>{{ t('resign_control.resigning_is_permanent') }}</p>
+      <p>{{ t('resign_control.warning') }}</p>
       <button data-testid="confirm-resign" :disabled="!available" @click="confirm">{{ t('resign_control.confirm_resignation') }}</button>
       <button data-testid="cancel-resign" @click="confirming = false">{{ t('resign_control.cancel') }}</button>
     </div>

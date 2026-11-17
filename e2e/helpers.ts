@@ -63,6 +63,8 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
           }
         }));
         await page.goto(invite ?? '/');
+        await expect(page.locator(sel('nickname'))).toHaveAccessibleName('Nickname');
+        await expect(page.locator(sel('login-enter'))).toHaveAccessibleName('Enter');
         await page.locator(sel('nickname')).fill(`Player ${actors.length}`);
         await page.locator(sel('login-enter')).click();
         await expect(page.locator(sel('screen-login'))).toHaveCount(0);
@@ -93,6 +95,8 @@ export async function createRoom(host: Actor, code?: string): Promise<string> {
   await host.page.locator(sel('create')).click();
   await expect(host.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => host.view?.phase).toBe('lobby');
+  await expect(host.page.locator(sel('room-title'))).toHaveRole('heading');
+  await expect(host.page.locator(sel('room-title'))).toHaveText(/^Room r_/);
   return (await host.page.locator(sel('room-title')).innerText()).replace('Room ', '');
 }
 export async function join(actor: Actor, roomId: string, code?: string): Promise<void> {

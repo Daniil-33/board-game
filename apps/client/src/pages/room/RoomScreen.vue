@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { t } from '../../shared/i18n/index';
+import { Translation as I18nT } from 'vue-i18n';
+import { i18n, t } from '../../shared/i18n/index';
 import { computed, ref } from 'vue';
 import { useClient } from '../../features/client-session/index';
 
@@ -12,7 +13,7 @@ async function copyInvite(): Promise<void> {
   const link = client.lobby.creatorAccess?.inviteLink;
   if (link === undefined) return;
   try { await navigator.clipboard.writeText(link); copied.value = t('room.invite_copied'); }
-  catch { copied.value = t('room.copy_unavailable_select'); }
+  catch { copied.value = t('room.copy_unavailable'); }
 }
 const room = computed(() => client.session.state.room);
 
@@ -28,14 +29,17 @@ const canStart = computed(() => client.game.connected && members.value.length >=
 
 <template>
   <section v-if="room" class="panel room-view">
-    <h2 data-testid="room-title">{{ t('common.room', { value0: room.roomId }) }}</h2>
+    <h2 data-testid="room-title">{{ t('common.room', { roomId: room.roomId }) }}</h2>
     <p v-if="client.game.fatal" class="error" data-testid="fatal">{{ client.game.fatal }}</p>
     <p v-else-if="!client.game.connected" class="muted" data-testid="connecting">{{ t('room.connecting') }}</p>
     <p v-if="client.game.problem" class="warn-box" data-testid="problem">{{ client.game.problem }}</p>
     <ul v-if="client.game.messages.length > 0" class="messages">
       <li v-for="message in client.game.messages" :key="message.id" class="error" data-testid="message" :data-code="message.code">
-        <span><strong>{{ message.code }}</strong>{{ t('common.symbol', { value0: message.message }) }}</span>
-        <button data-testid="message-dismiss" class="link" :aria-label="t('common.dismiss')" @click="client.connection.dismissMessage(message.id)">{{ t('common.symbol_2') }}</button>
+        <i18n-t tag="span" :i18n="i18n.global" keypath="common.server_message">
+          <template #code><strong>{{ message.code }}</strong></template>
+          <template #message>{{ message.message }}</template>
+        </i18n-t>
+        <button data-testid="message-dismiss" class="link" :aria-label="t('common.dismiss')" @click="client.connection.dismissMessage(message.id)">{{ t('common.dismiss_icon') }}</button>
       </li>
     </ul>
     <div v-if="isCreator && client.lobby.creatorAccess" class="warn-box" data-testid="creator-access">
@@ -55,7 +59,7 @@ const canStart = computed(() => client.game.connected && members.value.length >=
     </ul>
     <p v-if="client.lobby.error" class="error" data-testid="error">{{ client.lobby.error }}</p>
     <button v-if="isCreator" data-testid="start" class="primary" :disabled="!canStart" @click="client.startGame()"> {{ t('room.start_game') }} </button>
-    <p v-else class="muted" data-testid="waiting">{{ t('room.waiting_for_the') }}</p>
-    <p v-if="isCreator && members.length < MEMBERS_TO_START" class="muted">{{ t('room.waiting_for_a') }}</p>
+    <p v-else class="muted" data-testid="waiting">{{ t('room.waiting_for_host') }}</p>
+    <p v-if="isCreator && members.length < MEMBERS_TO_START" class="muted">{{ t('room.waiting_for_player') }}</p>
   </section>
 </template>

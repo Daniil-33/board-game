@@ -22,6 +22,14 @@ All client-owned UI text, accessibility labels and error-code reasons SHALL use 
 - **WHEN** a used key is missing, a defined English key is unused or a raw UI string is introduced
 - **THEN** the corresponding lint or key parity check fails
 
+#### Scenario: Presentation text in TypeScript
+- **WHEN** raw prose or an untranslated caption is introduced in a client presentation script or script-setup block
+- **THEN** CI rejects it through the scoped parser-based presentation checks
+
+#### Scenario: Rich sentence translation
+- **WHEN** a locale reorders a sentence containing an emphasized amount
+- **THEN** the complete named-slot message controls the sentence order and retains the amount emphasis
+
 ### Requirement: Shared locale formatting
 Money and time formatting SHALL go through shared Intl wrappers using the active locale. Existing visible number, currency and timer presentation SHALL remain unchanged in this task, including integer monetary values.
 

@@ -64,7 +64,7 @@ onMounted(async () => {
     client.attachBoard(mounted.board);
   } catch (error) {
     console.error(error);
-    boardError.value = t('game.the_board_could');
+    boardError.value = t('game.board_unavailable');
   }
 });
 

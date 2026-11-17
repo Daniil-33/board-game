@@ -12,7 +12,7 @@ async function submit(): Promise<void> {
   const normalized = normalizeNickname(nickname.value);
   if (normalized === null) {
     // An invalid nickname is never sent.
-    invalid.value = t('login.enter_a_nickname', { value0: NICKNAME_MAX_CODE_POINTS });
+    invalid.value = t('login.invalid_nickname', { maxLength: NICKNAME_MAX_CODE_POINTS });
     return;
   }
   invalid.value = null;
@@ -22,7 +22,7 @@ async function submit(): Promise<void> {
 
 <template>
   <section class="panel login">
-    <h2>{{ t('login.play_as_a') }}</h2>
+    <h2>{{ t('login.heading') }}</h2>
     <form data-testid="login-form" @submit.prevent="submit">
       <label for="nickname">{{ t('login.nickname') }}</label>
       <input data-testid="nickname" id="nickname" v-model="nickname" name="nickname" autocomplete="nickname" autofocus />

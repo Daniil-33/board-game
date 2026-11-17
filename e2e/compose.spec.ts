@@ -58,6 +58,8 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   await resign(players[2]!); await resign(players[1]!);
   for (const p of players) {
     await expect(p.page.locator(sel('game-over-title'))).toBeVisible();
+    await expect(p.page.locator(sel('game-over-title'))).toHaveRole('heading');
+    await expect(p.page.locator(sel('game-over-title'))).toHaveText('Game over');
     await expect(p.page.locator(sel('winner'))).toHaveText('Winner: Player 1');
   }
 });
@@ -229,7 +231,9 @@ async function endTurn(actor: import('./helpers').Actor, players: import('./help
 async function panels(players: import('./helpers').Actor[]): Promise<void> {
   for (const p of players) {
     for (const player of p.view!.players) {
+      const name = `Player ${players.findIndex(a => a.id === player.id) + 1}`;
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);
+      await expect(row.locator(sel('player-balance-name'))).toHaveText(name);
       await expect(row.locator(sel('player-balance-value'))).toHaveText(String(p.view!.balances[player.id]));
     }
   }
@@ -254,7 +258,8 @@ async function stage2(players: import('./helpers').Actor[], capital: number): Pr
     for (const other of board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === cell.asset!.groupId)) {
       await expect(card).toContainText(other.asset!.name);
     }
-    await p.page.locator(sel('asset-close')).click();
+    await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Close asset card');
+  await p.page.locator(sel('asset-close')).click();
   }
   await panels(players);
 }

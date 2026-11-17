@@ -74,10 +74,10 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
 export function connectionReason(ctx: ActionContext, type: ClientCommandType): string | null {
   const { view, me } = ctx;
   if (!ctx.connected) return t('view.disconnected_reconnecting');
-  if (view === null || me === null || !view.players.some((p) => p.id === me) || view.eliminated.includes(me)) return t('view.you_are_not');
-  if (ctx.pending.includes(type)) return t('view.waiting_for_the');
+  if (view === null || me === null || !view.players.some((p) => p.id === me) || view.eliminated.includes(me)) return t('view.inactive_player');
+  if (ctx.pending.includes(type)) return t('view.pending_command');
   const deadline = activeDeadline(view);
-  if (deadline === null || ctx.now >= deadline) return t('view.the_turn_time');
+  if (deadline === null || ctx.now >= deadline) return t('view.deadline_passed');
   return null;
 }
 

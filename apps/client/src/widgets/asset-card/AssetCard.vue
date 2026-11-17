@@ -28,6 +28,7 @@ const energyExamples = computed(() => {
   const q = quote.value;
   return q?.kind === 'energy' ? ENERGY_EXAMPLES.map(sum => ({ sum, rent: energyRentFor(q, sum) })) : [];
 });
+const energyExampleText = computed(() => energyExamples.value.map(({ sum, rent }) => t('asset_card.energy_example', { diceSum: sum, rent: formatMoney(rent) })).join(', '));
 const settlement = computed(() => (props.view?.rent?.assetId === assetId.value ? props.view?.rent ?? null : null));
 const actionContext = computed(() => (props.view === undefined ? null : { view: props.view, me: props.me ?? null, connected: props.connected ?? false, pending: props.pending ?? [], now: props.now ?? 0 }));
 const controls = computed(() => (assetId.value === undefined || actionContext.value === null ? null : houseControls(actionContext.value, assetId.value)));
@@ -53,40 +54,38 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
       <dt>{{ t('asset_card.owner') }}</dt><dd data-testid="asset-owner">{{ owner ?? t('asset_card.free') }}</dd>
       <dt>{{ t('asset_card.price') }}</dt><dd>{{ formatMoney(cell.asset.price) }}</dd>
       <dt>{{ t('asset_card.cell') }}</dt><dd>{{ cell.index }}</dd>
-      <template v-if="cell.kind === 'monopoly' && view"><dt>{{ t('asset_card.houses') }}</dt><dd data-testid="asset-houses">{{ t('asset_card.4', { value0: houses }) }}</dd></template>
-      <template v-if="terms"><dt>{{ t('asset_card.mortgage') }}</dt><dd data-testid="asset-mortgage">{{ t('asset_card.mortgaged_advance_laps', { value0: formatMoney(terms.advance), value1: terms.remainingLaps }) }}</dd>
+      <template v-if="cell.kind === 'monopoly' && view"><dt>{{ t('asset_card.houses') }}</dt><dd data-testid="asset-houses">{{ t('asset_card.house_count', { houses: houses }) }}</dd></template>
+      <template v-if="terms"><dt>{{ t('asset_card.mortgage') }}</dt><dd data-testid="asset-mortgage">{{ t('asset_card.mortgage_terms', { advance: formatMoney(terms.advance), laps: terms.remainingLaps }) }}</dd>
         <dt>{{ t('asset_card.lap_waits_for') }}</dt><dd data-testid="asset-mortgage-pending">{{ pendingNames || t('asset_card.nobody') }}</dd></template>
       <template v-if="quote?.kind === 'fixed'"><dt>{{ t('common.rent') }}</dt><dd data-testid="asset-rent">{{ formatMoney(quote.amount) }}</dd></template>
     </dl>
     <div v-if="quote?.kind === 'energy'" data-testid="asset-energy">
-      <p>{{ t('asset_card.rent_q_dice', { value0: formatMoney(quote.sumPrices), value1: quote.holdings, value2: quote.groupSize }) }}</p>
-      <p data-testid="energy-examples">
-        <template v-for="(example, i) in energyExamples" :key="example.sum">{{ t('asset_card.dice', { value0: i ? ', ' : '', value1: example.sum, value2: formatMoney(example.rent) }) }}</template>
-      </p>
+      <p>{{ t('asset_card.energy_formula', { sumPrices: formatMoney(quote.sumPrices), holdings: quote.holdings, groupSize: quote.groupSize }) }}</p>
+      <p data-testid="energy-examples">{{ energyExampleText }}</p>
     </div>
-    <p v-if="settlement" data-testid="asset-settlement">{{ t('asset_card.open_rent', { value0: formatMoney(settlement.amount) }) }}<template v-if="settlement.kind === 'energy'"> {{ t('common.dice_sum', { value0: settlement.diceSum }) }}</template></p>
+    <p v-if="settlement" data-testid="asset-settlement">{{ settlement.kind === 'energy' ? t('asset_card.energy_settlement', { amount: formatMoney(settlement.amount), diceSum: settlement.diceSum }) : t('asset_card.settlement', { amount: formatMoney(settlement.amount) }) }}</p>
     <div v-if="controls" data-testid="house-controls">
-      <p v-if="buildsLeft !== null" class="note" data-testid="builds-left">{{ t('asset_card.builds_left_this', { value0: buildsLeft }) }}</p>
+      <p v-if="buildsLeft !== null" class="note" data-testid="builds-left">{{ t('asset_card.builds_remaining', { builds: buildsLeft }) }}</p>
       <div class="house-control">
-        <button data-testid="build-house" :disabled="!controls.build.enabled" @click="send('BuildHouse')">{{ t('asset_card.build_a_house', { value0: formatMoney(controls.build.cost) }) }}</button>
+        <button data-testid="build-house" :disabled="!controls.build.enabled" @click="send('BuildHouse')">{{ t('asset_card.build_action', { cost: formatMoney(controls.build.cost) }) }}</button>
         <span v-if="controls.build.reason" class="reason" data-testid="build-reason">{{ controls.build.reason }}</span>
       </div>
       <div class="house-control">
-        <button data-testid="sell-house" :disabled="!controls.sell.enabled" @click="send('SellHouse')">{{ t('asset_card.sell_a_house', { value0: formatMoney(controls.sell.refund) }) }}</button>
+        <button data-testid="sell-house" :disabled="!controls.sell.enabled" @click="send('SellHouse')">{{ t('asset_card.sell_action', { refund: formatMoney(controls.sell.refund) }) }}</button>
         <span v-if="controls.sell.reason" class="reason" data-testid="sell-reason">{{ controls.sell.reason }}</span>
       </div>
     </div>
     <div v-if="mortgage" data-testid="mortgage-controls">
       <div class="house-control">
-        <button data-testid="mortgage" :disabled="!mortgage.mortgage.enabled" @click="send('Mortgage')">{{ t('asset_card.mortgage_2', { value0: formatMoney(mortgage.mortgage.advance) }) }}</button>
+        <button data-testid="mortgage" :disabled="!mortgage.mortgage.enabled" @click="send('Mortgage')">{{ t('asset_card.mortgage_action', { advance: formatMoney(mortgage.mortgage.advance) }) }}</button>
         <span v-if="mortgage.mortgage.reason" class="reason" data-testid="mortgage-reason">{{ mortgage.mortgage.reason }}</span>
       </div>
       <div class="house-control">
-        <button data-testid="redeem" :disabled="!mortgage.redeem.enabled" @click="send('Redeem')">{{ t('asset_card.redeem', { value0: formatMoney(mortgage.redeem.amount) }) }}</button>
+        <button data-testid="redeem" :disabled="!mortgage.redeem.enabled" @click="send('Redeem')">{{ t('asset_card.redeem_action', { amount: formatMoney(mortgage.redeem.amount) }) }}</button>
         <span v-if="mortgage.redeem.reason" class="reason" data-testid="redeem-reason">{{ mortgage.redeem.reason }}</span>
       </div>
     </div>
     <h3>{{ t('asset_card.other_group_members') }}</h3>
-    <ul><li data-testid="asset-group-member" :data-cell="other.index" v-for="other in others" :key="other.index">{{ t('asset_card.cell_2', { value0: other.asset!.name, value1: formatMoney(other.asset!.price), value2: other.index }) }}</li></ul>
+    <ul><li data-testid="asset-group-member" :data-cell="other.index" v-for="other in others" :key="other.index">{{ t('asset_card.group_member', { name: other.asset!.name, price: formatMoney(other.asset!.price), cell: other.index }) }}</li></ul>
   </section>
 </template>

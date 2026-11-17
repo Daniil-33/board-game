@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { formatMoney } from '../../shared/lib/index';
 
-import { t } from '../../shared/i18n/index';
+import { Translation as I18nT } from 'vue-i18n';
+import { i18n, t } from '../../shared/i18n/index';
 import { computed } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
@@ -14,10 +15,15 @@ const paying = computed(() => props.me !== null && props.view.rent?.payerId === 
 <template>
   <section v-if="view.rent" class="asset-card decision-panel" :aria-label="t('common.rent')" data-testid="rent">
     <h2>{{ t('rent_panel.rent_due') }}</h2>
-    <p data-testid="rent-line">
-      {{ t('rent_panel.owes', { value0: nameOf(view.rent.payerId), value1: nameOf(view.rent.ownerId) }) }} <strong>{{ formatMoney(view.rent.amount) }}</strong> {{ t('rent_panel.for', { value0: asset?.name ?? view.rent.assetId }) }}<template v-if="view.rent.kind === 'energy'"> {{ t('common.dice_sum', { value0: view.rent.diceSum }) }}</template>{{ t('rent_panel.symbol') }} </p>
+    <i18n-t tag="p" data-testid="rent-line" :i18n="i18n.global" :keypath="view.rent.kind === 'energy' ? 'rent_panel.energy_sentence' : 'rent_panel.sentence'">
+      <template #payer>{{ nameOf(view.rent.payerId) }}</template>
+      <template #owner>{{ nameOf(view.rent.ownerId) }}</template>
+      <template #amount><strong data-testid="rent-amount">{{ formatMoney(view.rent.amount) }}</strong></template>
+      <template #asset>{{ asset?.name ?? view.rent.assetId }}</template>
+      <template #diceSum>{{ view.rent.kind === 'energy' ? view.rent.diceSum : '' }}</template>
+    </i18n-t>
     <template v-if="paying">
-      <button class="primary" data-testid="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')"> {{ t('rent_panel.pay_rent_to', { value0: formatMoney(view.rent.amount), value1: nameOf(view.rent.ownerId) }) }}
+      <button class="primary" data-testid="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')"> {{ t('rent_panel.pay', { amount: formatMoney(view.rent.amount), owner: nameOf(view.rent.ownerId) }) }}
       </button>
     </template>
   </section>

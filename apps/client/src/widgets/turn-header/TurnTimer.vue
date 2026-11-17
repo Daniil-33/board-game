@@ -22,7 +22,7 @@ const seconds = computed(() => (props.paused || props.deadline === null ? null :
 <template>
   <div class="timer" :class="{ low: seconds !== null && seconds <= 10 }" data-testid="timer">
     <template v-if="paused">{{ t('turn_timer.paused') }}</template>
-    <template v-else-if="seconds !== null">{{ t('common.s', { value0: formatSeconds(seconds!) }) }}</template>
+    <template v-else-if="seconds !== null">{{ t('common.seconds_remaining', { seconds: formatSeconds(seconds!) }) }}</template>
     <template v-else>{{ t('common.unreported') }}</template>
   </div>
 </template>
