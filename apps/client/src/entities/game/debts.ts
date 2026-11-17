@@ -92,11 +92,6 @@ export function appendNotices(list: DebtNotice[], added: readonly DebtNotice[]):
   if (list.length > NOTICE_LIMIT) list.splice(0, list.length - NOTICE_LIMIT);
 }
 
-export const STEP_KIND_TEXT: Readonly<Record<LiquidationStep['kind'], string>> = {
-  get mortgage() { return t('debts.mortgage'); },
-  get 'sell-house'() { return t('debts.house_sale'); },
-};
-
 /** The asset's projected name, or its id when the board does not list it. */
 export function assetName(board: GeneratedBoard | null | undefined, assetId: string): string {
   return board?.cells.find(c => c.asset?.assetId === assetId)?.asset?.name ?? assetId;

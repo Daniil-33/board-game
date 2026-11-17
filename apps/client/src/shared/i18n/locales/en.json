@@ -8,11 +8,9 @@
     "jail_released": "{player} leaves jail (interim rule)"
   },
   "debts": {
-    "house_sale": "house sale",
     "resigned": "You are out: you resigned.",
     "bankrupt": "You are out: you went bankrupt.",
     "eliminated": "You are out.",
-    "mortgage": "mortgage",
     "mortgage_step": "Tier {tier}: mortgage of {asset}, +{amount}",
     "house_sale_step": "Tier {tier}: house sale of {asset}, +{amount}",
     "spectator_resigned": "You are out: you resigned. Watching the game.",

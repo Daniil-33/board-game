@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 const eslint = new ESLint();
 const cases = [
+  ['src/widgets/board/probe.ts', "s.banner.text = 'Bankrupt';", 'no-restricted-syntax'],
+  ['src/widgets/board/probe.ts', 's.banner.text = `Out: ${player}`;', 'no-restricted-syntax'],
   ['src/pages/game/probe.vue', '<template><i18n-t keypath="missing.probe" /></template>', '@intlify/vue-i18n/no-missing-keys'],
   ['src/widgets/board/probe.ts', "export const caption = 'Raw English caption';", 'no-restricted-syntax'],
   ['src/widgets/board/probe.ts', "label('Caption', 12, 0xffffff);", 'no-restricted-syntax'],

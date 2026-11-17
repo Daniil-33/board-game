@@ -9,6 +9,10 @@ const layers = ['app', 'pages', 'widgets', 'features', 'entities', 'shared'];
 // diagnostics and ordinary Error/RangeError diagnostics are implementation data.
 const rawTextChecks = [
   {
+    selector: "AssignmentExpression[left.property.name='text'] > Literal.right[value=/[A-Za-z]/], AssignmentExpression[left.property.name='text'] > TemplateLiteral.right > TemplateElement[value.raw=/[A-Za-z]/]",
+    message: 'Translate assigned Pixi or presentation text, including single-word captions.',
+  },
+  {
     selector: "Literal[value=/[A-Za-z]{2,}\\s+[A-Za-z]{2,}/]:not(ImportDeclaration > Literal):not(CallExpression[callee.object.name='console'] > Literal):not(NewExpression[callee.name=/^(Error|RangeError|TypeError)$/] > Literal)",
     message: 'Move client-owned display prose to a literal translation key.',
   },
@@ -21,7 +25,7 @@ const rawTextChecks = [
     message: 'Translate Pixi display captions.',
   },
   {
-    selector: "VariableDeclarator[id.name=/^(caption|message|label|text|notice|msg)$/] > Literal.init[value=/[A-Za-z]/], VariableDeclarator[id.name=/^(HOUSE_REASONS|MORTGAGE_REASONS|STEP_KIND_TEXT|ELIMINATION_TEXT)$/] ObjectExpression > Property > Literal.value[value=/[A-Za-z]/]",
+    selector: "VariableDeclarator[id.name=/^(caption|message|label|text|notice|msg)$/] > Literal.init[value=/[A-Za-z]/], VariableDeclarator[id.name=/^(HOUSE_REASONS|MORTGAGE_REASONS|ELIMINATION_TEXT)$/] ObjectExpression > Property > Literal.value[value=/[A-Za-z]/]",
     message: 'Translate presentation strings and reason-map values.',
   },
 ];
