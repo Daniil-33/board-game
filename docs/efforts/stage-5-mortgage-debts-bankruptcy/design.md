@@ -18,6 +18,8 @@ come from the handoff, `ROADMAP.md` stage 5 and `GAME-BREAKDOWN.md`.
 
 ## Interpretations (stated, reported to the CTO)
 
+CTO 2026-11-17: I3, I6 and the C7 representation choices are accepted.
+
 - **I1. Mortgage next to houses.** C1 requires only that the mortgaged asset
   itself has no houses ("evenness still applies to the rest of the group").
   So in a group with houses `[1,1,0]`, the 0-house asset may be mortgaged.

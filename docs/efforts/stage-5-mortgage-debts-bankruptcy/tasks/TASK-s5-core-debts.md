@@ -52,8 +52,8 @@ Product (handoff revision 2 C6-C9, C11; design § "Debt settlement",
      auto }` (the `shortfall` and `paid` fields are removed).
 5. **Bankruptcy** as the design § "Bankruptcy":
    - sell all houses;
-   - `paid = min(debt, cash after sales)` (I3: no mortgages taken; if the
-     CTO answer differs, only this step changes);
+   - `paid = min(debt, cash after sales)` (I3, confirmed by the CTO: no
+     mortgages taken);
    - release every asset (`AssetsReleased reason 'bankrupt'`) and emit
      `PlayerBankrupt { playerId, creditorId, debt, paid, writtenOff }`;
    - `cancelOffersOf`;
@@ -105,8 +105,8 @@ Not in scope:
 
 ## Canonical references
 
-- `docs/efforts/stage-5-mortgage-debts-bankruptcy.md` **revision 2** (docs
-  PR #59, branch `docs/stage-5-rev2`, until it merges).
+- `docs/efforts/stage-5-mortgage-debts-bankruptcy.md` **revision 2** (merged,
+  main `ec11867`).
 - `docs/efforts/stage-5-mortgage-debts-bankruptcy/design.md` (docs PR #58,
   branch `docs/stage-5-tl-design`): Interpretations I3, I4, I6; "Debt
   settlement", "Liquidation order", "Bankruptcy", "Invariants".
