@@ -5,7 +5,7 @@ id: TASK-s4-e2e
 revision: 1
 effort: EFF-stage-4-rent-building
 project: economic-board-game
-source_commit: TBD # main after TASK-s4-server and TASK-s4-client merge
+source_commit: 3edbba9 # main after TASK-s4-server (#54) and TASK-s4-client (#55)
 owner: team-lead
 status: proposed
 ```
@@ -26,7 +26,9 @@ browser clients and asserts against server-projected state in every client:
 4. Rent auto-paid at the turn deadline.
 5. Landing on one's own asset opens nothing.
 6. Building:
-   - building respects evenness and one house per full turn;
+   - building respects evenness and one house per turn (a double's bonus
+     turn is a new turn and allows another house, owner decision
+     2026-11-16);
    - an illegal build is rejected, and its reason is shown in the UI;
    - selling a house works.
 7. The interim shortfall pays the whole balance (the event records the
