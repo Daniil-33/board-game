@@ -157,23 +157,53 @@ the token table.
 
 ## Logos (C6)
 
-- **Storage:** `packages/game-core/src/catalog/logos/`, next to
-  `ua-1.json`.
-  - One file per company id: `<companyId>.svg` preferred, otherwise `.png`
-    no larger than 256 px on the long side and 40 KB.
-  - `logos.json` records `{ companyId: { file, source, sourceUrl, license,
-    retrievedAt } }`.
-- **Code boundary.** game-core code does not import the logos; they are
-  data. The client resolves them with Vite `import.meta.glob(..., { query:
-  '?url', eager: true })` into a `companyId → url` map.
-- **Monogram:** `shared/lib/monogram` takes up to two letters from the
-  company name, on the group gradient.
-- **Sources:**
-  - an official brand or press page, or Wikimedia Commons;
-  - no source, or an unclear one, means a monogram.
+The owner-commissioned set (2026-11-17) covers all 67 catalog ids, and
+replaced the 12 scraped logos in `TASK-vd-logos-set`.
 
-  The coverage list (`logos.json` plus a generated table in the evidence) is
-  part of the completion evidence. Trademark review is out of scope.
+**Storage:** `packages/game-core/src/catalog/logos/`, next to `ua-1.json`.
+- `<companyId>.svg` is for light backgrounds.
+- `<companyId>-dark.svg` is for dark backgrounds, and it is **mandatory**.
+- SVG only: `viewBox="0 0 64 64"`, transparent, outlines.
+- The directory also holds `README.md`, `FONT-LICENSE.txt` (the
+  DejaVu-derived letter geometry; it ships with the files) and
+  `.gitattributes`.
+
+**Manifest `logos.json`.** Exactly these five fields per id: `{ file:
+"<id>.svg", darkFile: "<id>-dark.svg", monogram, source: "owner-commissioned
+set, 2026-11-17", license: "see FONT-LICENSE.txt" }`. The validation test
+asserts the key set, file existence, no orphan files, at most 40 KB per file,
+the viewBox and SVG safety.
+
+**Drop-in.** The client resolves files only by the naming convention, with
+Vite `import.meta.glob(..., { query: '?url', eager: true })` into a
+`companyId → { light, dark }` map. A replacement set with the same names
+needs no code change.
+
+**Code boundary.** game-core code does not import the logo files.
+
+**Rendering (board task).**
+- Light cells: the light file. The board does not need a plate for this
+  set, but a plate behind the logo is still allowed.
+- Dark surfaces ("Мои активы", the dark side panels): the `-dark` file.
+- A file that fails to load falls back to the manifest `monogram` text on
+  the group gradient.
+
+**Two sets (owner, 2026-11-17 evening).**
+- `logos/brand/` holds the v2 brand icons, the default.
+- `logos/geometric/` holds the v1 set, the fallback. The brand set's
+  `microfinance-4` uses the geometric icon.
+- The runtime config `logoSet` (`LOGO_SET`) selects the set. `brand` is
+  the default in every environment, production included (owner decision
+  2026-11-17). `geometric` is only a fallback.
+- Logos are always lazily loaded URLs and never inlined into JS. See
+  `TASK-vd-logos-brand`.
+- The brand set is kept pixel-identical after svgo: about 2.1 MB raw and
+  0.77 MB gzip in total, with a 2.2 MB raw cap and recorded per-file
+  exceptions. A game fetches only its ~28 companies. nginx serves SVG
+  gzipped, and hashed assets are cached as immutable.
+
+**Feed ordering (REV-vd-chat-2 RVW-002).** The event feed merges live items
+by arrival order, and history items (from `Welcome`) by server `at`.
 
 ## Event log and chat (C7)
 
