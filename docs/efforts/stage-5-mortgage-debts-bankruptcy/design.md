@@ -23,6 +23,14 @@ come from the handoff, `ROADMAP.md` stage 5 and `GAME-BREAKDOWN.md`.
   So in a group with houses `[1,1,0]`, the 0-house asset may be mortgaged.
   The group then cannot be built on until it is redeemed (stage 4 hook).
   House rent does not depend on group completeness, so it is unaffected.
+  If that mortgage expires, the freed asset returns to the bank and the
+  siblings keep their houses (≤ 1 each, by evenness) and their house rent.
+  The stage 4 invariant "houses only on wholly owned groups" becomes:
+  houses only on monopoly assets owned by an active player, with group
+  evenness (unowned assets count as 0). Building still requires the whole
+  group, unmortgaged. Selling requires ownership and evenness. Doubling
+  still requires one owner of the whole group. (TL decision 2026-11-17, on
+  a TASK-s5-core-mortgage question.)
 - **I2. "Sale proceeds" in the loss (C6) are house-sale refunds only.**
   Mortgage advances count toward covering the debt but are not in the loss,
   because they must be repaid. Their cost is the lost rent term.
