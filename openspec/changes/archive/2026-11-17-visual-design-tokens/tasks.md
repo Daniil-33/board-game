@@ -31,13 +31,13 @@
 - [x] 3.1 Translate every locale key, set Russian default/fallback, preserve English and hidden selector path; test parity and translated screens (localization: Discovered English locale, Complete unchanged English keys).
 - [x] 3.2 Update Intl money and time wrappers and test Russian grouping and English formatting (localization: Shared locale formatting).
 - [x] 3.3 Mechanically adopt shared tokens and controls in existing client screens; test existing interactions and disabled reasons (design-system: Shared design tokens, Accessible shared primitives).
-- [ ] 3.4 Update browser and component text assertions and run affected tests (localization: Complete unchanged English keys).
+- [x] 3.4 Update browser and component text assertions and run affected tests (localization: Complete unchanged English keys).
 
 ## 4. Integration evidence
 
 - [x] 4.1 Add dev-only design-system page and verify production excludes it; capture both viewport screenshots next to the reference frame in the evidence directory (design-system: Contrast and evidence).
 - [x] 4.2 Run build, unit tests, client lint, bundle and strict OpenSpec validation; compare gzip sizes with TASK-vd-fsd baseline and record evidence.
-- [ ] 4.3 Inspect diff against the handoff, run git diff --check against base, and verify browser behavior and CI on the PR head.
+- [x] 4.3 Inspect diff against the handoff, run git diff --check against base, and verify browser behavior and CI on the PR head.
 
 ## Workflow follow-up
 
