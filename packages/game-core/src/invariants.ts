@@ -11,7 +11,7 @@ export type InvariantName =
   | 'player-count-for-phase'
   | 'rng-well-formed'
   | 'phase-state-shape'
-  | 'acquisition' | 'rent-building'
+  | 'acquisition' | 'rent-building' | 'mortgages'
   | 'ring-position' | 'board-shape' | 'balances';
 
 /**
@@ -68,6 +68,7 @@ export function checkInvariants(state: GameState): void {
   checkPhaseShape(state);
   checkAcquisition(state);
   checkRentBuilding(state);
+  checkMortgages(state);
 }
 
 function shape(detail: string): never {
@@ -86,6 +87,13 @@ function checkPhaseShape(state: GameState): void {
   }
   const ids = members.filter((p) => !state.eliminated.some((e) => e === p));
   const finished = state.phase === 'finished';
+  const validTime = (at: number) => Number.isSafeInteger(at) && at >= 0;
+  if (finished ? state.finishedAt === null || !validTime(state.finishedAt) : state.finishedAt !== null) shape('finishedAt must be a timestamp exactly in finished');
+  if (!Array.isArray(state.eliminations) || state.eliminations.length !== state.eliminated.length) shape('eliminations must match eliminated');
+  for (const [i, e] of state.eliminations.entries()) {
+    if (!e || e.playerId !== state.eliminated[i] || !['resigned', 'bankrupt'].includes(e.reason) || !validTime(e.at) ||
+      (e.reason === 'resigned' ? e.creditorId !== null : e.creditorId === null || e.creditorId === e.playerId || !members.includes(e.creditorId))) shape('invalid elimination record');
+  }
   if (finished) {
     if (ids.length !== 1 || state.winner !== ids[0]) shape('finished must have exactly one active player equal to winner');
   } else if (state.winner !== null) shape('winner must be null outside finished');
@@ -173,7 +181,7 @@ function checkAcquisition(state: GameState): void {
   if (!state.owners || typeof state.owners !== 'object' || Array.isArray(state.owners)) bad('Invalid owners');
   const assets = state.board?.cells.flatMap(c => c.asset ? [c.asset.assetId] : []) ?? [];
   for (const [assetId, owner] of Object.entries(state.owners)) {
-    if (!assets.includes(assetId as typeof assets[number]) || !state.players.some(p => p.id === owner)) bad('Unknown asset or owner');
+    if (!assets.includes(assetId as typeof assets[number]) || !state.players.some(p => p.id === owner) || state.eliminated.includes(owner)) bad('Unknown asset or owner');
   }
   const p = state.purchase;
   const a = state.auction;
@@ -208,7 +216,7 @@ function checkRentBuilding(state: GameState): void {
     const cell = state.board?.cells.find(c => c.asset?.assetId === id);
     if (!cell?.asset || cell.kind !== 'monopoly' || !Object.hasOwn(state.owners, id) || !Number.isInteger(count) || count < 1 || count > 4) return bad('Invalid house entry');
     const group = state.board!.cells.filter(c => c.asset?.groupId === cell.asset!.groupId);
-    if (group.some(c => state.owners[c.asset!.assetId] !== state.owners[id])) bad('Houses without whole group');
+    if (state.eliminated.includes(state.owners[id]!)) bad('Houses owned by eliminated player');
     const counts = group.map(c => state.houses[c.asset!.assetId] ?? 0);
     if (Math.max(...counts) - Math.min(...counts) > 1) bad('Uneven houses');
   }
@@ -220,5 +228,16 @@ function checkRentBuilding(state: GameState): void {
     if (!cell?.asset || cell.asset.assetId !== r.assetId || state.positions[r.payerId] !== r.cell || state.owners[r.assetId] !== r.ownerId || r.ownerId === r.payerId || state.eliminated.includes(r.ownerId) || state.eliminated.includes(r.payerId)) bad('Invalid rent participants or asset');
     if (!Number.isSafeInteger(r.amount) || r.amount <= 0 || r.amount % 10 !== 0) bad('Invalid rent amount');
     if (r.kind !== (cell!.kind === 'monopoly' ? 'regular' : cell!.kind) || (r.kind === 'energy' ? !Number.isInteger(r.diceSum) || r.diceSum! < 2 || r.diceSum! > 12 : r.diceSum !== null)) bad('Invalid rent kind or dice');
+  }
+}
+
+function checkMortgages(state: GameState): void {
+  const bad = (detail: string): never => { throw new InvariantViolationError('mortgages', detail); };
+  if (!state.mortgages || typeof state.mortgages !== 'object' || Array.isArray(state.mortgages)) bad('Invalid mortgage record');
+  const active = state.order ?? state.players.map(p => p.id).filter(p => !state.eliminated.includes(p));
+  for (const [id, term] of Object.entries(state.mortgages)) {
+    const asset = state.board?.cells.find(c => c.asset?.assetId === id)?.asset;
+    if (!asset || !['playing', 'finished'].includes(state.phase) || !Object.hasOwn(state.owners, id) || !active.includes(state.owners[id]!) || (state.houses[id] ?? 0) !== 0) bad('Invalid mortgage ownership or houses');
+    if (!term || term.advance !== 10 * Math.floor(asset!.price / 20) || !Number.isInteger(term.lapsCompleted) || term.lapsCompleted < 0 || term.lapsCompleted >= 8 || !Array.isArray(term.pending) || new Set(term.pending).size !== term.pending.length || term.pending.some(p => !active.includes(p))) bad('Invalid mortgage term');
   }
 }

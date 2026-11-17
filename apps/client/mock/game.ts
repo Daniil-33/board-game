@@ -35,6 +35,7 @@ export class MockGame {
     revision: 1 as Revision,
     rulesVersion: CURRENT_RULES_VERSION,
     phase: 'lobby',
+    mortgages: {}, eliminations: [], finishedAt: null, result: null,
     houses: {}, rent: null, rentQuotes: {}, owners: {}, purchase: null, auction: null,
     board: generateBoard(seedRng(42)).board,
     economy: null,

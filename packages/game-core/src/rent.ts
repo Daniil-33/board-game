@@ -4,8 +4,8 @@ import type { GameCommand, GameEvent } from './engine.js';
 import { creditBalance, debitBalance } from './money.js';
 import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
 
-/** Stage 5 replaces this hook; all rent and building callers share it. */
-export function isMortgaged(_state: GameState, _assetId: AssetId): boolean { return false; }
+/** All rent and building callers share the persisted mortgage flag. */
+export function isMortgaged(state: GameState, assetId: AssetId): boolean { return Object.hasOwn(state.mortgages, assetId); }
 export type RentQuote = { readonly kind: 'fixed'; readonly amount: Money } |
   { readonly kind: 'energy'; readonly sumPrices: Money; readonly groupSize: number; readonly holdings: number };
 export const quantumRatio = (numerator: number, denominator: number): Money => 10 * Math.floor(numerator / (10 * denominator)) as Money;
@@ -16,7 +16,7 @@ function quoteFor(state: GameState, assetId: AssetId): RentQuote {
   const cell = state.board?.cells.find(c => c.asset?.assetId === assetId);
   const owner = Object.hasOwn(state.owners, assetId) ? state.owners[assetId] : undefined;
   const zero: RentQuote = { kind: 'fixed', amount: 0 as Money };
-  if (!cell?.asset || !owner || state.eliminated.includes(owner) || isMortgaged(state, assetId)) return zero;
+  if (!cell?.asset || !owner || isMortgaged(state, assetId)) return zero;
   const group = state.board!.cells.filter(c => c.asset?.groupId === cell.asset!.groupId);
   const holdings = group.filter(c => state.owners[c.asset!.assetId] === owner && !isMortgaged(state, c.asset!.assetId)).length;
   if (cell.kind === 'energy') return { kind: 'energy', sumPrices: group.reduce((n,c) => n + c.asset!.price, 0) as Money, groupSize: group.length, holdings };

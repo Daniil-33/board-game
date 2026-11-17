@@ -1,3 +1,4 @@
+import { processMortgageBoundary } from './mortgage.js';
 import { offerRent, settleRent } from './rent.js';
 import { offerPurchase, openAuction, type PurchaseAuctionEvent, type FinishAuction } from './purchase-auction.js';
 import type { BalanceChanged } from './money.js';
@@ -118,16 +119,18 @@ export function closeTurn(
     ...settled.events,
     { type: 'TurnEnded', payload: { turnId: turn.turnId, playerId: turn.playerId, reason } },
   ];
+  if (resignation?.nextPlayer === null) return { state: { ...settled.state, turn: null }, events };
+  const boundary = processMortgageBoundary(settled.state, turn.playerId);
+  events.push(...boundary.events);
   let next: Step;
   if (resignation !== undefined) {
-    if (resignation.nextPlayer === null) return { state: { ...settled.state, turn: null }, events };
-    next = startTurn(settled.state, resignation.nextPlayer, false, 0, now);
+    next = startTurn(boundary.state, resignation.nextPlayer, false, 0, now);
   } else if (turn.pendingBonus) {
-    next = startTurn(settled.state, turn.playerId, true, turn.doublesStreak, now);
+    next = startTurn(boundary.state, turn.playerId, true, turn.doublesStreak, now);
   } else {
     const order = settled.state.order!;
     const following = order[(order.indexOf(turn.playerId) + 1) % order.length]!;
-    next = startTurn(settled.state, following, false, 0, now);
+    next = startTurn(boundary.state, following, false, 0, now);
   }
   return { state: next.state, events: [...events, ...next.events] };
 }

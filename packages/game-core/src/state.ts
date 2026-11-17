@@ -97,7 +97,23 @@ export interface RentSettlement {
   readonly diceSum: number | null;
 }
 
+export interface Mortgage {
+  readonly advance: Money;
+  readonly lapsCompleted: number;
+  readonly pending: readonly PlayerId[];
+}
+
+export interface Elimination {
+  readonly playerId: PlayerId;
+  readonly reason: 'resigned' | 'bankrupt';
+  readonly at: Timestamp;
+  readonly creditorId: PlayerId | null;
+}
+
 export interface GameState {
+  readonly mortgages: Readonly<Record<string, Mortgage>>;
+  readonly eliminations: readonly Elimination[];
+  readonly finishedAt: Timestamp | null;
   readonly houses: Readonly<Record<string, number>>;
   readonly rent: RentSettlement | null;
   readonly owners: Readonly<Record<string, PlayerId>>;
@@ -136,6 +152,7 @@ export const MAX_PLAYERS = 6;
 /** The state every game starts from. */
 export function genesis(): GameState {
   return {
+    mortgages: {}, eliminations: [], finishedAt: null,
     owners: {}, purchase: null, auction: null, houses: {}, rent: null,
     revision: 0 as Revision,
     board: null, economy: null, balances: {},
