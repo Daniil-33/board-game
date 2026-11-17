@@ -1,8 +1,8 @@
 # Stage 5 mortgage, debts and bankruptcy: Team Lead technical design
 
 Effort: `EFF-stage-5-mortgage-debts-bankruptcy`. Handoff
-`docs/efforts/stage-5-mortgage-debts-bankruptcy.md` revision 1 (docs PR #57),
-accepted by the Team Lead on 2026-11-17 at main `dcd39b3`. Criterion numbers
+`docs/efforts/stage-5-mortgage-debts-bankruptcy.md` revision 2 (revision 1 merged in PR #57 as `044fdf9`;
+revision 2 in PR #59), accepted by the Team Lead on 2026-11-17. Criterion numbers
 (C1..C15) refer to the handoff. This document holds only the decisions
 delegated to the Team Lead and the interpretations it states; product rules
 come from the handoff, `ROADMAP.md` stage 5 and `GAME-BREAKDOWN.md`.
@@ -31,10 +31,7 @@ come from the handoff, `ROADMAP.md` stage 5 and `GAME-BREAKDOWN.md`.
   group, unmortgaged. Selling requires ownership and evenness. Doubling
   still requires one owner of the whole group. (TL decision 2026-11-17, on
   a TASK-s5-core-mortgage question.)
-- **I2. "Sale proceeds" in the loss (C6) are house-sale refunds only.**
-  Mortgage advances count toward covering the debt but are not in the loss,
-  because they must be repaid. Their cost is the lost rent term.
-  GAME-BREAKDOWN says "выручка от продажи".
+- **I2.** Withdrawn: the loss function was removed in handoff revision 2.
 - **I3. Bankruptcy takes no mortgages (C9).** "Proceeds" are the resale of
   all houses. The creditor receives `min(debt, cash + house refunds)`. Since
   full liquidation (with mortgages) could not cover the debt, this always
@@ -136,134 +133,78 @@ The counter belongs to each mortgage, so it moves with the asset in stage 7.
 - **Projection.** `remainingLaps = 8 − lapsCompleted` and `pending` (who
   still has to move this lap).
 
-### Debt settlement (C6-C8)
+### Debt settlement (C6-C8, handoff revision 2)
 
 One function, `settleDebt(state, { payerId, creditorId, amount, cause },
-now)`, is used by `PayRent` and by `settleMandatory` (stage 6 reuses it). The
-payment is the rent amount.
+now)`, is used by `PayRent` and by `settleMandatory` (stage 6 reuses it).
 
-1. If `cash ≥ amount`, pay as in stage 4.
-2. Otherwise `deficit = amount − cash`. If
-   `maxProceeds(payer) = Σ refunds of all houses + Σ advances of all
-   unmortgaged assets` is below the deficit, the payer goes bankrupt (below).
-3. Otherwise `planLiquidation` returns the optimal plan. The core applies its
-   actions in the plan's canonical order:
-   - house sales emit `HouseSold { …, auto: true }` with `BalanceChanged`
-     reason `house-sale`;
-   - mortgages emit `AssetMortgaged { …, auto: true }` with `BalanceChanged`
-     reason `mortgage`.
+1. If `cash ≥ amount`, pay from cash only.
+2. If `cash + Σ resale of every house + Σ advance of every non-mortgaged
+   asset < amount`, the payer goes bankrupt at once (below).
+3. Otherwise run **liquidation**, step by step. After every single step
+   (one mortgage or one house sale), stop as soon as `cash ≥ amount`, then
+   pay.
 
-   It then emits `LiquidationApplied { payerId, creditorId, debt, cash,
-   proceeds, loss, surplus, actions }`, pays, and emits `RentPaid`.
+`RentPaid` becomes `{ payerId, ownerId, assetId, amount, auto }`. The stage 4
+`shortfall` and `paid` fields and the interim shortfall rule are removed.
+Liquidation is atomic, inside the one command that pays.
 
-`RentPaid` becomes `{ payerId, ownerId, assetId, amount, auto }`; the stage 4
-`shortfall` and `paid` fields are removed. The interim shortfall rule is
-deleted. Liquidation is atomic, inside the one command that pays.
+### Liquidation order (C7, owner decision 2026-11-17)
 
-### Liquidation search and proof of optimality (C6, C7)
+**Definitions.**
+- **Complete group:** one of the payer's groups that they wholly own:
+  - a monopoly group;
+  - all 4 logistics assets;
+  - both energy assets.
 
-> **Superseded (2026-11-17).** The owner replaces C6-C7 with a fixed tiered
-> priority (handoff revision 2, pending). This section and I2 are kept only
-> as history; `TASK-s5-planner` is parked. The design will be revised
-> against revision 2.
+  Mortgaged assets count toward completeness, as for doubling.
+- **Current rent of an asset:** `rentFor(state, assetId, 7)` in the
+  **current** state (dice sum 7 for energy; 0 when mortgaged). It is
+  recomputed before every step, so mortgaging one logistics asset changes
+  the order of the rest.
+- **Asset order key:** `(current rent, price, assetId)`, ascending.
 
-**Model.** The payer `P`'s assets are partitioned into rent groups:
-- each monopoly group;
-- the logistics group;
-- the energy group.
+**Steps.**
+- **Tier 1.** While cash < debt: mortgage the first asset by asset order
+  key among the non-mortgaged, **bare** (0-house) assets outside complete
+  groups.
+- **Tier 2.** While cash < debt: mortgage the first asset by asset order
+  key among the non-mortgaged bare assets inside complete groups.
+- **Tier 3.** Run while cash < debt and any house remains. It covers every
+  group with houses (complete, or left partial by an I1 expiry):
+  1. **Choose the group:** the lowest group key `(Σ current rent of the
+     group's built assets, Σ price of those assets, groupId)`. Built
+     assets are those with houses; the price sum is the "cheapest built
+     group" reading.
+  2. **Inside the group,** sell one house from the most built asset (ties by
+     asset order key).
+  3. If that asset is now bare, mortgage it immediately, before any further
+     sale.
+  4. Repeat inside the same group until it has no houses, then choose the
+     next group.
 
-An **option** for group `G` is a final configuration of `P`'s assets in `G`:
-- houses `h'` with `h' ≤ h` per asset and evenness (`max − min ≤ 1`) when
-  the group has houses;
-- mortgage flags `m'`, where an asset may become mortgaged only if
-  `h'_a = 0`, and existing mortgages stay.
+  After tier 2, every bare asset is already mortgaged, so tier 3 mortgages
+  only the assets it strips.
+- The stop condition is checked after every single step. If a sale covers
+  the debt and leaves its asset bare, liquidation stops and that asset is
+  **not** mortgaged.
 
-Every even `h' ≤ h` is reachable by legal single sales, since you always
-sell from a current maximum that is still above its target. A target with
-`cur_i > target_i` but no such maximum would contradict the target's
-evenness. So options are exactly the reachable final states. "Keep
-everything" is option 0 of every group.
+**Why the order is total.** Every choice ends in `assetId` / `groupId`,
+which are unique. The step-2 bankruptcy check guarantees that the tiers
+cover the debt before every asset is exhausted.
 
-**Per option, all in quanta:**
-- `proceeds = Σ sold houses × refund + Σ new advances`;
-- `loss = Σ sold houses × (cost − refund) + 8 × (Rref_G(before) −
-  Rref_G(after))`;
-- `affected` = the number of assets whose houses or mortgage changed.
+**Events.** Each step emits its normal event with `auto: true`:
+- `AssetMortgaged`, with `BalanceChanged` reason `mortgage`;
+- `HouseSold`, with `BalanceChanged` reason `house-sale`.
 
-**Reference rent** `Rref_G(config) = Σ rentFor` over `P`'s assets in `G`
-under that configuration, with the stage 4 formulas, dice sum 7 for energy,
-and 0 for a mortgaged asset. Group effects (doubling, which counts mortgaged
-assets; the logistics and energy holdings, which count only non-mortgaged
-ones) are inside `Rref_G`.
+Then `LiquidationApplied { payerId, creditorId, debt, cashBefore, raised,
+steps: [{ tier, kind: 'mortgage' | 'sell-house', assetId, amount }] }`,
+then the payment and `RentPaid`.
 
-**Separability.** A rent formula reads only:
-- the asset's own houses and mortgage;
-- ownership and mortgages within its own group;
-- the dice sum.
+**Interpretation I6 (reported).** Tiers 1-2 consider only bare assets.
+An asset with houses outside a complete group can exist only after an I1
+expiry; it is reached in tier 3.
 
-Other players' assets do not change. So the total loss, proceeds and
-`affected` are sums of per-group terms, and the groups' option sets are
-independent.
-
-**Objective.** Over all option vectors with `Σ proceeds ≥ deficit`, minimize
-lexicographically:
-1. `Σ loss`;
-2. `surplus = Σ proceeds − deficit`;
-3. `Σ affected`;
-4. the **id key**: the vector of per-group canonical option ranks, groups
-   in board order of their first cell. Within a group, options are ranked
-   by the per-asset vector `(housesSold, newlyMortgaged ? 1 : 0)` over the
-   group's assets in board order, compared lexicographically, smallest
-   first.
-
-**Algorithm: exact dynamic programming over exact proceeds.**
-- Process the groups in board order with a table indexed by the exact
-  proceeds sum `p` (in quanta, `0..maxProceeds`).
-- Each cell keeps the lexicographic minimum of `(Σ loss, Σ affected, id-key
-  prefix)` and a back-pointer.
-- At the end, take `min over p ≥ deficit` of `(loss, p − deficit, affected,
-  id key)`.
-
-**Why this is exact:**
-- `loss` and `affected` are additive.
-- For two partial vectors with the same `p`, every completion adds the same
-  terms to both and gives the same final surplus, so the lexicographically
-  smaller prefix stays smaller (the Bellman principle for lexicographic
-  sums).
-- The id key is a fixed-length vector compared position by position in
-  processing order, so a smaller prefix with equal additive keys never
-  loses.
-- `p` is kept exactly (not capped), so the surplus is exact.
-- No option and no `p` is pruned.
-
-**Size and time.**
-- Options per group: at most a few hundred (a 3-asset group at 4 houses has
-  29 even vectors, times the mortgage choices of 0-house assets).
-- `maxProceeds/10` is at most about 10⁴.
-- About 10 groups × 10² options × 10⁴ cells ≈ 10⁷ steps.
-- Target: the worst case (one player owns all 28 assets with 4 houses on
-  every monopoly asset, with a deficit just under and just over
-  `maxProceeds`) runs in ≤ 100 ms measured. The test asserts < 1 s on CI to
-  avoid flakes and logs the measured time.
-
-**Action order of a plan.**
-- House sales group by group in board order. Each sale is taken from the
-  current maximum, ties broken by board order, so every intermediate state
-  is legal.
-- Then mortgages in board order.
-- The emitted events replay through the normal reducers.
-
-**Brute-force reference (tests).**
-- Breadth-first search from the start position over **single legal
-  actions** (sell one house, mortgage one 0-house asset) gives every
-  reachable final state.
-- For each final state, evaluate the objective directly: loss from the full
-  `rentFor` on the whole resulting `GameState` (not per group), proceeds,
-  surplus, affected, id key. Pick the minimum.
-- Compare it with `planLiquidation` on many seeded generated positions
-  (small portfolios: up to 4 groups and 3 houses) and on hand-written edge
-  cases: ties, surplus tie-breaks, doubling loss, logistics/energy holdings,
-  exact cover, and "only mortgages".
 
 ### Bankruptcy (C9) and resignation (C10)
 
@@ -380,18 +321,14 @@ Functional only (C13):
 ## Tasks and order
 
 ```
-TASK-s5-planner (pure liquidation search) ─┐
-                                           ├─> TASK-s5-core-debts ─┬─> TASK-s5-server ─┐
-TASK-s5-core-mortgage (core-7 mortgage) ───┘                       └─> TASK-s5-client ─┴─> TASK-s5-e2e
+TASK-s5-core-mortgage (core-7 mortgage) ──> TASK-s5-core-debts ─┬─> TASK-s5-server ─┐
+                                                                 └─> TASK-s5-client ─┴─> TASK-s5-e2e
 ```
 
-- **Planner and core-mortgage start now, in parallel.** The planner is a
-  new pure module with an injected rent function and touches no existing
-  file except one `index.ts` export line. Core-mortgage owns the state and
-  rules changes. The planner merges first or second; core-mortgage rebases
-  the `index.ts` export if both touch it.
-- Core-debts wires the planner to the real `rentFor`, then adds
-  `settleDebt`, bankruptcy and game end.
+- `TASK-s5-planner` (the exhaustive search) is superseded by revision 2 and
+  stays parked. Its work is never merged.
+- Core-debts starts after core-mortgage merges. It adds `settleDebt`, the
+  tiered liquidation, bankruptcy and game end.
 - Server and client run in parallel after core-debts. The server merges
   first and the client rebases.
 - At most two Engineers at a time.
@@ -403,7 +340,8 @@ Per task: an independent review, and green CI on the exact head (`ci`,
 
 Effort completion (the handoff list):
 - the 7 browser scenarios with 3 clients;
-- planner brute-force comparison and the measured worst-case time;
+- liquidation order tests for every tier boundary, the immediate
+  bankruptcy check and the stop condition;
 - replay tests for the new rules;
 - `openspec validate --all --strict`;
 - green CI on the final main, with staging serving the final SHA;
