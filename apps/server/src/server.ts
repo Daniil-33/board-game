@@ -13,7 +13,7 @@ import { lobbyRoutes } from './lobby/routes.js';
 import { createLobbyService } from './lobby/service.js';
 import { consoleLogger, type Logger } from './logger.js';
 import type { RoomManager } from './rooms/types.js';
-import type { GameConnection } from './ws/connection.js';
+import type { ConnectionDeps, GameConnection } from './ws/connection.js';
 import { ConnectionRegistry } from './ws/registry.js';
 import { registerGameSocket } from './ws/routes.js';
 
@@ -28,6 +28,8 @@ export interface ServerDeps {
   readonly logger?: Logger;
   /** Default `HELLO_TIMEOUT_MS`. */
   readonly helloTimeoutMs?: number;
+  /** Tests only: replaces the per-viewer event filter of the game socket. */
+  readonly projectEvents?: ConnectionDeps['projectEvents'];
 }
 
 /**
@@ -56,6 +58,7 @@ export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
     registry: new ConnectionRegistry<GameConnection>(),
     logger,
     ...(deps.helloTimeoutMs !== undefined ? { helloTimeoutMs: deps.helloTimeoutMs } : {}),
+    ...(deps.projectEvents !== undefined ? { projectEvents: deps.projectEvents } : {}),
   });
   if (enableFixtures) {
     const { registerFixtureLoader } = await import('./test-fixture-loader.js');

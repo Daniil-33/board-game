@@ -113,7 +113,7 @@ it('rejects a malformed mortgage payload and a protocol 4 Hello', async () => {
   old.send({ t: 'Hello', protocolVersion: 4, token: g.guests[0]!.token, gameId: g.id, lastRevision: null });
   expect(await old.nextOf('Error')).toMatchObject({ code: 'PROTOCOL_VERSION_UNSUPPORTED' });
   await old.whenClosed();
-  expect(PROTOCOL_VERSION).toBe(5);
+  expect(PROTOCOL_VERSION).toBe(6);
 });
 
 it('expires a mortgage at the turn boundary and frees the asset on every guest', async () => {

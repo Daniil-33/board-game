@@ -1,4 +1,6 @@
 import type { CommandId, GameCommand, GameEngine, GameEvent, GameState, Revision } from '@game/game-core';
+import type { ChatRejectReason } from '@game/protocol';
+import type { StoredChatMessage, StoredHistory } from '../db/game-store.js';
 
 export type Engine = GameEngine<GameState, GameCommand, GameEvent>;
 
@@ -39,7 +41,24 @@ export type RoomEvent =
   | { readonly kind: 'resync'; readonly revision: Revision; readonly state: GameState }
   | { readonly kind: 'failed'; readonly reason: string }
   /** The room was closed by a command submitted with `closeRoom`; it follows that command's `update`. */
-  | { readonly kind: 'closed' };
+  | { readonly kind: 'closed' }
+  /** A chat message was stored; emitted before its sender is answered. */
+  | { readonly kind: 'chat'; readonly message: StoredChatMessage };
+
+export type ChatResult =
+  | { readonly ok: true; readonly message: StoredChatMessage }
+  | { readonly ok: false; readonly reason: ChatRejectReason };
+
+export type AttachResult =
+  | {
+      readonly ok: true;
+      /** The persisted state the history ends at. */
+      readonly state: GameState;
+      /** Unprojected: the caller filters events for its viewer. */
+      readonly history: StoredHistory;
+      readonly unsubscribe: () => void;
+    }
+  | { readonly ok: false };
 
 export interface SubmitOptions {
   /**
@@ -66,6 +85,19 @@ export interface Room {
   submit(command: GameCommand, options?: SubmitOptions): Promise<RoomResult>;
   /** `listener` runs after commit, in revision order. Returns unsubscribe. */
   subscribe(listener: (event: RoomEvent) => void): () => void;
+  /**
+   * One step of the room's queue: read the recent history up to the
+   * persisted state and subscribe `listener`, so every later commit or chat
+   * message reaches the listener and none is also in the history. `ok: false`
+   * when the room is not live or the history could not be read. Never rejects.
+   */
+  attach(listener: (event: RoomEvent) => void): Promise<AttachResult>;
+  /**
+   * Handle one chat message on the room's queue, after the commands queued
+   * before it: member, text and rate checks, store, emit `chat`, resolve.
+   * Never rejects.
+   */
+  chat(authorId: string, text: string): Promise<ChatResult>;
 }
 
 export interface RoomManager {

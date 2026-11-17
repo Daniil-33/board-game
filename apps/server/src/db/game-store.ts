@@ -21,6 +21,21 @@ export interface AppendOptions {
   readonly snapshot: GameState | null;
 }
 
+/** A stored chat message, as the protocol carries it. */
+export interface StoredChatMessage {
+  readonly seq: number;
+  readonly authorId: string;
+  readonly text: string;
+  /** Epoch milliseconds. */
+  readonly at: number;
+}
+
+/** What `Welcome.history` is built from, both oldest first. */
+export interface StoredHistory {
+  readonly entries: readonly LogEntry[];
+  readonly chat: readonly StoredChatMessage[];
+}
+
 /** A stored row that cannot be a log entry or snapshot of its game. */
 export class CorruptGameDataError extends Error {
   constructor(gameId: string, detail: string, options?: { cause?: unknown }) {
@@ -41,6 +56,15 @@ export interface GameStore {
   appendEntry(gameId: string, entry: LogEntry, options: AppendOptions): Promise<void>;
   /** Idempotent: a snapshot that already exists for `state.revision` is kept. */
   writeSnapshot(gameId: string, state: GameState): Promise<void>;
+  /** Highest stored chat `seq` of the room, 0 when there is none. */
+  lastChatSeq(gameId: string): Promise<number>;
+  /** Insert one chat message; a taken `(room, seq)` rejects with a unique violation. */
+  appendChat(gameId: string, message: StoredChatMessage): Promise<void>;
+  /**
+   * One consistent read of the last `limit` log entries with `revision <=
+   * maxRevision` and the last `limit` chat messages, both oldest first.
+   */
+  loadHistory(gameId: string, maxRevision: number, limit: number): Promise<StoredHistory>;
 }
 
 /**
@@ -180,6 +204,63 @@ export function createGameStore(db: Kysely<Database>): GameStore {
 
     async writeSnapshot(gameId, state) {
       await insertSnapshot(db, gameId, state);
+    },
+
+    async lastChatSeq(gameId) {
+      const row = await db
+        .selectFrom('chat_messages')
+        .select((eb) => eb.fn.max('seq').as('seq'))
+        .where('room_id', '=', gameId)
+        .executeTakeFirst();
+      return row?.seq ?? 0;
+    },
+
+    async appendChat(gameId, message) {
+      await db
+        .insertInto('chat_messages')
+        .values({
+          room_id: gameId,
+          seq: message.seq,
+          author_id: message.authorId,
+          text: message.text,
+          created_at: new Date(message.at),
+        })
+        .execute();
+    },
+
+    async loadHistory(gameId, maxRevision, limit) {
+      const { entries, chat } = await db
+        .transaction()
+        .setIsolationLevel('repeatable read')
+        .setAccessMode('read only')
+        .execute(async (trx) => {
+          const entries = await trx
+            .selectFrom('game_log')
+            .select(['revision', 'entry'])
+            .where('game_id', '=', gameId)
+            .where('revision', '<=', maxRevision)
+            .orderBy('revision', 'desc')
+            .limit(limit)
+            .execute();
+          const chat = await trx
+            .selectFrom('chat_messages')
+            .select(['seq', 'author_id', 'text', 'created_at'])
+            .where('room_id', '=', gameId)
+            .orderBy('seq', 'desc')
+            .limit(limit)
+            .execute();
+          return { entries, chat };
+        });
+      for (const row of entries) {
+        const entry: unknown = row.entry;
+        if (!isRecord(entry) || entry.revision !== row.revision || !Array.isArray(entry.events) || typeof entry.now !== 'number') {
+          throw new CorruptGameDataError(gameId, `log row ${row.revision} does not match its entry`);
+        }
+      }
+      return {
+        entries: entries.reverse().map((r) => r.entry),
+        chat: chat.reverse().map((r) => ({ seq: r.seq, authorId: r.author_id, text: r.text, at: r.created_at.getTime() })),
+      };
     },
   };
 }

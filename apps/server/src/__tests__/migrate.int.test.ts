@@ -25,11 +25,11 @@ const entry = (revision: number, commandId: string) =>
 // spec: server/persistence "Schema", "Migrations"
 describe('migrations', () => {
   it('create the six tables and both unique indexes on an empty database', async () => {
-    expect(h.migrations).toEqual(['0001_init', '0002_lobby', '0003_stage2_rules', '0004_stage3_rules', '0005_stage4_rules', '0006_stage5_rules']);
+    expect(h.migrations).toEqual(['0001_init', '0002_lobby', '0003_stage2_rules', '0004_stage3_rules', '0005_stage4_rules', '0006_stage5_rules', '0007_chat']);
     const tables = await sql<{ table_name: string }>`
       select table_name from information_schema.tables
       where table_schema = 'public' and table_name not like 'kysely_%' order by table_name`.execute(h.db);
-    expect(tables.rows.map((r) => r.table_name)).toEqual(['game_log', 'game_results', 'game_snapshots', 'guests', 'room_members', 'rooms']);
+    expect(tables.rows.map((r) => r.table_name)).toEqual(['chat_messages', 'game_log', 'game_results', 'game_snapshots', 'guests', 'room_members', 'rooms']);
     const indexes = await sql<{ indexdef: string }>`
       select indexdef from pg_indexes where tablename = 'game_log' order by indexname`.execute(h.db);
     const defs = indexes.rows.map((r) => r.indexdef);
@@ -330,5 +330,43 @@ describe('migrations', () => {
     await expect(
       sql`insert into game_log (game_id, revision, command_id, entry) values ('nope', 1, 'c', ${entry(1, 'c')})`.execute(h.db),
     ).rejects.toMatchObject({ code: '23503' });
+  });
+  // spec: server/persistence "Chat storage" / "Upgrade from 0006"
+  it('0007 adds chat_messages to a 0006 database and keeps every row', async () => {
+    const test = await createTestDatabase({ migrate: false });
+    const old = await mkdtemp(join(tmpdir(), 'mig-0006-'));
+    try {
+      const migrations = fileURLToPath(new URL('../../migrations/', import.meta.url));
+      const through0006 = ['0001_init', '0002_lobby', '0003_stage2_rules', '0004_stage3_rules', '0005_stage4_rules', '0006_stage5_rules'];
+      for (const name of through0006) await copyFile(join(migrations, `${name}.sql`), join(old, `${name}.sql`));
+      expect(await migrateToLatest(test.db, old)).toEqual(through0006);
+      const roomId = await seedRoom(test.db);
+      await sql`insert into game_log (game_id, revision, command_id, entry) values (${roomId}, 1, 'c1', ${entry(1, 'c1')})`.execute(test.db);
+      const data = async () => ({
+        guests: await test.db.selectFrom('guests').selectAll().orderBy('id').execute(),
+        rooms: await test.db.selectFrom('rooms').selectAll().orderBy('id').execute(),
+        members: await test.db.selectFrom('room_members').selectAll().orderBy('room_id').execute(),
+        logs: await test.db.selectFrom('game_log').selectAll().orderBy('game_id').orderBy('revision').execute(),
+      });
+      const before = await data();
+      await copyFile(join(migrations, '0007_chat.sql'), join(old, '0007_chat.sql'));
+      expect(await migrateToLatest(test.db, old)).toEqual(['0007_chat']);
+      expect(await data()).toEqual(before);
+      expect(await test.db.selectFrom('chat_messages').selectAll().execute()).toEqual([]);
+      const columns = await sql<{ column_name: string; data_type: string; is_nullable: string }>`
+        select column_name, data_type, is_nullable from information_schema.columns
+        where table_name = 'chat_messages' order by ordinal_position`.execute(test.db);
+      expect(columns.rows).toEqual([
+        { column_name: 'room_id', data_type: 'text', is_nullable: 'NO' },
+        { column_name: 'seq', data_type: 'integer', is_nullable: 'NO' },
+        { column_name: 'author_id', data_type: 'text', is_nullable: 'NO' },
+        { column_name: 'text', data_type: 'text', is_nullable: 'NO' },
+        { column_name: 'created_at', data_type: 'timestamp with time zone', is_nullable: 'NO' },
+      ]);
+      expect(await migrateToLatest(test.db, old)).toEqual([]);
+    } finally {
+      await rm(old, { recursive: true, force: true });
+      await test.drop();
+    }
   });
 });
