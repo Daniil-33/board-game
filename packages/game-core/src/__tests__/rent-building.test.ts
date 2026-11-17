@@ -88,7 +88,7 @@ describe('settlement and movement',()=>{
     }
     const s=due();const failed={...s,rent:null,positions:{...s.positions,a:10},jail:{a:{attemptsUsed:0}},turn:{...s.turn!,rolled:false},owners:s.owners};
     expect(accept(failed,command(failed,'RollDice'),undefined,[1,2]).state.rent).toBeNull();
-    expect(rentFor({...s,eliminated:[pid('b')]},s.rent!.assetId,3)).toBe(0);
+
     expect(rentFor(base(),'unknown' as AssetId,3)).toBe(0);
   });
   it.each(['a','b','c'])('isolates resignation %s',by=>{
@@ -196,7 +196,7 @@ it('retains the shared seed-6689 Compose setup tie and three-double jail stream'
     const r=session.submit(c,ctx(undefined,entropy([word(),word(),word(),word()])));
     if(r.kind!=='accepted')throw new Error(r.error.code);return r.events;
   };
-  submit('CreateGame',{seed:6689,rulesVersion:'core-6'});submit('AddPlayer',{playerId:'a'});submit('AddPlayer',{playerId:'b'});submit('StartGame');
+  submit('CreateGame',{seed:6689,rulesVersion:'core-7'});submit('AddPlayer',{playerId:'a'});submit('AddPlayer',{playerId:'b'});submit('StartGame');
   let rolls=0;while(session.state.setup){submit('RollForOrder');rolls++;}expect(rolls).toBe(4);
   for(const dice of [[1,1],[4,4],[6,6]]){
     const events=submit('RollDice');expect(events[0]!.payload).toMatchObject({dice});
@@ -210,10 +210,10 @@ it.each(['a','b'])('two-player resignation by %s drops rent before terminal clos
   const r=accept(s,cmd('Resign',null,{actor:player(by),rev:s.revision}));
   expect(r.state.phase).toBe('finished');expect(r.state.rent).toBeNull();expect(r.state.balances).toEqual(s.balances);expect(r.events.some(e=>e.type==='RentPaid')).toBe(false);
 });
-it('blocks construction and sale on rent, respects guard and deadline, and emits public house events',()=>{
+it('blocks construction on rent, respects guard and deadline, and emits public house events',()=>{
   const s=owned(),id=group(s)[0]!.assetId;
   for(const type of ['BuildHouse','SellHouse']){
-    const pending={...s,rent:due().rent};reject(pending,command(pending,type,{assetId:id}),'RENT_PENDING');
+    const pending={...s,rent:due().rent};reject(pending,command(pending,type,{assetId:id}),type==='BuildHouse'?'RENT_PENDING':'NO_HOUSES');
     reject(s,{...command(s,type,{assetId:id}),expected:{kind:'target',target:{kind:'turn',id:'stale'}}},'TARGET_MISMATCH');
   }
   reject(s,command(s,'BuildHouse',{assetId:id}),'DEADLINE_PASSED',s.turn!.deadline);

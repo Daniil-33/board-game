@@ -133,7 +133,7 @@ describe('end to end', () => {
     expect(await snapshotRevisions(h.db, roomId)).toContain(state.revision);
     for (const p of players) {
       const last = (await p.socket.seen((f) => f.t === 'Update' && f.revision === state.revision)) as UpdateFrame;
-      expect(last.events.at(-1)).toEqual({ type: 'GameEnded', payload: { winner: winner.guest.guestId } });
+      expect(last.events.at(-1)).toMatchObject({ type: 'GameEnded', payload: { winner: winner.guest.guestId, at: expect.any(Number), eliminations: expect.any(Array), finalBalances: expect.any(Object) } });
     }
     // A resigned player is not resigned by its socket closing, and may still watch.
     onTurn.socket.close();

@@ -59,8 +59,8 @@ describe('LeaveLobby', () => {
     g.ok(cmd('StartGame', null, { rev: g.state.revision }));
     expect(g.state.phase).toBe('setup');
   });
-  it('supports core-6 only', () => {
-    expect(SUPPORTED_RULES_VERSIONS).toEqual(['core-6']);
+  it('supports core-7 only', () => {
+    expect(SUPPORTED_RULES_VERSIONS).toEqual(['core-7']);
     for (const rulesVersion of ['core-1', 'core-2', 'unknown']) {
       const r = gameEngine.execute(genesis(), cmd('CreateGame', { seed: 1, rulesVersion }), ctx());
       expect(r.kind === 'rejected' && r.error.code).toBe('UNSUPPORTED_RULES_VERSION');
@@ -197,11 +197,12 @@ describe('resignation during play', () => {
       g.roll(1, 2); g.endTurn(); g.roll(1, 2); g.endTurn();
       expect(g.state.jail).toHaveProperty('a');
     }
+    const hadAssets = Object.values(g.state.owners).includes(pid('a'));
     const old = g.state.turn!;
     const stale = g.timeoutCmd();
     const events = g.ok(resign(g, 'a'));
-    expect(types(events)).toEqual(['PlayerResigned', 'TurnEnded', 'TurnStarted']);
-    expect(events[1]).toEqual({ type: 'TurnEnded', payload: { turnId: old.turnId, playerId: 'a', reason: 'resigned' } });
+    expect(types(events)).toEqual(['PlayerResigned', ...(hadAssets ? ['AssetsReleased'] : []), 'TurnEnded', 'TurnStarted']);
+    expect(events.find(e => e.type === 'TurnEnded')).toEqual({ type: 'TurnEnded', payload: { turnId: old.turnId, playerId: 'a', reason: 'resigned' } });
     expect(g.state.turn).toMatchObject({ playerId: 'b', bonus: false, rolled: false, continuation: false, doublesStreak: 0, pendingBonus: false, deadline: g.now + 45_000, quotas: { builds: 1, offers: 2 } });
     expect(g.state.turn!.turnId).not.toBe(old.turnId);
     expect(Object.hasOwn(g.state.positions, 'a')).toBe(false);
@@ -245,7 +246,7 @@ describe('victory and public projection', () => {
     const c = resign(g, id);
     const events = g.ok(c);
     expect(types(events)).toEqual(mode === 'owner' ? ['PlayerResigned', 'TurnEnded', 'GameEnded'] : ['PlayerResigned', 'GameEnded']);
-    expect(events.at(-1)).toEqual({ type: 'GameEnded', payload: { winner } });
+    expect(events.at(-1)).toEqual({ type: 'GameEnded', payload: { winner, at: g.now, eliminations: g.state.eliminations, finalBalances: g.state.balances } });
     expect(g.state).toMatchObject({ phase: 'finished', winner, eliminated: [id], setup: null, order: null, turn: null });
     expect(g.state.positions).toEqual(mode === 'setup' ? {} : { [winner]: 0 });
     expect(pendingDeadlines(g.state)).toEqual([]);

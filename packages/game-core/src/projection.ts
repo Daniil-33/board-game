@@ -1,3 +1,4 @@
+import type { MortgageEvent } from './mortgage.js';
 import { rentQuotes, type RentQuote, type RentEvent } from './rent.js';
 import type { HouseEvent } from './houses.js';
 import type { PlayerId } from './types.js';
@@ -24,6 +25,7 @@ export type Visibility = 'public' | 'secret';
  * makes adding a state field without classifying it a compile error.
  */
 export const STATE_VISIBILITY = {
+  mortgages: 'public', eliminations: 'public', finishedAt: 'public',
   houses: 'public', rent: 'public', owners: 'public', purchase: 'public', auction: 'public',
   board: 'public', economy: 'public', balances: 'public',
   revision: 'public',
@@ -45,7 +47,10 @@ type PublicStateKey = {
 }[keyof GameState];
 
 /** What a client may see of the game state. */
-export type StateView = { readonly [K in PublicStateKey]: GameState[K] } & { readonly rentQuotes: Readonly<Record<string, RentQuote>> };
+export type StateView = { readonly [K in Exclude<PublicStateKey, 'mortgages'>]: GameState[K] } & { readonly rentQuotes: Readonly<Record<string, RentQuote>>;
+  readonly mortgages: Readonly<Record<string, import('./state.js').Mortgage & {readonly remainingLaps: number}>>;
+  readonly result: {readonly winner: PlayerId; readonly finishedAt: import('./types.js').Timestamp; readonly eliminations: GameState['eliminations']; readonly finalBalances: GameState['balances']} | null;
+};
 
 const PUBLIC_STATE_KEYS = (Object.keys(STATE_VISIBILITY) as (keyof GameState)[]).filter(
   (k) => STATE_VISIBILITY[k] === 'public',
@@ -75,7 +80,10 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
   for (const key of PUBLIC_STATE_KEYS) {
     view[key] = copy(state[key]);
   }
-  return { ...view, rentQuotes: rentQuotes(state) } as StateView;
+  return { ...view, rentQuotes: rentQuotes(state),
+    mortgages: Object.fromEntries(Object.entries(state.mortgages).map(([id, term]) => [id, {...copy(term), remainingLaps: 8 - term.lapsCompleted}])),
+    result: state.phase === 'finished' ? copy({winner: state.winner!, finishedAt: state.finishedAt!, eliminations: state.eliminations, finalBalances: state.balances}) : null,
+  } as StateView;
 }
 
 // ---- Events -----------------------------------------------------------------
@@ -86,6 +94,7 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
  * type missing at runtime fails closed in `projectEvents`.
  */
 export const EVENT_VISIBILITY = {
+  AssetMortgaged: 'public', AssetRedeemed: 'public', MortgageExpired: 'public', AssetsReleased: 'public',
   RentDue: 'public', RentPaid: 'public', HouseBuilt: 'public', HouseSold: 'public',
   PurchaseOffered: 'public', AssetPurchased: 'public', AuctionStarted: 'public',
   AuctionBid: 'public', AuctionPassed: 'public', AuctionWon: 'public', AuctionEndedUnsold: 'public',
@@ -112,7 +121,7 @@ export const EVENT_VISIBILITY = {
 } as const satisfies Record<CoreEvent['type'], Visibility>;
 
 /** Every event type this rules version emits. */
-export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | HouseEvent;
+export type CoreEvent = LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | HouseEvent | MortgageEvent;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

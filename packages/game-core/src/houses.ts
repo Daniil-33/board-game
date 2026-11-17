@@ -9,13 +9,13 @@ export type HouseErrorCode = 'PHASE_NOT_ALLOWED' | 'NOT_ACTIVE_PLAYER' | 'DECISI
 export function houseCost(price: Money): Money { return quantumRatio(price, 2); }
 /** House sale refund Q(50% × cost); a pure display helper shared with the client. */
 export function houseRefund(cost: Money): Money { return quantumRatio(cost, 2); }
-function common(state: GameState, playerId: PlayerId, assetId: AssetId): HouseErrorCode | null {
+function common(state: GameState, playerId: PlayerId, assetId: AssetId, allowRent = false): HouseErrorCode | null {
   if (state.phase !== 'playing') return 'PHASE_NOT_ALLOWED';
   // Same precedence as the handler: auction pause before turn ownership.
   if (state.auction) return 'AUCTION_IN_PROGRESS';
   if (state.turn!.playerId !== playerId || state.eliminated.includes(playerId)) return 'NOT_ACTIVE_PLAYER';
   if (state.purchase) return 'DECISION_PENDING';
-  if (state.rent) return 'RENT_PENDING';
+  if (state.rent && !allowRent) return 'RENT_PENDING';
   if (!state.board!.cells.some(c => c.kind === 'monopoly' && c.asset?.assetId === assetId)) return 'NOT_A_BUILDABLE_ASSET';
   if (state.owners[assetId] !== playerId) return 'NOT_OWNER';
   return null;
@@ -37,7 +37,7 @@ export function buildLegality(state: GameState, playerId: PlayerId, assetId: Ass
   return null;
 }
 export function saleLegality(state: GameState, playerId: PlayerId, assetId: AssetId): HouseErrorCode | null {
-  const error = common(state, playerId, assetId); if (error) return error;
+  const error = common(state, playerId, assetId, true); if (error) return error;
   const houses = state.houses[assetId] ?? 0;
   if (houses < 1) return 'NO_HOUSES';
   if (houses !== Math.max(...groupFor(state, assetId).map(a => state.houses[a.assetId] ?? 0))) return 'UNEVEN_SALE';

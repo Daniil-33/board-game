@@ -8,7 +8,7 @@ import { MAX_PLAYERS, MIN_PLAYERS } from './state.js';
 import { beginOrderRoll } from './setup.js';
 
 /** Rules versions this engine can run. Bump when transitions or the RNG stream change. */
-export const CURRENT_RULES_VERSION = 'core-6';
+export const CURRENT_RULES_VERSION = 'core-7';
 export const SUPPORTED_RULES_VERSIONS: readonly string[] = [CURRENT_RULES_VERSION];
 
 export type LifecycleErrorCode =

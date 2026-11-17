@@ -23,6 +23,10 @@ Defines voluntary permanent elimination during setup or play, preserving the sur
 ### Requirement: Permanent elimination
 Acceptance SHALL retain the participant in `players`, append their id once to public `eliminated`, remove their position and jail entry, and emit `PlayerResigned { playerId }`. Eliminated players SHALL have no setup membership or turn order entry and SHALL be unable to perform further game actions. An eliminated player SHALL own a turn only temporarily while that turn is paused and an auction is present, pending resigned closure at auction resolution.
 
+#### Scenario: Record resignation details
+- **WHEN** an active participant resigns
+- **THEN** the engine SHALL append eliminations {playerId, reason: 'resigned', at: context.now, creditorId: null} in eliminated order, remove the player from mortgage pending and invoke the no-op cancelOffersOf hook
+
 #### Scenario: Prisoner resigns
 - **WHEN** a participant with an own jail entry resigns
 - **THEN** the entry and position SHALL be absent and the id SHALL be recorded as eliminated
@@ -36,7 +40,7 @@ In playing, resigning on one's own turn SHALL drop any purchase decision and clo
 
 #### Scenario: Pending bonus canceled
 - **WHEN** the owner resigns after rolling a double while at least two other players remain
-- **THEN** events SHALL be PlayerResigned, TurnEnded with reason resigned, then TurnStarted for the next survivor with bonus false
+- **THEN** events SHALL include PlayerResigned, TurnEnded with reason resigned, then TurnStarted for the next survivor with bonus false
 
 #### Scenario: Unrolled or continued turn
 - **WHEN** the owner resigns before rolling or during an automatic-roll continuation
@@ -72,19 +76,19 @@ When setup continues with a different current roller, resignation SHALL open a f
 - **THEN** group indexing SHALL be corrected while the current target and deadline remain unchanged
 
 ### Requirement: Last active player wins
-After any accepted resignation leaving exactly one active player, the game SHALL enter finished, set winner to that player, clear setup, turn, order, purchase and auction, and emit GameEnded { winner }. There SHALL be no pending deadlines or new turn. Remaining positions and jail entries, if any, SHALL describe only the winner. A setup finish SHALL not create positions or perform order rolls.
+After any accepted resignation leaving exactly one active player, the game SHALL enter finished, set winner to that player, clear setup, turn, order, purchase and auction, set finishedAt to context.now, and emit GameEnded { winner, at, eliminations, finalBalances }, including every player balance. Terminal elimination SHALL skip lap processing. There SHALL be no pending deadlines or new turn. Remaining positions and jail entries, if any, SHALL describe only the winner.
 
 #### Scenario: Win in setup
 - **WHEN** one of the two remaining active participants resigns during setup
-- **THEN** events SHALL be PlayerResigned then GameEnded, with no turn or pending deadline
+- **THEN** events SHALL include PlayerResigned then GameEnded, with no turn or pending deadline; a setup finish SHALL not create positions or perform order rolls
 
 #### Scenario: Win on owner's turn
 - **WHEN** the turn owner resigns leaving one active participant
-- **THEN** events SHALL be PlayerResigned, TurnEnded with reason resigned, then GameEnded, with no TurnStarted
+- **THEN** events SHALL include PlayerResigned, TurnEnded with reason resigned, then GameEnded, with no TurnStarted
 
 #### Scenario: Win on another player's turn
 - **WHEN** a non-owner resigns leaving only the owner active
-- **THEN** events SHALL be PlayerResigned then GameEnded and the owner's turn SHALL be cleared
+- **THEN** events SHALL include PlayerResigned then GameEnded and the owner's turn SHALL be cleared
 
 ### Requirement: Finished games reject further actions
 The engine SHALL reject every new player command in finished without mutation or randomness consumption. Existing session command-id deduplication SHALL still return an earlier accepted result for an identical previously accepted command; it SHALL NOT execute it again.
@@ -144,3 +148,21 @@ A resigning leader SHALL pay nothing. leaderAfterResignation SHALL scan bids bac
 #### Scenario: No surviving earlier bid
 - **WHEN** every recorded bidder is eliminated
 - **THEN** the auction SHALL continue with no leader and the next bid SHALL be startBid
+
+### Requirement: Resignation releases assets
+Resignation SHALL delete all the resigner's owners, houses and mortgages and emit AssetsReleased {playerId, assetIds, reason: 'resigned'} in board order only when assetIds is non-empty. It SHALL leave their balance unchanged. R1/R2 SHALL continue dropping rent without payment when the payer or owner resigns. No eliminated player SHALL own assets, houses or mortgages.
+
+#### Scenario: Release a portfolio
+- **WHEN** a player resigns with houses and mortgaged assets
+- **THEN** their portfolio SHALL become free with no refund or advance repayment and unrelated rent SHALL survive unless the game finishes
+
+#### Scenario: Empty portfolio
+- **WHEN** a participant with no assets resigns, including during setup
+- **THEN** no AssetsReleased event SHALL be emitted
+
+### Requirement: Elimination and finish validity
+eliminations SHALL match eliminated in ids and order, recording reason, at and creditorId. finishedAt SHALL be non-null exactly in finished and SHALL use trusted transition time. Initial eliminations SHALL be empty and finishedAt SHALL be null.
+
+#### Scenario: Recorded outcome
+- **WHEN** resignation leaves one active player
+- **THEN** its elimination timestamp and finish timestamp SHALL equal context.now, and final balances SHALL include eliminated players

@@ -135,3 +135,8 @@ export { rentFor, rentQuotes, energyRentFor, isMortgaged } from './rent.js';
 export type { RentQuote, RentEvent, RentDue, RentPaid, PayRentCommand } from './rent.js';
 export { buildLegality, saleLegality, houseCost, houseRefund } from './houses.js';
 export type { HouseErrorCode, HouseEvent, HouseBuilt, HouseSold, BuildHouseCommand, SellHouseCommand } from './houses.js';
+
+export { mortgageAdvance, mortgageLegality, redeemLegality } from './mortgage.js';
+export type { MortgageCommand, RedeemCommand, MortgageErrorCode, AssetMortgaged, AssetRedeemed, MortgageExpired, MortgageEvent } from './mortgage.js';
+export type { Mortgage, Elimination } from './state.js';
+export type { AssetsReleased } from './resignation.js';

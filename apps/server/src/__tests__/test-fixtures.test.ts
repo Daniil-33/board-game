@@ -10,7 +10,7 @@ it.each(FIXTURE_NAMES)('%s is deterministic and invariant checked for 2–6 gues
     const state = buildFixture(name, ids, 1767225600000);
     checkInvariants(state);
     expect(state).toEqual(buildFixture(name, ids, 1767225600000));
-    expect(state.rulesVersion).toBe('core-6');
+    expect(state.rulesVersion).toBe('core-7');
     expect(() => checkInvariants({ ...state, houses: { unknown: 5 } })).toThrow();
   }
 });

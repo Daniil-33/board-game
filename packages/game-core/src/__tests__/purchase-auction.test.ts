@@ -32,9 +32,9 @@ function reject(g: Game, c: GameCommand, code: string, at = g.now) {
 }
 
 describe('purchase commands and landing', () => {
-  it('initializes acquisition fields and supports core-6 only', () => {
+  it('initializes acquisition fields and supports core-7 only', () => {
     const g = playingGame(['a','b']);
-    expect(g.state).toMatchObject({ owners: {}, purchase: null, auction: null, rulesVersion: 'core-6', turn: { pausedRemainingMs: null } });
+    expect(g.state).toMatchObject({ owners: {}, purchase: null, auction: null, rulesVersion: 'core-7', turn: { pausedRemainingMs: null } });
   });
   it.each([[1,2,'monopoly'], [2,3,'logistics'], [6,6,'energy']] as const)('offers %s + %s landing on %s', (d1,d2,kind) => {
     const g = playingGame(['a','b']); const events = g.roll(d1,d2);
