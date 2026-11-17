@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-vd-logos-brand
-revision: 1
+revision: 2
 effort: EFF-visual-design
 project: economic-board-game
 source_commit: 9c4ae33 # main after TASK-vd-chat PR #80
@@ -58,15 +58,30 @@ logo resolver, so `TASK-vd-board` and the asset lists use it.
      function that returns `false` for the logo directories). Add a build
      check that the JS bundle contains no `data:image/svg` for logos;
    - unknown ids return `null`, so the caller shows the monogram.
-6. **Switch.**
+6. **Switch** (revision 2: owner decision 2026-11-17).
    - The runtime config (the existing `config.js` / `docker-entrypoint.d`
-     mechanism) gains `logoSet: "brand" | "geometric"`, default `brand`.
-   - The deployment env documents `LOGO_SET`.
-   - Staging uses `brand`.
-   - The production env file sets `geometric` until the owner clears
-     trademark use. Agents do not deploy production.
+     mechanism) gains `logoSet: "brand" | "geometric"`.
+   - **`brand` is the default in every environment, production
+     included.** There is no production override to `geometric`.
+   - `geometric` is a documented fallback that can be selected through
+     `LOGO_SET`.
+   - Agents do not deploy production.
 7. **Bundle.** JS and CSS gzip stay within the effort budget, and logos add
    0 bytes to JS chunks. Report the total brand set size (raw and gzip).
+
+## Revision 2 (2026-11-17)
+
+- **Owner decision:** the v2 brand logos are used in all environments,
+  production included (CTO message 20261117T192649Z), so AC6 changes.
+- **Pixel fidelity is kept:**
+  - Chromium is the reference renderer, and every logo must be
+    pixel-identical at 24 and 64 px;
+  - the brand-set cap is 2.2 MB raw and 0.8 MB summed gzip (TL decision);
+  - nginx serves SVG gzipped, at a level that matches the budget
+    measurement.
+- **Each logo file has one fixed appearance:** no
+  `prefers-color-scheme` rules, because the app chooses light or dark
+  (REV-vd-logos-brand-1 RVW-001).
 
 ## Scope and non-goals
 
