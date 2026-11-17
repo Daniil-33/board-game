@@ -81,3 +81,9 @@ input[readonly] { width: 100%; }
 .house-control { margin: 8px 0; }
 .asset-card .house-control button { float: none; }
 .house-control .reason { display: block; margin-top: 4px; color: var(--muted); font-size: 0.85rem; }
+
+.debt-notices { padding: 1rem; margin-bottom: 1rem; background: #22384a; border-radius: 8px; max-height: 360px; overflow-y: auto; }
+.debt-notices h3 { margin-top: 0; }
+.debt-notices h4 { margin: .6rem 0 .3rem; }
+.debt-notices p { margin: .3rem 0; }
+.debt-notices article + article { border-top: 1px solid #36506a; }
