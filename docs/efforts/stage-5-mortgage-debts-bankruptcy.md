@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-stage-5-mortgage-debts-bankruptcy
-revision: 1
+revision: 2
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-17T06:45:00Z
@@ -42,7 +42,7 @@ decisions of 2026-11-16, and GAME-BREAKDOWN.md § "Ипотека и расчё�
    conditions as building in stage 4: own turn, no pending decision, no
    auction. Mortgaging and selling houses are also allowed during the player's
    own open rent settlement, so they can raise cash themselves before paying
-   (CTO interpretation).
+   (owner confirmed 2026-11-17).
 4. **Term.** A mortgage lasts 8 collective laps. One collective lap is
    complete when every active player has made one turn.
    - The Team Lead defines the exact counter, including how bonus turns and
@@ -56,28 +56,32 @@ decisions of 2026-11-16, and GAME-BREAKDOWN.md § "Ипотека и расчё�
 
 ### Debts and automatic liquidation
 
-6. **Shortfall.** When a mandatory payment (rent in this stage) exceeds the
-   payer's cash at the moment it is paid (`PayRent` or automatic payment), the
-   core runs automatic liquidation before paying.
-   - Liquidation may sell houses (each returns `Q(50% × build cost)`, keeping
-     evenness) and take new mortgages (assets without houses).
-   - Among all legal combinations that cover the debt, it picks the one with
-     minimal loss:
-     `loss = Σ build cost of sold houses − Σ sale proceeds + 8 × Σ lost
-     reference rent of affected assets`.
-   - Group effects count: losing the doubling or a holding count changes the
-     rent of other assets.
-   - **Reference rent:** the asset's current rent as in stage 4, with dice sum
-     7 for energy assets. The Team Lead states the exact definition in the
-     design.
-   - **Tie-breakers, in order:** smaller surplus of proceeds over the debt,
-     then fewer affected assets, then stable action and asset ids.
-7. **Search.** It must find the exact optimum: no greedy heuristics. Pruning or
-   branch-and-bound is allowed only with a stated argument that it preserves
-   the optimum.
-   - Tests compare the result with brute force on generated positions.
-   - A worst-case position (one player owning every asset with maximum houses)
-     has a measured time bound that fits inside a command.
+6. **Shortfall (owner decision 2026-11-17).** A mandatory payment (rent in
+   this stage) is checked when it is paid (`PayRent` or the automatic
+   payment):
+   - if cash covers it, only cash is used;
+   - if cash plus the resale of every house plus the advance of every asset
+     that could be mortgaged (after its houses are sold) is below the debt, the
+     player is bankrupt at once (criterion 9);
+   - otherwise automatic liquidation raises money step by step and stops as
+     soon as cash covers the debt.
+7. **Liquidation order (owner decision 2026-11-17).** It uses no
+   loss-minimizing search.
+   - **Group.** A "complete group" is a monopoly group, all 4 logistics or both
+     energy assets owned by the player.
+   - **Tier 1.** Mortgage non-mortgaged assets outside complete groups.
+   - **Tier 2.** Mortgage bare assets (no houses) inside complete groups.
+   - **Tier 3.** Sell houses one at a time, keeping evenness: always from the
+     most built asset of the group. As soon as an asset has no houses left,
+     mortgage it before selling further.
+   - **Order inside tiers 1 and 2:** lowest current rent first (dice-based
+     assets at dice sum 7), then lower price, then stable asset id.
+   - **Order between groups in tier 3:** start with the group whose houses
+     bring the least rent (the cheapest built group), then lower price, then
+     stable id.
+   - **Tests.** Tests cover every tier boundary, the immediate-bankruptcy
+     check, and that liquidation stops at the first step that covers the
+     debt.
 8. **No interaction.** Liquidation is automatic and atomic: the player is not
    asked. Every sale and mortgage is a core event, visible to all players.
    This replaces the stage 4 interim rule "pay the whole balance, the rest is
@@ -122,7 +126,7 @@ decisions of 2026-11-16, and GAME-BREAKDOWN.md § "Ипотека и расчё�
 14. **Recovery.** Server restart and tab reload preserve mortgages, their
     terms and the finished game result.
 15. **Tests.** All new core rules have deterministic core tests, including
-    replay and liquidation-against-brute-force tests. The stage 4 core
+    replay and liquidation order tests. The stage 4 core
     RVW-002 is covered: rent paths with mortgaged assets.
 
 ## Scope and non-goals
@@ -168,20 +172,17 @@ These are accepted and mandatory, unchanged from earlier stages:
 The Team Lead decides:
 - state and event shapes, command names, protocol shapes;
 - the collective-lap counter and expiry representation, within criterion 4;
-- the liquidation search algorithm and the exact reference rent, within
-  criteria 6-7;
+- how liquidation steps are represented as events, within criteria 6-7;
 - the results storage schema;
 - task order and test strategy.
 
 Escalate to the CTO:
 - any case these rules do not determine, for example a mortgage expiring
   while its asset is in a pending decision or auction;
-- a liquidation optimum that cannot be computed within the time bound.
+- a liquidation case the order in criterion 7 does not determine.
 
 ## Dependencies, risks, and limits
 
-- Risk: the liquidation search is the hardest part of the MVP. Start with a
-  design note and the brute-force reference before the UI.
 - VM agents work only on branches with PRs; they never push to `main` and
   rebase on current `main` before a PR. A PR carrying a product decision is
   merged by the owner. Routine PRs merge after independent review and green
@@ -212,13 +213,16 @@ Escalate to the CTO:
   5. Resignation frees the resigned player's assets.
   6. The game reaches a winner, and the game-over screen survives a reload.
   7. Server restart with mortgages in place.
-- Liquidation brute-force comparison tests and the measured worst-case time.
+- Liquidation order tests for every tier.
 - Replay test for the new core rules.
 - ROADMAP.md "Сделано" is updated.
 
 ## Revision history
 
 - 1: initial handoff.
+- 2: owner decisions 2026-11-17: priority liquidation order replaces the
+  loss-minimizing search (criteria 6-7); manual mortgage and house sale
+  during one's own open rent settlement confirmed.
 
 ## Acceptance
 
