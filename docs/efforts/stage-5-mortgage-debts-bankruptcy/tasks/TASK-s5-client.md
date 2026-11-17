@@ -114,7 +114,8 @@ passes.
 
 - `pnpm build`, `pnpm test`, the client bundle;
 - `openspec validate --all --strict`;
-- `git diff --check` against the base;
+- `git diff --check <base> HEAD` over the committed range (not the working
+  tree);
 - green CI (all jobs).
 
 ## Escalation conditions
