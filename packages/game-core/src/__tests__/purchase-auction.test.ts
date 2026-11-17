@@ -195,10 +195,10 @@ describe('turn pause, resume and closure',()=>{
 
 describe('isolated provisional E1 policy',()=>{
   it('decision holder drops the decision without auction and cancels bonus',()=>{
-    const g=offered();const events=resign(g,'a');expect(g.state.purchase).toBeNull();expect(g.state.auction).toBeNull();expect(g.state.turn!.playerId).toBe('b');expect(types(events)).toEqual(['PlayerResigned', 'AssetsReleased','TurnEnded','TurnStarted']);
+    const g=offered();const events=resign(g,'a');expect(g.state.purchase).toBeNull();expect(g.state.auction).toBeNull();expect(g.state.turn!.playerId).toBe('b');expect(types(events)).toEqual(['PlayerResigned','TurnEnded','TurnStarted']);
   });
   it('non-responder passes without changing response target or deadline',()=>{
-    const g=auction(['a','b','c','d']);const a=g.state.auction!;const events=resign(g,'c');expect(g.state.auction).toEqual({...a,passed:['c']});expect(types(events)).toEqual(['PlayerResigned', 'AssetsReleased']);
+    const g=auction(['a','b','c','d']);const a=g.state.auction!;const events=resign(g,'c');expect(g.state.auction).toEqual({...a,passed:['c']});expect(types(events)).toEqual(['PlayerResigned']);
   });
   it('responder departure advances; eliminated owner closes only at resolution',()=>{
     const g=auction(['a','b','c','d']);resign(g,'a');expect(g.state.turn).toMatchObject({playerId:'a',pendingBonus:false});expect(g.state.auction!.responder).toBe('b');

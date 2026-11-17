@@ -181,7 +181,7 @@ describe('resignation, projection and restoration',()=>{
     const m=mortgage();let s=m.r.state;
     s={...s,mortgages:{[m.id]:{...s.mortgages[m.id]!,lapsCompleted:7,pending:[pid('b')]}}};
     const r=accept(s,cmd('Resign',null,{actor:player('b'),rev:s.revision}));s=r.state;
-    expect(s.mortgages[m.id]!.pending).toEqual([]);expect(r.events.map(e=>e.type)).toEqual(['PlayerResigned','AssetsReleased']);
+    expect(s.mortgages[m.id]!.pending).toEqual([]);expect(r.events.map(e=>e.type)).toEqual(['PlayerResigned']);
     expect(close(s).events.map(e=>e.type)).toEqual(['TurnEnded','MortgageExpired','TurnStarted']);
   });
   it('defers an empty pending lap through an auction until resigned turn closure',()=>{

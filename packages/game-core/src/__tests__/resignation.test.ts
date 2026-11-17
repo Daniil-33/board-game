@@ -105,7 +105,7 @@ describe('resignation during setup', () => {
     const old = g.state.setup!;
     const stale = g.timeoutCmd();
     const events = g.ok(resign(g, 'a'), { at: T0 + 1_000 });
-    expect(types(events)).toEqual(['PlayerResigned', 'AssetsReleased', 'OrderRollStarted']);
+    expect(types(events)).toEqual(['PlayerResigned', 'OrderRollStarted']);
     expect(g.state.setup).toMatchObject({ playerId: 'b', deadline: T0 + 46_000, round: { pending: ['b', 'c'], rolls: {} } });
     expect(g.state.setup!.setupRollId).not.toBe(old.setupRollId);
     reject(g, stale, 'TARGET_MISMATCH');
@@ -119,7 +119,7 @@ describe('resignation during setup', () => {
     g.rollForOrder(2);
     const old = g.state.setup!;
     const timeout = g.timeoutCmd();
-    expect(types(g.ok(resign(g, 'a')))).toEqual(['PlayerResigned', 'AssetsReleased']);
+    expect(types(g.ok(resign(g, 'a')))).toEqual(['PlayerResigned']);
     expect(g.state.setup).toMatchObject({ setupRollId: old.setupRollId, deadline: old.deadline, playerId: 'c', round: { rolls: { b: 2 }, pending: ['c', 'd'] } });
     g.ok(timeout, { at: old.deadline, dice: [4] });
     g.rollForOrder(1);
@@ -130,14 +130,14 @@ describe('resignation during setup', () => {
     g.rollForOrder(2);
     g.rollForOrder(6);
     const events = g.ok(resign(g, 'c'));
-    expect(types(events)).toEqual(['PlayerResigned', 'AssetsReleased', 'TurnOrderDetermined', 'TurnStarted']);
+    expect(types(events)).toEqual(['PlayerResigned', 'TurnOrderDetermined', 'TurnStarted']);
     expect(g.state.order).toEqual(['b', 'a']);
   });
   it('preserves tied surviving results then rerolls only the tied group', () => {
     const g = setupGame(['a', 'b', 'c', 'd']);
     for (const value of [4, 4, 1]) g.rollForOrder(value);
     const events = g.ok(resign(g, 'd'));
-    expect(types(events)).toEqual(['PlayerResigned', 'AssetsReleased', 'OrderTied', 'OrderRollStarted']);
+    expect(types(events)).toEqual(['PlayerResigned', 'OrderTied', 'OrderRollStarted']);
     expect(g.state.setup!.groups).toEqual([['a', 'b'], ['c']]);
     g.rollForOrder(2);
     g.rollForOrder(5);
@@ -197,11 +197,12 @@ describe('resignation during play', () => {
       g.roll(1, 2); g.endTurn(); g.roll(1, 2); g.endTurn();
       expect(g.state.jail).toHaveProperty('a');
     }
+    const hadAssets = Object.values(g.state.owners).includes(pid('a'));
     const old = g.state.turn!;
     const stale = g.timeoutCmd();
     const events = g.ok(resign(g, 'a'));
-    expect(types(events)).toEqual(['PlayerResigned', 'AssetsReleased', 'TurnEnded', 'TurnStarted']);
-    expect(events[2]).toEqual({ type: 'TurnEnded', payload: { turnId: old.turnId, playerId: 'a', reason: 'resigned' } });
+    expect(types(events)).toEqual(['PlayerResigned', ...(hadAssets ? ['AssetsReleased'] : []), 'TurnEnded', 'TurnStarted']);
+    expect(events.find(e => e.type === 'TurnEnded')).toEqual({ type: 'TurnEnded', payload: { turnId: old.turnId, playerId: 'a', reason: 'resigned' } });
     expect(g.state.turn).toMatchObject({ playerId: 'b', bonus: false, rolled: false, continuation: false, doublesStreak: 0, pendingBonus: false, deadline: g.now + 45_000, quotas: { builds: 1, offers: 2 } });
     expect(g.state.turn!.turnId).not.toBe(old.turnId);
     expect(Object.hasOwn(g.state.positions, 'a')).toBe(false);
@@ -224,7 +225,7 @@ describe('resignation during play', () => {
     if (mode === 'continuation') g.timeout({ dice: [1, 2] });
     const turn = g.state.turn!;
     const timeout = g.timeoutCmd();
-    expect(types(g.ok(resign(g, 'b')))).toEqual(['PlayerResigned', 'AssetsReleased']);
+    expect(types(g.ok(resign(g, 'b')))).toEqual(['PlayerResigned']);
     expect(g.state.turn).toBe(turn);
     expect(g.state.order).toEqual(['a', 'c']);
     g.ok(timeout, { at: turn.deadline, dice: [1, 2] });
@@ -244,7 +245,7 @@ describe('victory and public projection', () => {
     const winner = mode === 'other' ? 'a' : 'b';
     const c = resign(g, id);
     const events = g.ok(c);
-    expect(types(events)).toEqual(mode === 'owner' ? ['PlayerResigned', 'AssetsReleased', 'TurnEnded', 'GameEnded'] : ['PlayerResigned', 'AssetsReleased', 'GameEnded']);
+    expect(types(events)).toEqual(mode === 'owner' ? ['PlayerResigned', 'TurnEnded', 'GameEnded'] : ['PlayerResigned', 'GameEnded']);
     expect(events.at(-1)).toEqual({ type: 'GameEnded', payload: { winner, at: g.now, eliminations: g.state.eliminations, finalBalances: g.state.balances } });
     expect(g.state).toMatchObject({ phase: 'finished', winner, eliminated: [id], setup: null, order: null, turn: null });
     expect(g.state.positions).toEqual(mode === 'setup' ? {} : { [winner]: 0 });

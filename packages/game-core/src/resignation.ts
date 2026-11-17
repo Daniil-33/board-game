@@ -44,7 +44,8 @@ export const resignationCommands: CommandRegistry = {
         eliminations: [...state.eliminations, {playerId, reason: 'resigned', at: context.now, creditorId: null}],
       }, playerId), playerId);
       next = resignDuringRent(next, playerId, winner !== null);
-      const events: GameEvent[] = [{ type: 'PlayerResigned', payload: { playerId } } satisfies PlayerResignedEvent, {type: 'AssetsReleased', payload: {playerId, assetIds, reason: 'resigned'}} satisfies AssetsReleased];
+      const events: GameEvent[] = [{ type: 'PlayerResigned', payload: { playerId } } satisfies PlayerResignedEvent];
+      if (assetIds.length > 0) events.push({type: 'AssetsReleased', payload: {playerId, assetIds, reason: 'resigned'}} satisfies AssetsReleased);
       if (state.phase === 'playing') {
         const order = state.order!;
         next = { ...next, order: order.filter((p) => p !== playerId), turn: state.turn!.playerId === playerId ? { ...state.turn!, pendingBonus: false } : state.turn };

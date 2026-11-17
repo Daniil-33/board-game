@@ -39,4 +39,3 @@ Only core-7 SHALL be supported. Houses SHALL be integers 1..4 on monopoly assets
 #### Scenario: Houses survive sibling expiry
 - **WHEN** the zero-house asset in a [1,1,0] group is mortgaged and expires after eight laps
 - **THEN** sibling houses and their house rent SHALL remain; the partial group SHALL pass invariants, BuildHouse SHALL reject GROUP_INCOMPLETE, and a legal maximum-house sale SHALL succeed
-
