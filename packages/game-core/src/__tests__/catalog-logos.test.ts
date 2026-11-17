@@ -10,12 +10,12 @@ const catalog = JSON.parse(readFileSync(new URL('../catalog/ua-1.json', import.m
   logistics: { id: string }[];
   energy: { id: string }[];
 };
-type Entry = { file: null; reason: string } | {
+type Entry = {
   file: string;
+  darkFile: string;
+  monogram: string;
   source: string;
-  sourceUrl: string;
   license: string;
-  retrievedAt: string;
 };
 const manifest = JSON.parse(readFileSync(join(directory, 'logos.json'), 'utf8')) as Record<string, Entry>;
 const ids = [
@@ -32,7 +32,7 @@ function validateSvg(svg: string): void {
   expect(svg).not.toMatch(/<\?|<!|&|\\/);
   const tags = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon',
     'defs', 'clipPath', 'mask', 'linearGradient', 'radialGradient', 'stop', 'title', 'desc', 'use']);
-  const attributes = new Set(['xmlns', 'xmlns:xlink', 'viewBox', 'width', 'height', 'id', 'd', 'fill',
+  const attributes = new Set(['xmlns', 'xmlns:xlink', 'role', 'aria-label', 'viewBox', 'width', 'height', 'id', 'd', 'fill',
     'fill-rule', 'fill-opacity', 'clip-rule', 'clip-path', 'clipPathUnits', 'mask', 'maskUnits',
     'maskContentUnits', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
     'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'opacity',
@@ -62,47 +62,39 @@ function validateSvg(svg: string): void {
   }
 }
 
-function validatePng(bytes: Buffer): void {
-  expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
-  expect(bytes.readUInt32BE(8)).toBe(13);
-  expect(bytes.subarray(12, 16).toString('ascii')).toBe('IHDR');
-  for (const dimension of [bytes.readUInt32BE(16), bytes.readUInt32BE(20)]) {
-    expect(dimension).toBeGreaterThan(0);
-    expect(dimension).toBeLessThanOrEqual(256);
-  }
-}
-
 describe('catalog logos (data only)', () => {
   it('covers exactly every catalog company, including logistics and energy', () => {
     expect(Object.keys(manifest).sort()).toEqual([...ids].sort());
   });
 
-  it('has exactly one regular file for each non-null manifest entry', () => {
-    const files = Object.values(manifest).flatMap((entry) => entry.file === null ? [] : [entry.file]);
+  it('has exactly the light and dark regular files plus metadata', () => {
+    const files = Object.values(manifest).flatMap((entry) => [entry.file, entry.darkFile]);
     expect(new Set(files).size).toBe(files.length);
-    expect(readdirSync(directory).sort()).toEqual(['logos.json', ...files].sort());
+    expect(readdirSync(directory).sort()).toEqual(['.gitattributes', 'logos.json', 'README.md', 'FONT-LICENSE.txt', ...files].sort());
     for (const file of files) expect(lstatSync(join(directory, file)).isFile()).toBe(true);
   });
 
+  it('ships the font license and final МГ mark', () => {
+    expect(readFileSync(join(directory, 'FONT-LICENSE.txt'), 'utf8').trim().length).toBeGreaterThan(0);
+    expect(manifest['microfinance-4']!.monogram).toBe('МГ');
+  });
+
   for (const [id, entry] of Object.entries(manifest)) {
-    it(`${id} has a reason or a sourced, bounded and sanitized logo`, () => {
-      if (entry.file === null) {
-        expect(Object.keys(entry).sort()).toEqual(['file', 'reason']);
-        expect(entry.reason.trim().length).toBeGreaterThan(0);
-        return;
+    it(`${id} has commissioned light and dark SVGs`, () => {
+      expect(Object.keys(entry).sort()).toEqual(['darkFile', 'file', 'license', 'monogram', 'source']);
+      expect(entry.file).toBe(`${id}.svg`);
+      expect(entry.darkFile).toBe(`${id}-dark.svg`);
+      expect(entry.source).toBe('owner-commissioned set, 2026-11-17');
+      expect(entry.license).toBe('see FONT-LICENSE.txt');
+      expect(entry.monogram.trim().length).toBeGreaterThan(0);
+      for (const file of [entry.file, entry.darkFile]) {
+        const bytes = readFileSync(join(directory, file));
+        expect(bytes.length).toBeGreaterThan(0);
+        expect(bytes.length).toBeLessThanOrEqual(40_000);
+        const svg = bytes.toString('utf8');
+        validateSvg(svg);
+        expect(svg.match(/^<svg\s[^>]*\bviewBox="([^"]*)"/)?.[1]).toBe('0 0 64 64');
       }
-      expect(Object.keys(entry).sort()).toEqual(['file', 'license', 'retrievedAt', 'source', 'sourceUrl']);
-      expect(entry.file).toMatch(new RegExp(`^${id}\\.(svg|png)$`));
-      expect(['official brand page', 'official press page', 'Wikimedia Commons']).toContain(entry.source);
-      expect(new URL(entry.sourceUrl).protocol).toBe('https:');
-      expect(entry.license.trim().length).toBeGreaterThan(0);
-      expect(entry.retrievedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(new Date(entry.retrievedAt).toISOString().slice(0, 10)).toBe(entry.retrievedAt);
-      const bytes = readFileSync(join(directory, entry.file));
-      expect(bytes.length).toBeGreaterThan(0);
-      expect(bytes.length).toBeLessThanOrEqual(40_000);
-      if (entry.file.endsWith('.svg')) validateSvg(bytes.toString('utf8'));
-      else validatePng(bytes);
     });
   }
 });
@@ -122,13 +114,5 @@ describe('SVG safety guard', () => {
 
   it('accepts geometry with local paint and clipping references', () => {
     validateSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><defs><clipPath id="c"><path d="M0 0h5v5H0z"/></clipPath></defs><path clip-path="url(#c)" fill="#fff" d="M0 0h10v10H0z"/></svg>');
-  });
-
-  it('rejects oversized PNG dimensions', () => {
-    const bytes = Buffer.alloc(33);
-    Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex').copy(bytes);
-    bytes.writeUInt32BE(257, 16);
-    bytes.writeUInt32BE(1, 20);
-    expect(() => validatePng(bytes)).toThrow();
   });
 });
