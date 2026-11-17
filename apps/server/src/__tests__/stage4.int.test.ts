@@ -172,3 +172,40 @@ it('restarts an HTTP fixture-created open settlement with exact state and guest 
     expect(client.welcome.view).toEqual(projectState(before, { kind: 'player', id: guest.guestId as never }));
   }
 });
+
+// Browser fixture contract: a real RollDice must perform the landing, with no
+// forged settlement or synthetic energy sum. Try independent real transitions.
+it.each(['pre-roll-regular-rent', 'pre-roll-full-group-rent', 'pre-roll-logistics-rent', 'pre-roll-energy-rent', 'pre-roll-shortfall', 'pre-roll-own-asset', 'bonus-building'])(
+  '%s starts pre-roll and reaches its target with real socket dice', async name => {
+    let hit = false;
+    for (let attempt = 0; attempt < 100 && !hit; attempt++) {
+      const g = await fixture(name);
+      const before = g.room.state;
+      expect(before.turn!.rolled).toBe(false);
+      expect(before.rent).toBeNull();
+      await g.command('RollDice');
+      const entry = (await logEntries(h.db, g.id)).at(-1)!;
+      const roll = entry.events.find(e => e.type === 'DiceRolled')!;
+      const dice = (roll.payload as { dice: number[] }).dice;
+      expect(dice).toHaveLength(2);
+      const sum = dice.reduce((a, b) => a + b, 0);
+      expect(g.room.state.positions[before.turn!.playerId]).toBe((before.positions[before.turn!.playerId]! + sum) % 40);
+      if (name === 'pre-roll-own-asset' || name === 'bonus-building') {
+        hit = !!g.room.state.board!.cells[g.room.state.positions[before.turn!.playerId]!]!.asset;
+        expect(g.room.state.rent).toBeNull();
+        expect(g.room.state.purchase).toBeNull();
+      } else {
+        hit = g.room.state.rent !== null;
+        if (hit && name === 'pre-roll-energy-rent') expect(g.room.state.rent!.diceSum).toBe(sum);
+        if (hit && name === 'pre-roll-logistics-rent') expect(Object.keys(before.owners)).toHaveLength(2);
+        if (hit && name === 'pre-roll-shortfall') {
+          // A start crossing can award money; browser evidence accepts only a shortfall landing.
+          hit = g.room.state.balances[before.turn!.playerId]! < g.room.state.rent!.amount;
+          if (hit) await g.command('PayRent');
+        }
+      }
+      await g.server.stop();
+    }
+    expect(hit, `${name}: no target landing in 100 real rolls`).toBe(true);
+  }, 60_000,
+);

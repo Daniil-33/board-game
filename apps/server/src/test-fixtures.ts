@@ -4,7 +4,9 @@ import {
 } from '@game/game-core';
 
 export const FIXTURE_NAMES = ['regular-rent', 'full-group-rent', 'logistics-rent', 'energy-rent',
-  'own-asset', 'shortfall', 'building', 'open-rent'] as const;
+  'own-asset', 'shortfall', 'building', 'open-rent', 'bonus-building',
+  'pre-roll-regular-rent', 'pre-roll-full-group-rent', 'pre-roll-logistics-rent',
+  'pre-roll-energy-rent', 'pre-roll-own-asset', 'pre-roll-shortfall'] as const;
 export type FixtureName = typeof FIXTURE_NAMES[number];
 
 /** Deterministic scenario genesis; seats are existing guest ids, deadlines use the host clock. */
@@ -32,6 +34,29 @@ export function buildFixture(name: FixtureName, ids: readonly string[], now: num
   let state = session.state;
   const payer = state.turn!.playerId;
   const owner = ids.find(id => id !== payer)! as PlayerId;
+  if (name.startsWith('pre-roll-') || name === 'bonus-building') {
+    const scenario = name.replace(/^pre-roll-/, '');
+    const cells = state.board!.cells;
+    const family = scenario === 'logistics-rent' ? 'logistics' : scenario === 'energy-rent' ? 'energy' : 'monopoly';
+    const target = cells.find(c => c.kind === family && (family !== 'monopoly' ||
+      c.index >= 7 && cells.find(x => x.asset?.groupId === c.asset!.groupId)?.index === c.index))!;
+    const monopoly = cells.filter(c => c.kind === 'monopoly');
+    const own = scenario === 'own-asset' || scenario === 'bonus-building';
+    // Board generation stays untouched. Place the mover seven steps before the target:
+    // a real sum of seven hits it, while nearby assets can also exercise the scenario.
+    // A missed roll is retried from a fresh fixture by the bounded browser loop.
+    const holdings = own ? cells.filter(c => c.asset)
+      : scenario === 'full-group-rent' ? monopoly
+      : scenario === 'logistics-rent' ? cells.filter(c => c.kind === family).slice(0, 2)
+      : scenario === 'energy-rent' ? cells.filter(c => c.kind === family)
+      : monopoly.filter(c => cells.filter(x => x.asset?.groupId === c.asset!.groupId).at(-1)?.index !== c.index);
+    state = { ...state, owners: Object.fromEntries(holdings.map(c => [c.asset!.assetId, own ? payer : owner])),
+      positions: { ...state.positions, [payer]: (target.index + 40 - 7) % 40 },
+      turn: { ...state.turn!, rolled: false } };
+    if (scenario === 'shortfall') state = { ...state, balances: { ...state.balances, [payer]: 10 as Money } };
+    checkInvariants(state);
+    return state;
+  }
   const family = name === 'logistics-rent' ? 'logistics' : name === 'energy-rent' ? 'energy' : 'monopoly';
   const cell = state.board!.cells.find(c => c.kind === family)!;
   const asset = cell.asset!;
