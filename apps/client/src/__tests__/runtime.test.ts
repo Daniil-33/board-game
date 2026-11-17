@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runtimeApi } from '../api/runtime';
-import { createLobbyApi } from '../api/lobby';
+import { runtimeApi } from '../shared/api/index';
+import { createLobbyApi } from '../shared/api/index';
 
 describe('runtime API selection', () => {
   it.each([

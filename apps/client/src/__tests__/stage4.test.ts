@@ -5,13 +5,13 @@ import {
   type AssetId, type CommandId, type GameState, type HouseErrorCode, type Money, type StateView,
 } from '@game/game-core';
 import { decodeClientFrame, type ClientCommandType } from '@game/protocol';
-import RentPanel from '../components/RentPanel.vue';
-import AssetCard from '../components/AssetCard.vue';
-import Hud from '../components/Hud.vue';
-import { BoardScene } from '../board/BoardCanvas';
-import { HOUSE_REASONS, houseControls, houseReason } from '../game/houses';
-import { stepsForEvent, stepsForEvents } from '../game/animation';
-import { actionAvailability, canIssue, type ActionContext } from '../game/view';
+import { RentPanel } from '../widgets/rent-panel/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { Hud } from '../widgets/turn-header/index';
+import { BoardScene } from '../widgets/board/index';
+import { HOUSE_REASONS, houseControls, houseReason } from '../entities/game/index';
+import { stepsForEvent, stepsForEvents } from '../entities/game/index';
+import { actionAvailability, canIssue, type ActionContext } from '../entities/game/index';
 import { harness, pid, playingView, room, storedSession, update, welcome } from './helpers';
 
 const nameOf = (id: string): string => ({ a: 'Alice', b: 'Bob', c: 'Carol' })[id] ?? id;

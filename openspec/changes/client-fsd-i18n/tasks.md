@@ -2,32 +2,32 @@
 
 ## 1. Approval and baseline
 
-- [ ] 1.1 Reconcile Team Lead approval, handoff revision and source design in a fresh Apply context; verify agentctl acknowledgement and clean agent/task-vd-fsd branch.
-- [ ] 1.2 Build the pristine base bundle and record raw/gzip JS/CSS per-file totals and tool versions in /srv/agents/evidence/TASK-vd-fsd/; verify reproducible baseline before dependency changes.
+- [x] 1.1 Reconcile Team Lead approval, handoff revision and source design in a fresh Apply context; verify agentctl acknowledgement and clean agent/task-vd-fsd branch.
+- [x] 1.2 Build the pristine base bundle and record raw/gzip JS/CSS per-file totals and tool versions in /srv/agents/evidence/TASK-vd-fsd/; verify reproducible baseline before dependency changes.
 
 ## 2. Moves (client/structure — Enforced client boundaries)
 
-- [ ] 2.1 Move shared/api (HTTP, runtime, socket and connection with structural input contracts) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.2 Move entities/game (store, view, animation, debts, house and mortgage adapters; Board contract) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.3 Move entities/session (session persistence) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.4 Move features/client-session (client coordinator and injection API) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.5 Move widgets/board (Pixi scene, geometry and display) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.6 Move widgets/players-panel (PlayerPanel) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.7 Move features/turn-actions (ActionButtons) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.8 Move features/resign (ResignControl) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.9 Move widgets/turn-header (Hud, TurnOrder and TurnTimer) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.10 Move widgets/asset-card (AssetCard) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.11 Move widgets/purchase-card (PurchaseDialog) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.12 Move widgets/auction-panel (AuctionPanel) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.13 Move widgets/rent-panel (RentPanel) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.14 Move widgets/debt-notices (DebtNotices) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.15 Move pages/login (LoginScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.16 Move pages/lobby (LobbyScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.17 Move pages/room (RoomScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.18 Move pages/game (GameScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.19 Move pages/game-over (GameOverScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.20 Move app (entrypoint, App and global styles) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
-- [ ] 2.21 Remove obsolete directories, update HTML entry and external board-layout import; verify client/mock tests and bundle build, then commit moves separately.
+- [x] 2.1 Move shared/api (HTTP, runtime, socket and connection with structural input contracts) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.2 Move entities/game (store, view, animation, debts, house and mortgage adapters; Board contract) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.3 Move entities/session (session persistence) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.4 Move features/client-session (client coordinator and injection API) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.5 Move widgets/board (Pixi scene, geometry and display) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.6 Move widgets/players-panel (PlayerPanel) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.7 Move features/turn-actions (ActionButtons) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.8 Move features/resign (ResignControl) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.9 Move widgets/turn-header (Hud, TurnOrder and TurnTimer) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.10 Move widgets/asset-card (AssetCard) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.11 Move widgets/purchase-card (PurchaseDialog) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.12 Move widgets/auction-panel (AuctionPanel) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.13 Move widgets/rent-panel (RentPanel) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.14 Move widgets/debt-notices (DebtNotices) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.15 Move pages/login (LoginScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.16 Move pages/lobby (LobbyScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.17 Move pages/room (RoomScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.18 Move pages/game (GameScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.19 Move pages/game-over (GameOverScreen) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.20 Move app (entrypoint, App and global styles) with its public index.ts and update affected imports; verify client typecheck and focused existing tests with unchanged assertions.
+- [x] 2.21 Remove obsolete directories, update HTML entry and external board-layout import; verify client/mock tests and bundle build, then commit moves separately.
 
 ## 3. Boundaries (client/structure — Enforced client boundaries)
 

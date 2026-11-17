@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAD_RESPONSE, LobbyRequestError, NETWORK_ERROR, createLobbyApi } from '../api/lobby';
+import { BAD_RESPONSE, LobbyRequestError, NETWORK_ERROR, createLobbyApi } from '../shared/api/index';
 import { fakeFetch, room } from './helpers';
 
 const ROOM = room([['a', 'Alice']]);

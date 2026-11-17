@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Value } from '@sinclair/typebox/value';
 import { houseCost, houseRefund, type AssetId, type GameEvent, type StateView } from '@game/game-core';
 import { PROTOCOL_VERSION, GuestLoginResponseSchema, decodeServerFrame, type AckFrame, type ClientFrame, type ServerFrame } from '@game/protocol';
-import { stepsForEvents } from '../../src/game/animation';
+import { stepsForEvents } from '../../src/entities/game/index';
 import { MockServer } from '../server';
 import { BOT_DELAY_MS, LOBBY_BOT_DELAY_MS } from '../script';
 

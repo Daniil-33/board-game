@@ -20,7 +20,7 @@ const ALLOWED_VALUES = ['CLASSIC_40', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIN
 
 describe('client boundary', () => {
   it('finds the client sources', () => {
-    expect(FILES.map((f) => f.name)).toEqual(expect.arrayContaining(['main.ts', 'App.vue', 'net/connection.ts']));
+    expect(FILES.map((f) => f.name)).toEqual(expect.arrayContaining(['app/main.ts', 'app/App.vue', 'shared/api/connection.ts']));
   });
 
   it('imports only types, constants and display helpers from game-core, never transition logic', () => {
@@ -54,8 +54,8 @@ describe('client boundary', () => {
 
   it('decodes server frames in exactly one place', () => {
     const users = FILES.filter((f) => f.text.includes('decodeServerFrame(')).map((f) => f.name);
-    expect(users).toEqual(['net/connection.ts']);
+    expect(users).toEqual(['shared/api/connection.ts']);
     const parsers = FILES.filter((f) => /JSON\.parse\(/.test(f.text)).map((f) => f.name);
-    expect(parsers).toEqual(['store/session.ts']);
+    expect(parsers).toEqual(['entities/session/session.ts']);
   });
 });

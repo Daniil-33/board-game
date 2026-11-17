@@ -1,11 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StateView } from '@game/game-core';
-import App from '../App.vue';
-import { CLIENT_KEY, BOARD_MOUNT_KEY, createClient } from '../client';
-import { runtimeApi } from '../api/runtime';
-import { createLobbyApi } from '../api/lobby';
-import { canIssue, turnOrder } from '../game/view';
+import { App } from '../app/index';
+import { CLIENT_KEY, BOARD_MOUNT_KEY, createClient } from '../features/client-session/index';
+import { runtimeApi } from '../shared/api/index';
+import { createLobbyApi } from '../shared/api/index';
+import { canIssue, turnOrder } from '../entities/game/index';
 import { fakeFetch, fakeSockets, fakeStorage, harness, room, storedSession, lobbyView, playingView, setupView, welcome, update, pid } from './helpers';
 
 const TWO = room([['a', 'Alice'], ['b', 'Bob']]);

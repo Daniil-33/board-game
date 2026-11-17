@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import App from '../App.vue';
-import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../client';
-import LobbyScreen from '../screens/LobbyScreen.vue';
-import LoginScreen from '../screens/LoginScreen.vue';
-import RoomScreen from '../screens/RoomScreen.vue';
+import { App } from '../app/index';
+import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
+import { LobbyScreen } from '../pages/lobby/index';
+import { LoginScreen } from '../pages/login/index';
+import { RoomScreen } from '../pages/room/index';
 import {
   GUEST,
   harness,

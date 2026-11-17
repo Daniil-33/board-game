@@ -1,12 +1,12 @@
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { Q, timestamp, nextBidAmount, type StateView } from '@game/game-core';
-import PurchaseDialog from '../components/PurchaseDialog.vue';
-import AuctionPanel from '../components/AuctionPanel.vue';
-import TurnTimer from '../components/TurnTimer.vue';
-import AssetCard from '../components/AssetCard.vue';
-import { BoardScene, TOKEN_COLORS } from '../board/BoardCanvas';
-import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../game/view';
+import { PurchaseDialog } from '../widgets/purchase-card/index';
+import { AuctionPanel } from '../widgets/auction-panel/index';
+import { TurnTimer } from '../widgets/turn-header/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { BoardScene, TOKEN_COLORS } from '../widgets/board/index';
+import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../entities/game/index';
 import { playingView, pid, harness, storedSession, room, welcome, update } from './helpers';
 
 function purchase(): StateView {

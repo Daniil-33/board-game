@@ -1,7 +1,7 @@
 import { AUCTION_RESPONSE_MS, CONTINUATION_MS } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { cellRect } from '../apps/client/src/board/layout';
+import { cellRect } from '../apps/client/src/widgets/board/index';
 import { test, expect, sel, createRoom, join, start, setup, active, action, resign } from './helpers';
 
 test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }, info) => {

@@ -6,16 +6,16 @@ import {
   type PlayerBankrupt, type RentPaid, type StateView, type Timestamp,
 } from '@game/game-core';
 import { decodeClientFrame, type ClientCommandType } from '@game/protocol';
-import App from '../App.vue';
-import AssetCard from '../components/AssetCard.vue';
-import DebtNotices from '../components/DebtNotices.vue';
-import Hud from '../components/Hud.vue';
-import { BoardScene } from '../board/BoardCanvas';
-import { CLIENT_KEY, BOARD_MOUNT_KEY } from '../client';
-import { HOUSE_REASONS, houseControls } from '../game/houses';
-import { MORTGAGE_REASONS, mortgageControls, mortgageReason, mortgageTerms } from '../game/mortgages';
-import { NOTICE_LIMIT, debtNotices, eliminationText, formatTime, type DebtNotice } from '../game/debts';
-import type { ActionContext } from '../game/view';
+import { App } from '../app/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { DebtNotices } from '../widgets/debt-notices/index';
+import { Hud } from '../widgets/turn-header/index';
+import { BoardScene } from '../widgets/board/index';
+import { CLIENT_KEY, BOARD_MOUNT_KEY } from '../features/client-session/index';
+import { HOUSE_REASONS, houseControls } from '../entities/game/index';
+import { MORTGAGE_REASONS, mortgageControls, mortgageReason, mortgageTerms } from '../entities/game/index';
+import { NOTICE_LIMIT, debtNotices, eliminationText, formatTime, type DebtNotice } from '../entities/game/index';
+import type { ActionContext } from '../entities/game/index';
 import { harness, pid, playingView, room, storedSession, update, welcome } from './helpers';
 
 const nameOf = (id: string): string => ({ a: 'Alice', b: 'Bob', c: 'Carol' })[id] ?? id;

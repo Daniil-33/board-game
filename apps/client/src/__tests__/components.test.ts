@@ -1,13 +1,13 @@
 import { mount } from '@vue/test-utils';
-import { actionAvailability } from '../game/view';
+import { actionAvailability } from '../entities/game/index';
 import { describe, expect, it } from 'vitest';
 import type { StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
-import ActionButtons from '../components/ActionButtons.vue';
-import Hud from '../components/Hud.vue';
-import TurnOrder from '../components/TurnOrder.vue';
-import TurnTimer from '../components/TurnTimer.vue';
-import { turnOrder } from '../game/view';
+import { ActionButtons } from '../features/turn-actions/index';
+import { Hud } from '../widgets/turn-header/index';
+import { TurnOrder } from '../widgets/turn-header/index';
+import { TurnTimer } from '../widgets/turn-header/index';
+import { turnOrder } from '../entities/game/index';
 import { pid, playingView, setupView } from './helpers';
 
 const NAMES: Record<string, string> = { a: 'Alice', b: 'Bob', c: 'Cy' };

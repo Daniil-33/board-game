@@ -12,7 +12,7 @@ import {
   type ServerFrame,
 } from '@game/protocol';
 import type { StateView } from '@game/game-core';
-import { stepsForEvents } from '../../src/game/animation';
+import { stepsForEvents } from '../../src/entities/game/index';
 import { MockServer, type MockPeer } from '../server';
 
 /** Manual clock and timers. */

@@ -2,12 +2,12 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { Text } from 'pixi.js';
 import { generateBoard, seedRng } from '@game/game-core';
-import PlayerPanel from '../components/PlayerPanel.vue';
-import AssetCard from '../components/AssetCard.vue';
-import GameScreen from '../screens/GameScreen.vue';
-import { BoardScene } from '../board/BoardCanvas';
-import { cellDisplay, GROUP_COLORS } from '../board/display';
-import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../client';
+import { PlayerPanel } from '../widgets/players-panel/index';
+import { AssetCard } from '../widgets/asset-card/index';
+import { GameScreen } from '../pages/game/index';
+import { BoardScene } from '../widgets/board/index';
+import { cellDisplay, GROUP_COLORS } from '../widgets/board/index';
+import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
 import { harness, playingView, pid, storedSession, room, welcome, update } from './helpers';
 
 const board = generateBoard(seedRng(42)).board;

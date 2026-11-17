@@ -1,8 +1,8 @@
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { cellRect } from '../apps/client/src/board/layout';
-import { BOARD_SIZE, TOKEN_COLORS } from '../apps/client/src/board/BoardCanvas';
+import { cellRect } from '../apps/client/src/widgets/board/index';
+import { BOARD_SIZE, TOKEN_COLORS } from '../apps/client/src/widgets/board/index';
 import { test, expect, sel, createRoom, join, start, setup, active, sendRaw, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
 

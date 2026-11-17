@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLASSIC_40 } from '@game/game-core';
-import { RING_CELLS, cellRect, jailBox, jailVisitorSlot, tokenSlot, type Rect } from '../board/layout';
+import { RING_CELLS, cellRect, jailBox, jailVisitorSlot, tokenSlot, type Rect } from '../widgets/board/index';
 
 const SIZE = 660;
 const rects = Array.from({ length: RING_CELLS }, (_, i) => cellRect(i, SIZE));
