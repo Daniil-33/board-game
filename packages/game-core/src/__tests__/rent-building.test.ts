@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rentFor, energyRentFor, rentQuotes, buildLegality, saleLegality, gameEngine, createSession, restoreSession, replay, pendingDeadlines, checkInvariants, projectState, projectEvents, type GameState, type AssetId, type Money, type GameCommand } from '../index.js';
+import { rentFor, energyRentFor, rentQuotes, buildLegality, saleLegality, houseCost, houseRefund, gameEngine, createSession, restoreSession, replay, pendingDeadlines, checkInvariants, projectState, projectEvents, type GameState, type AssetId, type Money, type GameCommand } from '../index.js';
 import { offerRent } from '../rent.js';
 import { playingGame } from './helpers/game.js';
 import { cmd, ctx, pid, player, deepFreeze } from './helpers/fixtures.js';
@@ -285,4 +285,26 @@ it.each(['BuildHouse', 'SellHouse'])('%s checks auction pause, actor, then deadl
     expect((type === 'BuildHouse' ? buildLegality : saleLegality)(s, by, assetId)).toBe('AUCTION_IN_PROGRESS');
     expectParity(s, type, by, assetId, originalDeadline - 1);
   }
+});
+
+describe('houseCost and houseRefund display helpers', () => {
+  it('equal Q(50% × price) and Q(50% × cost) for every monopoly price', () => {
+    for (const c of base().board!.cells.filter(c => c.kind === 'monopoly')) {
+      const price = c.asset!.price;
+      expect(houseCost(price)).toBe(q(price, 2));
+      expect(houseRefund(houseCost(price))).toBe(q(q(price, 2), 2));
+    }
+    for (const [n, cost, refund] of [[0, 0, 0], [10, 0, 0], [20, 10, 0], [150, 70, 30], [1990, 990, 490]] as const) {
+      expect(houseCost(n as Money)).toBe(cost); expect(houseRefund(houseCost(n as Money))).toBe(refund);
+    }
+  });
+  it('match the HouseBuilt cost and HouseSold refund of the handler', () => {
+    for (const size of [2, 3]) {
+      const s = owned(size), asset = group(s, size)[0]!;
+      const built = accept(s, command(s, 'BuildHouse', { assetId: asset.assetId }));
+      expect(built.events.find(e => e.type === 'HouseBuilt')!.payload).toMatchObject({ cost: houseCost(asset.price) });
+      const sold = accept(built.state, command(built.state, 'SellHouse', { assetId: asset.assetId }));
+      expect(sold.events.find(e => e.type === 'HouseSold')!.payload).toMatchObject({ refund: houseRefund(houseCost(asset.price)) });
+    }
+  });
 });

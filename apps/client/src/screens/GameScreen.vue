@@ -8,6 +8,7 @@ import AssetCard from '../components/AssetCard.vue';
 import type { Board } from '../client';
 import PurchaseDialog from '../components/PurchaseDialog.vue';
 import AuctionPanel from '../components/AuctionPanel.vue';
+import RentPanel from '../components/RentPanel.vue';
 import Hud from '../components/Hud.vue';
 
 const TICK_MS = 250;
@@ -81,7 +82,13 @@ onBeforeUnmount(() => {
     </div>
     <div class="game-panel">
       <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />
-      <AssetCard v-if="selectedCell && client.game.view?.board" :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board" @close="selectedIndex = null" />
+      <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
+      <AssetCard
+        v-if="selectedCell && client.game.view?.board"
+        :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board"
+        :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now"
+        @close="selectedIndex = null" @command="client.sendCommand"
+      />
       <PurchaseDialog v-if="client.game.view?.purchase" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
       <AuctionPanel v-if="client.game.view?.auction" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
       <Hud

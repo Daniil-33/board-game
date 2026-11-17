@@ -16,7 +16,7 @@ function manualPlayer() {
   const log: string[] = [];
   const speeds: number[] = [];
   let finish: (() => void) | null = null;
-  const name = (s: AnimationStep): string => (s.kind === 'hop' || s.kind === 'jump' ? `${s.kind}:${s.cell}` : `${s.kind}:${s.playerId}`);
+  const name = (s: AnimationStep): string => (s.kind === 'hop' || s.kind === 'jump' ? `${s.kind}:${s.cell}` : s.kind === 'rentPayment' ? `${s.kind}:${s.from}>${s.to}:${s.amount}` : `${s.kind}:${s.playerId}`);
   return {
     log,
     speeds,

@@ -15,8 +15,8 @@ function sources(dir: string): string[] {
 
 const FILES = sources(srcDir).map((file) => ({ name: relative(srcDir, file), text: readFileSync(file, 'utf8') }));
 
-/** The pure constants and display helper the client may take from game-core. Everything else must be `import type`. */
-const ALLOWED_VALUES = ['CLASSIC_40', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIND', 'AUCTION_RESPONSE_TARGET_KIND', 'nextBidAmount'];
+/** The pure constants and display/legality helpers the client may take from game-core. Everything else must be `import type`. */
+const ALLOWED_VALUES = ['CLASSIC_40', 'SETUP_ROLL_TARGET_KIND', 'TURN_TARGET_KIND', 'AUCTION_RESPONSE_TARGET_KIND', 'nextBidAmount', 'buildLegality', 'saleLegality', 'houseCost', 'houseRefund', 'energyRentFor'];
 
 describe('client boundary', () => {
   it('finds the client sources', () => {

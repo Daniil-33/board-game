@@ -4,8 +4,23 @@
  * game outcome. The server's `Ack` stays the only source of acceptance.
  */
 import { AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from '@game/game-core';
-import type { Expectation, PlayerId, StateView } from '@game/game-core';
+import type { AssetId, Expectation, PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
+
+/** Per-asset commands: their controls come from `houseControls` in game/houses.ts. */
+export type AssetCommandType = 'BuildHouse' | 'SellHouse';
+/**
+ * The payload the protocol defines for a command type: `{ assetId }` for the
+ * house commands, `null` otherwise. `createConnection` builds the frame as a
+ * `CommandFrame`, so the compiler checks this against the protocol schema.
+ */
+export type CommandPayload<T extends ClientCommandType> = T extends AssetCommandType ? { readonly assetId: AssetId } : null;
+/** A command type whose payload is `null`. */
+export type NullPayloadType = { [T in ClientCommandType]: CommandPayload<T> extends null ? T : never }[ClientCommandType];
+/** One intent: a command type with the payload the protocol defines for it. */
+export type Intent = { [T in ClientCommandType]: { readonly type: T; readonly payload: CommandPayload<T> } }[ClientCommandType];
+/** What a component asks to send: a null-payload type by name, or a full intent. */
+export type IntentRequest = NullPayloadType | Intent;
 
 /** The deadline the timer counts to: the order roll's in `setup`, the turn's in `playing`. */
 export function activeDeadline(view: StateView | null): number | null {
@@ -59,18 +74,35 @@ export interface ActionContext {
 
 /** Commands presented by the turn-action buttons; resignation has its own confirmation. */
 export type TurnCommandType = 'RollForOrder' | 'RollDice' | 'EndTurn';
-export type ActionAvailability = Readonly<Record<ClientCommandType, boolean>>;
+export type ActionAvailability = Readonly<Record<Exclude<ClientCommandType, AssetCommandType>, boolean>>;
 
 function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): boolean {
   if (type === 'Resign') return view.phase === 'setup' || view.phase === 'playing';
   if (type === 'RollForOrder') return view.phase === 'setup' && view.setup?.playerId === me;
   if (type === 'Bid' || type === 'PassAuction') return view.auction?.responder === me && (type !== 'Bid' || nextBidAmount(view.auction) <= (view.balances[me] ?? 0));
   if (view.auction !== null || view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
+  if (type === 'PayRent') return view.rent?.payerId === me;
+  // Per-asset: legality comes from game-core's buildLegality / saleLegality (game/houses.ts).
+  if (type === 'BuildHouse' || type === 'SellHouse') return false;
   if (type === 'BuyAsset' || type === 'StartAuction') {
     const asset = view.board?.cells.find(c => c.asset?.assetId === view.purchase?.assetId)?.asset;
     return view.purchase?.playerId === me && (type !== 'BuyAsset' || (asset !== undefined && asset !== null && (view.balances[me] ?? 0) >= asset.price));
   }
   return type === 'RollDice' ? !view.turn.rolled : view.turn.rolled;
+}
+
+/**
+ * Why a command cannot be sent for connection or timing reasons, or null.
+ * Turn ownership and game legality are not covered here.
+ */
+export function connectionReason(ctx: ActionContext, type: ClientCommandType): string | null {
+  const { view, me } = ctx;
+  if (!ctx.connected) return 'Disconnected: reconnecting…';
+  if (view === null || me === null || !view.players.some((p) => p.id === me) || view.eliminated.includes(me)) return 'You are not an active player.';
+  if (ctx.pending.includes(type)) return 'Waiting for the server…';
+  const deadline = activeDeadline(view);
+  if (deadline === null || ctx.now >= deadline) return 'The turn time is over.';
+  return null;
 }
 
 /** Whether the button for `type` is enabled. Greys buttons out only; the server decides. */
@@ -95,9 +127,7 @@ export function actionAvailability(ctx: ActionContext): ActionAvailability {
     StartAuction: canIssue(ctx, 'StartAuction'),
     Bid: canIssue(ctx, 'Bid'),
     PassAuction: canIssue(ctx, 'PassAuction'),
-    PayRent: false,
-    BuildHouse: false,
-    SellHouse: false,
+    PayRent: canIssue(ctx, 'PayRent'),
   };
 }
 

@@ -1,10 +1,14 @@
-import type { AssetId, PlayerId } from './types.js';
+import type { AssetId, Money, PlayerId } from './types.js';
 import type { GameState } from './state.js';
 import type { GameCommand, GameEvent } from './engine.js';
 import { creditBalance, debitBalance } from './money.js';
 import { isMortgaged, quantumRatio } from './rent.js';
 import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
 export type HouseErrorCode = 'PHASE_NOT_ALLOWED' | 'NOT_ACTIVE_PLAYER' | 'DECISION_PENDING' | 'AUCTION_IN_PROGRESS' | 'RENT_PENDING' | 'NOT_A_BUILDABLE_ASSET' | 'NOT_OWNER' | 'GROUP_INCOMPLETE' | 'GROUP_MORTGAGED' | 'MAX_HOUSES' | 'UNEVEN_BUILD' | 'BUILD_QUOTA_USED' | 'INSUFFICIENT_FUNDS' | 'NO_HOUSES' | 'UNEVEN_SALE';
+/** House build cost Q(50% × price); a pure display helper shared with the client. */
+export function houseCost(price: Money): Money { return quantumRatio(price, 2); }
+/** House sale refund Q(50% × cost); a pure display helper shared with the client. */
+export function houseRefund(cost: Money): Money { return quantumRatio(cost, 2); }
 function common(state: GameState, playerId: PlayerId, assetId: AssetId): HouseErrorCode | null {
   if (state.phase !== 'playing') return 'PHASE_NOT_ALLOWED';
   // Same precedence as the handler: auction pause before turn ownership.
@@ -29,7 +33,7 @@ export function buildLegality(state: GameState, playerId: PlayerId, assetId: Ass
   if (houses >= 4) return 'MAX_HOUSES';
   if (houses !== Math.min(...group.map(a => state.houses[a.assetId] ?? 0))) return 'UNEVEN_BUILD';
   if (state.turn!.quotas.builds < 1) return 'BUILD_QUOTA_USED';
-  if (state.balances[playerId]! < quantumRatio(group.find(a => a.assetId === assetId)!.price, 2)) return 'INSUFFICIENT_FUNDS';
+  if (state.balances[playerId]! < houseCost(group.find(a => a.assetId === assetId)!.price)) return 'INSUFFICIENT_FUNDS';
   return null;
 }
 export function saleLegality(state: GameState, playerId: PlayerId, assetId: AssetId): HouseErrorCode | null {
@@ -41,8 +45,8 @@ export function saleLegality(state: GameState, playerId: PlayerId, assetId: Asse
 }
 export type BuildHouseCommand = GameCommand<{ readonly assetId: AssetId }, 'BuildHouse'>;
 export type SellHouseCommand = GameCommand<{ readonly assetId: AssetId }, 'SellHouse'>;
-export type HouseBuilt = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly cost: import('./types.js').Money }, 'HouseBuilt'>;
-export type HouseSold = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly refund: import('./types.js').Money }, 'HouseSold'>;
+export type HouseBuilt = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly cost: Money }, 'HouseBuilt'>;
+export type HouseSold = GameEvent<{ readonly playerId: PlayerId; readonly assetId: AssetId; readonly houses: number; readonly refund: Money }, 'HouseSold'>;
 export type HouseEvent = HouseBuilt | HouseSold;
 export const houseCommands: CommandRegistry = Object.fromEntries(['BuildHouse', 'SellHouse'].map(type => [type, {
   guard: targetGuard('turn', (s: GameState) => s.turn?.turnId ?? null), allowedActors: ['player'], allowedPhases: ['playing'],
@@ -57,9 +61,9 @@ export const houseCommands: CommandRegistry = Object.fromEntries(['BuildHouse', 
     const error = (type === 'BuildHouse' ? buildLegality : saleLegality)(state, playerId, assetId);
     if (error) return fail(error, error);
     const asset = state.board!.cells.find(c => c.asset?.assetId === assetId)!.asset!;
-    const cost = quantumRatio(asset.price, 2);
+    const cost = houseCost(asset.price);
     const build = type === 'BuildHouse';
-    const refund = quantumRatio(cost, 2);
+    const refund = houseRefund(cost);
     const balance = build ? debitBalance(state.balances, playerId, cost, 'build') : creditBalance(state.balances, playerId, refund, 'house-sale');
     const houses = { ...state.houses };
     const count = (houses[assetId] ?? 0) + (build ? 1 : -1);

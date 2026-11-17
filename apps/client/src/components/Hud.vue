@@ -2,7 +2,8 @@
 import { computed } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
-import { actionAvailability, activeDeadline, activePlayerId, turnOrder } from '../game/view';
+import { actionAvailability, activeDeadline, activePlayerId, turnOrder, type NullPayloadType } from '../game/view';
+import { houseReason } from '../game/houses';
 import type { HudMessage } from '../store/game';
 import ResignControl from './ResignControl.vue';
 import ActionButtons from './ActionButtons.vue';
@@ -22,7 +23,7 @@ const props = defineProps<{
   nameOf: (playerId: string) => string;
   colorOf: (playerId: string) => string;
 }>();
-const emit = defineEmits<{ command: [type: ClientCommandType]; dismiss: [id: number] }>();
+const emit = defineEmits<{ command: [type: NullPayloadType]; dismiss: [id: number] }>();
 
 const entries = computed(() => turnOrder(props.view));
 const active = computed(() => activePlayerId(props.view));
@@ -49,6 +50,9 @@ const headline = computed(() => {
 
     <p v-if="me && view?.eliminated.includes(me)" class="warn-box" data-test="spectator">You are out. Watching the game.</p>
     <ActionButtons :available="available" @command="(type) => emit('command', type)" />
+    <p v-if="me && view?.rent?.payerId === me" class="note" data-test="auto-pay-note">
+      Ending the turn pays the open rent automatically.
+    </p>
 
     <ResignControl :available="available.Resign" @confirm="emit('command', 'Resign')" />
 
@@ -57,7 +61,7 @@ const headline = computed(() => {
 
     <ul v-if="messages.length > 0" class="messages">
       <li v-for="message in messages" :key="message.id" class="error" data-test="message">
-        <span><strong>{{ message.code }}</strong>: {{ message.message }}</span>
+        <span><strong>{{ message.code }}</strong>: {{ message.message }}<template v-if="houseReason(message.code, message.commandType)"> — {{ houseReason(message.code, message.commandType) }}</template></span>
         <button class="link" aria-label="Dismiss" @click="emit('dismiss', message.id)">×</button>
       </li>
     </ul>
