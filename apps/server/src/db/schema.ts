@@ -1,5 +1,5 @@
 import type { ColumnType } from 'kysely';
-import type { GameState, LogEntry } from '@game/game-core';
+import type { GameState, LogEntry, Elimination, PlayerId, Money } from '@game/game-core';
 
 /** Set by the database on insert, never updated. */
 type CreatedAt = ColumnType<Date, Date | undefined, never>;
@@ -45,7 +45,19 @@ export interface GameSnapshotsTable {
   state: GameState;
 }
 
+export interface GameResultsTable {
+  room_id: string;
+  rules_version: string;
+  winner_id: string;
+  finished_at: Date;
+  final_revision: number;
+  eliminations: readonly Elimination[];
+  final_balances: Readonly<Record<PlayerId, Money>>;
+  created_at: CreatedAt;
+}
+
 export interface Database {
+  game_results: GameResultsTable;
   guests: GuestsTable;
   rooms: RoomsTable;
   room_members: RoomMembersTable;

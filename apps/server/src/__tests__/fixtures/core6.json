@@ -1,0 +1,663 @@
+{
+  "source": "da73237 original core-6 engine, seed 42, entropy [1,2,3,4]; snapshot after StartGame",
+  "snapshot": {
+    "owners": {},
+    "purchase": null,
+    "auction": null,
+    "houses": {},
+    "rent": null,
+    "revision": 4,
+    "board": {
+      "layout": "CLASSIC_40",
+      "catalogVersion": "ua-1",
+      "priceTableVersion": "prices-1",
+      "generatorVersion": "gen-1",
+      "cells": [
+        {
+          "index": 0,
+          "kind": "start",
+          "asset": null
+        },
+        {
+          "index": 1,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "mobility-1",
+            "name": "Uklon",
+            "categoryId": "mobility",
+            "categoryName": "Такси и мобильность",
+            "groupId": "M1",
+            "rank": 1,
+            "price": 720
+          }
+        },
+        {
+          "index": 2,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 3,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "mobility-4",
+            "name": "Uber Україна",
+            "categoryId": "mobility",
+            "categoryName": "Такси и мобильность",
+            "groupId": "M1",
+            "rank": 1,
+            "price": 800
+          }
+        },
+        {
+          "index": 4,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 5,
+          "kind": "logistics",
+          "asset": {
+            "assetId": "logistics-5",
+            "name": "Delivery",
+            "categoryId": "logistics",
+            "categoryName": "Логистика",
+            "groupId": "logistics",
+            "rank": null,
+            "price": 1780
+          }
+        },
+        {
+          "index": 6,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "telecom-1",
+            "name": "Київстар",
+            "categoryId": "telecom",
+            "categoryName": "Связь",
+            "groupId": "M2",
+            "rank": 2,
+            "price": 930
+          }
+        },
+        {
+          "index": 7,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 8,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "telecom-4",
+            "name": "Укртелеком",
+            "categoryId": "telecom",
+            "categoryName": "Связь",
+            "groupId": "M2",
+            "rank": 2,
+            "price": 930
+          }
+        },
+        {
+          "index": 9,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "telecom-3",
+            "name": "lifecell",
+            "categoryId": "telecom",
+            "categoryName": "Связь",
+            "groupId": "M2",
+            "rank": 2,
+            "price": 1030
+          }
+        },
+        {
+          "index": 10,
+          "kind": "jail",
+          "asset": null
+        },
+        {
+          "index": 11,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "banks-4",
+            "name": "ПУМБ",
+            "categoryId": "banks",
+            "categoryName": "Банки",
+            "groupId": "M3",
+            "rank": 3,
+            "price": 1210
+          }
+        },
+        {
+          "index": 12,
+          "kind": "energy",
+          "asset": {
+            "assetId": "energy-2",
+            "name": "Укренерго",
+            "categoryId": "energy",
+            "categoryName": "Энергетика",
+            "groupId": "energy",
+            "rank": null,
+            "price": 1330
+          }
+        },
+        {
+          "index": 13,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "banks-2",
+            "name": "Ощадбанк",
+            "categoryId": "banks",
+            "categoryName": "Банки",
+            "groupId": "M3",
+            "rank": 3,
+            "price": 1210
+          }
+        },
+        {
+          "index": 14,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "banks-7",
+            "name": "Sense Bank",
+            "categoryId": "banks",
+            "categoryName": "Банки",
+            "groupId": "M3",
+            "rank": 3,
+            "price": 1330
+          }
+        },
+        {
+          "index": 15,
+          "kind": "logistics",
+          "asset": {
+            "assetId": "logistics-3",
+            "name": "Meest",
+            "categoryId": "logistics",
+            "categoryName": "Логистика",
+            "groupId": "logistics",
+            "rank": null,
+            "price": 1780
+          }
+        },
+        {
+          "index": 16,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "fuel-1",
+            "name": "WOG",
+            "categoryId": "fuel",
+            "categoryName": "Топливо и АЗС",
+            "groupId": "M4",
+            "rank": 4,
+            "price": 1560
+          }
+        },
+        {
+          "index": 17,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 18,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "fuel-3",
+            "name": "UPG",
+            "categoryId": "fuel",
+            "categoryName": "Топливо и АЗС",
+            "groupId": "M4",
+            "rank": 4,
+            "price": 1560
+          }
+        },
+        {
+          "index": 19,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "fuel-2",
+            "name": "ОККО",
+            "categoryId": "fuel",
+            "categoryName": "Топливо и АЗС",
+            "groupId": "M4",
+            "rank": 4,
+            "price": 1720
+          }
+        },
+        {
+          "index": 20,
+          "kind": "casino",
+          "asset": null
+        },
+        {
+          "index": 21,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "commerce-6",
+            "name": "Фокстрот",
+            "categoryId": "commerce",
+            "categoryName": "E-commerce",
+            "groupId": "M5",
+            "rank": 5,
+            "price": 2020
+          }
+        },
+        {
+          "index": 22,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 23,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "commerce-2",
+            "name": "Prom.ua",
+            "categoryId": "commerce",
+            "categoryName": "E-commerce",
+            "groupId": "M5",
+            "rank": 5,
+            "price": 2020
+          }
+        },
+        {
+          "index": 24,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "commerce-1",
+            "name": "Rozetka",
+            "categoryId": "commerce",
+            "categoryName": "E-commerce",
+            "groupId": "M5",
+            "rank": 5,
+            "price": 2220
+          }
+        },
+        {
+          "index": 25,
+          "kind": "logistics",
+          "asset": {
+            "assetId": "logistics-2",
+            "name": "Укрпошта",
+            "categoryId": "logistics",
+            "categoryName": "Логистика",
+            "groupId": "logistics",
+            "rank": null,
+            "price": 1780
+          }
+        },
+        {
+          "index": 26,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "technology-6",
+            "name": "Ajax Systems",
+            "categoryId": "technology",
+            "categoryName": "Технологии",
+            "groupId": "M6",
+            "rank": 6,
+            "price": 2610
+          }
+        },
+        {
+          "index": 27,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "technology-7",
+            "name": "Preply",
+            "categoryId": "technology",
+            "categoryName": "Технологии",
+            "groupId": "M6",
+            "rank": 6,
+            "price": 2610
+          }
+        },
+        {
+          "index": 28,
+          "kind": "energy",
+          "asset": {
+            "assetId": "energy-4",
+            "name": "Укргідроенерго",
+            "categoryId": "energy",
+            "categoryName": "Энергетика",
+            "groupId": "energy",
+            "rank": null,
+            "price": 1330
+          }
+        },
+        {
+          "index": 29,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "technology-5",
+            "name": "Readdle",
+            "categoryId": "technology",
+            "categoryName": "Технологии",
+            "groupId": "M6",
+            "rank": 6,
+            "price": 2870
+          }
+        },
+        {
+          "index": 30,
+          "kind": "go-to-jail",
+          "asset": null
+        },
+        {
+          "index": 31,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "microfinance-4",
+            "name": "Миттєві Гроші",
+            "categoryId": "microfinance",
+            "categoryName": "Микрофинансы",
+            "groupId": "M7",
+            "rank": 7,
+            "price": 3370
+          }
+        },
+        {
+          "index": 32,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "microfinance-3",
+            "name": "ШвидкоГроші",
+            "categoryId": "microfinance",
+            "categoryName": "Микрофинансы",
+            "groupId": "M7",
+            "rank": 7,
+            "price": 3370
+          }
+        },
+        {
+          "index": 33,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 34,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "microfinance-5",
+            "name": "Credit7",
+            "categoryId": "microfinance",
+            "categoryName": "Микрофинансы",
+            "groupId": "M7",
+            "rank": 7,
+            "price": 3710
+          }
+        },
+        {
+          "index": 35,
+          "kind": "logistics",
+          "asset": {
+            "assetId": "logistics-1",
+            "name": "Нова пошта",
+            "categoryId": "logistics",
+            "categoryName": "Логистика",
+            "groupId": "logistics",
+            "rank": null,
+            "price": 1780
+          }
+        },
+        {
+          "index": 36,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 37,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "media-3",
+            "name": "1+1 Media",
+            "categoryId": "media",
+            "categoryName": "Медиа и развлечения",
+            "groupId": "M8",
+            "rank": 8,
+            "price": 4360
+          }
+        },
+        {
+          "index": 38,
+          "kind": "chance",
+          "asset": null
+        },
+        {
+          "index": 39,
+          "kind": "monopoly",
+          "asset": {
+            "assetId": "media-4",
+            "name": "StarLightMedia",
+            "categoryId": "media",
+            "categoryName": "Медиа и развлечения",
+            "groupId": "M8",
+            "rank": 8,
+            "price": 4800
+          }
+        }
+      ]
+    },
+    "economy": {
+      "startingCapital": 29910,
+      "lapReward": 3980
+    },
+    "balances": {
+      "a": 29910,
+      "b": 29910
+    },
+    "rulesVersion": "core-6",
+    "phase": "setup",
+    "players": [
+      {
+        "id": "a"
+      },
+      {
+        "id": "b"
+      }
+    ],
+    "eliminated": [],
+    "winner": null,
+    "rng": {
+      "algo": "xoshiro128**",
+      "s": [
+        1339792873,
+        4061536857,
+        1670614990,
+        3256783723
+      ]
+    },
+    "setup": {
+      "setupRollId": "s4",
+      "playerId": "a",
+      "deadline": 1767225645000,
+      "groups": [
+        [
+          "a",
+          "b"
+        ]
+      ],
+      "round": {
+        "groupIndex": 0,
+        "pending": [
+          "a",
+          "b"
+        ],
+        "rolls": {}
+      }
+    },
+    "order": null,
+    "turn": null,
+    "positions": {},
+    "jail": {}
+  },
+  "log": [
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-0",
+        "expected": {
+          "kind": "revision",
+          "revision": 0
+        },
+        "payload": {
+          "rulesVersion": "core-6",
+          "seed": 42
+        },
+        "type": "CreateGame"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 1,
+      "events": [
+        {
+          "payload": {
+            "createdAt": 1767225600000,
+            "rulesVersion": "core-6"
+          },
+          "type": "GameCreated"
+        },
+        {
+          "payload": {
+            "catalogVersion": "ua-1",
+            "generatorVersion": "gen-1",
+            "layout": "CLASSIC_40",
+            "priceTableVersion": "prices-1"
+          },
+          "type": "BoardGenerated"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-1",
+        "expected": {
+          "kind": "revision",
+          "revision": 1
+        },
+        "payload": {
+          "playerId": "a"
+        },
+        "type": "AddPlayer"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 2,
+      "events": [
+        {
+          "payload": {
+            "playerId": "a"
+          },
+          "type": "PlayerAdded"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-2",
+        "expected": {
+          "kind": "revision",
+          "revision": 2
+        },
+        "payload": {
+          "playerId": "b"
+        },
+        "type": "AddPlayer"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 3,
+      "events": [
+        {
+          "payload": {
+            "playerId": "b"
+          },
+          "type": "PlayerAdded"
+        }
+      ]
+    },
+    {
+      "command": {
+        "actor": {
+          "kind": "system"
+        },
+        "commandId": "legacy-3",
+        "expected": {
+          "kind": "revision",
+          "revision": 3
+        },
+        "payload": null,
+        "type": "StartGame"
+      },
+      "now": 1767225600000,
+      "entropy": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "revision": 4,
+      "events": [
+        {
+          "payload": {
+            "playerIds": [
+              "a",
+              "b"
+            ]
+          },
+          "type": "GameStarted"
+        },
+        {
+          "payload": {
+            "balance": 29910,
+            "delta": 29910,
+            "playerId": "a",
+            "reason": "starting-capital"
+          },
+          "type": "BalanceChanged"
+        },
+        {
+          "payload": {
+            "balance": 29910,
+            "delta": 29910,
+            "playerId": "b",
+            "reason": "starting-capital"
+          },
+          "type": "BalanceChanged"
+        },
+        {
+          "payload": {
+            "deadline": 1767225645000,
+            "playerId": "a",
+            "setupRollId": "s4"
+          },
+          "type": "OrderRollStarted"
+        }
+      ]
+    }
+  ]
+}

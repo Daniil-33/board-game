@@ -14,12 +14,12 @@ import {
 } from './common.js';
 
 /**
- * Command types a client may send through stage 4, named as in game-core
- * (`setupCommands`, `turnCommands`, resignation). House commands carry an assetId; other payloads are null.
+ * Command types a client may send through stage 5, named as in game-core
+ * (`setupCommands`, `turnCommands`, resignation). House and mortgage commands carry an assetId; other payloads are null.
  * System commands (`CreateGame`, `AddPlayer`, `LeaveLobby`, `StartGame`,
  * `Timeout`) are never accepted from a client.
  */
-export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse'] as const;
+export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem'] as const;
 export type ClientCommandType = (typeof CLIENT_COMMAND_TYPES)[number];
 
 // ---- Shared parts ----------------------------------------------------------
@@ -62,7 +62,7 @@ const commandFrame = <T extends ClientCommandType>(type: T) =>
       commandId: CommandIdSchema,
       type: Type.Literal(type),
       expected: ExpectationSchema,
-      payload: type === 'BuildHouse' || type === 'SellHouse'
+      payload: type === 'BuildHouse' || type === 'SellHouse' || type === 'Mortgage' || type === 'Redeem'
         ? Type.Object({ assetId: AssetIdSchema }, closed) : Type.Null(),
     },
     closed,

@@ -17,17 +17,19 @@ const stage2 = JSON.parse(await readFile(new URL('./fixtures/core4.json', import
 
 const stage3 = JSON.parse(await readFile(new URL('./fixtures/core5.json', import.meta.url), 'utf8'));
 
+const stage4 = JSON.parse(await readFile(new URL('./fixtures/core6.json', import.meta.url), 'utf8'));
+
 const entry = (revision: number, commandId: string) =>
   sql`${JSON.stringify({ revision, command: { commandId } })}::jsonb`;
 
 // spec: server/persistence "Schema", "Migrations"
 describe('migrations', () => {
-  it('create the five tables and both unique indexes on an empty database', async () => {
-    expect(h.migrations).toEqual(['0001_init', '0002_lobby', '0003_stage2_rules', '0004_stage3_rules', '0005_stage4_rules']);
+  it('create the six tables and both unique indexes on an empty database', async () => {
+    expect(h.migrations).toEqual(['0001_init', '0002_lobby', '0003_stage2_rules', '0004_stage3_rules', '0005_stage4_rules', '0006_stage5_rules']);
     const tables = await sql<{ table_name: string }>`
       select table_name from information_schema.tables
       where table_schema = 'public' and table_name not like 'kysely_%' order by table_name`.execute(h.db);
-    expect(tables.rows.map((r) => r.table_name)).toEqual(['game_log', 'game_snapshots', 'guests', 'room_members', 'rooms']);
+    expect(tables.rows.map((r) => r.table_name)).toEqual(['game_log', 'game_results', 'game_snapshots', 'guests', 'room_members', 'rooms']);
     const indexes = await sql<{ indexdef: string }>`
       select indexdef from pg_indexes where tablename = 'game_log' order by indexname`.execute(h.db);
     const defs = indexes.rows.map((r) => r.indexdef);
@@ -247,6 +249,77 @@ describe('migrations', () => {
       expect(await test.db.selectFrom('game_log').selectAll().where('game_id', '=', current).execute()).toEqual(currentLog);
       expect((await data()).logs.filter(r => r.game_id !== current)).toEqual(before.logs);
       expect((await data()).snapshots).toEqual(before.snapshots);
+    } finally {
+      await rm(old, { recursive: true, force: true });
+      await test.drop();
+    }
+  });
+
+  // spec: server/persistence "Stage 4 room retirement"
+  it('0006 closes only active stage 4 rooms, preserves their data and creates game_results; runs once', async () => {
+    const test = await createTestDatabase({ migrate: false });
+    const old = await mkdtemp(join(tmpdir(), 'mig-0005-'));
+    try {
+      const migrations = fileURLToPath(new URL('../../migrations/', import.meta.url));
+      const through0005 = ['0001_init', '0002_lobby', '0003_stage2_rules', '0004_stage3_rules', '0005_stage4_rules'];
+      for (const name of through0005) await copyFile(join(migrations, `${name}.sql`), join(old, `${name}.sql`));
+      expect(await migrateToLatest(test.db, old)).toEqual(through0005);
+      const statuses = ['lobby', 'playing', 'finished', 'closed'] as const;
+      const ids = [];
+      for (const status of statuses) {
+        const id = await seedRoom(test.db);
+        ids.push(id);
+        await test.db.updateTable('rooms').set({ status }).where('id', '=', id).execute();
+        for (const entry of stage4.log) await sql`insert into game_log (game_id, revision, command_id, entry)
+          values (${id}, ${entry.revision}, ${entry.command.commandId}, ${JSON.stringify(entry)}::jsonb)`.execute(test.db);
+        await sql`insert into game_snapshots (game_id, revision, state)
+          values (${id}, ${stage4.snapshot.revision}, ${JSON.stringify(stage4.snapshot)}::jsonb)`.execute(test.db);
+      }
+      const data = async () => ({
+        logs: await test.db.selectFrom('game_log').selectAll().orderBy('game_id').orderBy('revision').execute(),
+        snapshots: await test.db.selectFrom('game_snapshots').selectAll().orderBy('game_id').orderBy('revision').execute(),
+        members: await test.db.selectFrom('room_members').selectAll().orderBy('room_id').orderBy('guest_id').execute(),
+      });
+      const before = await data();
+      expect(before.snapshots.every(r => (r.state as { rulesVersion: string }).rulesVersion === 'core-6')).toBe(true);
+      const roomsBefore = await test.db.selectFrom('rooms').selectAll().orderBy('id').execute();
+      await copyFile(join(migrations, '0006_stage5_rules.sql'), join(old, '0006_stage5_rules.sql'));
+      expect(await migrateToLatest(test.db, old)).toEqual(['0006_stage5_rules']);
+      expect(await test.db.selectFrom('rooms').selectAll().orderBy('id').execute()).toEqual(roomsBefore.map(room => ({ ...room, status: room.status === 'lobby' || room.status === 'playing' ? 'closed' : room.status })));
+      for (const [i, id] of ids.entries()) {
+        const row = await test.db.selectFrom('rooms').select('status').where('id', '=', id).executeTakeFirstOrThrow();
+        expect(row.status).toBe(i < 2 ? 'closed' : statuses[i]);
+      }
+      expect(await data()).toEqual(before);
+      expect(await test.db.selectFrom('game_results').selectAll().execute()).toEqual([]);
+
+      const columns = await sql<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null }>`
+        select column_name, data_type, is_nullable, column_default from information_schema.columns
+        where table_name = 'game_results' order by ordinal_position`.execute(test.db);
+      expect(columns.rows).toEqual([
+        { column_name: 'room_id', data_type: 'text', is_nullable: 'NO', column_default: null },
+        { column_name: 'rules_version', data_type: 'text', is_nullable: 'NO', column_default: null },
+        { column_name: 'winner_id', data_type: 'text', is_nullable: 'NO', column_default: null },
+        { column_name: 'finished_at', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
+        { column_name: 'final_revision', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'eliminations', data_type: 'jsonb', is_nullable: 'NO', column_default: null },
+        { column_name: 'final_balances', data_type: 'jsonb', is_nullable: 'NO', column_default: null },
+        { column_name: 'created_at', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+      ]);
+      const result = (roomId: string) => sql`insert into game_results
+        (room_id, rules_version, winner_id, finished_at, final_revision, eliminations, final_balances)
+        values (${roomId}, 'core-7', 'a', now(), 9, '[]'::jsonb, '{}'::jsonb)`.execute(test.db);
+      await expect(result('nope')).rejects.toMatchObject({ code: '23503' });
+      await result(ids[2]!);
+      await expect(result(ids[2]!)).rejects.toMatchObject({ code: '23505', constraint: 'game_results_pkey' });
+
+      const current = await seedRoom(test.db);
+      const currentBefore = await test.db.selectFrom('rooms').selectAll().where('id', '=', current).execute();
+      expect(await migrateToLatest(test.db, old)).toEqual([]);
+      expect(await test.db.selectFrom('rooms').selectAll().where('id', '=', current).execute()).toEqual(currentBefore);
+      expect(currentBefore[0]!.status).toBe('lobby');
+      const after = await data();
+      expect({ ...after, members: after.members.filter(m => m.room_id !== current) }).toEqual(before);
     } finally {
       await rm(old, { recursive: true, force: true });
       await test.drop();

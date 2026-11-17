@@ -92,30 +92,42 @@ server (`lobby`, `game-socket`, `e2e`) and the service process itself
 In agent sessions that predate the docker group change, wrap the compose
 commands: `sg docker -c 'docker compose -f docker-compose.dev.yml up -d --wait'`.
 
-## Stage 4 compatibility
+## Stage 5 compatibility
 
-The server speaks protocol 4 and runs core-6 games. Welcome and Update expose
-board, economy, balances, owners, purchase decisions, auction state, houses, rent and rent quotes; public
-core events pass through unchanged. BuyAsset, StartAuction, Bid and PassAuction
+The server speaks protocol 5 and runs core-7 games. Welcome and Update expose
+board, economy, balances, owners, purchase decisions, auction state, houses, rent,
+rent quotes, mortgages (with remainingLaps), eliminations and, once finished, the
+result; public core events (including AssetMortgaged, AssetRedeemed,
+MortgageExpired, LiquidationApplied, PlayerBankrupt, AssetsReleased and GameEnded)
+pass through unchanged. BuyAsset, StartAuction, Bid, PassAuction and PayRent
 carry null payloads; the authenticated guest supplies the actor. A duplicate
 command id returns the original Ack, while a new id with a stale response
 target is rejected with TARGET_MISMATCH.
 
+BuildHouse, SellHouse, Mortgage and Redeem carry exactly `{ assetId: string }`
+(1–128 UTF-16 units, no NUL or lone surrogates). Core error codes are returned
+unchanged in rejected Acks.
+
 Timers follow pendingDeadlines, including the 10 second auction response and
-paused/resumed turn deadlines. Purchase and auction states recover from the
-snapshot and ordered log tail; overdue response deadlines fire on boot.
+paused/resumed turn deadlines. Purchase, auction, rent and mortgage states recover
+from the snapshot and ordered log tail; overdue deadlines fire on boot. Finished
+rooms are not restored at boot; they load on demand at Hello, serve their final
+view to every member (eliminated players included) and arm no timers.
 
-Migration 0005 closes existing lobby/playing rooms once, preserving logs,
-snapshots and membership. Closed rows answer ROOM_CLOSED at Hello before game
-loading. Unsupported core-3, core-4 or core-5 data actually opened (including a finished
-room at Hello or a closed room through the manager) uses the failed-room path
-with ROOM_UNAVAILABLE; active boot recovery reports that room and continues.
-Protocol 1, 2 and 3 Hello frames are refused before authentication.
+An accepted command whose events include GameEnded inserts one `game_results`
+row (room, core rules version, winner, finish time, final revision, ordered
+eliminations, final balances) in the same transaction as its log row, the
+finished room status and the final snapshot, before anything is broadcast. A
+failure rolls all of them back and the command is rejected with
+PERSISTENCE_FAILED.
 
-PayRent carries null. BuildHouse and SellHouse carry exactly
-`{ assetId: string }` (1–128 UTF-16 units, no NUL or lone surrogates).
-Core error codes are returned unchanged in rejected Acks. Rent uses the existing
-turn deadline; timeout auto-payment and open settlements recover normally.
+Migrations 0005 and 0006 each close the then existing lobby/playing rooms once,
+preserving logs, snapshots and membership. Closed rows answer ROOM_CLOSED at
+Hello before game loading. Unsupported core-3 to core-6 data actually opened
+(including a finished room at Hello or a closed room through the manager) uses
+the failed-room path with ROOM_UNAVAILABLE; active boot recovery reports that
+room and continues. Protocol 1 to 4 Hello frames are refused before
+authentication.
 
 ## Test fixtures
 
@@ -138,10 +150,10 @@ The response is HTTP 201 `{ "roomId": "..." }`. All tokens authenticate existing
 guests; no extra authorization header is needed for this test-only endpoint.
 Unknown names, duplicate tokens or invalid body shapes return 400 INVALID_REQUEST;
 unknown tokens return 401 UNAUTHENTICATED. Clients cannot supply a state or path.
-Connect each guest normally through /ws with a protocol 4 Hello for that roomId.
+Connect each guest normally through /ws with a protocol 5 Hello for that roomId.
 
 Builders are importable from `apps/server/src/test-fixtures.ts`:
-`buildFixture(name, guestIds, now)` returns an invariant-checked core-6 GameState.
+`buildFixture(name, guestIds, now)` returns an invariant-checked core-7 GameState.
 The fixture uses seed 42, deterministic setup, actual guest identities and host
 time for deadlines. The active player is given by state.turn.playerId; callers
 should read the Welcome rather than assume the creator is active.
@@ -156,6 +168,20 @@ should read the Welcome rather than assume the creator is active.
 | shortfall | Open regular rent with payer balance 10 |
 | building | Unrolled turn with a complete regular group owned by the active player |
 | open-rent | Open regular settlement for restart/deadline scenarios |
+
+Stage 5 fixtures. The payer is the active player (state.turn.playerId); the
+creditor is the next seat in turn order. The payer's holdings come from the
+cheapest regular group, the creditor's from the most expensive one.
+
+| Name | State | Next command |
+|---|---|---|
+| mortgage-expiry | Rolled turn; the payer's one mortgage has 7 laps done and only the payer pending | EndTurn (or the turn Timeout) emits MortgageExpired |
+| liquidation-tier-1 | Open rent on the creditor's full group; payer cash is rent − 10 and it owns one asset of an incomplete group | PayRent mortgages that asset (tier 1) |
+| liquidation-tier-2 | As tier 1, but the payer owns a complete group without houses | PayRent mortgages in the complete group (tier 2) |
+| liquidation-tier-3 | As tier 2, with one house on every asset of the group | PayRent sells a house (tier 3) |
+| bankruptcy | Open rent; payer has cash 10 and one already mortgaged asset | PayRent: PlayerBankrupt, creditor receives 10, the asset is released; with 3+ seats play continues |
+| final-bankruptcy | As bankruptcy, after every seat other than payer and creditor resigned through the core (still members) | PayRent ends the game: GameEnded and a game_results row |
+| mortgage-restart | Rolled turn; payer mortgage at 7 laps (only the payer pending), creditor mortgage at 3 laps (everyone pending) | Restart, then EndTurn expires one term and advances the other |
 
 The full state is persisted atomically with the room and membership as its
 genesis snapshot at the state's actual revision. No historical commands are
