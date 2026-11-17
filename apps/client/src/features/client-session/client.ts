@@ -5,7 +5,7 @@ import { t } from '../../shared/i18n/index';
  * tests run the whole client against fakes.
  */
 import { inject, reactive, type InjectionKey } from 'vue';
-import { CLASSIC_40 } from '@game/game-core';
+import { CLASSIC_40, type GameEvent, type StateView } from '@game/game-core';
 import { AccessCodeSchema, RoomIdSchema, type RoomSummary } from '@game/protocol';
 import { Value } from '@sinclair/typebox/value';
 import { LobbyRequestError, createLobbyApi, type FetchLike, type LobbyApi } from '../../shared/api/index';
@@ -16,6 +16,8 @@ import { createConnection, type Connection, type Timers } from '../../shared/api
 import type { SocketFactory } from '../../shared/api/index';
 import { createGameState, type GameState } from '../../entities/game/index';
 import { createSessionStore, type SessionStore } from '../../entities/session/index';
+import { createChatStore, type ChatStore } from '../../entities/chat/index';
+import { createEventLog, type EventLog } from '../../entities/event/index';
 import type { Board } from '../../entities/game/index';
 export type { Board } from '../../entities/game/index';
 
@@ -46,6 +48,10 @@ export interface Client {
   readonly session: SessionStore;
   readonly game: GameState;
   readonly lobby: LobbyState;
+  /** Room chat; send with `features/send-chat` over `connection`. */
+  readonly chat: ChatStore;
+  /** The viewer's event log: Welcome history, then each Update's events. */
+  readonly events: EventLog;
   readonly connection: Connection;
   now(): number;
   /** Resume after a page load: reconnect to the stored room, if any. */
@@ -71,6 +77,8 @@ export interface Client {
 export function createClient(deps: ClientDeps): Client {
   const session = createSessionStore(deps.storage);
   const game = createGameState();
+  const chat = createChatStore();
+  const events = createEventLog();
   const lobby = reactive<LobbyState>({ rooms: [], error: null, notice: null, busy: false, inviteRoomId: null, creatorAccess: null });
   const api: LobbyApi = createLobbyApi(deps.fetchFn);
 
@@ -123,6 +131,8 @@ export function createClient(deps: ClientDeps): Client {
     queue.clear();
     session.clearRoom();
     game.notices.splice(0);
+    chat.clear();
+    events.clear();
     lobby.creatorAccess = null;
     lobby.busy = false;
     lobby.error = null;
@@ -168,7 +178,10 @@ export function createClient(deps: ClientDeps): Client {
     token: () => session.state.guest?.token ?? null,
     ...(deps.timers !== undefined && { timers: deps.timers }),
     ...(deps.newCommandId !== undefined && { newCommandId: deps.newCommandId }),
-    onWelcome(view) {
+    onWelcome(view, history) {
+      // The log and chat as of this Welcome; never animated.
+      events.replace(history.entries);
+      chat.replace(history.chat);
       board?.refreshOwnership?.(view);
       eliminatedKey = JSON.stringify(view.eliminated);
       // No delta replay in stage 1: drop what was waiting and show the view as it is.
@@ -176,17 +189,16 @@ export function createClient(deps: ClientDeps): Client {
       snapBoard();
       resolveNames();
     },
-    onUpdate(view, events) {
-      // Before animation handling: a terminal update cancels the queue, and its bankruptcy must still show.
-      appendNotices(game.notices, debtNotices(events));
-      board?.refreshOwnership?.(view);
-      const nextEliminated = JSON.stringify(view.eliminated);
-      if (nextEliminated !== eliminatedKey || view.phase === 'finished' || events.some((e) => e.type === 'PlayerResigned' || e.type === 'GameEnded')) {
-        queue.clear();
-        snapBoard();
-      } else queue.enqueue(events);
-      eliminatedKey = nextEliminated;
-      if (events.some((e) => e.type === 'PlayerAdded' || e.type === 'PlayerLeftLobby')) resolveNames();
+    onUpdate(view, updateEvents, revision) {
+      // The Update frame carries no commit time: the log entry is stamped on receipt.
+      events.append({ revision, at: deps.now(), events: [...updateEvents] });
+      onViewUpdate(view, updateEvents);
+    },
+    onChat(message) {
+      chat.receive(message);
+    },
+    onChatAck(ack) {
+      chat.acknowledge(ack);
     },
     onAuthLost() {
       cleanup('');
@@ -199,6 +211,19 @@ export function createClient(deps: ClientDeps): Client {
         : t('client.return_reason', { message: error.message, code: error.code }));
     },
   });
+
+  function onViewUpdate(view: StateView, events: readonly GameEvent[]): void {
+    // Before animation handling: a terminal update cancels the queue, and its bankruptcy must still show.
+    appendNotices(game.notices, debtNotices(events));
+    board?.refreshOwnership?.(view);
+    const nextEliminated = JSON.stringify(view.eliminated);
+    if (nextEliminated !== eliminatedKey || view.phase === 'finished' || events.some((e) => e.type === 'PlayerResigned' || e.type === 'GameEnded')) {
+      queue.clear();
+      snapBoard();
+    } else queue.enqueue(events);
+    eliminatedKey = nextEliminated;
+    if (events.some((e) => e.type === 'PlayerAdded' || e.type === 'PlayerLeftLobby')) resolveNames();
+  }
 
   /** Run a lobby request; a rejected token returns to login, other errors are shown. */
   async function run<T>(request: (token: string) => Promise<T>): Promise<T | undefined> {
@@ -260,6 +285,8 @@ export function createClient(deps: ClientDeps): Client {
     session,
     game,
     lobby,
+    chat,
+    events,
     connection,
     now: deps.now,
     nameOf,

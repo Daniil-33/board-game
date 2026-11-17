@@ -4,10 +4,14 @@ import {
   PROTOCOL_VERSION,
   decodeServerFrame,
   type AckFrame,
+  type ChatAckFrame,
+  type ChatMessage,
+  type ChatSendFrame,
   type ClientCommandType,
   type CommandFrame,
   type ErrorFrame,
   type HelloFrame,
+  type History,
   type ServerFrame,
 } from '@game/protocol';
 import { commandExpectation, type Intent, type IntentRequest } from './intent';
@@ -39,12 +43,17 @@ export interface ConnectionOptions {
   readonly socketFactory: SocketFactory;
   /** The stored guest token at the time of each `Hello`. */
   readonly token: () => string | null;
+  /** Also used for chat `clientMsgId`s. */
   readonly newCommandId?: () => string;
   readonly timers?: Timers;
-  /** A `Welcome` replaced the view. */
-  readonly onWelcome?: (view: StateView) => void;
+  /** A `Welcome` replaced the view; `history` is the room's recent log and chat for this viewer. */
+  readonly onWelcome?: (view: StateView, history: History) => void;
   /** An `Update` replaced the view; `events` are its events in order. */
-  readonly onUpdate?: (view: StateView, events: readonly GameEvent[]) => void;
+  readonly onUpdate?: (view: StateView, events: readonly GameEvent[], revision: Revision) => void;
+  /** A chat message of the room, the viewer's own included. */
+  readonly onChat?: (message: ChatMessage) => void;
+  /** The answer to one of this viewer's `ChatSend` frames. */
+  readonly onChatAck?: (ack: ChatAckFrame) => void;
   /** The server rejected the token. The connection has already stopped. */
   readonly onAuthLost?: () => void;
   /** The room is gone or we are not in it. The connection has already stopped. */
@@ -61,6 +70,11 @@ export interface Connection {
    * payload. Returns false when the view has no target for it or one is already pending.
    */
   sendCommand(request: IntentRequest): boolean;
+  /**
+   * Send `ChatSend` and return its `clientMsgId`, or null when not connected
+   * (nothing is sent or kept: chat is never resent automatically).
+   */
+  sendChat(text: string): string | null;
   dismissMessage(id: number): void;
 }
 
@@ -71,7 +85,8 @@ const defaultTimers: Timers = {
 
 /**
  * One WebSocket per joined room. Every received message goes through
- * `decodeServerFrame`; the only frames sent are `Hello` and `Command`.
+ * `decodeServerFrame`; the only frames sent are `Hello`, `Command` and
+ * `ChatSend`. The connection holds no chat state.
  */
 export function createConnection(options: ConnectionOptions): Connection {
   const { state } = options;
@@ -88,7 +103,7 @@ export function createConnection(options: ConnectionOptions): Connection {
   /** Revision of the held view, from the frame's checked `revision` field (the view itself is an open object). */
   let heldRevision: Revision | null = null;
 
-  function send(frame: HelloFrame | CommandFrame): void {
+  function send(frame: HelloFrame | CommandFrame | ChatSendFrame): void {
     socket?.send(JSON.stringify(frame));
   }
 
@@ -163,7 +178,7 @@ export function createConnection(options: ConnectionOptions): Connection {
         state.connected = true;
         state.problem = null;
         attempt = 0;
-        options.onWelcome?.(frame.view);
+        options.onWelcome?.(frame.view, frame.history);
         // Resend what was never acknowledged, unchanged: same commandId, same expectation.
         for (const command of state.pending) send(command);
         return;
@@ -173,9 +188,15 @@ export function createConnection(options: ConnectionOptions): Connection {
         if (state.view === null || heldRevision === null || frame.revision <= heldRevision) return;
         heldRevision = frame.revision;
         state.view = frame.view;
-        options.onUpdate?.(frame.view, frame.events);
+        options.onUpdate?.(frame.view, frame.events, frame.revision);
         return;
       }
+      case 'Chat':
+        if (state.view !== null) options.onChat?.(frame.message);
+        return;
+      case 'ChatAck':
+        options.onChatAck?.(frame);
+        return;
       case 'Ack':
         return handleAck(frame);
       case 'Error':
@@ -261,6 +282,12 @@ export function createConnection(options: ConnectionOptions): Connection {
       state.pending.push(frame);
       if (state.connected) send(frame);
       return true;
+    },
+    sendChat(text) {
+      if (!state.connected || socket === null) return null;
+      const clientMsgId = newCommandId();
+      send({ t: 'ChatSend', clientMsgId, text });
+      return clientMsgId;
     },
     dismissMessage(id) {
       const index = state.messages.findIndex((m) => m.id === id);

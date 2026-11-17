@@ -102,6 +102,7 @@ export const welcome = (view: StateView, playerId = 'a'): ServerFrame => ({
   playerId: pid(playerId),
   revision: view.revision,
   view,
+  history: { entries: [], chat: [] },
 });
 
 export const update = (view: StateView, events: { type: string; payload: unknown }[] = []): ServerFrame => ({
