@@ -36,4 +36,3 @@ export function commandExpectation(view: StateView | null, type: ClientCommandTy
   if (view.phase !== 'playing' || view.turn === null) return null;
   return { kind: 'target', target: { kind: TURN_TARGET_KIND, id: view.turn.turnId } };
 }
-

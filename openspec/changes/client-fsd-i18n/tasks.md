@@ -3,7 +3,7 @@
 ## 1. Approval and baseline
 
 - [x] 1.1 Reconcile Team Lead approval, handoff revision and source design in a fresh Apply context; verify agentctl acknowledgement and clean agent/task-vd-fsd branch.
-- [x] 1.2 Build the pristine base bundle and record raw/gzip JS/CSS per-file totals and tool versions in /srv/agents/evidence/TASK-vd-fsd/; verify reproducible baseline before dependency changes.
+- [ ] 1.2 Build the pristine base bundle and record raw/gzip JS/CSS per-file totals and tool versions in /srv/agents/evidence/TASK-vd-fsd/; verify reproducible baseline before dependency changes.
 
 ## 2. Moves (client/structure — Enforced client boundaries)
 
@@ -31,8 +31,8 @@
 
 ## 3. Boundaries (client/structure — Enforced client boundaries)
 
-- [ ] 3.1 Add pinned eslint-plugin-boundaries dependency and client layer/public API configuration; verify upward, peer-slice, type-only and private-import negative probes fail while intra-slice imports pass.
-- [ ] 3.2 Add client lint command to CI; verify the same command passes locally and includes Vue and TypeScript sources, then commit boundaries separately.
+- [x] 3.1 Add pinned eslint-plugin-boundaries dependency and client layer/public API configuration; verify upward, peer-slice, type-only and private-import negative probes fail while intra-slice imports pass.
+- [x] 3.2 Add client lint command to CI; verify the same command passes locally and includes Vue and TypeScript sources, then commit boundaries separately.
 
 ## 4. Localization (client/localization)
 

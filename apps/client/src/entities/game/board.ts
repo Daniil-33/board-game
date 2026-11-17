@@ -11,4 +11,3 @@ export interface Board {
   snap(view: BoardView, activeId: string | null): void;
   play(step: AnimationStep, speed: number): Promise<void>;
 }
-
