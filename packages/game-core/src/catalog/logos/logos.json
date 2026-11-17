@@ -1,0 +1,306 @@
+{
+  "banks-1": {
+    "file": null,
+    "reason": "restricted: https://static.privatbank.ua/files/0000003515410882.pdf requires written consent for logo uses outside its stated terms"
+  },
+  "banks-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.); no logo file with verified brand/press provenance retrieved"
+  },
+  "banks-3": {
+    "file": null,
+    "reason": "Commons file identified, but original SVG download returned HTTP 403/429; no file retrieved"
+  },
+  "banks-4": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "banks-5": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "banks-6": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "banks-7": {
+    "file": "banks-7.svg",
+    "source": "official press page",
+    "sourceUrl": "https://sensebank.ua/news",
+    "license": "© АТ «Сенс Банк». No separate reuse license stated on the press page; logo extracted from its header.",
+    "retrievedAt": "2026-11-17"
+  },
+  "banks-8": {
+    "file": "banks-8.svg",
+    "source": "official brand page",
+    "sourceUrl": "https://a-bank.com.ua/forpartners",
+    "license": "Використовуйте логотип у наданому вигляді: без зміни пропорцій, кольорів, нахилу або форми. Official downloadable logo kit; no open-content license stated.",
+    "retrievedAt": "2026-11-17"
+  },
+  "insurance-1": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "insurance-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "insurance-3": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "insurance-4": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "insurance-5": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "insurance-6": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "microfinance-1": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "microfinance-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "microfinance-3": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "microfinance-4": {
+    "file": null,
+    "reason": "catalog company identity unverified"
+  },
+  "microfinance-5": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "microfinance-6": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "technology-1": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 302: The HTTP server returned a redirect error that would lead to an infinite loop.); no logo file with verified brand/press provenance retrieved"
+  },
+  "technology-2": {
+    "file": "technology-2.svg",
+    "source": "official brand page",
+    "sourceUrl": "https://www.globallogic.com/hr/brand-identity-guidelines/",
+    "license": "© 2026 Copyright GlobalLogic Inc. All rights reserved. Brand guide requires the GlobalLogic wordmark and Hitachi endorsement to appear together; both are preserved.",
+    "retrievedAt": "2026-11-17"
+  },
+  "technology-3": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "technology-4": {
+    "file": null,
+    "reason": "official press page returned HTTP 403; no verifiable logo file retrieved"
+  },
+  "technology-5": {
+    "file": null,
+    "reason": "inspected press kits are for individual products; no company-logo file with clear press-kit provenance retrieved"
+  },
+  "technology-6": {
+    "file": "technology-6.svg",
+    "source": "official press page",
+    "sourceUrl": "https://ajax.systems/press-page/",
+    "license": "© 2026 AJAX SYSTEMS CH. All rights reserved. No separate reuse license stated on the press page; logo extracted from its header.",
+    "retrievedAt": "2026-11-17"
+  },
+  "technology-7": {
+    "file": null,
+    "reason": "official media-kit page returned HTTP 403; no verifiable logo file retrieved"
+  },
+  "technology-8": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "telecom-1": {
+    "file": null,
+    "reason": "restricted: press-page footer requires prior written consent to reuse site materials"
+  },
+  "telecom-2": {
+    "file": "telecom-2.svg",
+    "source": "official press page",
+    "sourceUrl": "https://www.vodafone.ua/news/all",
+    "license": "© 2026 Vodafone Ukraine. No separate reuse license stated on the press page; logo from its header.",
+    "retrievedAt": "2026-11-17"
+  },
+  "telecom-3": {
+    "file": "telecom-3.svg",
+    "source": "official press page",
+    "sourceUrl": "https://www.lifecell.ua/uk/pro_lifecell/pres-tsentr/",
+    "license": "© 2004-2026, ТОВ «лайфселл». Усі права захищено. No separate reuse license stated on the press page; logo from its header.",
+    "retrievedAt": "2026-11-17"
+  },
+  "telecom-4": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "telecom-5": {
+    "file": null,
+    "reason": "no verified combined Datagroup-Volia logo retrieved; separate Datagroup and Volia marks not substituted"
+  },
+  "mobility-1": {
+    "file": null,
+    "reason": "official brand page links an external Drive kit; no individual logo file with verified provenance retrieved"
+  },
+  "mobility-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "mobility-3": {
+    "file": null,
+    "reason": "restricted: brand guidelines require written permission before publishing assets"
+  },
+  "mobility-4": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 406: Not Acceptable); no logo file with verified brand/press provenance retrieved"
+  },
+  "commerce-1": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "commerce-2": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "commerce-3": {
+    "file": "commerce-3.svg",
+    "source": "official brand page",
+    "sourceUrl": "https://www.olxgroup.com/brands/",
+    "license": "No explicit reuse license stated on the official brands page. OLX logo from its OLX brand listing; not an open-content license.",
+    "retrievedAt": "2026-11-17"
+  },
+  "commerce-4": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "commerce-5": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "commerce-6": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "groceries-1": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "groceries-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "groceries-3": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 404: Not Found); no logo file with verified brand/press provenance retrieved"
+  },
+  "groceries-4": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "groceries-5": {
+    "file": null,
+    "reason": "inspected route returned a JavaScript application shell; could not verify it as a press or brand source"
+  },
+  "fuel-1": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "fuel-2": {
+    "file": "fuel-2.svg",
+    "source": "official press page",
+    "sourceUrl": "https://www.okko.ua/news",
+    "license": "© 2026. No separate reuse license stated on the OKKO news page; logo extracted from its header.",
+    "retrievedAt": "2026-11-17"
+  },
+  "fuel-3": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "fuel-4": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "fuel-5": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "media-1": {
+    "file": "media-1.png",
+    "source": "official press page",
+    "sourceUrl": "https://megogo.net/ua/about-UA/materials",
+    "license": "© 2026 MEGOGO. Всі права захищені. Official media page supplies a downloadable logo kit; no open-content license stated.",
+    "retrievedAt": "2026-11-17"
+  },
+  "media-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "media-3": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "media-4": {
+    "file": "media-4.svg",
+    "source": "official press page",
+    "sourceUrl": "https://starlight.media/news/",
+    "license": "2015 © ТОВ «СТАРЛАЙТ МЕДІА». Всі права захищено. No separate reuse license stated on the news page.",
+    "retrievedAt": "2026-11-17"
+  },
+  "logistics-1": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "logistics-2": {
+    "file": null,
+    "reason": "official press-assets page identified but returned HTTP 403; no logo file retrieved"
+  },
+  "logistics-3": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "logistics-4": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "logistics-5": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "logistics-6": {
+    "file": "logistics-6.svg",
+    "source": "official press page",
+    "sourceUrl": "https://www.sat.ua/news/",
+    "license": "© 2023-2026 Транспортна компанія SAT. Всі права захищені. No separate reuse license stated on the news page.",
+    "retrievedAt": "2026-11-17"
+  },
+  "energy-1": {
+    "file": null,
+    "reason": "no downloadable logo with verified brand/press provenance retrieved from inspected official pages"
+  },
+  "energy-2": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "energy-3": {
+    "file": null,
+    "reason": "official source request failed (HTTP Error 403: Forbidden); no logo file with verified brand/press provenance retrieved"
+  },
+  "energy-4": {
+    "file": "energy-4.svg",
+    "source": "official press page",
+    "sourceUrl": "https://uhe.gov.ua/media_tsentr/novyny",
+    "license": "Creative Commons Attribution 4.0 International license, unless otherwise stated (site-wide notice). Attribution: ПрАТ «Укргідроенерго», https://uhe.gov.ua/; SVG sanitized and optimized.",
+    "retrievedAt": "2026-11-17"
+  }
+}
