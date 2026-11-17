@@ -61,6 +61,22 @@ describe('core-7 mortgage commands',()=>{
     ];
     for(const [state,type,assetId,code] of cases){ expect((type==='Mortgage'?mortgageLegality:redeemLegality)(state,pid('a'),assetId)).toBe(code);reject(state,command(state,type,assetId,pid('a')),code); }
   });
+  it('covers redemption legality, funds and restored rent eligibility',()=>{
+    const s=portfolio(), id=group(s)[0]!.assetId;
+    reject(s,command(s,'Redeem',id),'NOT_MORTGAGED');expect(redeemLegality(s,pid('a'),id)).toBe('NOT_MORTGAGED');
+    const mortgaged=accept(s,command(s,'Mortgage',id)).state;
+    const cases:[GameState,AssetId,string][]=[
+      [{...mortgaged,purchase:{} as never},id,'DECISION_PENDING'],
+      [{...mortgaged,rent:{} as never},id,'RENT_PENDING'],
+      [mortgaged,'unknown' as AssetId,'NOT_AN_ASSET'],
+      [{...mortgaged,owners:{[id]:pid('b')}},id,'NOT_OWNER'],
+      [{...mortgaged,balances:{...mortgaged.balances,a:0 as Money}},id,'INSUFFICIENT_FUNDS'],
+    ];
+    for(const [state,assetId,code] of cases){expect(redeemLegality(state,pid('a'),assetId)).toBe(code);reject(state,command(state,'Redeem',assetId),code);}
+    expect(rentFor(mortgaged,id,null)).toBe(0);
+    const redeemed=accept(mortgaged,command(mortgaged,'Redeem',id)).state;
+    expect(rentFor(redeemed,id,null)).toBe(rentFor(s,id,null));expect(rentFor(redeemed,id,null)).toBeGreaterThan(0);
+  });
   it.each(['Mortgage','Redeem'])('%s respects payload, envelope, auction, actor and deadline precedence',type=>{
     const s=portfolio(),id=group(s)[0]!.assetId;
     for(const payload of [null,{},[],{assetId:1},{assetId:id,extra:1}]) reject(s,{...command(s,type,id),payload},'INVALID_PAYLOAD');
