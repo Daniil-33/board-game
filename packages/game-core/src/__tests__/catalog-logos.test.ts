@@ -138,7 +138,7 @@ describe.each(sets)('$name catalog logos (data only)', ({ name, metadata }) => {
       for (const file of files) {
         const bytes = readFileSync(join(root, file));
         raw += bytes.length;
-        gzip += gzipSync(bytes).length;
+        gzip += gzipSync(bytes, { level: 6 }).length; // Match the web container.
         if (bytes.length > 40_000) oversized.push(file);
       }
       expect(oversized.sort()).toEqual([...brandSizeExceptions.keys()].sort());
