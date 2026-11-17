@@ -125,10 +125,7 @@ the PR once review passes.
 - `pnpm build`, `pnpm test`, `pnpm test:integration`;
 - `openspec validate --all --strict`;
 - `git diff --check <base> HEAD` over the committed range (not the working
-  tree). In the first commit, also remove the trailing blank line at the end
-  of
-  `openspec/changes/archive/2026-11-17-stage-5-core-debts/specs/engine/turn-cycle/spec.md`
-  (deferred REV-s5-core-debts-2 RVW-002);
+  tree).;
 - green CI on the PR head (all jobs).
 
 ## Escalation conditions
