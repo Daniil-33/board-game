@@ -197,6 +197,10 @@ needs no code change.
   2026-11-17). `geometric` is only a fallback.
 - Logos are always lazily loaded URLs and never inlined into JS. See
   `TASK-vd-logos-brand`.
+- The brand set is kept pixel-identical after svgo: about 2.1 MB raw and
+  0.77 MB gzip in total, with a 2.2 MB raw cap and recorded per-file
+  exceptions. A game fetches only its ~28 companies. nginx serves SVG
+  gzipped, and hashed assets are cached as immutable.
 
 **Feed ordering (REV-vd-chat-2 RVW-002).** The event feed merges live items
 by arrival order, and history items (from `Welcome`) by server `at`.
