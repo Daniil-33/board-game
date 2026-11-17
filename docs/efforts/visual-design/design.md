@@ -61,6 +61,9 @@ apps/client/src/
 - **Import rule:** a layer imports only from layers below it (`app > pages >
   widgets > features > entities > shared`). Enforce it with an ESLint or
   `dependency-cruiser` boundary rule in CI.
+  `shared` is made of segments, not slices: shared segments may import each
+  other through a segment's `index.ts` with no cycles (`shared/i18n` imports no
+  other shared segment). TL decision 2026-11-17 on a TASK-vd-fsd question.
 - **Slice API:** each slice exposes a public `index.ts`.
 - **Today's modules move as follows:**
   - `game/*` goes to `entities/*`;
