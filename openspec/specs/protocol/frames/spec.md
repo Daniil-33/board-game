@@ -8,12 +8,12 @@ and how untrusted frame text is decoded.
 ## Requirements
 
 ### Requirement: Protocol version
-The package SHALL export `PROTOCOL_VERSION` equal to `4`. `Hello` and
+The package SHALL export `PROTOCOL_VERSION` equal to `5`. `Hello` and
 `Welcome` SHALL carry the protocol version.
 
 #### Scenario: Version constant
 - **WHEN** `PROTOCOL_VERSION` is imported
-- **THEN** it SHALL equal `4`
+- **THEN** it SHALL equal `5`
 
 ### Requirement: Frame set
 Every WebSocket frame SHALL be a JSON object tagged by a string field `t` and SHALL conform to exactly one of the client or server frame shapes below.
@@ -100,7 +100,7 @@ without naming game-core symbols.
 
 ### Requirement: Client command types
 The client `Command` types SHALL be exactly `RollForOrder`, `RollDice`,
-`EndTurn`, `Resign`, `BuyAsset`, `StartAuction`, `Bid`, `PassAuction`, `PayRent`, `BuildHouse` and `SellHouse`, named as in game-core. All except BuildHouse and SellHouse SHALL carry payload `null`. BuildHouse and SellHouse SHALL carry exactly `{ assetId: string }`, with a storable nonempty id bounded to 128 UTF-16 code units and no extra keys.
+`EndTurn`, `Resign`, `BuyAsset`, `StartAuction`, `Bid`, `PassAuction`, `PayRent`, `BuildHouse`, `SellHouse`, `Mortgage` and `Redeem`, named as in game-core. All except BuildHouse, SellHouse, Mortgage and Redeem SHALL carry payload `null`. BuildHouse, SellHouse, Mortgage and Redeem SHALL carry exactly `{ assetId: string }`, with a storable nonempty id bounded to 128 UTF-16 code units and no extra keys.
 
 #### Scenario: Resign frame
 - **WHEN** `{ t: 'Command', commandId: 'c1', type: 'Resign', expected: { kind: 'revision', revision: 7 }, payload: null }` is decoded
@@ -121,6 +121,10 @@ The client `Command` types SHALL be exactly `RollForOrder`, `RollDice`,
 #### Scenario: Rent command payload
 - **WHEN** PayRent is decoded
 - **THEN** null SHALL be accepted and every non-null payload SHALL be rejected
+
+#### Scenario: Mortgage command payloads
+- **WHEN** Mortgage or Redeem is decoded
+- **THEN** exactly one bounded storable assetId string SHALL be accepted; null, missing ids, extra keys, nonstrings, empty or oversized ids, NUL and lone surrogates SHALL be rejected
 
 ### Requirement: Storable ids
 Every id string (room/game id, guest id, player id, command id) SHALL reject
@@ -155,3 +159,10 @@ Welcome and Update SHALL preserve the core public houses, rent settlement, rentQ
 #### Scenario: Stage 4 round trip
 - **WHEN** a Welcome or Update carries houses, a rent settlement or rent quotes
 - **THEN** encoding and decoding SHALL preserve all fields and public events unchanged
+
+### Requirement: Stage 5 public projection and events
+Welcome and Update SHALL preserve core-7 mortgages, eliminations, result, balances and public events unchanged. The view SHALL remain statically typed as StateView and checked as a JSON object at runtime.
+
+#### Scenario: Core-7 round trip
+- **WHEN** a frame carries mortgage progress, liquidation, bankruptcy or a finished result
+- **THEN** encoding and decoding SHALL preserve the public projection and event payloads unchanged

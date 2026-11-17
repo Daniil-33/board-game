@@ -22,7 +22,7 @@
 ## 5. Integrated verification and delivery
 
 - [x] 5.1 Run pnpm build, pnpm test, pnpm test:integration and openspec validate --all --strict; reconcile only obsolete server/protocol expectations and necessary client type placeholders, reporting any placeholders. Compare final diff with every handoff criterion and report concrete results through agentctl.
-- [ ] 5.2 Commit on agent/task-s5-server and verify git diff --check fb625a1 HEAD; rebase on current main before the PR, recording external push/PR intent, verification and confirmation through agentctl. Open the PR and initiate independent review via the required reviewer handoff; resolve supported findings and verify all CI jobs on the exact final SHA.
+- [x] 5.2 Commit on agent/task-s5-server and verify git diff --check fb625a1 HEAD; rebase on current main before the PR, recording external push/PR intent, verification and confirmation through agentctl. Open the PR and initiate independent review via the required reviewer handoff; resolve supported findings and verify all CI jobs on the exact final SHA.
 
 ## Workflow follow-up
 
