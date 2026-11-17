@@ -157,23 +157,40 @@ the token table.
 
 ## Logos (C6)
 
-- **Storage:** `packages/game-core/src/catalog/logos/`, next to
-  `ua-1.json`.
-  - One file per company id: `<companyId>.svg` preferred, otherwise `.png`
-    no larger than 256 px on the long side and 40 KB.
-  - `logos.json` records `{ companyId: { file, source, sourceUrl, license,
-    retrievedAt } }`.
-- **Code boundary.** game-core code does not import the logos; they are
-  data. The client resolves them with Vite `import.meta.glob(..., { query:
-  '?url', eager: true })` into a `companyId → url` map.
-- **Monogram:** `shared/lib/monogram` takes up to two letters from the
-  company name, on the group gradient.
-- **Sources:**
-  - an official brand or press page, or Wikimedia Commons;
-  - no source, or an unclear one, means a monogram.
+The owner is commissioning a designer set of all 67 logos (brief:
+`docs/design/logos-brief.md`, PR #76). Until it arrives, the 12 sourced logos
+(PR #74) plus monograms are used. There is no further scraping, and
+`TASK-vd-logos-2` is cancelled.
 
-  The coverage list (`logos.json` plus a generated table in the evidence) is
-  part of the completion evidence. Trademark review is out of scope.
+**Storage:** `packages/game-core/src/catalog/logos/`, next to `ua-1.json`.
+- `<companyId>.svg` (or `.png`, at most 512 px) is for light backgrounds.
+- `<companyId>-dark.svg` (or `.png`) is an **optional** variant for dark
+  backgrounds.
+- `logos.json` is the provenance list. Each file has an entry
+  `{ file, darkFile?, source, sourceUrl?, license?, retrievedAt? }`, or
+  `{ file: null, reason }`. A commissioned set uses `source: "commissioned"`.
+
+**Drop-in.** The client resolves files by the naming convention with Vite
+`import.meta.glob(..., { query: '?url', eager: true })` into a
+`companyId → { light, dark? }` map. Replacing or adding files needs no code
+change; only the provenance entry is updated.
+
+**Validation test (game-core):**
+- every catalog id has an entry;
+- every file, and every optional `-dark` file, has a matching entry, and
+  every entry's files exist;
+- size limits: SVG at most 40 KB; PNG at most 512 px and 80 KB;
+- SVG safety: no script, no `on*` attributes, no external references.
+
+**Code boundary.** game-core code does not import the logo files.
+
+**Rendering (board task).**
+- On light cells: the light file, on a light plate so white or
+  `currentColor` variants stay visible (REV-vd-logos-1 RVW-002).
+- On dark surfaces ("Мои активы"): the dark file if present, otherwise the
+  light file on a light plate.
+- A missing or failed file falls back to the monogram (up to two letters
+  on the group gradient).
 
 ## Event log and chat (C7)
 
