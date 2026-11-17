@@ -103,12 +103,11 @@ Each environment SHALL have a separate restricted ed25519 key and pinned DEPLOY_
 - **THEN** the command fails visibly and no credential is exposed in logs or artifacts
 
 ### Requirement: Browser CI headroom
-CI SHALL run production compose-browser and deterministic compose-browser-seeded separately with 35-minute limits, cached Playwright browsers, sanitized evidence and independent cleanup. Public staging smoke SHALL remain opt-in outside CI and verify two browsers complete setup and a turn over the staging API WSS connection.
+CI SHALL run production compose-browser, isolated-fixture compose-browser-fixtures and deterministic compose-browser-seeded as separate parallel jobs with 35-minute limits, cached Playwright browsers, per-job sanitized evidence artifacts and independent cleanup. Public staging smoke SHALL remain opt-in outside CI and verify two browsers complete setup and a turn over the staging API WSS connection.
 
 #### Scenario: Delivery validation
 - **WHEN** a PR runs CI
-- **THEN** both browser jobs gate whole-workflow success and measured durations establish remaining headroom
-
+- **THEN** all browser jobs gate whole-workflow success and measured durations establish remaining headroom
 
 ### Requirement: Provisioning before pipeline activation
 After TL confirmation of first staging success, environments, keys, secrets and SSH refusal checks SHALL be provisioned and verified before the pipeline PR merges. Production owner protection SHALL exist before any workflow using that environment runs on main.
