@@ -72,3 +72,41 @@ it.each(['bankruptcy', 'final-bankruptcy'] as const)('%s bankrupts the payer to 
     expect(next.events.at(-1)!.type).toBe('GameEnded');
   }
 });
+
+it('liquidation-multi-tier mortgages, sells the house, then mortgages the bare asset', () => {
+  const state = buildFixture('liquidation-multi-tier', ids, NOW);
+  const rent = state.rent!;
+  const built = Object.keys(state.houses).find(id => state.owners[id] === rent.payerId)!;
+  const next = run(state, 'PayRent');
+  expect(steps(next.events)).toEqual([
+    expect.objectContaining({ tier: 1, kind: 'mortgage' }),
+    { tier: 3, kind: 'sell-house', assetId: built, amount: expect.any(Number) },
+    expect.objectContaining({ tier: 3, kind: 'mortgage', assetId: built }),
+  ]);
+  expect(steps(next.events)![0]!.assetId).not.toBe(built);
+  expect(next.events.at(-1)).toEqual({ type: 'RentPaid', payload: { payerId: rent.payerId, ownerId: rent.ownerId,
+    assetId: rent.assetId, amount: rent.amount, auto: false } });
+  expect(next.state.houses[built]).toBeUndefined();
+  expect(next.state.eliminated).toEqual([]);
+});
+
+it('bankruptcy-houses sells the house, pays the cash and frees every asset', () => {
+  const state = buildFixture('bankruptcy-houses', ids, NOW);
+  const rent = state.rent!;
+  const owned = Object.keys(state.owners).filter(id => state.owners[id] === rent.payerId);
+  const built = Object.keys(state.houses).find(id => state.owners[id] === rent.payerId)!;
+  const next = run(state, 'PayRent');
+  const sold = next.events.find(e => e.type === 'HouseSold')!.payload as { assetId: string; refund: number };
+  expect(sold.assetId).toBe(built);
+  const paid = 10 + sold.refund;
+  expect(next.events.find(e => e.type === 'PlayerBankrupt')!.payload).toEqual({
+    playerId: rent.payerId, creditorId: rent.ownerId, debt: rent.amount, paid, writtenOff: rent.amount - paid });
+  expect(next.events.find(e => e.type === 'AssetsReleased')!.payload).toEqual({ playerId: rent.payerId, assetIds: owned, reason: 'bankrupt' });
+  for (const id of owned) {
+    expect(next.state.owners[id]).toBeUndefined();
+    expect(next.state.houses[id]).toBeUndefined();
+    expect(next.state.mortgages[id]).toBeUndefined();
+  }
+  expect(next.state.balances[rent.ownerId]).toBe(state.balances[rent.ownerId]! + paid);
+  expect(next.state.phase).toBe('playing');
+});
