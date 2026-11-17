@@ -5,7 +5,7 @@ id: TASK-vd-shell-pages
 revision: 1
 effort: EFF-visual-design
 project: economic-board-game
-source_commit: TBD # main after TASK-vd-tokens merges
+source_commit: 436a12a # main after TASK-vd-tokens (PR #83)
 owner: team-lead
 status: proposed
 ```
@@ -91,6 +91,10 @@ the PR once review passes.
 - `openspec validate --all --strict`;
 - `git diff --check <base> HEAD`;
 - green CI (all four jobs) on the PR head.
+
+## Known flake (2026-11-17)
+
+A browser wait for a disabled End turn timed out once in CI (`stage3.spec.ts:330`). Do not add new waits on a disabled End turn without a bounded, state-based condition. Report any recurrence with its trace.
 
 ## Escalation conditions
 

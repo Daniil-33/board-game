@@ -5,7 +5,7 @@ id: TASK-vd-board
 revision: 1
 effort: EFF-visual-design
 project: economic-board-game
-source_commit: TBD # main after TASK-vd-tokens merges (logos #81 already on main 91ddf71)
+source_commit: 436a12a # main after TASK-vd-tokens (PR #83)
 owner: team-lead
 status: proposed
 ```
