@@ -44,6 +44,37 @@ describe('game store', () => {
     expect(await store.findEntryByCommandId(gameId, 'unknown')).toBeUndefined();
   });
 
+  // spec: server/persistence "Relational game results", "Atomic result persistence before broadcast"
+  it('writes the GameEnded result with its terminal entry and refuses one without a terminal snapshot', async () => {
+    const store = createGameStore(h.db);
+    const gameId = await seedRoom(h.db);
+    const { session } = played(6);
+    for (const entry of session.log) await store.appendEntry(gameId, entry, { status: null, members: null, snapshot: null });
+    const resigned = session.submit({ type: 'Resign', commandId: 'resign' as never, actor: { kind: 'player', id: 'a' as never },
+      expected: { kind: 'revision', revision: session.state.revision }, payload: null }, { now: timestamp(T0 + 5), entropy: seededEntropy(4).next() });
+    expect(resigned.kind).toBe('accepted');
+    const entry = session.log.at(-1)!;
+    const ended = entry.events.find((e) => e.type === 'GameEnded')!.payload as { winner: string; at: number; eliminations: unknown; finalBalances: unknown };
+    const rows = async () => ({
+      logs: await logEntries(h.db, gameId),
+      status: await roomStatus(h.db, gameId),
+      snapshots: await snapshotRevisions(h.db, gameId),
+      results: await h.db.selectFrom('game_results').selectAll().where('room_id', '=', gameId).execute(),
+    });
+    const before = await rows();
+    await expect(store.appendEntry(gameId, entry, { status: 'finished', members: null, snapshot: null })).rejects.toThrow('terminal snapshot');
+    expect(await rows()).toEqual(before);
+
+    await store.appendEntry(gameId, entry, { status: 'finished', members: null, snapshot: session.state });
+    const after = await rows();
+    expect(after.status).toBe('finished');
+    expect(after.snapshots.at(-1)).toBe(entry.revision);
+    expect(after.results).toEqual([{ room_id: gameId, rules_version: CURRENT_RULES_VERSION, winner_id: '__proto__',
+      finished_at: new Date(T0 + 5), final_revision: entry.revision, eliminations: ended.eliminations,
+      final_balances: ended.finalBalances, created_at: expect.any(Date) }]);
+    expect(Object.keys(after.results[0]!.final_balances)).toEqual(['a', '__proto__']);
+  });
+
   it('loads the latest snapshot and only the entries after it', async () => {
     const store = createGameStore(h.db);
     const gameId = await seedRoom(h.db);

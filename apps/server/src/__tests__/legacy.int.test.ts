@@ -7,7 +7,7 @@ import { useHarness } from './helpers/harness.js';
 import { lobby, sys, whenIdle } from './helpers/game.js';
 import { startServer, stopServers, login, TestSocket } from './helpers/server.js';
 
-const fixtures = await Promise.all(['core3', 'core4', 'core5'].map(async version => JSON.parse(await readFile(new URL(`./fixtures/${version}.json`, import.meta.url), 'utf8'))));
+const fixtures = await Promise.all(['core3', 'core4', 'core5', 'core6'].map(async version => JSON.parse(await readFile(new URL(`./fixtures/${version}.json`, import.meta.url), 'utf8'))));
 let fixture = fixtures[0];
 const h = useHarness({ perTest: true });
 afterEach(stopServers);
@@ -77,4 +77,30 @@ describe.each(fixtures)('unsupported $snapshot.rulesVersion data', historical =>
     await server.stop();
     expect(await data(id)).toEqual(before);
   });
+});
+
+// spec: server/recovery "Legacy closed room reconnect"
+it('a playing core-6 room retired by the 0006 statement answers ROOM_CLOSED and keeps its data', async () => {
+  fixture = fixtures.at(-1);
+  expect(fixture.snapshot.rulesVersion).toBe('core-6');
+  const server = await startServer(h);
+  const guest = await login(server, 'stage 4 guest');
+  const id = await seedRoom(h.db);
+  await h.db.insertInto('room_members').values({ room_id: id, guest_id: guest.guestId }).execute();
+  await legacy(id, true);
+  await h.db.updateTable('rooms').set({ status: 'playing' }).where('id', '=', id).execute();
+  const migration = await readFile(new URL('../../migrations/0006_stage5_rules.sql', import.meta.url), 'utf8');
+  const retire = migration.replace(/--.*$/gm, '').split(';').map(s => s.trim()).filter(s => /^UPDATE rooms/i.test(s));
+  expect(retire).toEqual(["UPDATE rooms SET status = 'closed' WHERE status IN ('lobby', 'playing')"]);
+  await sql.raw(retire[0]!).execute(h.db);
+  const before = await data(id);
+  expect(before.room[0]!.status).toBe('closed');
+  const socket = await TestSocket.open(server.wsUrl);
+  socket.send({ t: 'Hello', protocolVersion: PROTOCOL_VERSION, token: guest.token, gameId: id, lastRevision: null });
+  expect(await socket.nextOf('Error')).toMatchObject({ code: 'ROOM_CLOSED' });
+  await socket.whenClosed();
+  expect(server.manager.get(id)).toBeUndefined();
+  expect(server.clock.pending).toEqual([]);
+  await server.stop();
+  expect(await data(id)).toEqual(before);
 });

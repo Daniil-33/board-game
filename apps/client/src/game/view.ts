@@ -7,11 +7,14 @@ import { AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, SETUP_ROLL_TARGET_KIND, TU
 import type { AssetId, Expectation, PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 
-/** Per-asset commands: their controls come from `houseControls` in game/houses.ts. */
-export type AssetCommandType = 'BuildHouse' | 'SellHouse';
+/**
+ * Per-asset commands: house controls come from `houseControls` in game/houses.ts.
+ * Mortgage and Redeem are protocol v5 placeholders until the stage 5 client adds their controls.
+ */
+export type AssetCommandType = 'BuildHouse' | 'SellHouse' | 'Mortgage' | 'Redeem';
 /**
  * The payload the protocol defines for a command type: `{ assetId }` for the
- * house commands, `null` otherwise. `createConnection` builds the frame as a
+ * house and mortgage commands, `null` otherwise. `createConnection` builds the frame as a
  * `CommandFrame`, so the compiler checks this against the protocol schema.
  */
 export type CommandPayload<T extends ClientCommandType> = T extends AssetCommandType ? { readonly assetId: AssetId } : null;
@@ -83,7 +86,7 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
   if (view.auction !== null || view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
   if (type === 'PayRent') return view.rent?.payerId === me;
   // Per-asset: legality comes from game-core's buildLegality / saleLegality (game/houses.ts).
-  if (type === 'BuildHouse' || type === 'SellHouse') return false;
+  if (type === 'BuildHouse' || type === 'SellHouse' || type === 'Mortgage' || type === 'Redeem') return false;
   if (type === 'BuyAsset' || type === 'StartAuction') {
     const asset = view.board?.cells.find(c => c.asset?.assetId === view.purchase?.assetId)?.asset;
     return view.purchase?.playerId === me && (type !== 'BuyAsset' || (asset !== undefined && asset !== null && (view.balances[me] ?? 0) >= asset.price));

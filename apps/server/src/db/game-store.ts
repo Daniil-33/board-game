@@ -1,5 +1,5 @@
 import { sql, type Kysely, type RawBuilder } from 'kysely';
-import type { GameState, LogEntry } from '@game/game-core';
+import type { GameEndedEvent, GameState, LogEntry } from '@game/game-core';
 import type { Database, RoomStatus } from './schema.js';
 
 /** What a room is rebuilt from: the latest snapshot (if any) and every later log entry, in order. */
@@ -37,7 +37,7 @@ export interface GameStore {
   /** One consistent read of the latest snapshot and the log after it. */
   loadGame(gameId: string): Promise<LoadedGame>;
   findEntryByCommandId(gameId: string, commandId: string): Promise<LogEntry | undefined>;
-  /** One transaction: the log row, then the optional status, member and snapshot updates. */
+  /** One transaction: the log row, then the optional status, member, snapshot and terminal result writes. */
   appendEntry(gameId: string, entry: LogEntry, options: AppendOptions): Promise<void>;
   /** Idempotent: a snapshot that already exists for `state.revision` is kept. */
   writeSnapshot(gameId: string, state: GameState): Promise<void>;
@@ -155,6 +155,22 @@ export function createGameStore(db: Kysely<Database>): GameStore {
               .onConflict((oc) => oc.columns(['room_id', 'guest_id']).doNothing())
               .execute();
           }
+        }
+        const ended = entry.events.find((event): event is GameEndedEvent => event.type === 'GameEnded');
+        if (ended) {
+          const snapshot = options.snapshot;
+          if (!snapshot || snapshot.phase !== 'finished' || !snapshot.rulesVersion) {
+            throw new Error('GameEnded requires a terminal snapshot with a rules version');
+          }
+          await trx.insertInto('game_results').values({
+            room_id: gameId,
+            rules_version: snapshot.rulesVersion,
+            winner_id: ended.payload.winner,
+            finished_at: new Date(ended.payload.at),
+            final_revision: entry.revision,
+            eliminations: jsonb(ended.payload.eliminations),
+            final_balances: jsonb(ended.payload.finalBalances),
+          }).execute();
         }
         if (options.snapshot !== null) {
           await insertSnapshot(trx, gameId, options.snapshot);
