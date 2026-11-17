@@ -5,7 +5,7 @@ id: TASK-s5-e2e
 revision: 1
 effort: EFF-stage-5-mortgage-debts-bankruptcy
 project: economic-board-game
-source_commit: TBD # main after TASK-s5-client merges
+source_commit: cfc941e # main after TASK-s5-client (PR #63)
 owner: team-lead
 status: proposed
 ```
@@ -95,7 +95,7 @@ Not in scope: product code. A product defect goes to the Team Lead.
 
 ## Dependencies
 
-Starts after `TASK-s5-server` (#62, merged) and `TASK-s5-client` merge.
+Starts now: `TASK-s5-server` (#62) and `TASK-s5-client` (#63) are merged.
 
 ## Required workflow
 
