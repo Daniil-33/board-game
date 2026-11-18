@@ -83,6 +83,7 @@ export class BoardScene {
   readonly mortgages = new Container<Graphics>();
   private boardKey = '';
   private compact = false;
+  private requestRender: (() => void) | null = null;
   private readonly detailLabels: Text[] = [];
   private readonly markerByCell = new Map<number, Marker>();
   private readonly gradients = new Map<string, FillGradient>();
@@ -180,6 +181,7 @@ export class BoardScene {
       }
       this.markerByCell.set(index, { owner, color, houses, mortgaged });
     }
+    this.requestRender?.();
   }
 
   private readonly markerIndex = new WeakMap<Graphics, number>();
@@ -226,10 +228,20 @@ export class BoardScene {
     if (this.compact === compact) return;
     this.compact = compact;
     for (const text of this.detailLabels) text.visible = !compact;
+    this.invalidateCells();
   }
 
-  enableLogos(): void {
-    this.textureCache = loadLogoTexture;
+  setRenderRequest(request: (() => void) | null): void {
+    this.requestRender = request;
+    if (request !== null) {
+      this.textureCache = loadLogoTexture;
+      this.cells.cacheAsTexture(true);
+    }
+  }
+
+  invalidateCells(): void {
+    this.cells.updateCacheTexture();
+    this.requestRender?.();
   }
 
   private getGradient(key: string, colors: string[], direction?: Parameters<typeof gradient>[1]): FillGradient {
@@ -301,6 +313,7 @@ export class BoardScene {
           sprite.position.set(content.x, logoY);
           box.addChild(sprite);
           fallback.visible = false;
+          this.invalidateCells();
         });
 
         this.addDetail(box, label(display.name, 9, theme.ink, theme.ui, true), content.x, content.y + 13, width - (vertical ? 18 : 9));
@@ -323,6 +336,7 @@ export class BoardScene {
       }
       this.cells.addChild(box);
     }
+    this.invalidateCells();
   }
 
   destroy(): void {
@@ -359,7 +373,10 @@ export class BoardScene {
     const epoch = this.epoch;
     const cancelled = (): boolean => epoch !== this.epoch;
     const wait = (ms: number, frame: (t: number) => void = () => {}): Promise<boolean> =>
-      this.clock.animate(ms / Math.max(1, speed), frame, cancelled);
+      this.clock.animate(ms / Math.max(1, speed), (t) => {
+        frame(t);
+        this.requestRender?.();
+      }, cancelled);
 
     switch (step.kind) {
       case 'highlight':
@@ -418,6 +435,7 @@ export class BoardScene {
           });
         } finally {
           if (!payment.destroyed) payment.destroy({ children: true });
+          this.requestRender?.();
         }
         return;
       }
@@ -453,6 +471,7 @@ export class BoardScene {
     const token = playerId === null ? undefined : this.tokenById.get(playerId);
     this.activeRing.visible = token !== undefined && token.visible;
     if (token !== undefined) this.activeRing.position.copyFrom(token.position);
+    this.requestRender?.();
   }
 
   /** One token per player of the view, coloured by index. */
@@ -500,7 +519,8 @@ export async function mountBoard(host: HTMLElement, scene: BoardScene): Promise<
     width: scene.size,
     height: scene.size,
     background: scene.theme.board,
-    antialias: true,
+    antialias: pixelRatio < 2,
+    autoStart: false,
     autoDensity: true,
     resolution: pixelRatio,
   });
@@ -514,7 +534,16 @@ export async function mountBoard(host: HTMLElement, scene: BoardScene): Promise<
     document.fonts.load(`700 12px "${scene.theme.display[0]}"`, 'AaАа'),
   ]);
   host.appendChild(app.canvas);
-  scene.enableLogos();
+  app.stage.addChild(scene.root);
+  let renderFrame: number | null = null;
+  const requestRender = () => {
+    if (renderFrame !== null) return;
+    renderFrame = requestAnimationFrame(() => {
+      renderFrame = null;
+      app.render();
+    });
+  };
+  scene.setRenderRequest(requestRender);
   const resize = () => {
     const width = app.canvas.getBoundingClientRect().width;
     if (width === 0) return;
@@ -525,14 +554,17 @@ export async function mountBoard(host: HTMLElement, scene: BoardScene): Promise<
     app.renderer.resize(scene.size, scene.size, resolution);
     app.canvas.style.width = '100%';
     app.canvas.style.height = 'auto';
+    scene.invalidateCells();
   };
   const observer = new ResizeObserver(resize);
   observer.observe(app.canvas);
   resize();
   const disposeTooltip = mountCellTooltip(app.canvas, scene);
-  app.stage.addChild(scene.root);
+  requestRender();
   return () => {
     observer.disconnect();
+    scene.setRenderRequest(null);
+    if (renderFrame !== null) cancelAnimationFrame(renderFrame);
     disposeTooltip();
     app.stage.removeChild(scene.root);
     scene.destroy();
