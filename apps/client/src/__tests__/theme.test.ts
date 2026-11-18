@@ -32,6 +32,7 @@ it.each([
   ['danger-on-light', 'danger-surface'],
   ['on-accent', 'accent-blue'],
   ['on-accent', 'accent-mint'],
+  ...Array.from({ length: 6 }, (_, index) => ['on-accent', `player-${index + 1}`]),
 ])('%s reaches AA on %s', (text, surface) => {
   const values = [luminance(rgb(text)), luminance(rgb(surface))];
   expect((Math.max(...values) + 0.05) / (Math.min(...values) + 0.05)).toBeGreaterThanOrEqual(4.5);

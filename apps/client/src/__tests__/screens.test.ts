@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../app/index';
 import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
@@ -19,7 +19,13 @@ import {
   type Route,
 } from './helpers';
 
+enableAutoUnmount(afterEach);
+const body = new DOMWrapper(document.body);
+
 const provide = (h: Harness) => ({ global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
+const pageOptions = (h: Harness) => ({
+  global: { ...provide(h).global, stubs: { Tooltip: { template: '<slot />' } } },
+});
 const ALICE_ROOM = room([['a', 'Alice']]);
 const BOB_ROOM = room([['b', 'Bob']], 'b', 'r2');
 
@@ -82,7 +88,7 @@ describe('LobbyScreen', () => {
 
   it('lists joinable rooms with their members and offers no leave control', async () => {
     const h = harness({ stored: storedSession(), route: lobby });
-    const wrapper = mount(LobbyScreen, provide(h));
+    const wrapper = mount(LobbyScreen, pageOptions(h));
     await flushPromises();
     expect(wrapper.findAll('[data-testid="room"]')).toHaveLength(1);
     expect(wrapper.find('[data-testid="room-members"]').text()).toBe('Bob');
@@ -93,7 +99,8 @@ describe('LobbyScreen', () => {
     const h = harness({ stored: storedSession(), route: lobby });
     const wrapper = mount(App, provide(h));
     await flushPromises();
-    await wrapper.find('[data-testid="create"]').trigger('click');
+    await wrapper.get('[data-testid="open-create"]').trigger('click');
+    await body.get('[role=dialog] form').trigger('submit');
     await flushPromises();
     expect(h.calls.map((c) => `${c.method} ${c.path}`)).toContain('POST /api/rooms');
     expect(wrapper.attributes('data-screen')).toBe('room');
@@ -120,7 +127,7 @@ describe('LobbyScreen', () => {
         stored: storedSession(),
         route: (call) => (call.method === 'GET' ? { body: { rooms: [BOB_ROOM] } } : { status: 409, body: { code: 'ROOM_UNAVAILABLE', message: 'Gone' } }),
       });
-      const wrapper = mount(LobbyScreen, provide(h));
+      const wrapper = mount(LobbyScreen, pageOptions(h));
       await flushPromises();
       await wrapper.find('[data-testid="join"]').trigger('click');
       await flushPromises();
@@ -132,7 +139,7 @@ describe('LobbyScreen', () => {
       await wrapper.vm.$nextTick();
       expect(h.calls.filter((c) => c.method === 'GET').length).toBe(polls + 1);
       expect(h.client.lobby.busy).toBe(false);
-      for (const button of ['create', 'join', 'refresh']) {
+      for (const button of ['open-create', 'join', 'refresh']) {
         expect(wrapper.find(`[data-testid="${button}"]`).attributes('disabled')).toBeUndefined();
       }
       expect(wrapper.find('[data-testid="error"]').text()).toContain('ROOM_UNAVAILABLE');
@@ -148,7 +155,7 @@ describe('LobbyScreen', () => {
 
   it('malformed response: shows an error and renders nothing from it', async () => {
     const h = harness({ stored: storedSession(), route: () => ({ body: { rooms: [{ roomId: 'r9', members: 'x' }] } }) });
-    const wrapper = mount(LobbyScreen, provide(h));
+    const wrapper = mount(LobbyScreen, pageOptions(h));
     await flushPromises();
     expect(wrapper.find('[data-testid="error"]').text()).toContain('BAD_RESPONSE');
     expect(wrapper.findAll('[data-testid="room"]')).toHaveLength(0);
@@ -167,7 +174,7 @@ describe('LobbyScreen', () => {
 describe('RoomScreen', () => {
   const start = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="start"]');
   const names = (wrapper: ReturnType<typeof mount>): string[] =>
-    wrapper.findAll('[data-testid="member"]').map((m) => m.text().split(/\s+/)[0]!);
+    wrapper.findAll('[data-testid="member"]').map((m) => m.get('strong').text());
 
   function inRoom(summary = ALICE_ROOM, route?: Route): Harness {
     const h = harness({ stored: storedSession(summary), ...(route !== undefined && { route }) });
@@ -178,19 +185,43 @@ describe('RoomScreen', () => {
 
   it('creator alone: Start is visible and disabled', async () => {
     const h = inRoom();
-    const wrapper = mount(RoomScreen, provide(h));
+    const wrapper = mount(RoomScreen, pageOptions(h));
     h.sockets.last().receive(welcome(lobbyView(['a'])));
     await flushPromises();
     expect(names(wrapper)).toEqual(['Alice']);
+    expect(wrapper.findAll('[data-testid="empty-seat"]')).toHaveLength(5);
+    expect(wrapper.text()).toContain('Ждём второго игрока.');
     expect(start(wrapper).exists()).toBe(true);
     expect(start(wrapper).attributes('disabled')).toBeDefined();
     expect(wrapper.find('[data-testid="leave"]').exists()).toBe(true);
   });
 
+  it.each(['cancel', 'Escape'])('does not send a leave request when the creator dismisses with %s', async (dismissal) => {
+    const h = inRoom();
+    const wrapper = mount(RoomScreen, { ...pageOptions(h), attachTo: document.body });
+    h.sockets.last().receive(welcome(lobbyView(['a'])));
+    await flushPromises();
+    const leave = wrapper.get('[data-testid="leave"]');
+    (leave.element as HTMLButtonElement).focus();
+    await leave.trigger('click');
+
+    const cancel = body.get('[role="alertdialog"]').get('button');
+    await vi.waitFor(() => expect(document.activeElement).toBe(cancel.element));
+    if (dismissal === 'Escape') await cancel.trigger('keydown', { key: 'Escape' });
+    else await cancel.trigger('click');
+
+    await vi.waitFor(() => {
+      expect(body.find('[role="alertdialog"]').exists()).toBe(false);
+      expect(document.activeElement).toBe(leave.element);
+    });
+    expect(h.calls.filter(call => call.path.endsWith('/leave'))).toEqual([]);
+    expect(h.client.session.state.room?.roomId).toBe(ALICE_ROOM.roomId);
+  });
+
   it('a second member arrives on the socket: Start becomes enabled and the roster is refreshed through get-room', async () => {
     const withBob = room([['a', 'Alice'], ['b', 'Bob']]);
     const h = inRoom(ALICE_ROOM, () => ({ body: { room: withBob } }));
-    const wrapper = mount(RoomScreen, provide(h));
+    const wrapper = mount(RoomScreen, pageOptions(h));
     h.sockets.last().receive(welcome(lobbyView(['a'], 2)));
     h.sockets.last().receive(update(lobbyView(['a', 'b'], 3), [{ type: 'PlayerAdded', payload: { playerId: 'b' } }]));
     await flushPromises();
@@ -204,7 +235,7 @@ describe('RoomScreen', () => {
   it('shows a server error and a malformed-frame problem while in the room view', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const h = inRoom();
-    const wrapper = mount(RoomScreen, provide(h));
+    const wrapper = mount(RoomScreen, pageOptions(h));
     h.sockets.last().receive(welcome(lobbyView(['a'])));
     h.sockets.last().receive({ t: 'Error', code: 'MALFORMED_FRAME', message: 'bad hello' });
     h.sockets.last().receive('garbage');
@@ -218,7 +249,7 @@ describe('RoomScreen', () => {
 
   it('falls back to the player id when no nickname is known', async () => {
     const h = inRoom();
-    const wrapper = mount(RoomScreen, provide(h));
+    const wrapper = mount(RoomScreen, pageOptions(h));
     h.sockets.last().receive(welcome(lobbyView(['a', 'zz'])));
     await flushPromises();
     expect(names(wrapper)).toEqual(['Alice', 'zz']);
@@ -226,7 +257,7 @@ describe('RoomScreen', () => {
 
   it('a non-creator sees no Start button', async () => {
     const h = inRoom(room([['b', 'Bob'], ['a', 'Alice']], 'b'));
-    const wrapper = mount(RoomScreen, provide(h));
+    const wrapper = mount(RoomScreen, pageOptions(h));
     h.sockets.last().receive(welcome(lobbyView(['b', 'a'])));
     await flushPromises();
     expect(start(wrapper).exists()).toBe(false);
@@ -235,7 +266,7 @@ describe('RoomScreen', () => {
 
   it('Start requests the start route; a rejection is shown', async () => {
     const h = inRoom(room([['a', 'Alice'], ['b', 'Bob']]), () => ({ status: 409, body: { code: 'NOT_ENOUGH_PLAYERS', message: 'Need two' } }));
-    const wrapper = mount(RoomScreen, provide(h));
+    const wrapper = mount(RoomScreen, pageOptions(h));
     h.sockets.last().receive(welcome(lobbyView(['a', 'b'])));
     await flushPromises();
     await start(wrapper).trigger('click');
@@ -261,8 +292,8 @@ describe('App screen selection', () => {
     h.sockets.last().receive(update(setupView(['a', 'b'], { revision: 4, roller: 'a', deadline: 95_000 })));
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');
-    expect(wrapper.find('[data-testid="timer"]').text()).toBe('45 с');
-    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Розыгрыш порядка ходов: Alice');
+    expect(body.get('[data-testid="timer"]').text()).toBe('45 с');
+    expect(body.get('[data-testid="headline"]').text()).toBe('Розыгрыш порядка ходов: Alice');
     expect(h.board.snaps.length).toBeGreaterThan(0);
   });
 

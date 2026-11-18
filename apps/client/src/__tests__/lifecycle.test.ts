@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StateView } from '@game/game-core';
 import { App } from '../app/index';
@@ -10,6 +10,9 @@ import { fakeFetch, fakeSockets, fakeStorage, harness, room, storedSession, lobb
 
 const TWO = room([['a', 'Alice'], ['b', 'Bob']]);
 const THREE = room([['a', 'Alice'], ['b', 'Bob'], ['c', 'Carol']]);
+enableAutoUnmount(afterEach);
+const body = new DOMWrapper(document.body);
+
 const provide = (h: ReturnType<typeof harness>) => ({ global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -109,18 +112,21 @@ describe('invites and creator secrets', () => {
   });
 
   it('creator sees code and selectable link; clipboard failure leaves a useful fallback', async () => {
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('Denied'));
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('Denied'));
     const h = harness({ stored: storedSession(), route: (c) => c.path === '/api/rooms' && c.method === 'POST'
       ? { body: { room: { ...TWO, locked: true, joinable: false }, accessCode: 'abcd', inviteLink: '/?room=r1&code=abcd' } }
       : c.path === '/api/rooms/r1' ? { body: { room: TWO } } : { body: { rooms: [] } } });
     const wrapper = mount(App, provide(h));
     await flushPromises();
-    await wrapper.get('[data-testid="create-code"]').setValue('abcd');
-    await wrapper.get('[data-testid="create"]').trigger('click'); await flushPromises();
+    await wrapper.get('[data-testid="open-create"]').trigger('click');
+    await body.get('[data-testid="create-code"]').setValue('abcd');
+    await body.get('[role=dialog] form').trigger('submit'); await flushPromises();
     expect(wrapper.get('[data-testid="access-code"]').text()).toBe('abcd');
     expect((wrapper.get('[data-testid="invite-link"]').element as HTMLInputElement).value).toContain('/?room=r1&code=abcd');
     await wrapper.get('[data-testid="copy-invite"]').trigger('click'); await flushPromises();
-    expect(wrapper.text()).toContain('Выделите и скопируйте');
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/?room=r1&code=abcd'));
+    expect(wrapper.get('p[role="status"]').text()).toContain('Не удалось скопировать');
+    expect(wrapper.get('[data-testid="invite-link"]').attributes('readonly')).toBeDefined();
     expect([...h.storage.data.values()].join()).not.toContain('abcd');
     wrapper.unmount();
   });
@@ -139,13 +145,38 @@ describe('lobby availability and recovery', () => {
     expect(rows.map((r) => r.get('[data-testid="room-status"]').text())).toEqual(['Открытая', 'Закрытая', 'Идёт партия', 'Мест нет']);
     expect(rows[2]!.get('[data-testid="join"]').attributes('disabled')).toBeDefined();
     expect(rows[3]!.get('[data-testid="join"]').attributes('disabled')).toBeDefined();
-    await rows[1]!.get('[data-testid="join-code"]').setValue('abcd'); await rows[1]!.get('[data-testid="join-form"]').trigger('submit'); await flushPromises();
-    expect(wrapper.get('[data-testid="error"]').text()).toContain('ACCESS_CODE_INVALID');
-    expect(rows[1]!.find('[data-testid="join-code"]').exists()).toBe(true);
+    await rows[1]!.get('[data-testid="join"]').trigger('click');
+    const form = body.get('[data-testid="join-form"]');
+    expect((form.get('select').element as HTMLSelectElement).value).toBe('locked');
+    await form.get('[data-testid="join-code"]').setValue('abcd');
+    await form.trigger('submit'); await flushPromises();
+    expect(body.get('[role="alert"]').text()).toContain('ACCESS_CODE_INVALID');
+    expect(body.find('[data-testid="join-code"]').exists()).toBe(true);
     await rows[0]!.get('[data-testid="join"]').trigger('click'); await flushPromises();
     expect(h.calls.find((c) => c.path === '/api/rooms/open/join')?.body).toBeUndefined();
     wrapper.unmount();
   });
+
+  it.each(['[data-testid="join-by-code"]', '[data-testid="room"] [data-testid="join"]'])(
+    'returns focus to %s after closing locked-room entry',
+    async (selector) => {
+      const locked = { ...TWO, locked: true, joinable: false };
+      const h = harness({ stored: storedSession(), route: () => ({ body: { rooms: [locked] } }) });
+      const wrapper = mount(App, { ...provide(h), attachTo: document.body });
+      await flushPromises();
+      const opener = wrapper.get(selector);
+      (opener.element as HTMLButtonElement).focus();
+      await opener.trigger('click');
+      const dialog = body.get('[role="dialog"]');
+      await vi.waitFor(() => expect(dialog.element.contains(document.activeElement)).toBe(true));
+
+      await new DOMWrapper(document.activeElement!).trigger('keydown', { key: 'Escape' });
+      await vi.waitFor(() => {
+        expect(body.find('[role="dialog"]').exists()).toBe(false);
+        expect(document.activeElement).toBe(opener.element);
+      });
+    },
+  );
 
   it('a successful poll clears its preceding poll error', async () => {
     let fail = true;

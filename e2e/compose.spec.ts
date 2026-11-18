@@ -78,6 +78,7 @@ test('locked code and invite, participant leave and creator closes room', async 
   await expect(guest!.page.locator(sel('screen-lobby'))).toBeVisible();
   await expect(host!.page.locator(sel('member'))).toHaveCount(2);
   await host!.page.locator(sel('leave')).click();
+  await host!.page.locator(sel('confirm-leave')).click();
   await expect(host!.page.locator(sel('screen-lobby'))).toBeVisible();
   await expect(third!.page.locator(sel('screen-lobby'))).toBeVisible();
   await third!.page.locator(sel('refresh')).click();
@@ -246,6 +247,13 @@ async function stage2(players: import('./helpers').Actor[], capital: number): Pr
   for (const p of players) {
     await expect.poll(() => p.view?.board).toEqual(board);
     await expect.poll(() => Object.values(p.view!.balances)).toEqual(players.map(() => capital));
+    // This scenario inspects the board before rolling for order.
+    const dialog = p.page.getByRole('dialog', { name: 'Кто ходит первым' });
+    if (p.view?.phase === 'setup') {
+      await expect(dialog).toBeVisible();
+      await dialog.press('Escape');
+      await expect(p.page.locator(sel('open-setup'))).toBeFocused();
+    }
     const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
     await expect(canvas).toBeVisible();
     const box = (await canvas.boundingBox())!;
@@ -260,7 +268,11 @@ async function stage2(players: import('./helpers').Actor[], capital: number): Pr
       await expect(card).toContainText(other.asset!.name);
     }
     await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Закрыть карточку актива');
-  await p.page.locator(sel('asset-close')).click();
+    await p.page.locator(sel('asset-close')).click();
+    if (p.view?.phase === 'setup') {
+      await p.page.locator(sel('open-setup')).click();
+      await expect(dialog).toBeVisible();
+    }
   }
   await panels(players);
 }

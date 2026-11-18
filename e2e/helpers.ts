@@ -91,6 +91,7 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
 });
 export { expect };
 export async function createRoom(host: Actor, code?: string): Promise<string> {
+  await host.page.locator(sel('open-create')).click();
   if (code) await host.page.locator(sel('create-code')).fill(code);
   await host.page.locator(sel('create')).click();
   await expect(host.page.locator(sel('screen-room'))).toBeVisible();
@@ -103,8 +104,11 @@ export async function join(actor: Actor, roomId: string, code?: string): Promise
   await actor.page.locator(sel('refresh')).click();
   const row = actor.page.locator(`${sel('room')}[data-room-id="${roomId}"]`);
   await expect(row).toBeVisible();
-  if (code) await row.locator(sel('join-code')).fill(code);
   await row.locator(sel('join')).click();
+  if (code) {
+    await actor.page.locator(sel('join-code')).fill(code);
+    await actor.page.locator(sel('submit-join-code')).click();
+  }
   await expect(actor.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => actor.view?.phase).toBe('lobby');
 }

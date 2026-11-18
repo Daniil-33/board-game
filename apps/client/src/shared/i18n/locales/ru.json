@@ -67,6 +67,16 @@
     "back_to_lobby": "В лобби"
   },
   "lobby": {
+    "heading": "Лобби",
+    "profile": "Войти / профиль",
+    "profile_reason": "Аккаунты появятся после MVP.",
+    "join_by_code": "Войти по коду",
+    "choose_room": "Закрытая комната",
+    "no_locked_rooms": "Нет закрытых комнат со свободными местами.",
+    "occupancy": "{count} / {capacity}",
+    "closed": "Закрыта",
+    "finished": "Партия завершена",
+    "code_required": "Нужен код",
     "rooms": "Комнаты",
     "refresh": "Обновить",
     "create_room": "Создать комнату",
@@ -87,16 +97,24 @@
     "full": "Мест нет",
     "locked": "Закрытая",
     "open": "Открытая",
-    "empty": "Пустая",
-    "access_code_for": "Код доступа для комнаты {roomId}"
+    "empty": "Пустая"
   },
   "login": {
+    "guidance": "Придумайте ник, который увидят другие игроки.",
     "invalid_nickname": "Введите ник длиной от 1 до {maxLength} видимых символов.",
     "heading": "Играть как гость",
     "nickname": "Ник",
     "enter": "Войти"
   },
   "room": {
+    "empty_marker": "+",
+    "heading": "Комната ожидания · {count} из {capacity} мест",
+    "empty_seat": "Свободно",
+    "leave_title": "Закрыть комнату?",
+    "leave_warning": "Если создатель выйдет, комната закроется для всех игроков.",
+    "cancel_leave": "Остаться",
+    "confirm_leave": "Выйти и закрыть",
+    "busy": "Ждём ответа сервера…",
     "invite_copied": "Приглашение скопировано.",
     "copy_unavailable": "Не удалось скопировать. Выделите и скопируйте ссылку выше.",
     "connecting": "Подключаемся…",
@@ -214,6 +232,9 @@
     "rejected_command": "{code}: {message} — {reason}"
   },
   "turn_order": {
+    "setup_title": "Кто ходит первым",
+    "setup_description": "Каждый бросает одну кость. Ничьи перебрасываются. Если время выйдет, кость бросится автоматически.",
+    "awaiting_roll": "Броска ещё нет",
     "out": "выбыл",
     "rolled": "выпало {roll}",
     "jail_attempts": "в тюрьме, использовано попыток: {attempts} (временное правило)",
