@@ -3,7 +3,7 @@ import { actionAvailability } from '../../entities/game/index';
 import { ChatComposer } from '../../features/send-chat/index';
 import { ResignControl } from '../../features/resign/index';
 import { MobileNav } from '../../widgets/mobile-nav/index';
-import { installSoundGate, playSound, SoundControls } from '../../shared/sound/index';
+import { playSound, SoundControls } from '../../shared/sound/index';
 import { MyTurn } from '../../widgets/my-turn/index';
 import { MyAssets } from '../../widgets/my-assets/index';
 import { EventFeed } from '../../widgets/event-feed/index';
@@ -53,7 +53,6 @@ watch(() => boardDisplayKey(client.game.view?.board), () => { selectedIndex.valu
 let mountedBoard: Board | null = null;
 let ticker: ReturnType<typeof setInterval> | undefined;
 let destroyBoard: (() => void) | null = null;
-let uninstallSoundGate: (() => void) | null = null;
 let unmounted = false;
 
 // A new view is measured against the clock of its arrival, not the last tick.
@@ -98,7 +97,6 @@ function colorOf(playerId: string): string {
 }
 
 onMounted(async () => {
-  uninstallSoundGate = installSoundGate();
   client.attachSound(playSound);
   media?.addEventListener('change', updateViewport);
   ticker = setInterval(() => (now.value = client.now()), TICK_MS);
@@ -129,8 +127,6 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  uninstallSoundGate?.();
-  uninstallSoundGate = null;
   client.attachSound(null);
   unmounted = true;
   media?.removeEventListener('change', updateViewport);

@@ -159,6 +159,9 @@ describe.each(sets)('$name catalog logos (data only)', ({ name, metadata }) => {
       expect(entry.source).toBe('geometric fallback');
       expect(entry.construction).toBe('geometric-fallback');
       expect(entry.sourceRef).toBe('../geometric/logos.json');
+      const geometricRoot = join(directory, 'geometric');
+      expect(readFileSync(join(root, entry.file))).toEqual(readFileSync(join(geometricRoot, entry.file)));
+      expect(readFileSync(join(root, entry.darkFile))).toEqual(readFileSync(join(geometricRoot, entry.darkFile)));
     });
   }
 

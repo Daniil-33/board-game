@@ -4,9 +4,11 @@ import App from './App.vue';
 import { runtimeApi } from '../shared/api/index';
 import { CLIENT_KEY, createClient } from '../features/client-session/index';
 import { browserSocketFactory } from '../shared/api/index';
+import { installAudioGestureGate } from '../shared/audio-context/index';
 import './fonts.css';
 import './style.css';
 
+installAudioGestureGate();
 registerLocales();
 const storedLocale = window.localStorage.getItem('game.locale');
 if (storedLocale && i18n.global.availableLocales.includes(storedLocale)) {

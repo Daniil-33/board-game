@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SOUND_IDS, createSoundEngine, type SoundEngineOptions } from '../shared/sound/index';
+import { createAudioGestureGate } from '../shared/audio-context/index';
 import { soundForEvent, createAuctionTickSoundMapper, soundForChat, soundForTokenStep } from '../entities/event/sounds';
 import type { GameEvent } from '@game/game-core';
 import { harness, pid, playingView, room, storedSession, update, welcome } from './helpers';
@@ -81,29 +82,36 @@ describe('sound engine', () => {
 
   it('retries a suspended context on later user gestures without creating another context', async () => {
     FakeAudioContext.created = 0; FakeAudioContext.resumeAttempts = 0; FakeAudioContext.failFirstResume = true;
-    const { engine } = makeEngine();
+    const gate = createAudioGestureGate(() => new FakeAudioContext() as unknown as AudioContext);
     const events = new EventTarget();
-    engine.installGate(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+    gate.install(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
     events.dispatchEvent(new Event('pointerdown'));
     await Promise.resolve();
     expect(FakeAudioContext.created).toBe(1);
     expect(FakeAudioContext.resumeAttempts).toBe(1);
-    events.dispatchEvent(new Event('pointerup'));
+    events.dispatchEvent(new Event('keydown'));
     await Promise.resolve();
     expect(FakeAudioContext.created).toBe(1);
     expect(FakeAudioContext.resumeAttempts).toBe(2);
-    events.dispatchEvent(new Event('keydown'));
+    events.dispatchEvent(new Event('pointerdown'));
     expect(FakeAudioContext.resumeAttempts).toBe(2);
     FakeAudioContext.failFirstResume = false;
   });
 
-  it('adopts a gesture that happened before the lazy sound engine loaded', async () => {
+  it('plays a game sound after a pre-game gesture without another interaction', async () => {
     FakeAudioContext.created = 0; FakeAudioContext.resumeAttempts = 0;
-    const { engine } = makeEngine({ hasUserActivation: () => true });
-    engine.installGate(new EventTarget() as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+    FakeAudioContext.gains = [];
+    const gate = createAudioGestureGate(() => new FakeAudioContext() as unknown as AudioContext);
+    const events = new EventTarget();
+    gate.install(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+    events.dispatchEvent(new Event('pointerdown'));
     await Promise.resolve();
+    const { engine } = makeEngine({ contextProvider: gate.getContext });
+    engine.playSound('dice-roll');
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(FakeAudioContext.created).toBe(1);
     expect(FakeAudioContext.resumeAttempts).toBe(1);
+    expect(FakeAudioContext.gains).toHaveLength(1);
   });
 
   it('drops playback requests while resume is pending instead of queueing stale sounds', async () => {
@@ -232,7 +240,7 @@ describe('event sound mapping', () => {
     expect(played).toEqual([{ id: 'turn-start', own: true }, { id: 'chat', own: false }]);
   });
 
-  it('replays sounds that arrive while the async game screen is loading', () => {
+  it('drops sounds that arrive before the lazy game screen attaches', () => {
     const h = harness({ stored: storedSession(room([['a', 'Alice'], ['b', 'Bob']])) });
     h.client.start();
     const socket = h.sockets.last(); socket.open();
@@ -243,6 +251,6 @@ describe('event sound mapping', () => {
     socket.receive({ t: 'Chat', message: { seq: 1, authorId: pid('b'), text: 'Ready', at: 4 } });
     const played: Array<{ id: string; own?: boolean }> = [];
     h.client.attachSound((id, opts) => { played.push({ id, ...opts }); });
-    expect(played).toEqual([{ id: 'turn-start', own: true }, { id: 'chat', own: false }]);
+    expect(played).toEqual([]);
   });
 });

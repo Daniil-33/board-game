@@ -88,12 +88,7 @@ export function createClient(deps: ClientDeps): Client {
   const journal = createJournal();
   const lobby = reactive<LobbyState>({ rooms: [], error: null, notice: null, busy: false, inviteRoomId: null, creatorAccess: null });
   const api: LobbyApi = createLobbyApi(deps.fetchFn);
-  let soundPlayer = deps.sound ?? null;
-  const pendingSounds: Array<{ id: SoundId; opts?: { own?: boolean } }> = [];
-  function emitSound(id: SoundId, opts?: { own?: boolean }): void {
-    if (soundPlayer !== null) soundPlayer(id, opts);
-    else pendingSounds.push({ id, ...(opts !== undefined && { opts }) });
-  }
+  let emitSound = deps.sound ?? (() => {});
 
   let board: Board | null = null;
   const nameOf = (playerId: string): string => session.nicknameOf(playerId);
@@ -405,10 +400,7 @@ export function createClient(deps: ClientDeps): Client {
       if (queue.idle) snapBoard();
     },
     attachSound(sound) {
-      soundPlayer = sound ?? deps.sound ?? null;
-      if (soundPlayer !== null) {
-        for (const pending of pendingSounds.splice(0)) soundPlayer(pending.id, pending.opts);
-      }
+      emitSound = sound ?? deps.sound ?? (() => {});
     },
   };
 }

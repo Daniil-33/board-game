@@ -173,7 +173,7 @@ projection and the core rules.
 
 ### TASK-vd-load-split logo follow-up
 
-The 134-file light and dark set totals 2,113,222 B raw / 734,615 B gzip before this pass and 2,039,211 B raw / 713,315 B gzip after it. The 32 files still above 20,000 bytes after the additional safe SVGO pass are recorded below. Six are retained at their best tolerance-passing SVGO candidate; the other 26 retain their original bytes because no candidate passed the approved raster tolerance. Reducing these files further requires visible geometry simplification and an owner decision. No manual geometry or color changes are included in TASK-vd-load-split.
+The 134-file light and dark set totals 2,113,222 B raw / 734,615 B gzip before this pass and 2,039,309 B raw / 713,361 B gzip after it. The `microfinance-4.svg` and `microfinance-4-dark.svg` brand copies are excluded from SVGO and remain byte-identical to the geometric originals per the catalog contract. The 32 files still above 20,000 bytes after the additional safe SVGO pass are recorded below. Six are retained at their best tolerance-passing SVGO candidate; the other 26 retain their original bytes because no candidate passed the approved raster tolerance. Reducing these files further requires visible geometry simplification and an owner decision. No manual geometry or color changes are included in TASK-vd-load-split.
 
 | Brand logo | Raw bytes | Gzip bytes | Follow-up reason |
 | --- | ---: | ---: | --- |

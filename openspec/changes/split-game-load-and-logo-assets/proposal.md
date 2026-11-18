@@ -24,6 +24,7 @@ None.
 - `client/session`: defer game-only code until game entry while retaining existing login, lobby, room, reconnect, invite, and game screen transitions.
 - `client/logos`: keep URL resolution side-effect free and request only the logos rendered by the active game screen.
 - `client/game-screen`: preserve game presentation and reconnect behavior when the screen is loaded asynchronously, including direct reload on the game URL.
+- `client/sound`: activate the shared audio context from the always-loaded shell gesture gate while keeping the engine and audio files in the lazy game chunk.
 
 ## Impact
 

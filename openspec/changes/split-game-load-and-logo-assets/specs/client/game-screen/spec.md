@@ -15,5 +15,5 @@ behavior. Loading the game screen SHALL NOT require a protocol or server change.
 - **THEN** the game screen SHALL show the restored projection and clear reconnect feedback after Welcome
 
 #### Scenario: Preserve sound activation through lazy loading
-- **WHEN** a player interacts with the page before entering a game and game events arrive while the game screen chunk is loading
-- **THEN** the lazy sound engine SHALL adopt the browser's prior user activation and play the queued events after it attaches
+- **WHEN** a player interacts with the page before entering a game
+- **THEN** the lazy sound engine SHALL adopt the AudioContext created by the shell gesture gate without requiring another gesture
