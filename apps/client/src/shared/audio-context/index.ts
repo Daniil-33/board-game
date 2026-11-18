@@ -15,30 +15,43 @@ export function createAudioGestureGate(factory: AudioContextFactory = browserAud
   function getContext(): AudioContext | null { return context; }
 
   function install(target: GestureTarget): () => void {
-    let active = true;
-    const stop = (): void => {
-      if (!active) return;
-      active = false;
+    let disposed = false;
+    let listening = false;
+    const disarm = (): void => {
+      if (!listening) return;
+      listening = false;
       for (const event of GESTURE_EVENTS) target.removeEventListener(event, activate);
+    };
+    const arm = (): void => {
+      if (disposed || listening) return;
+      listening = true;
+      for (const event of GESTURE_EVENTS) target.addEventListener(event, activate);
+    };
+    const stop = (): void => {
+      if (disposed) return;
+      disposed = true;
+      disarm();
+      context?.removeEventListener('statechange', onStateChange);
+    };
+    const onStateChange = (): void => {
+      if (context?.state === 'running') disarm();
+      else arm();
     };
     const activate = (event: Event): void => {
       if (context === null && (event.type === 'pointerdown' || event.type === 'keydown')) {
         context = factory();
-        if (context !== null) {
-          for (const gesture of GESTURE_EVENTS) {
-            if (gesture !== 'pointerdown' && gesture !== 'keydown') target.addEventListener(gesture, activate);
-          }
-        }
+        context?.addEventListener('statechange', onStateChange);
       }
       if (context === null) return;
-      if (context.state === 'running') { stop(); return; }
+      if (context.state === 'running') { disarm(); return; }
+      arm();
       try {
         void context.resume().then(() => {
-          if (context?.state === 'running') stop();
+          onStateChange();
         }).catch(() => {});
       } catch { /* Keep listening for another user gesture. */ }
     };
-    for (const event of ['pointerdown', 'keydown'] as const) target.addEventListener(event, activate);
+    arm();
     return stop;
   }
 

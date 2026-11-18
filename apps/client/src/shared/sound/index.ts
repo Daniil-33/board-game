@@ -13,11 +13,9 @@ const allowedForOthers = new Set<SoundId>(['dice-roll', 'dice-double', 'purchase
 const urls = import.meta.glob('./files/*.mp3', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 const storedKey = 'game.sound';
 
-type AudioContextCtor = new () => AudioContext;
 export interface SoundEngineOptions {
   storage?: Pick<Storage, 'getItem' | 'setItem'>;
   fetchFn?: typeof fetch;
-  contextCtor?: AudioContextCtor;
   contextProvider?: () => AudioContext | null;
   urls?: Record<string, string>;
 }
@@ -30,7 +28,6 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
   const settings = reactive<SoundSettings>({ muted: false, volume: 0.65 });
   const storage = options.storage ?? browserStorage();
   const fetchFn = options.fetchFn ?? globalThis.fetch?.bind(globalThis);
-  const contextCtor = options.contextCtor ?? (typeof window !== 'undefined' ? window.AudioContext : undefined);
   const contextProvider = options.contextProvider ?? (() => null);
   const files = options.urls ?? urls;
   let context: AudioContext | null = contextProvider();
@@ -58,12 +55,6 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
   function setMuted(muted: boolean): void { settings.muted = muted; persist(); }
   function setVolume(volume: number): void {
     if (Number.isFinite(volume)) { settings.volume = Math.max(0, Math.min(1, volume)); persist(); }
-  }
-  function activate(): void {
-    if (context === null && contextCtor !== undefined) {
-      try { context = new contextCtor(); } catch { context = null; }
-    }
-    if (context !== null && context.state !== 'running') void resumeContext(context);
   }
   function currentContext(): AudioContext | null {
     if (context === null) context = contextProvider();
@@ -109,7 +100,7 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
       } catch { /* Audio output failures stay silent. */ }
     });
   }
-  return { settings, setMuted, setVolume, activate, playSound };
+  return { settings, setMuted, setVolume, playSound };
 }
 
 const engine = createSoundEngine({ contextProvider: getShellAudioContext });

@@ -27,13 +27,19 @@ describe('sound assets', () => {
   });
 });
 
-class FakeAudioContext {
+class FakeAudioContext extends EventTarget {
   static created = 0;
   static resumeAttempts = 0;
   static failFirstResume = false;
   static gains: Array<{ value: number }> = [];
-  state: AudioContextState = 'suspended';
-  constructor() { FakeAudioContext.created++; }
+  private currentState: AudioContextState = 'suspended';
+  get state(): AudioContextState { return this.currentState; }
+  set state(next: AudioContextState) {
+    if (this.currentState === next) return;
+    this.currentState = next;
+    this.dispatchEvent(new Event('statechange'));
+  }
+  constructor() { super(); FakeAudioContext.created++; }
   destination = {} as AudioDestinationNode;
   resume = async (): Promise<void> => {
     FakeAudioContext.resumeAttempts++;
@@ -60,10 +66,18 @@ class PendingResumeAudioContext extends FakeAudioContext {
 function makeEngine(extra: Partial<SoundEngineOptions> = {}) {
   const store = new Map<string, string>();
   let fetches = 0;
+  let readyContext: AudioContext | null = null;
   const options: SoundEngineOptions = {
     storage: { getItem: key => store.get(key) ?? null, setItem: (key, value) => { store.set(key, value); } },
     fetchFn: (async () => { fetches++; return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) } as Response; }) as typeof fetch,
-    contextCtor: FakeAudioContext as unknown as NonNullable<SoundEngineOptions['contextCtor']>,
+    contextProvider: () => {
+      if (readyContext === null) {
+        const context = new FakeAudioContext();
+        context.state = 'running';
+        readyContext = context as unknown as AudioContext;
+      }
+      return readyContext;
+    },
     urls: Object.fromEntries(fileIds.map(id => [`./files/${id}.mp3`, `/${id}.mp3`])),
     ...extra,
   };
@@ -72,10 +86,15 @@ function makeEngine(extra: Partial<SoundEngineOptions> = {}) {
 
 describe('sound engine', () => {
   it('drops calls before the first gesture and fetches a buffer on first use only', async () => {
-    const { engine, fetchCount } = makeEngine();
+    const gate = createAudioGestureGate(() => new FakeAudioContext() as unknown as AudioContext);
+    const events = new EventTarget();
+    gate.install(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+    const { engine, fetchCount } = makeEngine({ contextProvider: gate.getContext });
     engine.playSound('dice-roll');
     expect(fetchCount()).toBe(0);
-    engine.activate(); engine.playSound('dice-roll'); engine.playSound('dice-roll');
+    events.dispatchEvent(new Event('pointerdown'));
+    await Promise.resolve();
+    engine.playSound('dice-roll'); engine.playSound('dice-roll');
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(fetchCount()).toBe(1);
   });
@@ -87,13 +106,13 @@ describe('sound engine', () => {
     ['keydown', 'touchend'],
   ] as const)('keeps the shell gate active after %s until a later %s resumes the context', async (firstEvent, unlockEvent) => {
     let attempts = 0;
-    let state: AudioContextState = 'suspended';
+    const context = new FakeAudioContext();
     const resume = vi.fn(async () => {
       attempts++;
-      if (attempts >= 2) state = 'running';
+      if (attempts >= 2) context.state = 'running';
     });
-    const context = { get state() { return state; }, resume } as unknown as AudioContext;
-    const gate = createAudioGestureGate(() => context);
+    context.resume = resume;
+    const gate = createAudioGestureGate(() => context as unknown as AudioContext);
     const events = new EventTarget();
     gate.install(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
 
@@ -123,15 +142,37 @@ describe('sound engine', () => {
     expect(FakeAudioContext.gains).toHaveLength(1);
   });
 
+  it('re-arms gesture listeners after the running context becomes suspended', async () => {
+    FakeAudioContext.created = 0; FakeAudioContext.resumeAttempts = 0;
+    const context = new FakeAudioContext();
+    const gate = createAudioGestureGate(() => context as unknown as AudioContext);
+    const events = new EventTarget();
+    gate.install(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+
+    events.dispatchEvent(new Event('pointerdown'));
+    await Promise.resolve();
+    expect(context.state).toBe('running');
+    expect(FakeAudioContext.resumeAttempts).toBe(1);
+
+    context.state = 'suspended';
+    events.dispatchEvent(new Event('touchend'));
+    await Promise.resolve();
+    expect(context.state).toBe('running');
+    expect(FakeAudioContext.resumeAttempts).toBe(2);
+
+    events.dispatchEvent(new Event('click'));
+    expect(FakeAudioContext.resumeAttempts).toBe(2);
+  });
+
   it('drops playback requests while resume is pending instead of queueing stale sounds', async () => {
     PendingResumeAudioContext.pending = [];
     let fetches = 0;
+    const context = new PendingResumeAudioContext() as unknown as AudioContext;
     const { engine } = makeEngine({
-      contextCtor: PendingResumeAudioContext as unknown as NonNullable<SoundEngineOptions['contextCtor']>,
+      contextProvider: () => context,
       fetchFn: (async () => { fetches++; return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) } as Response; }) as typeof fetch,
     });
     FakeAudioContext.gains = [];
-    engine.activate();
     engine.playSound('chat');
     expect(fetches).toBe(0);
     PendingResumeAudioContext.unlock();
@@ -145,7 +186,7 @@ describe('sound engine', () => {
 
   it('filters other-player sounds and attenuates allowed events by about nine decibels', async () => {
     FakeAudioContext.gains = [];
-    const { engine, fetchCount } = makeEngine(); engine.activate();
+    const { engine, fetchCount } = makeEngine();
     engine.playSound('token-step', { own: false }); engine.playSound('auction-bid', { own: false });
     expect(fetchCount()).toBe(0);
     engine.playSound('dice-roll', { own: false });
@@ -154,7 +195,7 @@ describe('sound engine', () => {
   });
 
   it('persists mute and volume, and leaves reserved slots silent', async () => {
-    const { engine, store, fetchCount } = makeEngine(); engine.activate();
+    const { engine, store, fetchCount } = makeEngine();
     engine.setMuted(true); engine.setVolume(0.3); engine.playSound('casino');
     expect(store.get('game.sound')).toBe('1:0.3');
     expect(fetchCount()).toBe(0);
@@ -166,7 +207,7 @@ describe('sound engine', () => {
     let release!: (response: Response) => void;
     const { engine } = makeEngine({ fetchFn: (() => new Promise<Response>(resolve => { release = resolve; })) as typeof fetch });
     FakeAudioContext.gains = [];
-    engine.activate(); engine.playSound('chat'); engine.setMuted(true);
+    engine.playSound('chat'); engine.setMuted(true);
     release({ ok: true, arrayBuffer: async () => new ArrayBuffer(1) } as Response);
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(FakeAudioContext.gains).toHaveLength(0);
@@ -175,7 +216,7 @@ describe('sound engine', () => {
   it('keeps defaults when storage throws and makes fetch/decode failures silent', async () => {
     const { engine } = makeEngine({ storage: { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } }, fetchFn: (async () => { throw new Error('offline'); }) as typeof fetch });
     expect(engine.settings).toMatchObject({ muted: false, volume: 0.65 });
-    engine.activate(); expect(() => engine.playSound('chat')).not.toThrow();
+    expect(() => engine.playSound('chat')).not.toThrow();
     await new Promise(resolve => setTimeout(resolve, 0));
   });
 
@@ -185,7 +226,7 @@ describe('sound engine', () => {
       if (++calls === 1) throw new Error('offline');
       return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) } as Response;
     }) as typeof fetch });
-    engine.activate(); engine.playSound('chat');
+    engine.playSound('chat');
     await new Promise(resolve => setTimeout(resolve, 0));
     engine.playSound('chat');
     await new Promise(resolve => setTimeout(resolve, 0));

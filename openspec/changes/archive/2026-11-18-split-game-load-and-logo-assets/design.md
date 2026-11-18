@@ -25,6 +25,11 @@ behavior, add an asset service, or change edge configuration.
   boundary. This preserves existing transitions and avoids introducing a
   second source of navigation state. A router-based design was considered but
   would expand the task and complicate invite/session recovery.
+- Let the always-loaded shell gesture gate be the only creator of the shared
+  AudioContext. Create it on first pointerdown or keydown, retry `resume()` on
+  pointerup, keyup, touchend and click while it is not running, and re-arm
+  those listeners if its state later leaves `running`. The lazy sound engine
+  receives the context through a provider and does not create one itself.
 - Keep the shared logo resolver side-effect free and retain external URL
   assets. The screen's rendered consumers determine network requests; do not
   preload the set or add a runtime fetch to the resolver. Verify this with a
@@ -41,10 +46,11 @@ behavior, add an asset service, or change edge configuration.
   under the budget. The merge-base total is 339,455 B. The always-loaded
   shell gesture gate adds 240 B gzip to initial-route JS (134,607 B without
   the gate; 134,847 B with it).
-  After restoring the gesture recovery listeners and adding the lazy-chunk
-  retry/error state, the current build measures 135,117 B initial and 197,938 B
-  lazy (333,055 B total gzip), 10,808 B below the cap. The per-chunk report is
-  retained in `/srv/agents/evidence/TASK-vd-load-split/bundle-report.md`.
+  After restoring the gesture recovery listeners, removing the sound engine's
+  context-construction path, and adding the lazy-chunk retry/error state, the
+  current build measures 135,145 B initial and 197,881 B lazy (333,026 B total
+  gzip), 10,837 B below the cap. The per-chunk report is retained in
+  `/srv/agents/evidence/TASK-vd-load-split/bundle-report.md`.
   Enable and inspect the Vite manifest. CI extracts it from the running web
   image into the checkout; the web image removes the public copy and returns
   404 for `/.vite/manifest.json`. Capture staging Lighthouse and transferred
@@ -52,7 +58,8 @@ behavior, add an asset service, or change edge configuration.
 - Compare each changed brand SVG at 512x512 and 1024x1024 RGBA raster sizes.
   A candidate passes when no more than 0.5% of pixels exceed a maximum
   per-channel delta of 16 and no pixel exceeds 64. Keep and report oversize
-  exceptions in the effort summary with raw/gzip sizes and reasons.
+  exceptions with raw/gzip sizes and reasons in the TL-owned
+  [logo exception record](../../../../docs/efforts/visual-design/logo-exceptions.md).
 
 ## Risks / Trade-offs
 
