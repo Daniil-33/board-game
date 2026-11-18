@@ -17,7 +17,9 @@ import type { SocketFactory } from '../../shared/api/index';
 import { createGameState, type GameState } from '../../entities/game/index';
 import { createSessionStore, type SessionStore } from '../../entities/session/index';
 import { createChatStore, type ChatStore } from '../../entities/chat/index';
-import { createEventLog, createJournal, type EventLog } from '../../entities/event/index';
+import { createEventLog, createJournal, soundForEvent, type EventLog } from '../../entities/event/index';
+import { playSound } from '../../shared/sound/index';
+import type { SoundId } from '../../shared/sound/index';
 import type { Board } from '../../entities/game/index';
 export type { Board } from '../../entities/game/index';
 
@@ -31,6 +33,8 @@ export interface ClientDeps {
   readonly newCommandId?: () => string;
   readonly initialUrl?: string;
   readonly replaceUrl?: (url: string) => void;
+  /** Test seam for live event audio; production uses the shared sound engine. */
+  readonly sound?: (id: SoundId, opts?: { own?: boolean }) => void;
 }
 
 export interface LobbyState {
@@ -83,6 +87,7 @@ export function createClient(deps: ClientDeps): Client {
   const journal = createJournal();
   const lobby = reactive<LobbyState>({ rooms: [], error: null, notice: null, busy: false, inviteRoomId: null, creatorAccess: null });
   const api: LobbyApi = createLobbyApi(deps.fetchFn);
+  const emitSound = deps.sound ?? playSound;
 
   let board: Board | null = null;
   const nameOf = (playerId: string): string => session.nicknameOf(playerId);
@@ -187,6 +192,7 @@ export function createClient(deps: ClientDeps): Client {
       chat.replace(history.chat);
       journal.replace(history);
       board?.refreshOwnership?.(view);
+      board?.setViewer?.(game.playerId);
       eliminatedKey = JSON.stringify(view.eliminated);
       // No delta replay in stage 1: drop what was waiting and show the view as it is.
       queue.clear();
@@ -203,6 +209,7 @@ export function createClient(deps: ClientDeps): Client {
     onChat(message) {
       chat.receive(message);
       journal.appendChat(message);
+      if (message.authorId !== game.playerId) emitSound('chat', { own: false });
     },
     onChatAck(ack) {
       chat.acknowledge(ack);
@@ -220,6 +227,10 @@ export function createClient(deps: ClientDeps): Client {
   });
 
   function onViewUpdate(view: StateView, events: readonly GameEvent[]): void {
+    for (const event of events) {
+      const sound = soundForEvent(event, game.playerId);
+      if (sound) emitSound(sound.id, { own: sound.own });
+    }
     // Before animation handling: a terminal update cancels the queue, and its bankruptcy must still show.
     appendNotices(game.notices, debtNotices(events));
     board?.refreshOwnership?.(view);
@@ -382,6 +393,7 @@ export function createClient(deps: ClientDeps): Client {
       board = next;
       if (board === null) return;
       board.setNames(nameOf);
+      board.setViewer?.(game.playerId);
       if (game.view !== null) board.refreshOwnership?.(game.view);
       if (queue.idle) snapBoard();
     },

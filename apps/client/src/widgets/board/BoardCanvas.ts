@@ -13,6 +13,7 @@ import { t } from '../../shared/i18n/index';
 import { boardDisplayKey, cellDisplay } from './display';
 import { Application, Container, Graphics, Rectangle, Sprite, type FillGradient, type Texture, type Text } from 'pixi.js';
 import { CLASSIC_40 } from '@game/game-core';
+import { playSound } from '../../shared/sound/index';
 import type { BoardView } from '../../entities/game/index';
 export type { BoardView } from '../../entities/game/index';
 import type { AnimationStep } from '../../entities/game/index';
@@ -101,6 +102,7 @@ export class BoardScene {
   private readonly banner: Text;
   private readonly activeRing = new Graphics();
   private activeId: string | null = null;
+  private viewerId: string | null = null;
   private nameOf: (playerId: string) => string = (id) => id;
   /** Bumped by `snap`; a step that started before it stops moving things. */
   private epoch = 0;
@@ -368,6 +370,7 @@ export class BoardScene {
   setNames(nameOf: (playerId: string) => string): void {
     this.nameOf = nameOf;
   }
+  setViewer(playerId: string | null): void { this.viewerId = playerId; }
 
   /**
    * Put every token where the view says and mark `activeId`. Cancels a step in
@@ -426,6 +429,7 @@ export class BoardScene {
         const from = { x: token.x, y: token.y };
         const lift = step.kind === 'hop' ? 11 : 18;
         const reduced = this.reduceMotion();
+        if (step.kind === 'hop' && !reduced) playSound('token-step', { own: step.playerId === this.viewerId });
         await wait(reduced ? 0 : step.kind === 'hop' ? HOP_MS : JUMP_MS, (t) => {
           const travel = t * t * (3 - 2 * t);
           token.position.set(from.x + (to.x - from.x) * travel,

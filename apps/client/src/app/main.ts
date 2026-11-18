@@ -7,8 +7,10 @@ import { BOARD_MOUNT_KEY, CLIENT_KEY, createClient, type BoardMount } from '../f
 import { browserSocketFactory } from '../shared/api/index';
 import './fonts.css';
 import './style.css';
+import { installSoundGate } from '../shared/sound/index';
 
 registerLocales();
+installSoundGate();
 const storedLocale = window.localStorage.getItem('game.locale');
 if (storedLocale && i18n.global.availableLocales.includes(storedLocale)) {
   i18n.global.locale.value = storedLocale;
