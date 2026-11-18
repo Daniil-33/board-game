@@ -139,6 +139,7 @@ onBeforeUnmount(() => {
         <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />
       </div>
       <div class="center-column">
+        <PurchaseDialog v-if="client.game.view?.purchase" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
         <div class="board-column">
           <Hud v-model:setup-open="setupOpen" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected"
             :pending="pendingTypes" :now="now" :history="client.events.state.entries"
@@ -169,7 +170,6 @@ onBeforeUnmount(() => {
               @close="closeAsset" @command="client.sendCommand"
             />
           </ResponsiveDialog>
-          <PurchaseDialog v-if="client.game.view?.purchase" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
           <AuctionPanel v-if="client.game.view?.auction" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
         </div>
       </div>

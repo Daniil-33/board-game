@@ -35,7 +35,7 @@ describe('purchase and auction projection', () => {
     expect(actionAvailability(props(auction()))).toMatchObject({ BuyAsset: false, StartAuction: false, Bid: true, PassAuction: true, RollDice: false, EndTurn: false });
     expect(actionAvailability({ ...props(auction()), me: pid('b') })).toMatchObject({ Bid: false, PassAuction: false });
   });
-  it('keeps the deciding player purchase dialog open, lets purchase bystanders dismiss, and checks affordability and intent', async () => {
+  it('locks purchase response to the decider and gives other viewers a live non-modal status', async () => {
     const view = purchase(); const price = view.board!.cells[view.purchase!.cell]!.asset!.price;
     const state = ref(props({ ...view, balances: { ...view.balances, a: price } }));
     const command = vi.fn();
@@ -59,10 +59,14 @@ describe('purchase and auction projection', () => {
       expect(canIssue(context, 'StartAuction')).toBe(false);
     }
     state.value = { ...state.value, me: pid('b'), view }; await flushPromises();
-    expect(document.querySelector('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]')).toBeNull(); expect(target('[data-testid="purchase"]').textContent).toContain('Player a решает');
-    target('[role="dialog"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await flushPromises();
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
+    expect(target('[role="status"]').textContent).toContain('Player a');
+    expect(target('[role="status"]').textContent).toContain(String(price));
+    expect(target('[data-testid="purchase-timer"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]')).toBeNull();
     state.value = { ...state.value, me: pid('a'), view: { ...view, eliminated: [pid('a')] } }; await flushPromises();
+    expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
+    expect(document.querySelector('[role="status"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]')).toBeNull();
   });
   it('auction roles, projected amounts, deadlines and restored leader', async () => {
@@ -94,14 +98,18 @@ describe('purchase and auction projection', () => {
     dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     expect(document.querySelector('[data-testid="auction"]')).toBeTruthy();
   });
-  it('lets mobile auction bystanders dismiss the sheet and reopens it when their response becomes required', async () => {
+  it('shows mobile auction inline to bystanders and opens the locked sheet when response becomes required', async () => {
     resize.setInnerWidth(390);
     const w = mount(AuctionPanel, { props: { ...props(auction()), me: pid('b') }, attachTo: document.body });
     await flushPromises();
-    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
-    document.querySelector<HTMLElement>('[role="dialog"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    await flushPromises();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[aria-modal]')).toBeNull();
+    expect(document.querySelector('[data-testid="auction"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="auction-leader"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="auction-timer"]')).toBeTruthy();
+    await w.setProps({ view: { ...auction(), eliminated: [pid('b')] } }); await flushPromises();
+    expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
+    expect(document.querySelector('[data-testid="auction"]')).toBeTruthy();
     await w.setProps({ me: pid('a') }); await flushPromises();
     expect(document.querySelector('[role="dialog"]')).toBeTruthy();
   });

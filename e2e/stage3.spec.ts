@@ -29,12 +29,17 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const price = assetAt(actor, bought.cell).price;
   const beforeBuy = structuredClone(actor.view!.balances);
   for (const p of players) {
-    await expect(p.page.locator(sel('purchase'))).toBeVisible();
+    if (p === actor) await expect(p.page.locator(sel('purchase'))).toBeVisible();
+    else {
+      await expect(p.page.locator(sel('purchase-status'))).toBeVisible();
+      await expect(p.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
+    }
     await expect(p.page.locator(sel('buy'))).toHaveCount(p === actor ? 1 : 0);
   }
   const observer = players.find(p => p !== actor)!;
-  await observer.page.keyboard.press('Escape');
-  await expect(observer.page.locator('[role="dialog"]')).toHaveCount(0);
+  await expect(observer.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
+  await expect(observer.page.locator('[role="status"]')).toContainText(assetAt(observer, bought.cell).name);
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
   await observer.page.locator(sel('chat-input')).fill('Chat during purchase');
   await observer.page.locator(sel('chat-send')).click();
   await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
@@ -65,9 +70,11 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await respond(players, 'pass');
   const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
-  await expect(auctionObserver.page.locator('[role="dialog"]')).toBeVisible();
-  await auctionObserver.page.keyboard.press('Escape');
-  await expect(auctionObserver.page.locator('[role="dialog"]')).toHaveCount(0);
+  await expect(auctionObserver.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
+  await expect(auctionObserver.page.locator(sel('auction'))).toBeVisible();
+  await expect(auctionObserver.page.locator(sel('auction-leader'))).toBeVisible();
+  await expect(auctionObserver.page.locator(sel('auction-timer'))).toBeVisible();
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(auctionObserver, info, 'auction-bystander-390');
   await auctionObserver.page.locator(sel('game-tab-journal')).click();
   await auctionObserver.page.locator(sel('chat-input')).fill('Chat during auction');
   await auctionObserver.page.locator(sel('chat-send')).click();

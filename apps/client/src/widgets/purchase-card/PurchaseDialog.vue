@@ -41,7 +41,7 @@ const disabledReason = (type: NullPayloadType): string => {
 };
 </script>
 <template>
-  <ResponsiveDialog v-if="view.purchase" v-model:open="surfaceOpen" :title="t('purchase_dialog.purchase_decision')" :dismissible="!deciding" wide>
+  <ResponsiveDialog v-if="view.purchase && deciding" v-model:open="surfaceOpen" :title="t('purchase_dialog.purchase_decision')" :dismissible="false" wide>
   <section class="asset-card decision-panel purchase-card" :style="{ '--asset-gradient': `var(--group-${asset?.groupId?.toLowerCase() ?? 'm1'})` }" :aria-label="t('purchase_dialog.purchase_decision')" data-testid="purchase">
     <header class="purchase-header">
       <img v-if="logo && !logoFailed" :src="logo" :alt="''" data-testid="purchase-logo" @error="logoFailed = true">
@@ -54,14 +54,16 @@ const disabledReason = (type: NullPayloadType): string => {
       <tbody><tr v-for="row in rentRows" :key="row.key"><th scope="row">{{ row.label }}</th><template v-if="row.rates"><td v-for="rate in row.rates" :key="rate.diceSum">{{ formatMoney(rate.amount) }}</td></template><td v-else>{{ formatMoney(row.amount ?? 0) }}</td></tr></tbody>
     </table>
     <p v-if="view.turn" data-testid="purchase-timer">{{ t('common.seconds_remaining', { seconds: formatSeconds(remainingSeconds(view.turn.deadline, now)) }) }}</p>
-    <template v-if="deciding">
       <p>{{ t('purchase_dialog.balance', { balance: formatMoney(view.balances[me!]) }) }}</p>
       <Button data-testid="buy" :disabled="!canIssue(props, 'BuyAsset')" :reason="disabledReason('BuyAsset')" @click="emit('command', 'BuyAsset')">{{ t('purchase_dialog.buy') }}</Button>
       <Button data-testid="start-auction" :disabled="!canIssue(props, 'StartAuction')" :reason="disabledReason('StartAuction')" @click="emit('command', 'StartAuction')">{{ t('purchase_dialog.start_auction') }}</Button>
-    </template>
-    <p v-else>{{ t('purchase_dialog.deciding', { player: nameOf(view.purchase.playerId) }) }}</p>
   </section>
   </ResponsiveDialog>
+  <section v-else-if="view.purchase" class="asset-card decision-panel purchase-card purchase-status" role="status" data-testid="purchase-status">
+    <h2>{{ t('purchase_dialog.purchase_decision') }}</h2>
+    <p class="purchase-status-details"><span>{{ t('purchase_dialog.deciding', { player: nameOf(view.purchase.playerId) }) }}</span><span>{{ asset?.name }}</span><span>{{ formatMoney(asset?.price ?? 0) }}</span></p>
+    <p v-if="view.turn" data-testid="purchase-timer">{{ t('common.seconds_remaining', { seconds: formatSeconds(remainingSeconds(view.turn.deadline, now)) }) }}</p>
+  </section>
 </template>
 
 <style scoped>
@@ -69,6 +71,8 @@ const disabledReason = (type: NullPayloadType): string => {
 .purchase-header img, .monogram { width: 48px; height: 48px; flex: none; object-fit: contain; }
 .monogram { display: grid; place-items: center; border-radius: 8px; color: var(--text-primary); background: var(--surface-1); font-weight: 700; }
 .purchase-header h2, .purchase-header p { margin: 0; }
+.purchase-status { width: 100%; max-width: 420px; margin-inline: auto; }
+.purchase-status-details { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .rent-table { width: 100%; border-collapse: collapse; margin-block: var(--space-3); }
 .rent-table th, .rent-table td { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: 1px solid var(--border-subtle); }
 .rent-table th { text-align: left; }

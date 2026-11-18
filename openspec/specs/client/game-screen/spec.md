@@ -192,7 +192,7 @@ A player panel SHALL show each participant's nickname and avatar in projected se
 - **THEN** the roster entry and turn header SHALL display a translated paused label
 
 ### Requirement: Asset inspection
-Selecting an asset from the board or “Мои активы” SHALL open a responsive inspection surface using the current board and projection. It SHALL show asset details and public rent tiers, highlight the projected current tier, and show owner actions only to the owner. Dismissing it SHALL restore focus to its opener.
+Selecting an asset from the board or “Мои активы” SHALL open a responsive inspection surface using only the current server board and projection. It SHALL show asset details and public rent tiers, highlight the projected current tier, and show owner actions only to the owner. Dismissing it SHALL restore focus to its opener.
 
 #### Scenario: Card content
 - **WHEN** an asset inspection surface opens

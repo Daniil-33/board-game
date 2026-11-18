@@ -42,6 +42,7 @@ describe('rent formula tables across prices-1', () => {
       }
     }
     const logistics = board.cells.filter(c => c.kind === 'logistics');
+    for (const cell of logistics) expect(rentTiers(board, cell.asset!.assetId).filter(tier => tier.kind === 'logistics')).toHaveLength(logistics.length);
     for (const cell of logistics) for (const tier of rentTiers(board, cell.asset!.assetId).filter((entry): entry is Extract<typeof entry, { kind: 'logistics' }> => entry.kind === 'logistics')) {
       const ownedCells = [cell, ...logistics.filter(other => other !== cell)].slice(0, tier.holdings);
       expect(tier.amount).toBe(rentFor({ ...s, owners: Object.fromEntries(ownedCells.map(c => [c.asset!.assetId, pid('b')])) }, cell.asset!.assetId, null));
