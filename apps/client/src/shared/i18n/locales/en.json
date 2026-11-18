@@ -307,7 +307,8 @@
     "command_rejected": "Command rejected ({code}): {message}",
     "auction_phase": "Auction",
     "after_roll": "Actions after rolling",
-    "before_roll": "Waiting for a roll"
+    "before_roll": "Waiting for a roll",
+    "leave_requires_resign": "Resign before leaving the game."
   },
   "chat": {
     "message": "Message…",

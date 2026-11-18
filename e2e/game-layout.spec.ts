@@ -1,15 +1,15 @@
-import { test, expect, createRoom, join, sel, setup, start } from './helpers';
+import { test, expect, createRoom, join, sel, setup, start, action } from './helpers';
 
 test('game layout stays within all supported widths and preserves mobile selection', async ({ actors }) => {
   test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room setup');
-  const players = await actors(2);
-  const [host, guest] = players;
-  const room = await createRoom(host!);
-  await join(guest!, room);
+  const players = await actors(3);
+  const host = players[0]!;
+  const room = await createRoom(host);
+  for (const guest of players.slice(1)) await join(guest, room);
   await start(players);
   await setup(players);
 
-  const page = host!.page;
+  const page = host.page;
   const nav = page.locator(sel('game-tab-board'));
   for (const width of [360, 390, 768, 1024, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
@@ -40,4 +40,14 @@ test('game layout stays within all supported widths and preserves mobile selecti
   await page.locator(sel('chat-send')).click();
   await expect(page.locator(sel('journal-entry')).filter({ hasText: 'Mobile chat' })).toBeVisible();
   await expect(journal).toHaveAttribute('aria-selected', 'true');
+
+  await page.locator(sel('game-tab-more')).click();
+  const leave = page.locator(sel('game-leave'));
+  await expect(leave).toBeDisabled();
+  await page.locator(sel('Resign')).click();
+  await action(host, 'confirm-resign');
+  await expect.poll(() => players[1]!.view?.eliminated).toContain(host.id);
+  await expect(leave).toBeEnabled();
+  await leave.click();
+  await expect(page.locator(sel('screen-lobby'))).toBeVisible();
 });

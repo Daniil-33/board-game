@@ -307,7 +307,8 @@
     "command_rejected": "Команда отклонена ({code}): {message}",
     "auction_phase": "Аукцион",
     "after_roll": "Действия после броска",
-    "before_roll": "Ожидание броска"
+    "before_roll": "Ожидание броска",
+    "leave_requires_resign": "Чтобы выйти из партии, сначала сдайтесь."
   },
   "chat": {
     "message": "Сообщение…",

@@ -25,6 +25,11 @@ The game screen SHALL keep existing in-game actions reachable and preserve their
 - **THEN** the game SHALL offer bottom tabs for Board, Assets, Journal and More, with the board sized to the available width and resign, rules summary and leave accessible in More
 - **AND** a server view update SHALL preserve the selected tab
 
+#### Scenario: Leaving an active game
+- **WHEN** an active player opens More
+- **THEN** leaving for the lobby SHALL remain disabled with a reason until the view shows their elimination. Players who choose to leave SHALL use the existing resignation confirmation
+- **AND** eliminated and non-playing viewers SHALL be able to return to the lobby
+
 #### Scenario: Supported widths
 - **WHEN** the game is rendered at widths 360, 390, 768, 1024, 1440 and 1920 px
 - **THEN** the page SHALL have no horizontal overflow

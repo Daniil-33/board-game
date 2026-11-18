@@ -77,6 +77,18 @@ describe('game presentation', () => {
       expect(w.get(`[id="${button.attributes('aria-describedby')}"]`).text()).toContain('переподключаемся');
     }
     expect(canIssue(context.value, 'EndTurn')).toBe(false);
+    for (const restriction of [
+      { connected: true, pending: ['EndTurn'] as const },
+      { connected: true, now: view.turn!.deadline },
+      { connected: true, me: pid('b') },
+    ]) {
+      const before = context.value;
+      context.value = { ...before, ...restriction };
+      await flushPromises();
+      for (const type of ['RollDice', 'EndTurn']) expect(w.get(hook(type)).attributes('disabled')).toBeDefined();
+      context.value = before;
+      await flushPromises();
+    }
     w.unmount();
   });
 
@@ -168,6 +180,36 @@ describe('game presentation', () => {
       expect(w.find(hook('unread-chat')).exists()).toBe(false);
       w.unmount();
     } finally { matchMedia.mockRestore(); }
+  });
+
+  it('permits returning to the lobby only after the server projects resignation', async () => {
+    const test = game();
+    const view = playingView(['a', 'b', 'c']);
+    const socket = test.sockets.last();
+    socket.receive(welcome(view));
+    const w = mountGame(test);
+    const leave = w.get(hook('game-leave'));
+    expect(leave.attributes('disabled')).toBeDefined();
+    expect(w.get(`[id="${leave.attributes('aria-describedby')}"]`).text()).toContain('сначала сдайтесь');
+    await leave.trigger('click');
+    expect(test.client.session.state.room).not.toBeNull();
+    await w.get(hook('Resign')).trigger('click');
+    await w.get(hook('confirm-resign')).trigger('click');
+    const command = socket.sent.find(frame => frame.t === 'Command');
+    expect(command).toMatchObject({ type: 'Resign', payload: null });
+    if (!command) throw Error('Expected the Resign command');
+    socket.receive({ t: 'Ack', commandId: command.commandId, outcome: 'accepted', revision: 10 as Revision });
+    await flushPromises();
+    expect(leave.attributes('disabled')).toBeDefined();
+    socket.receive(update({ ...view, revision: 10 as Revision, order: [pid('b'), pid('c')],
+      eliminated: [pid('a')], turn: { ...view.turn!, playerId: pid('b') } }));
+    await flushPromises();
+    expect(w.get(hook('Resign')).attributes('disabled')).toBeDefined();
+    expect(leave.attributes('disabled')).toBeUndefined();
+    await leave.trigger('click');
+    expect(test.client.session.state.room).toBeNull();
+    expect(w.attributes('data-screen')).toBe('lobby');
+    w.unmount();
   });
 });
 

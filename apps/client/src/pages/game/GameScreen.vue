@@ -71,6 +71,13 @@ const context = computed(() => ({
 }));
 const connectionMessages = computed(() => client.game.messages.filter(message => !message.commandType));
 const canResign = computed(() => actionAvailability(context.value).Resign);
+const canLeaveGame = computed(() => {
+  const { view, me } = context.value;
+  return view !== null && (me === null || view.eliminated.includes(me) || !view.players.some(player => player.id === me));
+});
+function leaveGame(): void {
+  if (canLeaveGame.value) client.returnToLobby();
+}
 
 /** Player identities use the same seat palette in the waiting room, setup and on the board. */
 function colorOf(playerId: string): string {
@@ -161,7 +168,10 @@ onBeforeUnmount(() => {
               <p>{{ t('game_layout.rules_summary') }}</p>
             </details>
             <div data-testid="game-sound-slot" />
-            <Button data-testid="game-leave" @click="client.returnToLobby()">{{ t('game_over.back_to_lobby') }}</Button>
+            <Button data-testid="game-leave" :disabled="!canLeaveGame"
+              :reason="canLeaveGame ? '' : t('game_layout.leave_requires_resign')" @click="leaveGame">
+              {{ t('game_over.back_to_lobby') }}
+            </Button>
           </div>
           <ResignControl v-if="!setupOpen" :available="canResign" @confirm="client.sendCommand('Resign')" />
         </section>
