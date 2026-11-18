@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { i18n, t } from '../shared/i18n/index';
+import CommandToasts from './CommandToasts.vue';
 import { UiProvider } from '../shared/ui/index';
 import { computed } from 'vue';
 import { useClient } from '../features/client-session/index';
@@ -42,6 +43,7 @@ const screen = computed(() => {
       <RoomScreen v-else-if="screen === 'room'" />
       <GameOverScreen v-else-if="screen === 'finished'" />
       <GameScreen v-else />
+      <CommandToasts v-if="screen === 'game'" />
     </UiProvider>
   </main>
 </template>

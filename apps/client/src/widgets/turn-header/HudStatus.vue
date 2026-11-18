@@ -10,7 +10,7 @@ const reasonFor = (message: HudMessage): string | null => houseReason(message.co
 
 <template>
   <p v-if="fatal" class="error" data-testid="fatal">{{ fatal }}</p>
-  <p v-else-if="!connected" class="warn-box" data-testid="offline">{{ t('hud.connection_lost_reconnecting') }}</p>
+  <p v-else-if="!connected" class="warn-box" role="status" data-testid="offline">{{ t('hud.connection_lost_reconnecting') }}</p>
   <p v-if="problem" class="warn-box" data-testid="problem">{{ problem }}</p>
   <ul v-if="messages.length > 0" class="messages">
     <li v-for="message in messages" :key="message.id" class="error" data-testid="message" :data-code="message.code">

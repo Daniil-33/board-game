@@ -5,10 +5,8 @@ import { computed, ref, watch } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType, HistoryEntry } from '@game/protocol';
 import { actionAvailability, activeDeadline, activePlayerId, turnOrder, type NullPayloadType } from '../../entities/game/index';
-import { eliminationText } from '../../entities/game/index';
 import type { HudMessage } from '../../entities/game/index';
 import { ResignControl } from '../../features/resign/index';
-import { ActionButtons } from '../../features/turn-actions/index';
 import HudStatus from './HudStatus.vue';
 import TurnOrder from './TurnOrder.vue';
 import TurnTimer from './TurnTimer.vue';
@@ -24,13 +22,14 @@ const props = defineProps<{
   messages: readonly HudMessage[];
   problem: string | null;
   fatal: string | null;
+  externalStatus?: boolean;
   nameOf: (playerId: string) => string;
   colorOf: (playerId: string) => string;
 }>();
 const emit = defineEmits<{ command: [type: NullPayloadType]; dismiss: [id: number] }>();
 
 const setup = computed(() => props.view?.phase === 'setup');
-const setupOpen = ref(false);
+const setupOpen = defineModel<boolean>('setupOpen', { default: false });
 const setupTrigger = ref<HTMLElement | null>(null);
 const turnHeading = ref<HTMLElement | null>(null);
 watch(setup, (isSetup) => {
@@ -78,7 +77,20 @@ const active = computed(() => activePlayerId(props.view));
 const available = computed(() =>
   actionAvailability({ view: props.view, me: props.me, connected: props.connected, pending: props.pending, now: props.now }),
 );
-const out = computed(() => (props.me !== null && props.view?.eliminated.includes(props.me) ? eliminationText(props.view, props.me, true) : null));
+const dice = computed(() => {
+  const turnId = props.view?.turn?.turnId;
+  if (turnId === undefined) return null;
+  for (const entry of [...(props.history ?? [])].reverse()) {
+    for (const event of [...entry.events].reverse()) {
+      const payload = event.payload;
+      if (event.type === 'DiceRolled' && payload && typeof payload === 'object' &&
+          'turnId' in payload && payload.turnId === turnId && 'dice' in payload &&
+          Array.isArray(payload.dice) && payload.dice.length === 2 &&
+          payload.dice.every(die => Number.isInteger(die) && die >= 1 && die <= 6)) return payload.dice as number[];
+    }
+  }
+  return null;
+});
 const headline = computed(() => {
   if (props.view === null || active.value === null) return t('hud.waiting');
   const own = active.value === props.me;
@@ -87,14 +99,28 @@ const headline = computed(() => {
   if (props.view.turn?.bonus) return own ? t('hud.your_bonus_turn') : t('hud.player_bonus_turn', { player });
   return own ? t('hud.your_turn') : t('hud.turn', { player });
 });
+const phase = computed(() => {
+  if (setup.value) return t('game_layout.setup_phase');
+  if (props.view?.auction) return t('game_layout.auction_phase');
+  if (props.view?.turn?.rolled) return t('game_layout.after_roll');
+  return t('game_layout.before_roll');
+});
 </script>
 
 <template>
-  <aside class="hud">
-    <HudStatus v-if="!setupOpen" :fatal="fatal" :connected="connected" :problem="problem" :messages="messages" @dismiss="emit('dismiss', $event)" />
+  <section class="game-surface turn-header" data-testid="turn-header">
+    <HudStatus v-if="!setupOpen && !externalStatus" :fatal="fatal" :connected="connected" :problem="problem" :messages="messages" @dismiss="emit('dismiss', $event)" />
 
-    <h2 ref="turnHeading" tabindex="-1" :data-testid="setup && setupOpen ? undefined : 'headline'">{{ headline }}</h2>
-    <TurnTimer v-if="!setup" :paused="view?.turn?.pausedRemainingMs != null" :deadline="activeDeadline(view)" :now="now" />
+    <div class="turn-meta">
+      <div>
+        <h2 ref="turnHeading" tabindex="-1" :data-testid="setup && setupOpen ? undefined : 'headline'">{{ headline }}</h2>
+        <p class="phase" data-testid="turn-phase">{{ phase }}</p>
+      </div>
+      <div v-if="dice" class="dice" data-testid="turn-dice">
+        <span v-for="(die, index) in dice" :key="index">{{ die }}</span>
+      </div>
+      <TurnTimer v-if="!setup" :paused="view?.turn?.pausedRemainingMs != null" :deadline="activeDeadline(view)" :now="now" />
+    </div>
     <div v-if="setup" ref="setupTrigger">
       <Button data-testid="open-setup" @click="setupOpen = true">{{ t('hud.order_roll') }}</Button>
     </div>
@@ -121,21 +147,23 @@ const headline = computed(() => {
       </div>
     </ResponsiveDialog>
 
-    <p v-if="out" class="warn-box" data-testid="spectator">{{ out }}</p>
-    <ActionButtons v-if="!setup" :available="available" @command="(type) => emit('command', type)" />
-    <p v-if="me && view?.rent?.payerId === me" class="note" data-testid="auto-pay-note"> {{ t('hud.automatic_payment') }} </p>
-
-    <ResignControl v-if="!setupOpen" :available="available.Resign" @confirm="emit('command', 'Resign')" />
-
-    <template v-if="!setup">
-      <h3>{{ t('hud.turn_order') }}</h3>
+    <details v-if="!setup" class="current-order">
+      <summary>{{ t('hud.turn_order') }}</summary>
       <TurnOrder :entries="entries" :me="me" :name-of="nameOf" :color-of="colorOf" />
-    </template>
-
-  </aside>
+    </details>
+  </section>
 </template>
 
 <style scoped>
+.turn-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.turn-meta h2 { margin: 0; }
+.turn-meta :deep(.timer) { font-family: var(--design-font-display); font-size: 1rem; margin: 0; }
+.current-order { font-size: .85rem; color: var(--text-secondary); }
+.current-order summary { margin-top: var(--space-2); cursor: pointer; }
+.phase { color: var(--text-muted); margin: var(--space-1) 0 0; font-size: .85rem; }
+.dice { display: flex; gap: var(--space-2); }
+.dice span { background: var(--gradient-card-light); color: var(--ink-primary); border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 10px; }
+
 .setup-dialog { overflow-wrap: anywhere; }
 .setup-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
 .setup-actions :deep(.timer) { font-size: 1rem; margin: var(--space-1) 0 0; }

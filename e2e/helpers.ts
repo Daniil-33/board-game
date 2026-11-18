@@ -155,6 +155,10 @@ export async function sendRaw(actor: Actor, frame: object): Promise<void> {
   }, JSON.stringify(frame));
 }
 export async function resign(actor: Actor): Promise<void> {
+  const more = actor.page.locator(sel('game-tab-more'));
+  const needsTab = await more.isVisible() && actor.view?.phase === 'playing';
+  if (needsTab) await more.click();
   await actor.page.locator(sel('Resign')).click();
   await action(actor, 'confirm-resign');
+  if (needsTab && actor.view?.phase === 'playing') await actor.page.locator(sel('game-tab-board')).click();
 }

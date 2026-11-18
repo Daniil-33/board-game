@@ -157,6 +157,28 @@ describe('client wiring', () => {
     expect(h.client.chat.state.messages).toEqual([msg(4, 'hey', 'b')]);
   });
 
+  it('sorts Welcome history by server time, appends mixed live frames in arrival order and replaces on Welcome', () => {
+    const h = joined();
+    const socket = h.sockets.last();
+    socket.receive(withHistory(welcome(lobbyView(['a', 'b'], 8)),
+      [{ ...entry(5), at: 20 }, { ...entry(2, ['GameStarted', 'TurnStarted']), at: 20 }],
+      [{ ...msg(3), at: 20 }, { ...msg(2), at: 10 }]));
+    const keys = () => h.client.journal.state.items.map(item => item.key);
+    expect(keys()).toEqual(['chat-2', 'event-2-0', 'event-2-1', 'event-5-0', 'chat-3']);
+    socket.receive({ t: 'Chat', message: { ...msg(8), at: 200 } });
+    h.clock.now = 6;
+    socket.receive(update(lobbyView(['a', 'b'], 9), [{ type: 'TurnEnded', payload: null }]));
+    socket.receive({ t: 'Chat', message: { ...msg(7), at: 1 } });
+    socket.receive({ t: 'Chat', message: { ...msg(8), at: 2 } });
+    expect(keys().slice(-3)).toEqual(['chat-8', 'event-9-0', 'chat-7']);
+    expect(h.client.journal.state.liveChat).toBe(2);
+    socket.receive(withHistory(welcome(lobbyView(['a', 'b'], 10)),
+      [{ ...entry(9), at: 5 }], [{ ...msg(8), at: 2 }]));
+    expect(keys()).toEqual(['chat-8', 'event-9-0']);
+    socket.receive({ t: 'Chat', message: msg(8) });
+    expect(keys()).toEqual(['chat-8', 'event-9-0']);
+  });
+
   it('sends ChatSend over the connection; the ack clears it; a pending message is not resent after a reconnect', () => {
     const h = joined();
     const socket = h.sockets.last();

@@ -45,10 +45,7 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .room { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--edge); }
 .members li { padding: 6px 0; }
 .room-view .primary { margin-top: 16px; }
-.game { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-.board { flex: 1 1 420px; max-width: 660px; min-width: 0; }
 .board-canvas { display: block; width: 100%; height: auto; border-radius: 10px; }
-.hud { flex: 1 1 280px; background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 16px; }
 .timer { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 12px; }
 .timer.low { color: var(--warn); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -67,7 +64,6 @@ input[readonly] { width: 100%; }
 .room form { flex: 1 1 220px; align-items: stretch; }
 .room form label { display: flex; flex-direction: column; gap: 6px; }
 
-.game-panel { min-width: 260px; max-width: 420px; }
 .player-panel, .asset-card { padding: 1rem; margin-bottom: 1rem; background: var(--surface-2); border-radius: 8px; }
 .player-panel ul, .asset-card ul { list-style: none; padding: 0; }
 .player-panel li { display: flex; gap: .6rem; flex-wrap: wrap; padding: .4rem 0; }
@@ -77,7 +73,6 @@ input[readonly] { width: 100%; }
 .asset-card dl { display: grid; grid-template-columns: 80px 1fr; gap: .3rem; }
 .asset-card dd { margin: 0; }
 .asset-card li { margin: .5rem 0; }
-.game-panel { flex: 1 1 280px; }
 
 .decision-panel button { float: none; margin-right: .5rem; }
 .decision-panel dl { grid-template-columns: 110px 1fr; }
@@ -170,3 +165,12 @@ body:has(.app:is([data-screen="login"], [data-screen="lobby"], [data-screen="roo
 }
 .ds-dialog-wide > h2 { font-family: var(--design-font-display); }
 .ds-dialog-wide > p { color: var(--text-muted); }
+
+.app[data-screen="game"] { min-height: 100dvh; max-width: 1440px; }
+body:has(.app[data-screen="game"]) { background: radial-gradient(ellipse at 12% 0%, var(--bg-glow-1), transparent 50%), var(--bg-base); }
+.game-surface h2, .player-panel h2 { font-family: var(--design-font-display); font-size: .95rem; }
+.game-surface { padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface-1); }
+@media (max-width: 1023px) {
+  .app[data-screen="game"] .ds-toast-viewport { left: var(--space-4); bottom: calc(68px + env(safe-area-inset-bottom)); }
+}
+.app[data-screen="game"] .ds-toast { max-width: min(32rem, calc(100vw - var(--space-8))); overflow-wrap: anywhere; margin-top: var(--space-2); }
