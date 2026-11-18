@@ -5,7 +5,7 @@ id: TASK-vd-sound
 revision: 1
 effort: EFF-visual-design
 project: economic-board-game
-source_commit: TBD # main after TASK-vd-game-dialogs merges
+source_commit: 5181edd # main after TASK-vd-game-dialogs (PR #89)
 owner: team-lead
 status: proposed
 ```
@@ -65,8 +65,15 @@ browser.
    - nothing plays for history.
 
    Use a fake `AudioContext`.
-8. **Bundle:** the engine adds at most a few KB of initial JS; the audio is
-   lazily fetched. Report the per-chunk table against the merge base.
+8. **Bundle:** the engine adds at most a few KB of initial JS, and the
+   audio is fetched lazily. Report the per-chunk table against the merge
+   base.
+
+   Main at 5181edd is +81,963 bytes over the 253,863-byte baseline, which
+   leaves about 3 KB before the +85 KB trigger. If this task's total JS
+   goes above +85 KB, it must also split the game page and its dialogs
+   into a lazy route chunk (design.md § Bundle size). Report initial-route
+   and lazy JS separately. The hard cap is +90 KB.
 9. **Evidence:** in `/srv/agents/evidence/TASK-vd-sound/`:
    - the sound list (id, trigger, file, source URL, author, license);
    - a short screen recording, or the test log, showing the sounds fire on
@@ -93,8 +100,11 @@ Not in scope:
 
 ## Dependencies
 
-Starts after `TASK-vd-game-dialogs` merges, because the call sites live in
-those widgets.
+Starts after `TASK-vd-game-dialogs` merges (base 5181edd), because the call
+sites live in those widgets. Runs in parallel with `TASK-vd-dialogs-followup`,
+which edits `widgets/purchase-card`, `widgets/auction-panel`, `rent.ts` and
+the e2e helpers. Keep the sound call sites minimal there, and rebase if both
+change the same files.
 
 ## Required workflow
 
