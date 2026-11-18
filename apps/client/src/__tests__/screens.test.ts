@@ -2,6 +2,7 @@ import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-u
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineAsyncComponent } from 'vue';
 import { App, GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from '../app/index';
+import { createGameScreenAsyncComponent } from '../app/game-screen-async';
 import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
 import { LobbyScreen } from '../pages/lobby/index';
 import { LoginScreen } from '../pages/login/index';
@@ -310,6 +311,22 @@ describe('App screen selection', () => {
     await flushPromises();
     expect(wrapper.find('[data-testid="game-loading"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="timer"]').exists()).toBe(true);
+  });
+
+  it('retries a failed game chunk once, then shows a translated reload state', async () => {
+    const h = harness({ stored: storedSession(TWO) });
+    h.client.start();
+    const loader = vi.fn(async () => { throw new Error('stale hashed chunk'); });
+    const options = provide(h);
+    options.global.provide[GAME_SCREEN_OVERRIDE_KEY as symbol] = createGameScreenAsyncComponent(loader);
+    const wrapper = mount(App, options);
+    h.sockets.last().open();
+    h.sockets.last().receive(welcome(setupView(['a', 'b'], { revision: 4, roller: 'a' })));
+    await flushPromises();
+    expect(loader).toHaveBeenCalledTimes(2);
+    expect(wrapper.find('[data-testid="game-chunk-error"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="game-chunk-error"]').text()).toContain('Не удалось загрузить игру');
+    expect(wrapper.find('[data-testid="game-chunk-error"] button').text()).toBe('Перезагрузить');
   });
 
   it('phase lobby shows the room view; leaving lobby shows the game screen for every member', async () => {

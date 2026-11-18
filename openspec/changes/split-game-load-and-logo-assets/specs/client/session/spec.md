@@ -19,6 +19,12 @@ SHALL load and show the game screen after recovery completes.
 - **WHEN** a guest with a stored room reloads the game's direct URL and the server restores a setup or playing view
 - **THEN** the client SHALL load and show the game screen with the recovered view
 
+#### Scenario: Game screen chunk is unavailable after a redeploy
+- **WHEN** loading the async game or game-over screen chunk fails
+- **THEN** the client SHALL retry the import once
+- **AND WHEN** the retry also fails
+- **THEN** the client SHALL show a translated load error with a Reload button that calls `location.reload()`
+
 ## ADDED Requirements
 
 ### Requirement: Game screen code is deferred

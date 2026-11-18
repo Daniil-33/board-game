@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SOUND_IDS, createSoundEngine, type SoundEngineOptions } from '../shared/sound/index';
 import { createAudioGestureGate } from '../shared/audio-context/index';
 import { soundForEvent, createAuctionTickSoundMapper, soundForChat, soundForTokenStep } from '../entities/event/sounds';
@@ -80,22 +80,31 @@ describe('sound engine', () => {
     expect(fetchCount()).toBe(1);
   });
 
-  it('retries a suspended context on later user gestures without creating another context', async () => {
-    FakeAudioContext.created = 0; FakeAudioContext.resumeAttempts = 0; FakeAudioContext.failFirstResume = true;
-    const gate = createAudioGestureGate(() => new FakeAudioContext() as unknown as AudioContext);
+  it.each([
+    ['pointerdown', 'pointerup'],
+    ['pointerdown', 'touchend'],
+    ['keydown', 'pointerup'],
+    ['keydown', 'touchend'],
+  ] as const)('keeps the shell gate active after %s until a later %s resumes the context', async (firstEvent, unlockEvent) => {
+    let attempts = 0;
+    let state: AudioContextState = 'suspended';
+    const resume = vi.fn(async () => {
+      attempts++;
+      if (attempts >= 2) state = 'running';
+    });
+    const context = { get state() { return state; }, resume } as unknown as AudioContext;
+    const gate = createAudioGestureGate(() => context);
     const events = new EventTarget();
     gate.install(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
-    events.dispatchEvent(new Event('pointerdown'));
+
+    events.dispatchEvent(new Event(firstEvent));
     await Promise.resolve();
-    expect(FakeAudioContext.created).toBe(1);
-    expect(FakeAudioContext.resumeAttempts).toBe(1);
-    events.dispatchEvent(new Event('keydown'));
+    expect(resume).toHaveBeenCalledTimes(1);
+    events.dispatchEvent(new Event(unlockEvent));
     await Promise.resolve();
-    expect(FakeAudioContext.created).toBe(1);
-    expect(FakeAudioContext.resumeAttempts).toBe(2);
-    events.dispatchEvent(new Event('pointerdown'));
-    expect(FakeAudioContext.resumeAttempts).toBe(2);
-    FakeAudioContext.failFirstResume = false;
+    expect(resume).toHaveBeenCalledTimes(2);
+    events.dispatchEvent(new Event('click'));
+    expect(resume).toHaveBeenCalledTimes(2);
   });
 
   it('plays a game sound after a pre-game gesture without another interaction', async () => {

@@ -1,5 +1,7 @@
 type AudioContextFactory = () => AudioContext | null;
 type GestureTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
+type GestureEvent = 'pointerdown' | 'pointerup' | 'keydown' | 'keyup' | 'touchend' | 'click';
+const GESTURE_EVENTS: readonly GestureEvent[] = ['pointerdown', 'pointerup', 'keydown', 'keyup', 'touchend', 'click'];
 
 function browserAudioContext(): AudioContext | null {
   if (typeof window === 'undefined' || typeof window.AudioContext !== 'function') return null;
@@ -17,11 +19,17 @@ export function createAudioGestureGate(factory: AudioContextFactory = browserAud
     const stop = (): void => {
       if (!active) return;
       active = false;
-      target.removeEventListener('pointerdown', activate);
-      target.removeEventListener('keydown', activate);
+      for (const event of GESTURE_EVENTS) target.removeEventListener(event, activate);
     };
-    const activate = (): void => {
-      if (context === null) context = factory();
+    const activate = (event: Event): void => {
+      if (context === null && (event.type === 'pointerdown' || event.type === 'keydown')) {
+        context = factory();
+        if (context !== null) {
+          for (const gesture of GESTURE_EVENTS) {
+            if (gesture !== 'pointerdown' && gesture !== 'keydown') target.addEventListener(gesture, activate);
+          }
+        }
+      }
       if (context === null) return;
       if (context.state === 'running') { stop(); return; }
       try {
@@ -30,8 +38,7 @@ export function createAudioGestureGate(factory: AudioContextFactory = browserAud
         }).catch(() => {});
       } catch { /* Keep listening for another user gesture. */ }
     };
-    target.addEventListener('pointerdown', activate);
-    target.addEventListener('keydown', activate);
+    for (const event of ['pointerdown', 'keydown'] as const) target.addEventListener(event, activate);
     return stop;
   }
 

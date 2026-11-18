@@ -41,6 +41,10 @@ behavior, add an asset service, or change edge configuration.
   under the budget. The merge-base total is 339,455 B. The always-loaded
   shell gesture gate adds 240 B gzip to initial-route JS (134,607 B without
   the gate; 134,847 B with it).
+  After restoring the gesture recovery listeners and adding the lazy-chunk
+  retry/error state, the current build measures 135,117 B initial and 197,938 B
+  lazy (333,055 B total gzip), 10,808 B below the cap. The per-chunk report is
+  retained in `/srv/agents/evidence/TASK-vd-load-split/bundle-report.md`.
   Enable and inspect the Vite manifest. CI extracts it from the running web
   image into the checkout; the web image removes the public copy and returns
   404 for `/.vite/manifest.json`. Capture staging Lighthouse and transferred

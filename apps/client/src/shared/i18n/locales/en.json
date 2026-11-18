@@ -52,6 +52,8 @@
   },
   "game": {
     "loading": "Loading game…",
+    "load_failed": "The game could not be loaded. Reload the page to continue.",
+    "reload": "Reload",
     "board_unavailable": "The board could not be drawn in this browser. The game continues in the panel."
   },
   "game_over": {

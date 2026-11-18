@@ -2,26 +2,16 @@
 import { i18n, t } from '../shared/i18n/index';
 import CommandToasts from './CommandToasts.vue';
 import { UiProvider } from '../shared/ui/index';
-import { computed, defineAsyncComponent, defineComponent, h, inject } from 'vue';
+import { computed, inject } from 'vue';
 import { GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from './screen-overrides';
+import { createGameScreenAsyncComponent } from './game-screen-async';
 import { useClient } from '../features/client-session/index';
 import { LobbyScreen } from '../pages/lobby/index';
 import { LoginScreen } from '../pages/login/index';
 import { RoomScreen } from '../pages/room/index';
 
-const GameLoading = defineComponent({
-  setup: () => () => h('div', { class: 'game-loading', role: 'status', 'data-testid': 'game-loading' }, t('game.loading')),
-});
-const AsyncGameScreen = defineAsyncComponent({
-  loader: () => import('../pages/game/index').then(({ GameScreen }) => GameScreen),
-  loadingComponent: GameLoading,
-  delay: 0,
-});
-const AsyncGameOverScreen = defineAsyncComponent({
-  loader: () => import('../pages/game-over/index').then(({ GameOverScreen }) => GameOverScreen),
-  loadingComponent: GameLoading,
-  delay: 0,
-});
+const AsyncGameScreen = createGameScreenAsyncComponent(() => import('../pages/game/index').then(({ GameScreen }) => GameScreen));
+const AsyncGameOverScreen = createGameScreenAsyncComponent(() => import('../pages/game-over/index').then(({ GameOverScreen }) => GameOverScreen));
 const GameScreen = inject(GAME_SCREEN_OVERRIDE_KEY, AsyncGameScreen);
 const GameOverScreen = inject(GAME_OVER_SCREEN_OVERRIDE_KEY, AsyncGameOverScreen);
 
