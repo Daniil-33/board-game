@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-vd-e2e
-revision: 1
+revision: 2
 effort: EFF-visual-design
 project: economic-board-game
 source_commit: TBD # main after TASK-vd-sound, TASK-vd-dialogs-followup and TASK-vd-load-split merge
@@ -58,6 +58,17 @@ The known flaky wait for a disabled EndTurn is understood and fixed.
 7. **No product code change** beyond `data-testid` hooks and test helpers.
    Any defect found goes to the Team Lead as a report, not a fix in this
    task.
+8. **Spec wording (REV-vd-dialogs-followup RVW-005, revision 2).** In
+   `openspec/specs/client/game-screen/spec.md`, the "Decision surface
+   accessibility" text still says that a viewer with nothing to answer can
+   close a dialog with Escape. Since TASK-vd-dialogs-followup, those viewers
+   get no dialog at all. Remove or correct that clause so the spec matches
+   the behaviour, using an OpenSpec delta. This is a spec-only change.
+9. **Load-split coverage (revision 2).** After TASK-vd-load-split, the game
+   screen loads asynchronously. The chat, mobile turn and turn-order specs
+   must wait on the game-screen ready state, not on timing. The
+   load-split network check (no Pixi or board requests on login, lobby or
+   room) stays in the suite.
 
 ## Scope and non-goals
 
