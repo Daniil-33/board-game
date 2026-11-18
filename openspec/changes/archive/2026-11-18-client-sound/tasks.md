@@ -15,4 +15,4 @@
 
 - [x] 3.1 Record the sound list and test log in `/srv/agents/evidence/TASK-vd-sound/`; measure initial and lazy JS chunks against `5181edd` with one Node zlib method and confirm audio is external hashed assets.
 - [x] 3.2 Run `pnpm build`, `pnpm test`, lint, `openspec validate --all --strict`, and `git diff --check 5181edd`; record results. (Final `5181edd..HEAD` check is performed after commit.)
-- [ ] 3.3 Open/update the task PR, start the independent review for its exact head, resolve findings, and archive this OpenSpec change after review passes.
+- [x] 3.3 Open/update the task PR, start the independent review for its exact head, resolve findings, and archive this OpenSpec change after review passes.
