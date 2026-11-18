@@ -12,7 +12,7 @@ The game has working purchase, auction, asset, rent, debt, and result data, but 
 - Verify focus containment, modal semantics, focus return, and which surfaces may close with Escape.
 - Add component and accessibility coverage, preserve stage 1–5 browser selectors, capture desktop/mobile evidence, and report per-chunk gzip bundle changes.
 
-Out of scope: page layout and panels, board rendering except the accepted tooltip follow-up, sound, stage 6–7 UI, and changes to game-core, protocol, or server.
+Out of scope: page layout and panels, board rendering except the accepted tooltip follow-up, sound, stage 6–7 UI, game-rule or transition changes, and protocol or server changes. The TL-approved, pure additive `game-core` display helper `rentTiers(board, assetId)` is an explicit scope extension; it reads board data only and does not change `rentFor`, `rentQuotes`, settlement, or public state shapes.
 
 ## Capabilities
 
@@ -26,4 +26,4 @@ None.
 
 ## Impact
 
-Affected code is limited to `apps/client` widgets, shared UI, locale files, component tests, relevant browser selectors, and the client game-screen OpenSpec delta. The rules and command contracts described under GAME-BREAKDOWN.md headings “Покупка и аукцион”, “Активы, рента и строительство”, “Ипотека и расчёт долгов”, and “Банкротство” remain unchanged. No dependencies or server contracts are added.
+Affected code includes `apps/client` widgets, shared UI, locale files, component and browser tests, the additive `packages/game-core/src/rent.ts` helper and parity test, and the client game-screen OpenSpec delta. The rules and command contracts described under GAME-BREAKDOWN.md headings “Покупка и аукцион”, “Активы, рента и строительство”, “Ипотека и расчёт долгов”, and “Банкротство” remain unchanged. No dependencies, protocol, or server contracts are added.

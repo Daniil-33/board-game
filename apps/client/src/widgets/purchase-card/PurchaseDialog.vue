@@ -41,7 +41,7 @@ const disabledReason = (type: NullPayloadType): string => {
 };
 </script>
 <template>
-  <ResponsiveDialog v-if="view.purchase" v-model:open="surfaceOpen" :title="t('purchase_dialog.purchase_decision')" :dismissible="false" wide>
+  <ResponsiveDialog v-if="view.purchase" v-model:open="surfaceOpen" :title="t('purchase_dialog.purchase_decision')" :dismissible="!deciding" wide>
   <section class="asset-card decision-panel purchase-card" :style="{ '--asset-gradient': `var(--group-${asset?.groupId?.toLowerCase() ?? 'm1'})` }" :aria-label="t('purchase_dialog.purchase_decision')" data-testid="purchase">
     <header class="purchase-header">
       <img v-if="logo && !logoFailed" :src="logo" :alt="''" data-testid="purchase-logo" @error="logoFailed = true">

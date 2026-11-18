@@ -200,6 +200,14 @@ describe('asset card: mortgage', () => {
     expect(energy.find('[data-testid="asset-energy"]').exists()).toBe(false);
     expect(mortgageTerms(project(s), at(s, 9))).toBeNull();
   });
+
+  it('highlights the logistics tier from the projected rent quote when a group member is mortgaged', () => {
+    const state = mortgaged(owning(), 15);
+    const view = project(state);
+    const w = card(view, 5);
+    expect(w.get('[data-testid="rent-tier-logistics-1"]').attributes('aria-current')).toBe('true');
+    expect(w.find('[data-testid="rent-tier-logistics-2"]').attributes('aria-current')).toBeUndefined();
+  });
 });
 
 describe('mortgage intents', () => {

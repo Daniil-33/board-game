@@ -124,15 +124,13 @@ describe('rent settlement', () => {
     const energy = project(withRent(owning(), 'a', 'b', 28, 'energy', 9));
     expect(mount(RentPanel, { props: props(energy) }).get('[data-testid="rent-line"]').text()).toContain('(сумма костей 9)');
   });
-  it('shows only the current projected rent shortfall, and names the required-response surface as non-dismissible', async () => {
+  it('shows only the current projected rent shortfall', async () => {
     const view = project(withRent(owning()));
     const payer = view.rent!.payerId;
     const short = mount(RentPanel, { props: props({ ...view, balances: { ...view.balances, [payer]: Q(view.rent!.amount - 30) } }) });
     expect(short.get('[data-testid="rent-shortfall"]').text()).toBe('Не хватает 30 для оплаты.');
     const enough = mount(RentPanel, { props: props({ ...view, balances: { ...view.balances, [payer]: view.rent!.amount } }) });
     expect(enough.find('[data-testid="rent-shortfall"]').exists()).toBe(false);
-    // Purchase, auction response and rent payment require an answer; asset inspection may close.
-    expect(['purchase', 'auction', 'rent']).toEqual(['purchase', 'auction', 'rent']);
   });
   it('keeps EndTurn enabled with an open settlement and tells the payer it pays automatically', async () => {
     const view = project(withRent(owning()));

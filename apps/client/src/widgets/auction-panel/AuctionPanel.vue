@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { ResponsiveDialog } from '../../shared/ui/index';
@@ -18,10 +18,14 @@ const dialogTitle = computed(() => {
   const asset = props.view.board?.cells.find(cell => cell.index === props.view.auction?.cell)?.asset;
   return t('auction_panel.title', { asset: asset?.name ?? '' });
 });
+const responding = computed(() => props.view.auction?.responder === props.me && props.me !== null && !props.view.eliminated.includes(props.me));
+const surfaceOpen = ref(true);
+watch(() => props.view.auction?.auctionId, () => { surfaceOpen.value = true; });
+watch(responding, value => { if (value) surfaceOpen.value = true; });
 </script>
 
 <template>
-  <ResponsiveDialog v-if="view.auction && mobile" :open="true" :title="dialogTitle" :dismissible="false" wide>
+  <ResponsiveDialog v-if="view.auction && mobile" v-model:open="surfaceOpen" :title="dialogTitle" :dismissible="!responding" wide>
     <AuctionContent :view="view" :me="me" :connected="connected" :pending="pending" :now="now" :name-of="nameOf" @command="emit('command', $event)" />
   </ResponsiveDialog>
   <AuctionContent v-else-if="view.auction" :view="view" :me="me" :connected="connected" :pending="pending" :now="now" :name-of="nameOf" @command="emit('command', $event)" />

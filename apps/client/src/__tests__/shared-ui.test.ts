@@ -97,7 +97,7 @@ it.each([1024, 1023])('opens a responsive dialog, manages focus and closes on Es
   });
 });
 
-it('keeps purchase, auction response, rent payment and game over non-dismissible; asset inspection and elimination are dismissible', async () => {
+it('keeps required rent payment non-dismissible and asset inspection dismissible; purchase and auction responder policy is tested by widgets', async () => {
   resize.setInnerWidth(390);
   const open = ref(true);
   render(() => h(ResponsiveDialog, {
@@ -121,7 +121,6 @@ it('keeps purchase, auction response, rent payment and game over non-dismissible
   await vi.waitFor(() => expect(element('#asset-close')).toBeTruthy());
   press(element('#asset-close'), 'Escape');
   await vi.waitFor(() => expect(element('[role="dialog"]')).toBeNull());
-  // Purchase, auction response, rent payment and game over stay open. Asset inspection and elimination can close.
 });
 
 it('focuses cancel in an alert dialog and restores focus after Escape or cancel', async () => {

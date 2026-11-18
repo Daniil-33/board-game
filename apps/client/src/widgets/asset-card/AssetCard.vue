@@ -54,14 +54,12 @@ const highlightedTier = computed(() => {
     const row = scheduleRows.value.find(item => item.key === key);
     return currentQuote?.kind === 'fixed' && row?.amount === currentQuote.amount ? key : null;
   }
-  const holdings = group.filter(cell => props.view!.owners[cell.asset!.assetId] === owner).length;
   if (props.cell.kind === 'logistics') {
     const fixedQuote = quote.value?.kind === 'fixed' ? quote.value : null;
-    const expected = schedule.value.find((tier): tier is Extract<RentTier, { kind: 'logistics' }> => tier.kind === 'logistics' && tier.holdings === holdings);
     const quoted = schedule.value.find((tier): tier is Extract<RentTier, { kind: 'logistics' }> => tier.kind === 'logistics' && tier.amount === fixedQuote?.amount);
-    return fixedQuote && expected?.amount === fixedQuote.amount && quoted ? `logistics-${quoted.holdings}` : null;
+    return fixedQuote && quoted ? `logistics-${quoted.holdings}` : null;
   }
-  return quote.value?.kind === 'energy' && quote.value.holdings === holdings ? `energy-${holdings}` : null;
+  return quote.value?.kind === 'energy' ? `energy-${quote.value.holdings}` : null;
 });
 /** Example dice sums for the energy quote; the amounts come from game-core's energyRentFor. */
 const ENERGY_EXAMPLES = [2, 7, 12] as const;
