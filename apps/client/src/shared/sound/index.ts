@@ -19,6 +19,7 @@ export interface SoundEngineOptions {
   contextCtor?: AudioContextCtor;
   urls?: Record<string, string>;
 }
+type GestureTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 
 function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
   try { return typeof localStorage === 'undefined' ? undefined : localStorage; } catch { return undefined; }
@@ -32,6 +33,12 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
   const files = options.urls ?? urls;
   let context: AudioContext | null = null;
   const decoded = new Map<SoundId, Promise<AudioBuffer | null>>();
+
+  function resumeContext(audio: AudioContext): Promise<boolean> {
+    if (audio.state === 'running') return Promise.resolve(true);
+    try { return audio.resume().then(() => audio.state === 'running').catch(() => false); }
+    catch { return Promise.resolve(false); }
+  }
 
   try {
     const stored = storage?.getItem(storedKey);
@@ -51,21 +58,53 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
     if (Number.isFinite(volume)) { settings.volume = Math.max(0, Math.min(1, volume)); persist(); }
   }
   function activate(): void {
-    if (context !== null || contextCtor === undefined) return;
-    try { context = new contextCtor(); void context.resume().catch(() => {}); } catch { context = null; }
+    if (context === null && contextCtor !== undefined) {
+      try { context = new contextCtor(); } catch { context = null; }
+    }
+    if (context !== null && context.state !== 'running') void resumeContext(context);
+  }
+  function installGate(target: GestureTarget): () => void {
+    const stop = (): void => {
+      target.removeEventListener('pointerdown', firstGesture);
+      target.removeEventListener('keydown', firstGesture);
+      target.removeEventListener('pointerup', retryGesture);
+      target.removeEventListener('keyup', retryGesture);
+      target.removeEventListener('touchend', retryGesture);
+      target.removeEventListener('click', retryGesture);
+    };
+    const firstGesture = (): void => {
+      activate();
+      if (context?.state === 'running') stop();
+    };
+    const retryGesture = (): void => {
+      if (context === null) return;
+      activate();
+      if (context.state === 'running') stop();
+    };
+    target.addEventListener('pointerdown', firstGesture);
+    target.addEventListener('keydown', firstGesture);
+    target.addEventListener('pointerup', retryGesture);
+    target.addEventListener('keyup', retryGesture);
+    target.addEventListener('touchend', retryGesture);
+    target.addEventListener('click', retryGesture);
+    return stop;
   }
   async function buffer(id: SoundId): Promise<AudioBuffer | null> {
     const url = files[`./files/${id}.mp3`];
     if (!url || !fetchFn || !context) return null;
     let pending = decoded.get(id);
     if (!pending) {
-      pending = (async () => {
+      const attempt = (async () => {
         try {
           const response = await fetchFn(url);
           if (!response.ok) return null;
           return await context!.decodeAudioData(await response.arrayBuffer());
         } catch { return null; }
       })();
+      pending = attempt.then((audio) => {
+        if (audio === null && decoded.get(id) === pending) decoded.delete(id);
+        return audio;
+      });
       decoded.set(id, pending);
     }
     return pending;
@@ -74,8 +113,8 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
     if (!context || settings.muted || settings.volume <= 0) return;
     if (opts.own === false && !allowedForOthers.has(id)) return;
     const activeContext = context;
-    void buffer(id).then((audio) => {
-      if (!audio || context !== activeContext || settings.muted || settings.volume <= 0) return;
+    void Promise.all([buffer(id), resumeContext(activeContext)]).then(([audio, running]) => {
+      if (!audio || !running || context !== activeContext || settings.muted || settings.volume <= 0) return;
       try {
         const source = activeContext.createBufferSource();
         const node = activeContext.createGain();
@@ -85,16 +124,14 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
       } catch { /* Audio output failures stay silent. */ }
     });
   }
-  return { settings, setMuted, setVolume, activate, playSound };
+  return { settings, setMuted, setVolume, activate, installGate, playSound };
 }
 
 const engine = createSoundEngine();
 export const soundSettings = engine.settings;
 export const playSound = engine.playSound;
-export function installSoundGate(target: Pick<Window, 'addEventListener' | 'removeEventListener'> = window): void {
-  const start = (): void => { engine.activate(); target.removeEventListener('pointerdown', start); target.removeEventListener('keydown', start); };
-  target.addEventListener('pointerdown', start, { once: true });
-  target.addEventListener('keydown', start, { once: true });
+export function installSoundGate(target: GestureTarget = window): void {
+  engine.installGate(target);
 }
 export const setSoundMuted = engine.setMuted;
 export const setSoundVolume = engine.setVolume;

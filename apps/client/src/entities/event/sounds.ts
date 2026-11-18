@@ -7,9 +7,16 @@ export function soundForChat(authorId: string, viewerId: string | null): EventSo
   return viewerId !== null && authorId !== viewerId ? { id: 'chat', own: false } : null;
 }
 
-export function soundForAuctionTick(remainingSeconds: number, responderId: string | null, viewerId: string | null): EventSound | null {
-  if (!Number.isInteger(remainingSeconds) || remainingSeconds < 1 || remainingSeconds > 3) return null;
-  return { id: 'auction-tick', own: viewerId !== null && responderId === viewerId };
+export function createAuctionTickSoundMapper() {
+  let lastTick = '';
+  return (auctionId: string | null, responseId: string | null, remainingSeconds: number,
+    responderId: string | null, viewerId: string | null): EventSound | null => {
+    if (!Number.isInteger(remainingSeconds) || remainingSeconds < 1 || remainingSeconds > 3 || auctionId === null || responseId === null) return null;
+    const key = `${auctionId}:${responseId}:${remainingSeconds}`;
+    if (key === lastTick) return null;
+    lastTick = key;
+    return { id: 'auction-tick', own: viewerId !== null && responderId === viewerId };
+  };
 }
 
 export function soundForTokenStep(playerId: string, viewerId: string | null, reducedMotion: boolean): EventSound | null {

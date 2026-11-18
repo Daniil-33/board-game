@@ -2,9 +2,9 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SOUND_IDS, createSoundEngine, type SoundEngineOptions } from '../shared/sound/index';
-import { soundForEvent, soundForAuctionTick, soundForChat, soundForTokenStep } from '../entities/event/sounds';
+import { soundForEvent, createAuctionTickSoundMapper, soundForChat, soundForTokenStep } from '../entities/event/sounds';
 import type { GameEvent } from '@game/game-core';
-import { harness, playingView, room, storedSession, update, welcome } from './helpers';
+import { harness, pid, playingView, room, storedSession, update, welcome } from './helpers';
 
 const dir = resolve(import.meta.dirname, '../shared/sound');
 const manifest = JSON.parse(readFileSync(resolve(dir, 'sounds.json'), 'utf8')) as Record<string, { file: string; source: string; sourceUrl: string; license: string; author: string } | null>;
@@ -27,9 +27,18 @@ describe('sound assets', () => {
 });
 
 class FakeAudioContext {
+  static created = 0;
+  static resumeAttempts = 0;
+  static failFirstResume = false;
   static gains: Array<{ value: number }> = [];
+  state: AudioContextState = 'suspended';
+  constructor() { FakeAudioContext.created++; }
   destination = {} as AudioDestinationNode;
-  resume = async (): Promise<void> => {};
+  resume = async (): Promise<void> => {
+    FakeAudioContext.resumeAttempts++;
+    if (FakeAudioContext.failFirstResume && FakeAudioContext.resumeAttempts === 1) throw new Error('gesture required');
+    this.state = 'running';
+  };
   decodeAudioData = async (): Promise<AudioBuffer> => ({} as AudioBuffer);
   createBufferSource() {
     return { buffer: null as AudioBuffer | null, connect: () => {}, start: () => {} } as unknown as AudioBufferSourceNode;
@@ -61,6 +70,24 @@ describe('sound engine', () => {
     engine.activate(); engine.playSound('dice-roll'); engine.playSound('dice-roll');
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(fetchCount()).toBe(1);
+  });
+
+  it('retries a suspended context on later user gestures without creating another context', async () => {
+    FakeAudioContext.created = 0; FakeAudioContext.resumeAttempts = 0; FakeAudioContext.failFirstResume = true;
+    const { engine } = makeEngine();
+    const events = new EventTarget();
+    engine.installGate(events as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+    events.dispatchEvent(new Event('pointerdown'));
+    await Promise.resolve();
+    expect(FakeAudioContext.created).toBe(1);
+    expect(FakeAudioContext.resumeAttempts).toBe(1);
+    events.dispatchEvent(new Event('pointerup'));
+    await Promise.resolve();
+    expect(FakeAudioContext.created).toBe(1);
+    expect(FakeAudioContext.resumeAttempts).toBe(2);
+    events.dispatchEvent(new Event('keydown'));
+    expect(FakeAudioContext.resumeAttempts).toBe(2);
+    FakeAudioContext.failFirstResume = false;
   });
 
   it('filters other-player sounds and attenuates allowed events by about nine decibels', async () => {
@@ -98,6 +125,19 @@ describe('sound engine', () => {
     engine.activate(); expect(() => engine.playSound('chat')).not.toThrow();
     await new Promise(resolve => setTimeout(resolve, 0));
   });
+
+  it('retries an id after its first fetch fails', async () => {
+    let calls = 0;
+    const { engine } = makeEngine({ fetchFn: (async () => {
+      if (++calls === 1) throw new Error('offline');
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) } as Response;
+    }) as typeof fetch });
+    engine.activate(); engine.playSound('chat');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    engine.playSound('chat');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(calls).toBe(2);
+  });
 });
 
 describe('event sound mapping', () => {
@@ -123,11 +163,14 @@ describe('event sound mapping', () => {
   });
 
   it('maps live chat, final auction seconds and reduced-motion movement centrally', () => {
+    const auctionTick = createAuctionTickSoundMapper();
     expect(soundForChat('b', 'a')).toEqual({ id: 'chat', own: false });
     expect(soundForChat('a', 'a')).toBeNull();
-    expect(soundForAuctionTick(3, 'a', 'a')).toEqual({ id: 'auction-tick', own: true });
-    expect(soundForAuctionTick(4, 'a', 'a')).toBeNull();
-    expect(soundForAuctionTick(0, 'a', 'a')).toBeNull();
+    expect(auctionTick('auction-1', 'response-1', 3, 'a', 'a')).toEqual({ id: 'auction-tick', own: true });
+    expect(auctionTick('auction-1', 'response-1', 3, 'a', 'a')).toBeNull();
+    expect(auctionTick('auction-1', 'response-1', 2, 'a', 'a')).toEqual({ id: 'auction-tick', own: true });
+    expect(auctionTick('auction-1', 'response-1', 4, 'a', 'a')).toBeNull();
+    expect(auctionTick('auction-1', 'response-2', 3, 'b', 'a')).toEqual({ id: 'auction-tick', own: false });
     expect(soundForTokenStep('a', 'a', false)).toEqual({ id: 'token-step', own: true });
     expect(soundForTokenStep('a', 'a', true)).toBeNull();
   });
@@ -142,10 +185,14 @@ describe('event sound mapping', () => {
     const socket = h.sockets.last(); socket.open();
     const first = playingView(['a', 'b']);
     const initial = welcome(first);
-    socket.receive({ ...initial, history: { entries: [{ revision: first.revision, at: 1, events: [{ type: 'TurnStarted', payload: { playerId: 'a' } }] }], chat: [] } } as Parameters<typeof socket.receive>[0]);
+    socket.receive({ ...initial, history: { entries: [{ revision: first.revision, at: 1, events: [{ type: 'TurnStarted', payload: { playerId: 'a' } }] }], chat: [{ seq: 1, authorId: 'b', text: 'History only', at: 2 }] } } as Parameters<typeof socket.receive>[0]);
     expect(played).toEqual([]);
     const next = playingView(['a', 'b'], { revision: 10 });
     socket.receive(update(next, [{ type: 'TurnStarted', payload: { playerId: 'a' } }]));
     expect(played).toEqual([{ id: 'turn-start', own: true }]);
+    socket.receive({ t: 'Chat', message: { seq: 2, authorId: pid('a'), text: 'Own message', at: 3 } });
+    expect(played).toEqual([{ id: 'turn-start', own: true }]);
+    socket.receive({ t: 'Chat', message: { seq: 3, authorId: pid('b'), text: 'Other message', at: 4 } });
+    expect(played).toEqual([{ id: 'turn-start', own: true }, { id: 'chat', own: false }]);
   });
 });
