@@ -1,7 +1,9 @@
 import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StateView } from '@game/game-core';
-import { App } from '../app/index';
+import { App, GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from '../app/index';
+import { GameScreen } from '../pages/game/index';
+import { GameOverScreen } from '../pages/game-over/index';
 import { CLIENT_KEY, BOARD_MOUNT_KEY, createClient } from '../features/client-session/index';
 import { runtimeApi } from '../shared/api/index';
 import { createLobbyApi } from '../shared/api/index';
@@ -13,7 +15,10 @@ const THREE = room([['a', 'Alice'], ['b', 'Bob'], ['c', 'Carol']]);
 enableAutoUnmount(afterEach);
 const body = new DOMWrapper(document.body);
 
-const provide = (h: ReturnType<typeof harness>) => ({ global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
+const provide = (h: ReturnType<typeof harness>) => ({ global: { provide: {
+  [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount,
+  [GAME_SCREEN_OVERRIDE_KEY as symbol]: GameScreen, [GAME_OVER_SCREEN_OVERRIDE_KEY as symbol]: GameOverScreen,
+} } });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 function deferred<T>() {

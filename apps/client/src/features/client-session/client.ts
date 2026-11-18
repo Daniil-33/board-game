@@ -18,7 +18,6 @@ import { createGameState, type GameState } from '../../entities/game/index';
 import { createSessionStore, type SessionStore } from '../../entities/session/index';
 import { createChatStore, type ChatStore } from '../../entities/chat/index';
 import { createEventLog, createJournal, soundForEvent, soundForChat, type EventLog } from '../../entities/event/index';
-import { playSound } from '../../shared/sound/index';
 import type { SoundId } from '../../shared/sound/index';
 import type { Board } from '../../entities/game/index';
 export type { Board } from '../../entities/game/index';
@@ -77,6 +76,8 @@ export interface Client {
   nameOf(playerId: string): string;
   /** The game screen hands over its board while mounted, null when it goes away. */
   attachBoard(board: Board | null): void;
+  /** The async game screen supplies the sound engine while it is mounted. */
+  attachSound(sound: ((id: SoundId, opts?: { own?: boolean }) => void) | null): void;
 }
 
 export function createClient(deps: ClientDeps): Client {
@@ -87,7 +88,7 @@ export function createClient(deps: ClientDeps): Client {
   const journal = createJournal();
   const lobby = reactive<LobbyState>({ rooms: [], error: null, notice: null, busy: false, inviteRoomId: null, creatorAccess: null });
   const api: LobbyApi = createLobbyApi(deps.fetchFn);
-  const emitSound = deps.sound ?? playSound;
+  let emitSound = deps.sound ?? (() => {});
 
   let board: Board | null = null;
   const nameOf = (playerId: string): string => session.nicknameOf(playerId);
@@ -397,6 +398,9 @@ export function createClient(deps: ClientDeps): Client {
       board.setViewer?.(game.playerId);
       if (game.view !== null) board.refreshOwnership?.(game.view);
       if (queue.idle) snapBoard();
+    },
+    attachSound(sound) {
+      emitSound = sound ?? deps.sound ?? (() => {});
     },
   };
 }

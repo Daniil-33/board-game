@@ -1,10 +1,13 @@
 import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { App } from '../app/index';
+import { defineAsyncComponent } from 'vue';
+import { App, GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from '../app/index';
 import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
 import { LobbyScreen } from '../pages/lobby/index';
 import { LoginScreen } from '../pages/login/index';
 import { RoomScreen } from '../pages/room/index';
+import { GameScreen } from '../pages/game/index';
+import { GameOverScreen } from '../pages/game-over/index';
 import {
   GUEST,
   harness,
@@ -22,7 +25,10 @@ import {
 enableAutoUnmount(afterEach);
 const body = new DOMWrapper(document.body);
 
-const provide = (h: Harness) => ({ global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
+const provide = (h: Harness) => ({ global: { provide: {
+  [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount,
+  [GAME_SCREEN_OVERRIDE_KEY as symbol]: GameScreen, [GAME_OVER_SCREEN_OVERRIDE_KEY as symbol]: GameOverScreen,
+} } });
 const pageOptions = (h: Harness) => ({
   global: { ...provide(h).global, stubs: { Tooltip: { template: '<slot />' } } },
 });
@@ -279,10 +285,38 @@ describe('RoomScreen', () => {
 describe('App screen selection', () => {
   const TWO = room([['a', 'Alice'], ['b', 'Bob']]);
 
+  it('keeps the session view current while the game screen chunk is resolving', async () => {
+    const h = harness({ stored: storedSession(TWO) });
+    h.client.start();
+    let resolveGame!: (component: typeof GameScreen) => void;
+    const DelayedGameScreen = defineAsyncComponent({
+      loader: () => new Promise<typeof GameScreen>((resolve) => { resolveGame = resolve; }),
+      loadingComponent: { template: '<div data-testid="game-loading" />' },
+      delay: 0,
+    });
+    const options = provide(h);
+    options.global.provide[GAME_SCREEN_OVERRIDE_KEY as symbol] = DelayedGameScreen;
+    const wrapper = mount(App, options);
+    h.sockets.last().open();
+    h.sockets.last().receive(welcome(setupView(['a', 'b'], { revision: 4, roller: 'a' })));
+    await flushPromises();
+    expect(wrapper.attributes('data-screen')).toBe('game');
+    expect(wrapper.find('[data-testid="game-loading"]').exists()).toBe(true);
+    h.sockets.last().receive(welcome(playingView(['a', 'b'], { revision: 5, owner: 'a' })));
+    await flushPromises();
+    expect(h.client.game.view?.revision).toBe(5);
+    expect(wrapper.find('[data-testid="game-loading"]').exists()).toBe(true);
+    resolveGame(GameScreen);
+    await flushPromises();
+    expect(wrapper.find('[data-testid="game-loading"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="timer"]').exists()).toBe(true);
+  });
+
   it('phase lobby shows the room view; leaving lobby shows the game screen for every member', async () => {
     const h = harness({ stored: storedSession(TWO) });
     h.client.start();
     const wrapper = mount(App, provide(h));
+    await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('room');
     h.sockets.last().open();
     h.sockets.last().receive(welcome(lobbyView(['a', 'b'], 3), 'b'));
@@ -301,6 +335,7 @@ describe('App screen selection', () => {
     const h = harness({ stored: storedSession(TWO) });
     h.client.start();
     const wrapper = mount(App, provide(h));
+    await flushPromises();
     h.sockets.last().open();
     h.sockets.last().receive(welcome(playingView(['b', 'a'], { owner: 'a', deadline: 62_400 })));
     await flushPromises();
@@ -313,6 +348,7 @@ describe('App screen selection', () => {
     const h = harness({ stored: storedSession(TWO) });
     h.client.start();
     const wrapper = mount(App, provide(h));
+    await flushPromises();
     h.sockets.last().open();
     h.sockets.last().receive(welcome(playingView(['a', 'b'], { owner: 'a' })));
     await flushPromises();

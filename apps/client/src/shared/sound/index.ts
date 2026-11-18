@@ -134,8 +134,8 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
 const engine = createSoundEngine();
 export const soundSettings = engine.settings;
 export const playSound = engine.playSound;
-export function installSoundGate(target: GestureTarget = window): void {
-  engine.installGate(target);
+export function installSoundGate(target: GestureTarget = window): () => void {
+  return engine.installGate(target);
 }
 export const setSoundMuted = engine.setMuted;
 export const setSoundVolume = engine.setVolume;

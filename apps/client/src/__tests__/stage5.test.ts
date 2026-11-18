@@ -9,7 +9,9 @@ import {
   type PlayerBankrupt, type RentPaid, type StateView, type Timestamp,
 } from '@game/game-core';
 import { decodeClientFrame, type ClientCommandType } from '@game/protocol';
-import { App } from '../app/index';
+import { App, GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from '../app/index';
+import { GameScreen } from '../pages/game/index';
+import { GameOverScreen } from '../pages/game-over/index';
 import { AssetCard } from '../widgets/asset-card/index';
 import { DebtNotices } from '../widgets/debt-notices/index';
 import { Hud } from '../widgets/turn-header/index';
@@ -24,7 +26,10 @@ import { harness, pid, playingView, room, storedSession, update, welcome } from 
 const nameOf = (id: string): string => ({ a: 'Alice', b: 'Bob', c: 'Carol' })[id] ?? id;
 const colorOf = (): string => '#fff';
 const THREE = room([['a', 'Alice'], ['b', 'Bob'], ['c', 'Carol']]);
-const provide = (h: ReturnType<typeof harness>) => ({ global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
+const provide = (h: ReturnType<typeof harness>) => ({ global: { provide: {
+  [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount,
+  [GAME_SCREEN_OVERRIDE_KEY as symbol]: GameScreen, [GAME_OVER_SCREEN_OVERRIDE_KEY as symbol]: GameOverScreen,
+} } });
 
 function core(view: StateView, over: Partial<GameState> = {}): GameState {
   const { rentQuotes: _quotes, result: _result, ...fields } = view;
@@ -346,7 +351,7 @@ describe('debt notices in the room session', () => {
     const h = harness({ stored: storedSession(THREE) });
     h.client.start(); h.sockets.last().open();
     const s = owning(); h.sockets.last().receive(welcome(project(s)));
-    const wrapper = mount(App, provide(h)); await flushPromises();
+    const wrapper = mount(App, provide(h)); await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
     let finish!: () => void; h.board.play = () => new Promise<void>(resolve => { finish = resolve; });
     h.sockets.last().receive(update({ ...project(s), revision: (s.revision + 1) as StateView['revision'] }, [{ type: 'PlayerMoved', payload: { playerId: 'a', from: 0, to: 2, steps: 2 } }]));
     const eliminations = [{ playerId: pid('c'), reason: 'resigned' as const, at: 1_000 as Timestamp, creditorId: null }, { playerId: pid('a'), reason: 'bankrupt' as const, at: 2_000 as Timestamp, creditorId: pid('b') }];
@@ -384,7 +389,7 @@ describe('elimination and game over', () => {
     const s = owning();
     const view = project({ ...s, order: [pid('b'), pid('c')], eliminated: [pid('a')], purchase: { playerId: pid('b'), cell: 13, assetId: at(s, 13) }, eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
     const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
-    const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises();
+    const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
     expect(document.querySelector('[data-testid="elimination-screen"]')?.textContent).toContain('Вы выбыли: вы сдались');
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-modal')).toBe('true');
     document.querySelector<HTMLElement>('[data-testid="continue-watching"]')!.click(); await flushPromises();
@@ -403,7 +408,7 @@ describe('elimination and game over', () => {
   it('opens asset inspection from My Assets and restores focus to the portfolio opener on Escape', async () => {
     const view = project(owning());
     const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
-    const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises();
+    const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
     const opener = wrapper.get('[data-testid="owned-asset-inspect"]');
     (opener.element as HTMLElement).focus(); await opener.trigger('click'); await flushPromises();
     expect(document.querySelector('[data-testid="asset-rent-table"]')).toBeTruthy();
@@ -422,9 +427,9 @@ describe('elimination and game over', () => {
     for (const remount of [false, true]) {
       const h = harness({ stored: storedSession(THREE) });
       h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
-      const wrapper = mount(App, provide(h)); await flushPromises();
+      const wrapper = mount(App, provide(h)); await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
       if (remount) { wrapper.unmount(); }
-      const w = remount ? mount(App, provide(h)) : wrapper; await flushPromises();
+      const w = remount ? mount(App, provide(h)) : wrapper; await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
       expect(w.attributes('data-screen')).toBe('finished');
       const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(dialog.getAttribute('aria-modal')).toBe('true');

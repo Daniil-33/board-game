@@ -51,6 +51,7 @@
     "end_turn": "End turn"
   },
   "game": {
+    "loading": "Loading game…",
     "board_unavailable": "The board could not be drawn in this browser. The game continues in the panel."
   },
   "game_over": {

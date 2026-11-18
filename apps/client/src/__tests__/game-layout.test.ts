@@ -2,7 +2,9 @@ import { DOMWrapper, flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { h, ref } from 'vue';
 import type { AssetId, Money, Revision, StateView } from '@game/game-core';
-import { App } from '../app/index';
+import { App, GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from '../app/index';
+import { GameScreen } from '../pages/game/index';
+import { GameOverScreen } from '../pages/game-over/index';
 import { createChatStore } from '../entities/chat/index';
 import { describeEvent, type JournalItem } from '../entities/event/index';
 import { canIssue, houseControls, mortgageControls, type ActionContext, type Intent } from '../entities/game/index';
@@ -29,6 +31,7 @@ function game() {
 function mountGame(test: ReturnType<typeof game>) {
   return mount(App, { attachTo: document.body, global: { provide: {
     [CLIENT_KEY as symbol]: test.client, [BOARD_MOUNT_KEY as symbol]: test.mount,
+    [GAME_SCREEN_OVERRIDE_KEY as symbol]: GameScreen, [GAME_OVER_SCREEN_OVERRIDE_KEY as symbol]: GameOverScreen,
   } } });
 }
 
