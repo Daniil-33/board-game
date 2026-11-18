@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MAX_PLAYERS } from '@game/game-core';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { RoomSummary } from '@game/protocol';
 import { useClient } from '../../features/client-session/index';
@@ -6,7 +7,6 @@ import { t } from '../../shared/i18n/index';
 import { Badge, Button, ResponsiveDialog } from '../../shared/ui/index';
 
 const REFRESH_MS = 5000;
-const CAPACITY = 6;
 const client = useClient();
 const createOpen = ref(false);
 const joinOpen = ref(false);
@@ -19,7 +19,7 @@ let joinOpener: HTMLElement | null = null;
 let timer: ReturnType<typeof setInterval> | undefined;
 
 function canEnterCode(room: RoomSummary): boolean {
-  return room.locked && room.status === 'lobby' && room.members.length < CAPACITY;
+  return room.locked && room.status === 'lobby' && room.members.length < MAX_PLAYERS;
 }
 
 const lockedRooms = computed(() => client.lobby.rooms.filter(canEnterCode));
@@ -29,7 +29,7 @@ function roomStatus(room: RoomSummary): string {
   if (room.status === 'playing') return t('lobby.in_play');
   if (room.status === 'finished') return t('lobby.finished');
   if (room.status === 'closed') return t('lobby.closed');
-  if (room.members.length >= CAPACITY) return t('lobby.full');
+  if (room.members.length >= MAX_PLAYERS) return t('lobby.full');
   return room.locked ? t('lobby.locked') : t('lobby.open');
 }
 
@@ -126,7 +126,7 @@ onBeforeUnmount(() => clearInterval(timer));
             <div class="muted" data-testid="room-members">{{ room.members.map(member => member.nickname).join(', ') || t('lobby.empty') }}</div>
           </div>
           <div class="room-status">
-            <Badge class="ds-number">{{ t('lobby.occupancy', { count: room.members.length, capacity: CAPACITY }) }}</Badge>
+            <Badge class="ds-number">{{ t('lobby.occupancy', { count: room.members.length, capacity: MAX_PLAYERS }) }}</Badge>
             <Badge data-testid="room-status">{{ roomStatus(room) }}</Badge>
             <Badge v-if="room.locked">{{ t('lobby.code_required') }}</Badge>
           </div>

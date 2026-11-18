@@ -48,7 +48,9 @@ function restoreSetupFocus(event: Event): void {
 
 const entries = computed(() => {
   const order = turnOrder(props.view);
-  if (!setup.value) return order;
+  const setupView = props.view?.setup;
+  if (!setup.value || !setupView) return order;
+  const currentGroup = setupView.groups[setupView.round.groupIndex];
 
   const lastRoll = new Map<string, number>();
   const tied = new Set<string>();
@@ -68,7 +70,7 @@ const entries = computed(() => {
   }
   return order.map(entry => ({
     ...entry,
-    roll: entry.roll ?? lastRoll.get(entry.playerId) ?? null,
+    roll: currentGroup?.includes(entry.playerId) ? entry.roll : (lastRoll.get(entry.playerId) ?? null),
     tieRolled: entry.tieRolled || (entry.tied && tied.has(entry.playerId)),
   }));
 });

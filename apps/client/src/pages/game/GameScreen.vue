@@ -43,10 +43,11 @@ watch(
 
 const pendingTypes = computed(() => client.game.pending.map((c) => c.type));
 
-/** Same colour as the player's token: by index in `view.players`. */
+/** The setup roster uses the same seat palette as the waiting room. */
 function colorOf(playerId: string): string {
-  const index = client.game.view?.players.findIndex((p) => p.id === playerId) ?? -1;
-  const color = TOKEN_COLORS[(index < 0 ? 0 : index) % TOKEN_COLORS.length]!;
+  const index = Math.max(0, client.game.view?.players.findIndex((p) => p.id === playerId) ?? 0);
+  if (client.game.view?.phase === 'setup') return `var(--player-${index + 1})`;
+  const color = TOKEN_COLORS[index % TOKEN_COLORS.length]!;
   return `#${color.toString(16).padStart(6, '0')}`;
 }
 

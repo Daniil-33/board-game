@@ -156,7 +156,15 @@ describe('Hud', () => {
     });
     expect(roll.attributes('disabled')).toBeUndefined();
     expect(dialog.findAll('[data-testid="tied"]').map(row => row.text())).toEqual(['ничья', 'ничья']);
-    expect(dialog.findAll('[data-testid="order-roll"]').map(row => row.text())).toEqual(['4', '4']);
+    expect(dialog.findAll('[data-testid="order-roll"]')).toHaveLength(0);
+
+    await wrapper.setProps({
+      view: setupView(['a', 'b'], { roller: 'b', revision: 8, rolls: { a: 5 } }),
+    });
+    expect(dialog.findAll('[data-testid="order-roll"]').map(row => row.text())).toEqual(['5']);
+    expect(dialog.findAll('[data-testid="order-entry"]')[1]!.find('[aria-label="Броска ещё нет"]').exists()).toBe(true);
+    expect(roll.attributes('disabled')).toBeDefined();
+
     await wrapper.setProps({ view: playingView(['b', 'a'], { owner: 'b' }) });
     await vi.waitFor(() => expect(body.find('[role="dialog"]').exists()).toBe(false));
     expect(wrapper.findAll('[data-testid="order-name"]').map(row => row.text())).toEqual(['Bob', 'Alice']);

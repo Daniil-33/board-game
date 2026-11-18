@@ -30,7 +30,7 @@ defineProps<{
         {{ entry.roll ?? t('common.unreported') }}
       </span>
       <span v-else-if="entry.roll !== null" class="tag" data-testid="order-roll">{{ t('turn_order.rolled', { roll: entry.roll }) }}</span>
-      <span v-if="entry.tied" class="tag warn" data-testid="tied">{{ entry.tieRolled ? t('turn_order.tied') : t('turn_order.undecided') }}</span>
+      <span v-if="entry.tied && (!setup || entry.tieRolled)" class="tag warn" data-testid="tied">{{ entry.tieRolled ? t('turn_order.tied') : t('turn_order.undecided') }}</span>
       <span v-if="entry.jail" class="tag warn" data-testid="jail"> {{ t('turn_order.jail_attempts', { attempts: entry.jail.attemptsUsed }) }} </span>
     </li>
   </ol>

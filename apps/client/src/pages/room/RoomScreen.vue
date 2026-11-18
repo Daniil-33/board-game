@@ -1,13 +1,11 @@
 <script setup lang="ts">
+import { MIN_PLAYERS, MAX_PLAYERS } from '@game/game-core';
 import { AlertDialog, Button, Toast } from '../../shared/ui/index';
 import { Translation as I18nT } from 'vue-i18n';
 import { i18n, t } from '../../shared/i18n/index';
 import { computed, ref } from 'vue';
 import { useClient } from '../../features/client-session/index';
 
-/** The Start button needs at least this many members (task handoff, criterion 2). */
-const MEMBERS_TO_START = 2;
-const CAPACITY = 6;
 
 const client = useClient();
 const copyFailed = ref(false);
@@ -35,7 +33,7 @@ const members = computed(() => {
 const isCreator = computed(() => room.value !== null && room.value.creatorId === client.session.state.guest?.guestId);
 const startReason = computed(() => {
   if (!client.game.connected) return t('room.connecting');
-  if (members.value.length < MEMBERS_TO_START) return t('room.waiting_for_player');
+  if (members.value.length < MIN_PLAYERS) return t('room.waiting_for_player');
   if (client.lobby.busy) return t('room.busy');
   return '';
 });
@@ -44,7 +42,7 @@ const startReason = computed(() => {
 <template>
   <section v-if="room" class="room-view">
     <header class="room-heading">
-      <p class="muted">{{ t('room.heading', { count: members.length, capacity: CAPACITY }) }}</p>
+      <p class="muted">{{ t('room.heading', { count: members.length, capacity: MAX_PLAYERS }) }}</p>
       <h2 class="shell-heading" data-testid="room-title">{{ t('common.room', { roomId: room.roomId }) }}</h2>
     </header>
     <p v-if="client.game.fatal" class="error" data-testid="fatal">{{ client.game.fatal }}</p>
@@ -60,7 +58,7 @@ const startReason = computed(() => {
       </li>
     </ul>
     <ul class="shell-card seats" :aria-label="t('common.players')">
-      <li v-for="seat in CAPACITY" :key="seat" :data-testid="members[seat - 1] ? 'member' : 'empty-seat'">
+      <li v-for="seat in MAX_PLAYERS" :key="seat" :data-testid="members[seat - 1] ? 'member' : 'empty-seat'">
         <template v-if="members[seat - 1]">
           <span class="avatar" :style="{ '--seat-color': 'var(--player-' + seat + ')' }" aria-hidden="true">{{ Array.from(members[seat - 1]!.name)[0] }}</span>
           <strong>{{ members[seat - 1]!.name }}</strong>
