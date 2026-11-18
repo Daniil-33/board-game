@@ -27,7 +27,8 @@ import struct
 import zlib
 
 root = Path(sys.argv[1])
-root.joinpath("index.html").write_text("<!doctype html><title>edge fixture</title>" + "h" * 4096)
+html = "<!doctype html><title>edge fixture</title>"
+root.joinpath("index.html").write_text(html + "h" * (562 - len(html)))
 root.joinpath("assets/check.js").write_text("const fixture = '" + "j" * 4096 + "';")
 root.joinpath("assets/check.css").write_text(".fixture { content: '" + "c" * 4096 + "'; }")
 root.joinpath("assets/check.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"><text>' + "s" * 4096 + "</text></svg>")
@@ -42,17 +43,18 @@ PY
 
 docker network create "$network" >/dev/null
 docker run -d --name "$api" --network "$network" \
-  --network-alias server --network-alias staging-server --network-alias production-server \
+  --network-alias server --network-alias staging-server \
   -v "$PWD/deploy/tests/edge-upstream.js:/edge-upstream.js:ro" \
   node:22-alpine node /edge-upstream.js >/dev/null
 docker run -d --name "$web" --network "$network" \
-  --network-alias staging-web --network-alias production-web \
+  --network-alias staging-web \
   -v "$PWD/apps/client/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
   -v "$tmp/www:/usr/share/nginx/html:ro" \
   nginx:1.27-alpine >/dev/null
 docker run -d --name "$edge" --network "$network" \
   --network-alias edge-check \
   --network-alias stage.focusima.space --network-alias stage-api.focusima.space \
+  --network-alias focusima.space \
   --entrypoint /bin/sh \
   -v "$edge_source:/edge:ro" \
   -v "$edge_source/nginx.conf:/etc/nginx/nginx.conf:ro" \
@@ -78,6 +80,9 @@ for env in staging production; do
     -out "$tmp/certs/live/$env/fullchain.pem" >/dev/null 2>&1
 done
 docker exec "$edge" sh /edge/reload.sh
+docker exec "$edge" wget -t 1 -T 4 -S --no-check-certificate -O /dev/null \
+  https://focusima.space/ > "$tmp/absent" 2>&1 || true
+grep -q '502 Bad Gateway' "$tmp/absent"
 docker exec "$edge" sh -c 'printf "HEAD /path?secret-query=must-not-log HTTP/1.0\r\nHost: stage.focusima.space\r\n\r\n" | nc -w 2 127.0.0.1 80' > "$tmp/http"
 grep -q '308 Permanent Redirect' "$tmp/http"
 grep -q 'https://stage.focusima.space/path?secret-query=must-not-log' "$tmp/http"
@@ -98,4 +103,4 @@ if grep -q 'must-not-log' "$tmp/logs"; then
 fi
 docker logs "$web" > "$tmp/web-logs" 2>&1
 grep -q 'GET /assets/check.js HTTP/1.1' "$tmp/web-logs"
-echo 'Edge: bootstrap, challenge, redirect, unknown host, path-only logs, HTTP/2, HTTP/1.1 web upstream, gzip text assets, immutable cache, uncompressed raster, API proxy and WebSocket upgrade verified'
+echo 'Edge: bootstrap, challenge, absent-environment 502, redirect, unknown host, path-only logs, HTTP/2, HTTP/1.1 web upstream, gzip text assets, immutable cache, uncompressed raster, API proxy and WebSocket upgrade verified'
