@@ -18,7 +18,7 @@
 ## 4. Integration and delivery
 
 - [x] 4.1 Run `pnpm build`, `pnpm test`, lint, `pnpm typecheck:e2e`, `openspec validate --all --strict`, and `git diff --check <base> HEAD`; record results and confirm all browser specs pass. Standard browser suite: 8 passed; isolated stage 4/5 fixtures: 18 passed across full run and corrected restart rerun; deterministic seed 6689 case: 1 passed. Evidence recorded in `/srv/agents/evidence/TASK-vd-load-split/verification.md`.
-- [ ] 4.2 Open the feature-branch PR, confirm all four CI jobs pass on its head, start independent review, resolve supported findings, and record review evidence in `/srv/agents/evidence/TASK-vd-load-split/`.
+- [x] 4.2 Open the feature-branch PR, confirm all four CI jobs pass on its head, start independent review, resolve supported findings, and record review evidence in `/srv/agents/evidence/TASK-vd-load-split/`.
 
 ## Workflow follow-up
 
