@@ -47,6 +47,14 @@ auction are bottom sheets. Rules, commands and timers are unchanged.
      highlighted;
    - the build, sell, mortgage and redeem actions only when the viewer owns
      the asset, using the existing legality adapters.
+
+   The desktop cell hover tooltip (`widgets/board/tooltip.ts`, from
+   TASK-vd-board) appends a mortgaged status suffix ("· В залоге").
+   REV-vd-board-df07cb8 RVW-006 asks for three things:
+   - add that suffix to the "Asset inspection" → "Desktop hover" scenario;
+   - add a unit test for the mortgaged and not-mortgaged tooltip text;
+   - refresh the suffix when the view changes while the pointer stays on the
+     cell.
 4. **Rent and debt** (`widgets/rent-panel`, `widgets/debt-notices`):
    - the amount due and the creditor;
    - the shortfall hint with the amount missing;
