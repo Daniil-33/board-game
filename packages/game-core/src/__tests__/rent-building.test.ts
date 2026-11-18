@@ -42,6 +42,7 @@ describe('rent formula tables across prices-1', () => {
       }
     }
     const logistics = board.cells.filter(c => c.kind === 'logistics');
+    for (const cell of logistics) expect(rentTiers(board, cell.asset!.assetId).filter(tier => tier.kind === 'logistics')).toHaveLength(logistics.length);
     for (const cell of logistics) for (const tier of rentTiers(board, cell.asset!.assetId).filter((entry): entry is Extract<typeof entry, { kind: 'logistics' }> => entry.kind === 'logistics')) {
       const ownedCells = [cell, ...logistics.filter(other => other !== cell)].slice(0, tier.holdings);
       expect(tier.amount).toBe(rentFor({ ...s, owners: Object.fromEntries(ownedCells.map(c => [c.asset!.assetId, pid('b')])) }, cell.asset!.assetId, null));
@@ -50,6 +51,19 @@ describe('rent formula tables across prices-1', () => {
     for (const cell of energy) for (const tier of rentTiers(board, cell.asset!.assetId).filter((entry): entry is Extract<typeof entry, { kind: 'energy' }> => entry.kind === 'energy')) {
       const ownedCells = [cell, ...energy.filter(other => other !== cell)].slice(0, tier.holdings);
       expect(tier.amount).toBe(rentFor({ ...s, owners: Object.fromEntries(ownedCells.map(c => [c.asset!.assetId, pid('b')])) }, cell.asset!.assetId, tier.diceSum));
+    }
+  });
+  it('logistics rent tiers stop at the holdings present on a shorter board', () => {
+    const s = base(), original = s.board!, logistics = original.cells.filter(c => c.kind === 'logistics');
+    const retained = logistics.slice(0, 2), retainedIds = new Set(retained.map(c => c.asset!.assetId));
+    const board = { ...original, cells: original.cells.filter(cell => cell.kind !== 'logistics' || retainedIds.has(cell.asset!.assetId)) };
+    for (const cell of retained) {
+      const tiers = rentTiers(board, cell.asset!.assetId).filter((tier): tier is Extract<typeof tier, { kind: 'logistics' }> => tier.kind === 'logistics');
+      expect(tiers.map(tier => tier.holdings)).toEqual([1, 2]);
+      for (const tier of tiers) {
+        const holdings = [cell, ...retained.filter(other => other !== cell)].slice(0, tier.holdings);
+        expect(tier.amount).toBe(rentFor({ ...s, board, owners: Object.fromEntries(holdings.map(ownedCell => [ownedCell.asset!.assetId, pid('b')])) }, cell.asset!.assetId, null));
+      }
     }
   });
   it('regular: every price, 0..4 houses, complete and incomplete groups', () => {

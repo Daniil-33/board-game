@@ -382,7 +382,7 @@ describe('elimination and game over', () => {
 
   it('keeps the eliminated viewer on the live game with chat after dismissing the elimination sheet', async () => {
     const s = owning();
-    const view = project({ ...s, order: [pid('b'), pid('c')], eliminated: [pid('a')], eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
+    const view = project({ ...s, order: [pid('b'), pid('c')], eliminated: [pid('a')], purchase: { playerId: pid('b'), cell: 13, assetId: at(s, 13) }, eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
     const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
     const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises();
     expect(document.querySelector('[data-testid="elimination-screen"]')?.textContent).toContain('Вы выбыли: вы сдались');
@@ -391,6 +391,12 @@ describe('elimination and game over', () => {
     expect(wrapper.attributes('data-screen')).toBe('game');
     expect(wrapper.find('[data-testid="chat-input"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="spectator"]').exists()).toBe(true);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[data-testid="purchase-status"]')?.textContent).toContain('Bob');
+    const chat = wrapper.get('[data-testid="chat-input"]');
+    (chat.element as HTMLInputElement).focus();
+    await chat.setValue('still here');
+    expect((chat.element as HTMLInputElement).value).toBe('still here');
     wrapper.unmount();
   });
 

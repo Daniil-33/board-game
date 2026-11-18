@@ -16,12 +16,12 @@ test('game layout stays within all supported widths and preserves mobile selecti
         const decider = players.find(p => p.id === host.view!.purchase!.playerId)!;
         const buy = decider.page.locator(sel('buy'));
         await action(decider, await buy.isEnabled() ? 'buy' : 'start-auction');
+        await syncToActor(players, decider);
       } else {
         const responder = players.find(p => p.id === host.view!.auction!.responder)!;
         await action(responder, 'pass');
+        await syncToActor(players, responder);
       }
-      const revision = host.view!.revision;
-      for (const player of players) await expect.poll(() => player.view?.revision).toBe(revision);
     }
   };
   const nav = page.locator(sel('game-tab-board'));
@@ -71,3 +71,8 @@ test('game layout stays within all supported widths and preserves mobile selecti
   await leave.click();
   await expect(page.locator(sel('screen-lobby'))).toBeVisible();
 });
+
+async function syncToActor(players: import('./helpers').Actor[], actor: import('./helpers').Actor) {
+  const revision = actor.view!.revision;
+  for (const player of players) await expect.poll(() => player.view?.revision).toBe(revision);
+}

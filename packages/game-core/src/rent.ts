@@ -44,7 +44,7 @@ export function rentTiers(board: GeneratedBoard | null | undefined, assetId: Ass
   if (!cell?.asset || (cell.kind !== 'monopoly' && cell.kind !== 'logistics' && cell.kind !== 'energy')) return [];
   const group = board!.cells.filter(candidate => candidate.asset?.groupId === cell.asset!.groupId);
   if (cell.kind === 'logistics') {
-    return LOGISTICS_RENT_PERCENT.slice(1).map((percent, index) => ({
+    return LOGISTICS_RENT_PERCENT.slice(1, Math.min(group.length, LOGISTICS_RENT_PERCENT.length - 1) + 1).map((percent, index) => ({
       kind: 'logistics' as const, holdings: index + 1,
       amount: quantumRatio(cell.asset!.price * percent, 100),
     }));

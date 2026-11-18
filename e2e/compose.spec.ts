@@ -230,18 +230,19 @@ async function settledAuction(players: import('./helpers').Actor[], auction = pl
 async function endTurn(actor: import('./helpers').Actor, players: import('./helpers').Actor[]): Promise<void> {
   if (actor.view!.purchase || await actor.page.locator(sel('start-auction')).count() > 0) {
     await action(actor, 'start-auction');
-    while (players[0]!.view!.auction) {
-      const auction = players[0]!.view!.auction!;
+    await syncToActor(players, actor);
+    while (actor.view!.auction) {
+      const auction = actor.view!.auction!;
       const responder = players.find(p => p.id === auction.responder)!;
-      const revision = players[0]!.view!.revision;
       await action(responder, 'pass');
-      await expect.poll(() => players[0]!.view?.revision).toBeGreaterThan(revision);
-      const updated = players[0]!.view!.revision;
-      for (const player of players) await expect.poll(() => player.view?.revision).toBe(updated);
+      await syncToActor(players, responder);
     }
   }
   const turnId = actor.view!.turn!.turnId;
+  const beforeEnd = actor.view!.revision;
   await action(actor, 'EndTurn');
+  await expect.poll(() => actor.view?.revision).toBeGreaterThan(beforeEnd);
+  await syncToActor(players, actor);
   const auction = actor.view!.auction;
   await settledAuction(players, auction ?? undefined);
   if (auction) {
@@ -256,13 +257,18 @@ async function resolvePrompts(players: import('./helpers').Actor[]): Promise<voi
       const decider = players.find(p => p.id === purchase.playerId)!;
       const buy = decider.page.locator(sel('buy'));
       await action(decider, await buy.isEnabled() ? 'buy' : 'start-auction');
+      await syncToActor(players, decider);
     } else {
       const responder = players.find(p => p.id === players[0]!.view!.auction!.responder)!;
       await action(responder, 'pass');
+      await syncToActor(players, responder);
     }
-    const revision = players[0]!.view!.revision;
-    for (const player of players) await expect.poll(() => player.view?.revision).toBe(revision);
   }
+}
+
+async function syncToActor(players: import('./helpers').Actor[], actor: import('./helpers').Actor): Promise<void> {
+  const revision = actor.view!.revision;
+  for (const player of players) await expect.poll(() => player.view?.revision).toBe(revision);
 }
 
 async function panels(players: import('./helpers').Actor[]): Promise<void> {
