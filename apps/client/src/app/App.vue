@@ -2,13 +2,18 @@
 import { i18n, t } from '../shared/i18n/index';
 import CommandToasts from './CommandToasts.vue';
 import { UiProvider } from '../shared/ui/index';
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
+import { GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from './screen-overrides';
+import { createGameScreenAsyncComponent } from './game-screen-async';
 import { useClient } from '../features/client-session/index';
-import { GameOverScreen } from '../pages/game-over/index';
-import { GameScreen } from '../pages/game/index';
 import { LobbyScreen } from '../pages/lobby/index';
 import { LoginScreen } from '../pages/login/index';
 import { RoomScreen } from '../pages/room/index';
+
+const AsyncGameScreen = createGameScreenAsyncComponent(() => import('../pages/game/index').then(({ GameScreen }) => GameScreen));
+const AsyncGameOverScreen = createGameScreenAsyncComponent(() => import('../pages/game-over/index').then(({ GameOverScreen }) => GameOverScreen));
+const GameScreen = inject(GAME_SCREEN_OVERRIDE_KEY, AsyncGameScreen);
+const GameOverScreen = inject(GAME_OVER_SCREEN_OVERRIDE_KEY, AsyncGameOverScreen);
 
 const client = useClient();
 const locale = i18n.global.locale;

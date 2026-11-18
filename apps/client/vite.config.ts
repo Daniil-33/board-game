@@ -26,13 +26,13 @@ export default defineConfig({
   ],
   define: { __VUE_I18N_FULL_INSTALL__: false, __VUE_I18N_LEGACY_API__: false },
   build: {
+    manifest: true,
+    minify: 'terser',
     assetsInlineLimit: (filePath) =>
       /\/catalog\/logos\/(?:brand|geometric)\//.test(filePath.replaceAll('\\', '/')) ? false : undefined,
     rollupOptions: {
-      // Ship the resolver and assets before the board and panels start importing it.
       input: {
         app: fileURLToPath(new URL('./index.html', import.meta.url)),
-        logos: fileURLToPath(new URL('./src/shared/lib/logos/index.ts', import.meta.url)),
       },
       preserveEntrySignatures: 'exports-only',
       plugins: [{

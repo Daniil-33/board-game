@@ -3,7 +3,7 @@ import { actionAvailability } from '../../entities/game/index';
 import { ChatComposer } from '../../features/send-chat/index';
 import { ResignControl } from '../../features/resign/index';
 import { MobileNav } from '../../widgets/mobile-nav/index';
-import { SoundControls } from '../../shared/sound/index';
+import { playSound, SoundControls } from '../../shared/sound/index';
 import { MyTurn } from '../../widgets/my-turn/index';
 import { MyAssets } from '../../widgets/my-assets/index';
 import { EventFeed } from '../../widgets/event-feed/index';
@@ -27,7 +27,7 @@ import { Hud, HudStatus } from '../../widgets/turn-header/index';
 const TICK_MS = 250;
 
 const client = useClient();
-const mountBoard = inject(BOARD_MOUNT_KEY);
+const injectedBoardMount = inject(BOARD_MOUNT_KEY, undefined);
 
 const host = ref<HTMLElement | null>(null);
 const boardError = ref<string | null>(null);
@@ -97,11 +97,18 @@ function colorOf(playerId: string): string {
 }
 
 onMounted(async () => {
+  client.attachSound(playSound);
   media?.addEventListener('change', updateViewport);
   ticker = setInterval(() => (now.value = client.now()), TICK_MS);
-  if (mountBoard === undefined || host.value === null) return;
+  if (host.value === null) return;
   try {
-    const mounted = await mountBoard(host.value);
+    const mounted = injectedBoardMount !== undefined
+      ? await injectedBoardMount(host.value)
+      : await (async () => {
+        const { BoardScene, mountBoard } = await import('../../widgets/board/index');
+        const board = new BoardScene();
+        return { board, destroy: await mountBoard(host.value!, board) };
+      })();
     if (unmounted) return mounted.destroy();
     destroyBoard = mounted.destroy;
     mountedBoard = mounted.board;
@@ -120,6 +127,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  client.attachSound(null);
   unmounted = true;
   media?.removeEventListener('change', updateViewport);
   clearInterval(ticker);

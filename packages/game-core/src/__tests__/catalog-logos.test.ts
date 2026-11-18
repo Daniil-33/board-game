@@ -26,11 +26,12 @@ const sets = [
   { name: 'brand', metadata: ['sources.md'] },
 ] as const;
 
-// These 22 files exceeded 40 KB in the initial resvg sweep. Four now fit
-// under the standard limit. For each remaining exception, smaller tested
-// candidates at or below 40 KB changed pixels at 24 px or 64 px in Chromium
-// or resvg. The limits are the smallest measured sizes matching both renderers.
-const brandSizeReview = new Map(Object.entries({
+// Explicit 20,000-byte exceptions retained pending an owner decision on
+// visible geometry simplification. Sizes are asserted so every exception
+// stays visible in review if its asset changes.
+const brandSizeExceptions = new Map(Object.entries({
+  'banks-4-dark.svg': 22_001,
+  'banks-4.svg': 22_001,
   'banks-5-dark.svg': 82_788,
   'banks-5.svg': 82_788,
   'commerce-4-dark.svg': 56_044,
@@ -49,12 +50,19 @@ const brandSizeReview = new Map(Object.entries({
   'insurance-6.svg': 58_574,
   'media-2-dark.svg': 81_577,
   'media-2.svg': 81_577,
-  'media-3-dark.svg': 30_647,
-  'media-3.svg': 30_647,
-  'microfinance-2-dark.svg': 51_617,
-  'microfinance-2.svg': 51_617,
+  'media-3-dark.svg': 23_543,
+  'media-3.svg': 23_543,
+  'microfinance-2-dark.svg': 41_762,
+  'microfinance-2.svg': 41_762,
+  'microfinance-3-dark.svg': 30_966,
+  'microfinance-3.svg': 30_966,
+  'microfinance-6-dark.svg': 35_541,
+  'microfinance-6.svg': 35_541,
+  'technology-5-dark.svg': 25_983,
+  'technology-5.svg': 25_983,
+  'telecom-3-dark.svg': 37_859,
+  'telecom-3.svg': 37_859,
 }));
-const brandSizeExceptions = new Map([...brandSizeReview].filter(([, bytes]) => bytes > 40_000));
 
 const ids = [
   ...catalog.categories.flatMap(({ companies }) => companies),
@@ -131,7 +139,6 @@ describe.each(sets)('$name catalog logos (data only)', ({ name, metadata }) => {
     });
   } else {
     it('fits the raw and summed gzip budgets with only the recorded exceptions', () => {
-      expect(files).toEqual(expect.arrayContaining([...brandSizeReview.keys()]));
       let raw = 0;
       let gzip = 0;
       const oversized = [];
@@ -139,21 +146,22 @@ describe.each(sets)('$name catalog logos (data only)', ({ name, metadata }) => {
         const bytes = readFileSync(join(root, file));
         raw += bytes.length;
         gzip += gzipSync(bytes, { level: 6 }).length; // Match the web container.
-        if (bytes.length > 40_000) oversized.push(file);
+        if (bytes.length > 20_000) oversized.push(file);
+        expect(brandSizeExceptions.get(file) ?? 0).toBe(bytes.length > 20_000 ? bytes.length : 0);
       }
       expect(oversized.sort()).toEqual([...brandSizeExceptions.keys()].sort());
       expect(raw).toBeLessThanOrEqual(2_200_000);
       expect(gzip).toBeLessThanOrEqual(800_000);
     });
 
-    it('copies microfinance-4 from geometric in both appearances', () => {
+    it('retains geometric-fallback provenance for microfinance-4 in both appearances', () => {
       const entry = manifest['microfinance-4']!;
       expect(entry.source).toBe('geometric fallback');
       expect(entry.construction).toBe('geometric-fallback');
       expect(entry.sourceRef).toBe('../geometric/logos.json');
-      for (const file of [entry.file, entry.darkFile]) {
-        expect(readFileSync(join(root, file)).equals(readFileSync(join(directory, 'geometric', file)))).toBe(true);
-      }
+      const geometricRoot = join(directory, 'geometric');
+      expect(readFileSync(join(root, entry.file))).toEqual(readFileSync(join(geometricRoot, entry.file)));
+      expect(readFileSync(join(root, entry.darkFile))).toEqual(readFileSync(join(geometricRoot, entry.darkFile)));
     });
   }
 
@@ -177,7 +185,7 @@ describe.each(sets)('$name catalog logos (data only)', ({ name, metadata }) => {
       const bytes = readFileSync(join(root, file));
       expect(bytes.length).toBeGreaterThan(0);
       const exception = name === 'brand' ? brandSizeExceptions.get(file) : undefined;
-      expect(bytes.length).toBeLessThanOrEqual(exception ?? 40_000);
+      expect(bytes.length).toBeLessThanOrEqual(exception ?? 20_000);
       const svg = bytes.toString('utf8');
       validateSvg(svg);
       expect(svg.match(/^<svg\s[^>]*\bviewBox="([^"]*)"/)?.[1]).toBe('0 0 64 64');

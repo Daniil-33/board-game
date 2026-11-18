@@ -1,4 +1,4 @@
-import { test as base, expect, type Page, type BrowserContext } from '@playwright/test';
+import { test as base, expect, type Page, type BrowserContext, type Request } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, writeFileSync } from 'node:fs';
 import type { StateView, GameEvent } from '../packages/game-core/src/index';
@@ -13,14 +13,16 @@ export interface Actor {
   welcomes: { playerId: string; revision: number }[];
   events: { at: number; revision: number; event: GameEvent }[];
   acks: { at: number; commandId: string; outcome: string; revision: number; error?: { code: string } }[];
+  networkStage: 'login' | 'lobby' | 'room' | 'game' | 'reload-game';
+  network: { stage: Actor['networkStage']; url: string; method: string; resourceType: string; status?: number; contentLength?: number; contentEncoding?: string }[];
 }
-export const test = base.extend<{ actors: (count: number, invite?: string) => Promise<Actor[]> }>({
+export const test = base.extend<{ actors: (count: number, invite?: string, observe?: (page: Page, actor: Actor) => void) => Promise<Actor[]> }>({
   actors: async ({ browser, baseURL }, use, info) => {
     const actors: Actor[] = [], secrets: string[] = [roomCode], traces: string[] = [];
     appendFileSync('.e2e-secrets.jsonl', JSON.stringify(roomCode) + '\n');
     const log: unknown[] = [];
     const remember = (secret: string) => { secrets.push(secret); appendFileSync('.e2e-secrets.jsonl', JSON.stringify(secret) + '\n'); };
-    await use(async (count, invite) => {
+    await use(async (count, invite, observe) => {
       const added: Actor[] = [];
       for (let i = 0; i < count; i++) {
         const context = await browser.newContext({ baseURL: baseURL! });
@@ -36,8 +38,26 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
             }
           };
         });
-        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [] };
+        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [], networkStage: 'login', network: [] };
         actors.push(actor); added.push(actor);
+        if (observe) {
+          const requests = new Map<Request, Actor['network'][number]>();
+          page.on('request', (request) => {
+            const url = new URL(request.url());
+            const record: Actor['network'][number] = { stage: actor.networkStage, url: `${url.origin}${url.pathname}`, method: request.method(), resourceType: request.resourceType() };
+            requests.set(request, record);
+            actor.network.push(record);
+          });
+          page.on('response', async (response) => {
+            const record = requests.get(response.request());
+            if (!record) return;
+            const headers = await response.allHeaders();
+            record.status = response.status();
+            if (headers['content-length'] !== undefined) record.contentLength = Number(headers['content-length']);
+            if (headers['content-encoding'] !== undefined) record.contentEncoding = headers['content-encoding'];
+          });
+          observe(page, actor);
+        }
         page.on('response', async (response) => {
           if (response.url().endsWith('/api/guests') && response.status() === 201) {
             const body = await response.json(); actor.id = body.guestId; remember(body.token);
@@ -68,6 +88,7 @@ export const test = base.extend<{ actors: (count: number, invite?: string) => Pr
         await page.locator(sel('nickname')).fill(`Player ${actors.length}`);
         await page.locator(sel('login-enter')).click();
         await expect(page.locator(sel('screen-login'))).toHaveCount(0);
+        actor.networkStage = 'lobby';
       }
       return added;
     });
@@ -115,7 +136,10 @@ export async function join(actor: Actor, roomId: string, code?: string): Promise
 export async function start(players: Actor[]): Promise<void> {
   await expect(players[0]!.page.locator(sel('member'))).toHaveCount(players.length);
   await players[0]!.page.locator(sel('start')).click();
-  for (const p of players) await expect(p.page.locator(sel('screen-game'))).toBeVisible();
+  for (const p of players) {
+    await expect(p.page.locator(sel('screen-game'))).toBeVisible();
+    await expect(p.page.locator(sel('board-canvas'))).toBeVisible();
+  }
 }
 export async function action(actor: Actor, type: string): Promise<void> {
   const revision = actor.view!.revision;
