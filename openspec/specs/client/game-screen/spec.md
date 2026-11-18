@@ -508,7 +508,7 @@ Rejected game commands SHALL show translated reason toasts. The game SHALL annou
 - **THEN** the reconnect banner SHALL disappear
 
 ### Requirement: Responsive decision and asset surfaces
-Purchase decisions SHALL use a modal dialog on desktop and a bottom sheet on mobile. Asset inspection SHALL use the responsive dialog on desktop and a bottom sheet on mobile. Auctions SHALL appear inline in the desktop centre column and in a bottom sheet on mobile. These surfaces SHALL use the current projection and existing legality adapters.
+Purchase response SHALL use a modal dialog on desktop or bottom sheet on mobile only for the decider; others SHALL see non-modal status. Auctions SHALL be inline on desktop. On mobile, only the current responder SHALL see a sheet; others SHALL see inline content, and it SHALL open when its viewer becomes responder. Decision surfaces SHALL use the current projection and legality adapters. Asset inspection SHALL use a responsive dialog on desktop and bottom sheet on mobile.
 
 #### Scenario: Purchase surface by viewport
 - **WHEN** a projected purchase decision is visible on desktop or mobile
@@ -517,12 +517,27 @@ Purchase decisions SHALL use a modal dialog on desktop and a bottom sheet on mob
 
 #### Scenario: Auction surface by viewport
 - **WHEN** a projected auction is visible on desktop or mobile
-- **THEN** desktop SHALL show it inline in the centre column and mobile SHALL show it in a bottom sheet, with the asset, projected leading bid and leader in that player's seat color, the existing legal bid increments, pass action, and response timer with a visible last-seconds state
+- **THEN** desktop SHALL show it inline in the centre column and mobile SHALL show a bottom sheet for the current responder and inline content for everyone else, with the asset, projected leading bid and leader in that player's seat color, the existing legal bid increments, pass action, and response timer with a visible last-seconds state
 - **AND** only the active responder's mobile sheet SHALL be non-dismissible
 
+#### Scenario: Purchase response and bystanders
+- **WHEN** a projected purchase decision is visible to the deciding player and to other participants, eliminated players, or spectators
+- **THEN** only the deciding player SHALL see the non-dismissible dialog
+- **AND** every other viewer SHALL see a non-modal status identifying who is deciding, the asset, its price, and the countdown
+
+#### Scenario: Mobile auction responder and bystanders
+- **WHEN** a projected auction is visible on mobile
+- **THEN** only the current responder SHALL see the non-dismissible bottom sheet
+- **AND** every other viewer SHALL see live inline auction content with the leader, bid, and timer
+- **AND** the sheet SHALL open when a viewer becomes the responder
+
+#### Scenario: Desktop auction viewers
+- **WHEN** a projected auction is visible on desktop
+- **THEN** every viewer SHALL see inline auction content with the leader, bid, and timer
+
 #### Scenario: Other viewers keep access
-- **WHEN** a non-deciding viewer sees a purchase dialog or a non-responder sees a mobile auction sheet
-- **THEN** Escape SHALL dismiss that viewer's presentation without affecting the pending decision or auction
+- **WHEN** a non-deciding viewer sees a purchase status or a non-responder sees inline auction content
+- **THEN** the status SHALL remain visible without a dialog and the auction SHALL remain visible inline
 - **AND** chat SHALL remain available to the viewer
 
 #### Scenario: Asset inspection from board and portfolio
