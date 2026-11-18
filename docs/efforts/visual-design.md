@@ -2,7 +2,7 @@
 
 ```yaml
 id: EFF-visual-design
-revision: 2
+revision: 3
 project: economic-board-game
 repo: github.com/Daniil-33/board-game
 created_at: 2026-11-17T11:50:00Z
@@ -138,6 +138,34 @@ projection and the core rules.
 12. **CI headroom:** `compose-browser` was at 21 of 35 minutes after stage 5.
     Split or shard it in this effort so that stages 6-7 have room.
 
+13. **Load performance (revision 3, owner report 2026-11-18: the app loads
+    slowly in desktop and phone browsers).** CTO measurement on staging
+    80660e6: `app-*.js` is 814 KB and is sent uncompressed; the CSS and the
+    logo SVGs are uncompressed too. The edge proxies the web container with
+    nginx's default HTTP/1.0, and the client nginx compresses only HTTP/1.1
+    requests, only for `image/svg+xml`. 32 light brand logos are larger than
+    20 KB (1.5 MB total; `banks-5.svg` is 82 KB, while its dark variant is
+    0.5 KB). Pixi is part of the first-load chunk. Requirements:
+    - through the staging edge, JS, CSS, SVG and JSON responses are compressed
+      (gzip, or Brotli if the team chooses), and a deploy test asserts this
+      through the edge, not only against the container;
+    - the edge serves HTTP/2 to browsers and HTTP/1.1 to the web upstream;
+    - brand logos are optimized without visible change: no single logo file
+      is larger than 20 KB, and the size of the whole set before and after is
+      reported. A logo that cannot meet the limit is listed with its reason;
+    - only the logos needed for the current screen are requested;
+    - login, lobby and room screens do not download Pixi or board code. These
+      load with the game screen;
+    - evidence: transferred bytes and Lighthouse mobile metrics (LCP, TTI or
+      TBT) on staging for login and for the game screen, before and after.
+    No separate media service or CDN. Logos are already separate files with
+    immutable caching, so a separate service would not reduce what the
+    browser downloads. The cause is missing compression and asset size. If
+    the owner asks for a media service again after seeing the measurements,
+    that is a new architecture decision.
+    Do this before the sound task, in parallel with the dialog follow-up.
+    The compression fix is the first PR.
+
 ## Scope and non-goals
 
 In scope:
@@ -256,6 +284,9 @@ Escalate to the CTO:
 - 1: initial handoff.
 - 2: owner decisions 2026-11-17: interface sound effects (criterion 10);
   Russian by default with multilingual support built in (criterion 8).
+- 3: owner report 2026-11-18 on slow loading: load performance (criterion
+  13). The deploy edge and client nginx configuration are in scope for it.
+  A separate media service was considered and not adopted.
 
 ## Acceptance
 
