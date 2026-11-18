@@ -14,6 +14,7 @@ import { boardDisplayKey, cellDisplay } from './display';
 import { Application, Container, Graphics, Rectangle, Sprite, type FillGradient, type Texture, type Text } from 'pixi.js';
 import { CLASSIC_40 } from '@game/game-core';
 import { playSound } from '../../shared/sound/index';
+import { soundForTokenStep } from '../../entities/event/index';
 import type { BoardView } from '../../entities/game/index';
 export type { BoardView } from '../../entities/game/index';
 import type { AnimationStep } from '../../entities/game/index';
@@ -429,7 +430,10 @@ export class BoardScene {
         const from = { x: token.x, y: token.y };
         const lift = step.kind === 'hop' ? 11 : 18;
         const reduced = this.reduceMotion();
-        if (step.kind === 'hop' && !reduced) playSound('token-step', { own: step.playerId === this.viewerId });
+        if (step.kind === 'hop') {
+          const sound = soundForTokenStep(step.playerId, this.viewerId, reduced);
+          if (sound) playSound(sound.id, { own: sound.own });
+        }
         await wait(reduced ? 0 : step.kind === 'hop' ? HOP_MS : JUMP_MS, (t) => {
           const travel = t * t * (3 - 2 * t);
           token.position.set(from.x + (to.x - from.x) * travel,

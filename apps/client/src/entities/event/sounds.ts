@@ -2,6 +2,20 @@ import type { GameEvent } from '@game/game-core';
 import type { SoundId } from '../../shared/sound/index';
 
 export interface EventSound { id: SoundId; own: boolean }
+
+export function soundForChat(authorId: string, viewerId: string | null): EventSound | null {
+  return viewerId !== null && authorId !== viewerId ? { id: 'chat', own: false } : null;
+}
+
+export function soundForAuctionTick(remainingSeconds: number, responderId: string | null, viewerId: string | null): EventSound | null {
+  if (!Number.isInteger(remainingSeconds) || remainingSeconds < 1 || remainingSeconds > 3) return null;
+  return { id: 'auction-tick', own: viewerId !== null && responderId === viewerId };
+}
+
+export function soundForTokenStep(playerId: string, viewerId: string | null, reducedMotion: boolean): EventSound | null {
+  return reducedMotion ? null : { id: 'token-step', own: viewerId !== null && playerId === viewerId };
+}
+
 export function soundForEvent(event: GameEvent, viewerId: string | null): EventSound | null {
   const payload = event.payload && typeof event.payload === 'object' ? event.payload as Record<string, unknown> : {};
   const actor = typeof payload.playerId === 'string' ? payload.playerId : null;

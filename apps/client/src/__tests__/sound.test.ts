@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SOUND_IDS, createSoundEngine, type SoundEngineOptions } from '../shared/sound/index';
-import { soundForEvent } from '../entities/event/sounds';
+import { soundForEvent, soundForAuctionTick, soundForChat, soundForTokenStep } from '../entities/event/sounds';
 import type { GameEvent } from '@game/game-core';
 import { harness, playingView, room, storedSession, update, welcome } from './helpers';
 
@@ -120,6 +120,16 @@ describe('event sound mapping', () => {
   it('does not map history-only events or an unrelated turn start', () => {
     expect(soundForEvent(event('PlayerMoved', { playerId: 'a' }), 'a')).toBeNull();
     expect(soundForEvent(event('TurnStarted', { playerId: 'b' }), 'a')).toBeNull();
+  });
+
+  it('maps live chat, final auction seconds and reduced-motion movement centrally', () => {
+    expect(soundForChat('b', 'a')).toEqual({ id: 'chat', own: false });
+    expect(soundForChat('a', 'a')).toBeNull();
+    expect(soundForAuctionTick(3, 'a', 'a')).toEqual({ id: 'auction-tick', own: true });
+    expect(soundForAuctionTick(4, 'a', 'a')).toBeNull();
+    expect(soundForAuctionTick(0, 'a', 'a')).toBeNull();
+    expect(soundForTokenStep('a', 'a', false)).toEqual({ id: 'token-step', own: true });
+    expect(soundForTokenStep('a', 'a', true)).toBeNull();
   });
 
   it('keeps Welcome history silent and plays the matching live Update event', () => {

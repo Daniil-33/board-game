@@ -17,7 +17,7 @@ import type { SocketFactory } from '../../shared/api/index';
 import { createGameState, type GameState } from '../../entities/game/index';
 import { createSessionStore, type SessionStore } from '../../entities/session/index';
 import { createChatStore, type ChatStore } from '../../entities/chat/index';
-import { createEventLog, createJournal, soundForEvent, type EventLog } from '../../entities/event/index';
+import { createEventLog, createJournal, soundForEvent, soundForChat, type EventLog } from '../../entities/event/index';
 import { playSound } from '../../shared/sound/index';
 import type { SoundId } from '../../shared/sound/index';
 import type { Board } from '../../entities/game/index';
@@ -209,7 +209,8 @@ export function createClient(deps: ClientDeps): Client {
     onChat(message) {
       chat.receive(message);
       journal.appendChat(message);
-      if (message.authorId !== game.playerId) emitSound('chat', { own: false });
+      const sound = soundForChat(message.authorId, game.playerId);
+      if (sound) emitSound(sound.id, { own: sound.own });
     },
     onChatAck(ack) {
       chat.acknowledge(ack);
