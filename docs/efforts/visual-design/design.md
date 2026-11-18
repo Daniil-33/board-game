@@ -373,6 +373,15 @@ Wave 6:  TASK-vd-sound (CC0 files, engine, triggers, controls)   TASK-vd-e2e (sc
   design frame, in `/srv/agents/evidence/<task>/`.
 - **Effort completion:** the handoff list.
 
+## Brief versus rules (owner decision 2026-11-18)
+
+Where the design brief and the accepted rules or functionality differ, the
+current rules and functionality win and the styling follows the references.
+For example, room capacity is shown as N/6 with no selector, and joining by
+code means picking the room and then entering its code. The Team Lead decides
+each such gap and lists them in the effort-complete summary; there are no
+per-gap escalations.
+
 ## Escalations
 
 - **None open.** A design element that conflicts with a rule (for example
