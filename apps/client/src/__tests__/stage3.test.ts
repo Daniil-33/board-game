@@ -68,6 +68,9 @@ describe('purchase and auction projection', () => {
     expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
     expect(document.querySelector('[role="status"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]')).toBeNull();
+    state.value = { ...state.value, me: null, view }; await flushPromises();
+    expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
+    expect(document.querySelector('[data-testid="purchase-status"]')).toBeTruthy();
   });
   it('auction roles, projected amounts, deadlines and restored leader', async () => {
     const view = auction(); const a = view.auction!;
@@ -108,6 +111,9 @@ describe('purchase and auction projection', () => {
     expect(document.querySelector('[data-testid="auction-leader"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="auction-timer"]')).toBeTruthy();
     await w.setProps({ view: { ...auction(), eliminated: [pid('b')] } }); await flushPromises();
+    expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
+    expect(document.querySelector('[data-testid="auction"]')).toBeTruthy();
+    await w.setProps({ me: null, view: auction() }); await flushPromises();
     expect(document.querySelector('[role="dialog"], [aria-modal]')).toBeNull();
     expect(document.querySelector('[data-testid="auction"]')).toBeTruthy();
     await w.setProps({ me: pid('a') }); await flushPromises();

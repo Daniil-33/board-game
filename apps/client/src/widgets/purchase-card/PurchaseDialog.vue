@@ -59,10 +59,12 @@ const disabledReason = (type: NullPayloadType): string => {
       <Button data-testid="start-auction" :disabled="!canIssue(props, 'StartAuction')" :reason="disabledReason('StartAuction')" @click="emit('command', 'StartAuction')">{{ t('purchase_dialog.start_auction') }}</Button>
   </section>
   </ResponsiveDialog>
-  <section v-else-if="view.purchase" class="asset-card decision-panel purchase-card purchase-status" role="status" data-testid="purchase-status">
-    <h2>{{ t('purchase_dialog.purchase_decision') }}</h2>
-    <p class="purchase-status-details"><span>{{ t('purchase_dialog.deciding', { player: nameOf(view.purchase.playerId) }) }}</span><span>{{ asset?.name }}</span><span>{{ formatMoney(asset?.price ?? 0) }}</span></p>
-    <p v-if="view.turn" data-testid="purchase-timer">{{ t('common.seconds_remaining', { seconds: formatSeconds(remainingSeconds(view.turn.deadline, now)) }) }}</p>
+  <section v-else-if="view.purchase" class="asset-card decision-panel purchase-card purchase-status" data-testid="purchase-status">
+    <div role="status">
+      <h2>{{ t('purchase_dialog.purchase_decision') }}</h2>
+      <p class="purchase-status-details"><span>{{ t('purchase_dialog.deciding', { player: nameOf(view.purchase.playerId) }) }}</span><span>{{ asset?.name }}</span><span>{{ formatMoney(asset?.price ?? 0) }}</span></p>
+    </div>
+    <p v-if="view.turn" aria-live="off" data-testid="purchase-timer">{{ t('common.seconds_remaining', { seconds: formatSeconds(remainingSeconds(view.turn.deadline, now)) }) }}</p>
   </section>
 </template>
 
