@@ -54,7 +54,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const declined = actor.view!.purchase!;
   const turnId = actor.view!.turn!.turnId;
   const beforeWon = structuredClone(actor.view!.balances);
-  const auctionObserver = players.find(p => p !== actor)!;
   await click(actor, players, 'start-auction');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
@@ -63,6 +62,8 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('auction'))).toBeVisible();
     await expect(p.page.locator(sel('purchase'))).toHaveCount(0);
   }
+  await respond(players, 'pass');
+  const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
   await expect(auctionObserver.page.locator('[role="dialog"]')).toBeVisible();
   await auctionObserver.page.keyboard.press('Escape');
@@ -72,7 +73,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await auctionObserver.page.locator(sel('chat-send')).click();
   await expect(auctionObserver.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during auction' })).toBeVisible();
   await auctionObserver.page.setViewportSize({ width: 1440, height: 900 });
-  await respond(players, 'pass');
   const bidder = byId(players, players[0]!.view!.auction!.responder);
   await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   await respond(players, 'bid');
