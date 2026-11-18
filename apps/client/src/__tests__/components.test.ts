@@ -129,6 +129,28 @@ describe('Hud', () => {
     expect(wrapper.find('[data-testid="timer"]').text()).toBe('0 с');
   });
 
+  it('closes setup on Escape, focuses the opener and allows reopening', async () => {
+    const wrapper = mount(Hud, {
+      attachTo: document.body,
+      props: { ...base, view: setupView(['a', 'b']) },
+    });
+    const opener = wrapper.get('[data-testid="open-setup"]');
+    await vi.waitFor(() => {
+      const dialog = body.get('[role="dialog"]');
+      expect(dialog.element.contains(document.activeElement)).toBe(true);
+    });
+
+    await new DOMWrapper(document.activeElement!).trigger('keydown', { key: 'Escape' });
+    await vi.waitFor(() => {
+      expect(body.find('[role="dialog"]').exists()).toBe(false);
+      expect(document.activeElement).toBe(opener.element);
+    });
+
+    await opener.trigger('click');
+    expect(body.find('[role="dialog"]').exists()).toBe(true);
+    expect(wrapper.emitted('command')).toBeUndefined();
+  });
+
   it('shows current roller, dice and an all-player tie from authoritative setup updates', async () => {
     const wrapper = mount(Hud, { props: { ...base, view: setupView(['a', 'b'], { roller: 'a', deadline: 62_400 }) } });
     await flushPromises();

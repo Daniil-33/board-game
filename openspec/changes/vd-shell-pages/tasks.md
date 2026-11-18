@@ -10,6 +10,6 @@
 
 ## 3. Verification and evidence
 
-- [ ] 3.1 Add focused regression coverage and update stage 1–5 browser selectors and text expectations as needed, preserving the workflows. Exercise the flows and verify the token contrast test and no horizontal overflow from 360 to 430 px.
-- [ ] 3.2 Capture all four app screens at 1440×900 and 390×844 under `/srv/agents/evidence/TASK-vd-shell-pages/` with the available design frames alongside them. Record the static player colors and reference gaps.
+- [x] 3.1 Add focused regression coverage and update stage 1–5 browser selectors and text expectations as needed, preserving the workflows. Exercise the flows and verify the token contrast test and no horizontal overflow from 360 to 430 px.
+- [x] 3.2 Capture all four app screens at 1440×900 and 390×844 under `/srv/agents/evidence/TASK-vd-shell-pages/` with the available design frames alongside them. Record the static player colors and reference gaps.
 - [ ] 3.3 Run build, tests, client bundle and lint, strict OpenSpec validation, and the diff check against the task base. Open the PR and obtain four green CI jobs and independent review on the exact PR head. Record any known stage 3 flake recurrence with its trace and follow the handoff's archive and final-head verification sequence.

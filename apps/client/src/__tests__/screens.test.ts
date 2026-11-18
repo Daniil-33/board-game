@@ -196,6 +196,28 @@ describe('RoomScreen', () => {
     expect(wrapper.find('[data-testid="leave"]').exists()).toBe(true);
   });
 
+  it.each(['cancel', 'Escape'])('does not send a leave request when the creator dismisses with %s', async (dismissal) => {
+    const h = inRoom();
+    const wrapper = mount(RoomScreen, { ...pageOptions(h), attachTo: document.body });
+    h.sockets.last().receive(welcome(lobbyView(['a'])));
+    await flushPromises();
+    const leave = wrapper.get('[data-testid="leave"]');
+    (leave.element as HTMLButtonElement).focus();
+    await leave.trigger('click');
+
+    const cancel = body.get('[role="alertdialog"]').get('button');
+    await vi.waitFor(() => expect(document.activeElement).toBe(cancel.element));
+    if (dismissal === 'Escape') await cancel.trigger('keydown', { key: 'Escape' });
+    else await cancel.trigger('click');
+
+    await vi.waitFor(() => {
+      expect(body.find('[role="alertdialog"]').exists()).toBe(false);
+      expect(document.activeElement).toBe(leave.element);
+    });
+    expect(h.calls.filter(call => call.path.endsWith('/leave'))).toEqual([]);
+    expect(h.client.session.state.room?.roomId).toBe(ALICE_ROOM.roomId);
+  });
+
   it('a second member arrives on the socket: Start becomes enabled and the roster is refreshed through get-room', async () => {
     const withBob = room([['a', 'Alice'], ['b', 'Bob']]);
     const h = inRoom(ALICE_ROOM, () => ({ body: { room: withBob } }));
