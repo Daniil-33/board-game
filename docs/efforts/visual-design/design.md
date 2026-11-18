@@ -299,6 +299,33 @@ strings. The tokens task translates them to Russian per the design.
   - fonts are latin + cyrillic woff2 only.
 - Each task reports its sizes, and CI prints them.
 
+**Measurement and status (TL decision, 2026-11-18).**
+- **What counts:** the budget covers all emitted JS:
+  - the initial route (the HTML entry and its static imports);
+  - lazy chunks;
+  - separate entries;
+  - the runtime config.
+
+  It is not redefined as initial-route only. The lazy PixiJS chunks existed
+  before this effort, so that would add no real headroom.
+- **Per-task report:** each UI task reports initial-route JS and lazy JS
+  separately against its merge base, in a per-chunk table, using one method
+  per comparison (Node zlib on each file).
+- **Baseline:** the pre-restructure baseline is 253,863 bytes of gzip JS.
+  - At TASK-vd-game-layout (candidate on a931758) the total is about
+    330.6 KB, so about +77 KB of the +90 KB.
+  - Nearly all the growth is in the initial-route `app` chunk: shell pages,
+    Reka dialogs and toasts, localized copy, and the game layout.
+- **Remaining headroom (about 13 KB)** is for TASK-vd-game-dialogs and
+  TASK-vd-sound:
+  - If either task would take the total above +85 KB, that task also splits
+    the routes: the game page and its dialogs become a lazy route chunk
+    behind the existing screen switch, with a loading state.
+  - The lazy part then counts toward the total budget, and the initial route
+    has to shrink.
+  - The sound engine stays a few KB of initial JS, and the audio files are
+    never inlined.
+
 ## CI split (C12)
 
 `compose-browser` (21 of 35 min) becomes two parallel jobs in the same
