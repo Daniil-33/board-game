@@ -21,4 +21,4 @@
 - [x] 3.1 Run the automated no-overflow check at the six widths in Responsive game layout and run the Stage 1–5 browser specs using compatible hooks.
 - [x] 3.2 Run pnpm build, pnpm test, hex/boundary/i18n lint, strict OpenSpec validation and git diff --check against the merge base.
 - [x] 3.3 Record the merge-base and candidate gzip JS and CSS per chunk, identifying initial-route JS. Capture 1440×900 and all four 390×844 tab views next to the design frames in the task evidence directory.
-- [ ] 3.4 Open the PR with the brief-vs-rules gaps, report all four CI jobs on its head, request independent review, address findings and archive the OpenSpec change as required by the handoff.
+- [x] 3.4 Open the PR with the brief-vs-rules gaps, report all four CI jobs on its head, request independent review, address findings and archive the OpenSpec change as required by the handoff.
