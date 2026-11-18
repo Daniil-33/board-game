@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Text, Texture } from 'pixi.js';
 import { CLASSIC_40 } from '@game/game-core';
 import { BoardScene, type SceneClock } from '../widgets/board/index';
-import { cellRect, jailBox } from '../widgets/board/index';
+import { cellRect, cellStrip, jailBox } from '../widgets/board/index';
 import { playingView, setupView } from './helpers';
 import { boardTheme } from '../shared/config/index';
 import { cacheLogoTextures } from '../widgets/board/textures';
@@ -184,6 +184,25 @@ it('keeps unchanged marker graphics while updating another property', () => {
   expect(scene.ownership.children[0]).toBe(border);
   expect(scene.cells.children[1]).toBe(firstCell);
   expect(scene.housing.children).toHaveLength(2);
+});
+
+it('keeps the house pips clear of the price strips on every side', () => {
+  const scene = new BoardScene();
+  const view = playingView(['a', 'b']);
+  const assets = view.board!.cells.filter(cell => cell.asset !== null);
+  scene.snap({ ...view, houses: Object.fromEntries(assets.map(cell => [cell.asset!.assetId, 4])) }, 'a');
+
+  for (const cell of assets) {
+    const strip = cellStrip(cell.index, cellRect(cell.index, scene.size)).bounds;
+    const pips = scene.housing.children.filter(pip => pip.label.startsWith(`house-${cell.index}-`));
+    expect(pips).toHaveLength(4);
+    for (const pip of pips) {
+      const bounds = pip.getBounds();
+      const overlapsStrip = bounds.maxX > strip.x && bounds.minX < strip.x + strip.width
+        && bounds.maxY > strip.y && bounds.minY < strip.y + strip.height;
+      expect(overlapsStrip).toBe(false);
+    }
+  }
 });
 
 it('skips rent and completes movement immediately with reduced motion', async () => {

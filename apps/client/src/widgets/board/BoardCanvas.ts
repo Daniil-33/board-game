@@ -169,8 +169,11 @@ export class BoardScene {
       }
       if ((previous?.houses ?? 0) !== houses) {
         this.removeMarkers(this.housing, index);
+        const { bounds: strip, vertical } = cellStrip(index, bounds);
+        const pipX = vertical && strip.x < bounds.x + bounds.width / 2 ? 21 : 9;
+        const pipY = strip.y > bounds.y + bounds.height / 2 ? 7 : bounds.height - 6;
         for (let pip = 0; pip < houses; pip++) {
-          const marker = new Graphics().circle(bounds.x + 9 + pip * 8, bounds.y + bounds.height - 6, 2.7)
+          const marker = new Graphics().circle(bounds.x + pipX + pip * 8, bounds.y + pipY, 2.7)
             .fill(this.theme.house).stroke({ color: this.theme.paper, width: 0.8 });
           this.addMarker(this.housing, marker, index, `house-${index}-${pip + 1}`);
         }
