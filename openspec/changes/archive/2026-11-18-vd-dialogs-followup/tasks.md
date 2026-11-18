@@ -13,4 +13,4 @@
 - [x] 3.1 Restore “only from server-projected data” wording in the canonical Asset inspection statement within strict-validation length limits.
 - [x] 3.2 Run required build, test, lint, e2e typecheck, strict OpenSpec validation, diff checks, affected Compose browser specs, and bundle-size comparison.
 - [x] 3.3 Capture bystander purchase and mobile auction status at 1440x900 and 390x844 in `/srv/agents/evidence/TASK-vd-dialogs-followup/`.
-- [ ] 3.4 Open/update the PR, confirm CI, request independent review, resolve findings, and archive the OpenSpec change after review passes.
+- [x] 3.4 Open/update the PR, confirm CI, request independent review, resolve findings, and archive the OpenSpec change after review passes.
