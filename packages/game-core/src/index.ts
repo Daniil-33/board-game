@@ -131,7 +131,8 @@ export type { BuyAssetCommand, StartAuctionCommand, BidCommand, PassAuctionComma
 export { debitBalance } from './money.js';
 
 export type { RentSettlement } from './state.js';
-export { rentFor, rentQuotes, energyRentFor, isMortgaged } from './rent.js';
+export { rentFor, rentQuotes, energyRentFor, rentTiers, isMortgaged } from './rent.js';
+export type { RentTier } from './rent.js';
 export type { RentQuote, RentEvent, RentDue, RentPaid, PayRentCommand } from './rent.js';
 export { buildLegality, saleLegality, houseCost, houseRefund } from './houses.js';
 export type { HouseErrorCode, HouseEvent, HouseBuilt, HouseSold, BuildHouseCommand, SellHouseCommand } from './houses.js';

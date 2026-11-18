@@ -80,17 +80,47 @@ it.each([1024, 1023])('opens a responsive dialog, manages focus and closes on Es
   trigger.click();
   await vi.waitFor(() => expect(document.activeElement).toBe(element('#first')));
   const dialog = element('[role="dialog"]');
+  expect(dialog.getAttribute('aria-modal')).toBe('true');
   expect(dialog.textContent).toContain('Карточка актива');
   expect(getComputedStyle(dialog).transform).toBe(width < 1024 ? 'none' : 'translate(-50%, -50%)');
   press(element('#first'), 'Tab', true);
   expect(document.activeElement).toBe(element('#last'));
   press(element('#last'), 'Tab');
   expect(document.activeElement).toBe(element('#first'));
+  const outside = document.createElement('button'); outside.id = 'outside'; document.body.append(outside); outside.focus();
+  await nextTick();
+  expect(dialog.contains(document.activeElement)).toBe(true);
   press(document.activeElement!, 'Escape');
   await vi.waitFor(() => {
     expect(element('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
   });
+});
+
+it('keeps required rent payment non-dismissible and asset inspection dismissible; purchase and auction responder policy is tested by widgets', async () => {
+  resize.setInnerWidth(390);
+  const open = ref(true);
+  render(() => h(ResponsiveDialog, {
+    title: 'Rent payment', dismissible: false, open: open.value,
+    'onUpdate:open': (value: boolean) => { open.value = value; },
+  }, { default: () => button('required-response') }));
+  await vi.waitFor(() => expect(element('[role="dialog"]')).toBeTruthy());
+  await vi.waitFor(() => expect(element('#required-response')).toBeTruthy());
+  const dialog = element('[role="dialog"]');
+  expect(dialog.getAttribute('aria-modal')).toBe('true');
+  press(element('#required-response'), 'Escape');
+  expect(element('[role="dialog"]')).toBeTruthy();
+  element('.ds-overlay').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+  expect(element('[role="dialog"]')).toBeTruthy();
+  open.value = false; await nextTick(); wrapper?.unmount(); wrapper = undefined;
+  const dismissible = ref(true);
+  render(() => h(ResponsiveDialog, {
+    title: 'Asset inspection', dismissible: true, open: dismissible.value,
+    'onUpdate:open': (value: boolean) => { dismissible.value = value; },
+  }, { default: () => button('asset-close') }));
+  await vi.waitFor(() => expect(element('#asset-close')).toBeTruthy());
+  press(element('#asset-close'), 'Escape');
+  await vi.waitFor(() => expect(element('[role="dialog"]')).toBeNull());
 });
 
 it('focuses cancel in an alert dialog and restores focus after Escape or cancel', async () => {

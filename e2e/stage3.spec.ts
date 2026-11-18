@@ -32,7 +32,14 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('purchase'))).toBeVisible();
     await expect(p.page.locator(sel('buy'))).toHaveCount(p === actor ? 1 : 0);
   }
+  const observer = players.find(p => p !== actor)!;
+  await observer.page.keyboard.press('Escape');
+  await expect(observer.page.locator('[role="dialog"]')).toHaveCount(0);
+  await observer.page.locator(sel('chat-input')).fill('Chat during purchase');
+  await observer.page.locator(sel('chat-send')).click();
+  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
   const buyFrom = actor.events.length;
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'purchase-open');
   await click(actor, players, 'buy');
   expect(actor.events.slice(buyFrom).map(e => e.event)).toEqual([
     { type: 'BalanceChanged', payload: { playerId: actor.id, delta: -price, balance: beforeBuy[actor.id]! - price, reason: 'purchase' } },
@@ -48,6 +55,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const turnId = actor.view!.turn!.turnId;
   const beforeWon = structuredClone(actor.view!.balances);
   await click(actor, players, 'start-auction');
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
   expect(won).toMatchObject({ reason: 'choice', assetId: declined.assetId, responder: actor.id, leader: null, leadingBid: null });
   for (const p of players) {
@@ -55,6 +63,16 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('purchase'))).toHaveCount(0);
   }
   await respond(players, 'pass');
+  const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
+  await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
+  await expect(auctionObserver.page.locator('[role="dialog"]')).toBeVisible();
+  await auctionObserver.page.keyboard.press('Escape');
+  await expect(auctionObserver.page.locator('[role="dialog"]')).toHaveCount(0);
+  await auctionObserver.page.locator(sel('game-tab-journal')).click();
+  await auctionObserver.page.locator(sel('chat-input')).fill('Chat during auction');
+  await auctionObserver.page.locator(sel('chat-send')).click();
+  await expect(auctionObserver.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during auction' })).toBeVisible();
+  await auctionObserver.page.setViewportSize({ width: 1440, height: 900 });
   const bidder = byId(players, players[0]!.view!.auction!.responder);
   await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   await respond(players, 'bid');
@@ -424,4 +442,15 @@ async function shoot(players: Actor[], info: TestInfo, name: string): Promise<vo
     await p.page.screenshot({ path, fullPage: true });
     await info.attach(`${name}-${i}`, { path, contentType: 'image/png' });
   }
+}
+
+async function capture(actor: Actor, info: TestInfo, name: string): Promise<void> {
+  const original = actor.page.viewportSize() ?? { width: 1280, height: 720 };
+  for (const [tag, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]] as const) {
+    await actor.page.setViewportSize({ width, height });
+    const path = info.outputPath(`${name}-${tag}.png`);
+    await actor.page.screenshot({ path, fullPage: false });
+    await info.attach(`${name}-${tag}`, { path, contentType: 'image/png' });
+  }
+  await actor.page.setViewportSize(original);
 }

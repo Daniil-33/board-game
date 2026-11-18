@@ -7,7 +7,7 @@ import { MyTurn } from '../../widgets/my-turn/index';
 import { MyAssets } from '../../widgets/my-assets/index';
 import { EventFeed } from '../../widgets/event-feed/index';
 import { ReconnectBanner } from '../../widgets/reconnect-banner/index';
-import { Button } from '../../shared/ui/index';
+import { Button, ResponsiveDialog } from '../../shared/ui/index';
 
 import { t } from '../../shared/i18n/index';
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -20,6 +20,7 @@ import { PurchaseDialog } from '../../widgets/purchase-card/index';
 import { AuctionPanel } from '../../widgets/auction-panel/index';
 import { RentPanel } from '../../widgets/rent-panel/index';
 import { DebtNotices } from '../../widgets/debt-notices/index';
+import { EliminationNotice } from '../../widgets/elimination/index';
 import { Hud, HudStatus } from '../../widgets/turn-header/index';
 
 const TICK_MS = 250;
@@ -32,7 +33,16 @@ const boardError = ref<string | null>(null);
 const now = ref(client.now());
 
 const selectedIndex = ref<number | null>(null);
+const selectedOpener = ref<HTMLElement | null>(null);
 const selectedCell = computed(() => client.game.view?.board?.cells.find(c => c.index === selectedIndex.value && c.asset !== null) ?? null);
+const assetDialogOpen = computed({ get: () => selectedCell.value !== null, set: (open: boolean) => { if (!open) closeAsset(); } });
+function openAsset(index: number, opener: HTMLElement | null): void { selectedIndex.value = index; selectedOpener.value = opener; }
+function closeAsset(): void { selectedIndex.value = null; }
+function restoreAssetFocus(event: Event): void {
+  event.preventDefault();
+  selectedOpener.value?.focus();
+  selectedOpener.value = null;
+}
 const selectedOwner = computed(() => {
   const asset = selectedCell.value?.asset;
   const owner = asset ? client.game.view?.owners[asset.assetId] : undefined;
@@ -95,7 +105,11 @@ onMounted(async () => {
     destroyBoard = mounted.destroy;
     mountedBoard = mounted.board;
     mounted.board.setAssetSelection?.((index) => {
-      if (client.game.view?.board?.cells.some(c => c.index === index && c.asset !== null)) selectedIndex.value = index;
+      if (client.game.view?.board?.cells.some(c => c.index === index && c.asset !== null)) {
+        const canvas = host.value?.querySelector('canvas') ?? null;
+        if (canvas) canvas.tabIndex = 0;
+        openAsset(index, canvas);
+      }
     });
     client.attachBoard(mounted.board);
   } catch (error) {
@@ -119,6 +133,7 @@ onBeforeUnmount(() => {
     <ReconnectBanner :reconnecting="!setupOpen && !client.game.connected && !client.game.fatal" />
     <HudStatus v-if="!setupOpen" :messages="connectionMessages" :connected="true"
       :problem="client.game.problem" :fatal="client.game.fatal" @dismiss="client.connection.dismissMessage" />
+    <EliminationNotice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" />
     <section class="game" :data-tab="selectedTab">
       <div class="roster-column">
         <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />
@@ -145,13 +160,15 @@ onBeforeUnmount(() => {
         </div>
         <div class="game-dialogs">
           <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
-          <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
-          <AssetCard
-            v-if="selectedCell && client.game.view?.board"
-            :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board"
-            :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf"
-            @close="selectedIndex = null" @command="client.sendCommand"
-          />
+          <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" @manage-assets="selectedTab = 'assets'" />
+          <ResponsiveDialog v-if="selectedCell && client.game.view?.board" v-model:open="assetDialogOpen"
+            :title="selectedCell.asset!.name" :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
+            <AssetCard
+              :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board"
+              :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf"
+              @close="closeAsset" @command="client.sendCommand"
+            />
+          </ResponsiveDialog>
           <PurchaseDialog v-if="client.game.view?.purchase" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
           <AuctionPanel v-if="client.game.view?.auction" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
         </div>
@@ -176,7 +193,7 @@ onBeforeUnmount(() => {
           <ResignControl v-if="!setupOpen" :available="canResign" @confirm="client.sendCommand('Resign')" />
         </section>
         <div class="assets-column" id="game-panel-assets" :role="desktop ? undefined : 'tabpanel'" :aria-label="t('game_layout.assets_tab')">
-          <MyAssets :context="context" @command="client.sendCommand" />
+          <MyAssets :context="context" @command="client.sendCommand" @inspect="openAsset" />
         </div>
       </div>
     </section>

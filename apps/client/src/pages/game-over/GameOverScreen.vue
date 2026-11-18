@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { Button } from '../../shared/ui/index';
+import { Button, ResponsiveDialog } from '../../shared/ui/index';
 import { formatMoney } from '../../shared/lib/index';
 
 import { t } from '../../shared/i18n/index';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { DebtNotices } from '../../widgets/debt-notices/index';
 import { useClient } from '../../features/client-session/index';
 import { eliminationText, formatTime } from '../../entities/game/index';
 const client = useClient();
+const open = ref(true);
 const out = computed(() => {
   const { view, playerId } = client.game;
   return view && playerId && view.eliminated.includes(playerId) ? eliminationText(view, playerId) : null;
@@ -23,7 +24,8 @@ const balances = computed(() => {
 });
 </script>
 <template>
-  <section class="panel game-over">
+  <ResponsiveDialog v-model:open="open" :title="t('game_over.game_over')" :dismissible="false" wide>
+  <section class="panel game-over" data-testid="game-over-screen">
     <h2 data-testid="game-over-title">{{ t('game_over.game_over') }}</h2>
     <p v-if="result" data-testid="winner">{{ t('game_over.winner', { player: client.nameOf(result.winner) }) }}</p>
     <p v-else data-testid="winner">{{ t('game_over.no_winner_reported') }}</p>
@@ -38,4 +40,11 @@ const balances = computed(() => {
     <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
     <Button variant="primary" data-testid="return-lobby" @click="client.returnToLobby()">{{ t('game_over.back_to_lobby') }}</Button>
   </section>
+  </ResponsiveDialog>
 </template>
+
+<style scoped>
+.game-over { display: grid; gap: var(--space-3); max-height: 70dvh; overflow: auto; }
+.game-over > h2 { margin: 0; font-family: var(--design-font-display); }
+.game-over ol, .game-over ul { margin: 0; padding-inline-start: var(--space-6); }
+</style>

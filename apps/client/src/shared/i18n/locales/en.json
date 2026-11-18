@@ -66,6 +66,11 @@
     "balance_entry": "{player}: {amount}",
     "back_to_lobby": "Back to lobby"
   },
+  "elimination": {
+    "title": "Eliminated",
+    "watching": "You can keep watching the game and use chat.",
+    "continue": "Continue watching"
+  },
   "lobby": {
     "heading": "Lobby",
     "profile": "Sign in / profile",
@@ -133,6 +138,12 @@
     "version_mismatch": "This page is out of date. Reload it to continue."
   },
   "asset_card": {
+    "rent_table": "Rent table",
+    "rent_table_energy": "Rent by dice sum",
+    "rent_tier_holdings_header": "Holdings",
+    "rent_tier_houses": "{houses} houses",
+    "rent_tier_complete_group": "Complete group, no houses",
+    "rent_tier_holdings": "Group holdings: {holdings}",
     "house_count": "{houses} / 4",
     "asset_details": "Asset details",
     "close_asset_card": "Close asset card",
@@ -215,7 +226,9 @@
     "rent_due": "Rent due",
     "pay": "Pay rent: {amount} to {owner}",
     "sentence": "{payer} owes {owner} {amount} for {asset}.",
-    "energy_sentence": "{payer} owes {owner} {amount} for {asset} (dice sum {diceSum})."
+    "energy_sentence": "{payer} owes {owner} {amount} for {asset} (dice sum {diceSum}).",
+    "shortfall": "You are short {amount}.",
+    "manage_assets": "Manage your assets"
   },
   "hud": {
     "waiting": "Waiting for the server",
@@ -242,7 +255,8 @@
     "undecided": "order undecided"
   },
   "turn_timer": {
-    "paused": "paused"
+    "paused": "paused",
+    "expired": "The turn time has expired."
   },
   "reasons": {
     "house": {

@@ -20,8 +20,13 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   for (let i = 0; i < 4; i++) {
     const actor = await active(players);
     const before = actor.view!.positions[actor.id]!;
+    const turnId = actor.view!.turn!.turnId;
     await action(actor, 'RollDice');
-    const rolled = actor.events.filter(e => e.event.type === 'DiceRolled').at(-1)!.event.payload as { dice: number[] };
+    const rolled = actor.events.filter(e => e.event.type === 'DiceRolled').map(e => e.event)
+      .findLast(e => {
+        const payload = e.payload as { playerId: string; turnId: string };
+        return payload.playerId === actor.id && payload.turnId === turnId;
+      })!.payload as { dice: number[] };
     if (!actor.view!.jail[actor.id]) expect(actor.view!.positions[actor.id]).toBe((before + rolled.dice[0]! + rolled.dice[1]!) % 40);
     if (actor.view!.turn?.playerId === actor.id && actor.view!.turn.rolled) await endTurn(actor, players);
     await expect.poll(() => host.view?.revision).toBe(actor.view!.revision);
@@ -54,8 +59,10 @@ test('three guests: setup, movement, reload, server restart and resignation to w
     expect(p.view!.balances).toEqual(saved.balances);
   }
   await panels(players);
+  await resolvePrompts(players);
   const resumed = await active(players);
-  await action(resumed, resumed.view!.turn!.rolled ? 'EndTurn' : 'RollDice');
+  if (resumed.view!.turn!.rolled) await endTurn(resumed, players);
+  else await action(resumed, 'RollDice');
   await resign(players[2]!); await resign(players[1]!);
   for (const p of players) {
     await expect(p.page.locator(sel('game-over-title'))).toBeVisible();
@@ -170,7 +177,7 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
   expect(prisoner.view!.turn!.pendingBonus).toBe(false);
   expect(prisoner.events.at(-1)!.revision).toBe(prisoner.view!.revision);
   // Continue the fresh seed-6689/core-5 stream, after the setup tie and jail
-  // attempt above, allowing acquisitions to pass by their real response timers.
+  // attempt above, resolving any acquisitions through auction commands.
   // A forward crossing still credits exactly 3980 without a new seed or restart.
   let crossed = false;
   for (let i = 0; i < 60 && !crossed; i++) {
@@ -200,7 +207,7 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
   expect(crossed, 'seed 6689 must reach a rewarded forward start crossing in 60 actions').toBe(true);
 });
 
-/** Existing browser flows have no auction UI yet: observe only server-driven passes. */
+/** Verify auctions that time out naturally in these server-deadline scenarios. */
 async function settledAuction(players: import('./helpers').Actor[], auction = players[0]!.view!.auction ?? undefined): Promise<void> {
   if (!auction) return;
   const host = players[0]!;
@@ -221,12 +228,40 @@ async function settledAuction(players: import('./helpers').Actor[], auction = pl
 }
 
 async function endTurn(actor: import('./helpers').Actor, players: import('./helpers').Actor[]): Promise<void> {
+  if (actor.view!.purchase || await actor.page.locator(sel('start-auction')).count() > 0) {
+    await action(actor, 'start-auction');
+    while (players[0]!.view!.auction) {
+      const auction = players[0]!.view!.auction!;
+      const responder = players.find(p => p.id === auction.responder)!;
+      const revision = players[0]!.view!.revision;
+      await action(responder, 'pass');
+      await expect.poll(() => players[0]!.view?.revision).toBeGreaterThan(revision);
+      const updated = players[0]!.view!.revision;
+      for (const player of players) await expect.poll(() => player.view?.revision).toBe(updated);
+    }
+  }
   const turnId = actor.view!.turn!.turnId;
   await action(actor, 'EndTurn');
   const auction = actor.view!.auction;
   await settledAuction(players, auction ?? undefined);
   if (auction) {
     expect(actor.events.some(e => e.event.type === 'TurnEnded' && (e.event.payload as { turnId: string }).turnId === turnId)).toBe(true);
+  }
+}
+
+async function resolvePrompts(players: import('./helpers').Actor[]): Promise<void> {
+  while (players[0]!.view!.purchase || players[0]!.view!.auction) {
+    if (players[0]!.view!.purchase) {
+      const purchase = players[0]!.view!.purchase!;
+      const decider = players.find(p => p.id === purchase.playerId)!;
+      const buy = decider.page.locator(sel('buy'));
+      await action(decider, await buy.isEnabled() ? 'buy' : 'start-auction');
+    } else {
+      const responder = players.find(p => p.id === players[0]!.view!.auction!.responder)!;
+      await action(responder, 'pass');
+    }
+    const revision = players[0]!.view!.revision;
+    for (const player of players) await expect.poll(() => player.view?.revision).toBe(revision);
   }
 }
 

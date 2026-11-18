@@ -42,6 +42,17 @@ export async function load(players: Actor[], fixture: string): Promise<string> {
 }
 export async function shoot(players: Actor[], info: TestInfo, name: string) {
   for (const [i, p] of players.entries()) {
+    if (process.env['E2E_DIALOG_EVIDENCE'] === '1') {
+      const original = p.page.viewportSize() ?? { width: 1280, height: 720 };
+      for (const [tag, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]] as const) {
+        await p.page.setViewportSize({ width, height });
+        const responsivePath = info.outputPath(`${name}-${i}-${tag}.png`);
+        await p.page.screenshot({ path: responsivePath, fullPage: false });
+        await info.attach(`${name}-${i}-${tag}`, { path: responsivePath, contentType: 'image/png' });
+      }
+      await p.page.setViewportSize(original);
+      continue;
+    }
     const path = info.outputPath(`${name}-${i}.png`);
     await p.page.screenshot({ path, fullPage: true });
     await info.attach(`${name}-${i}`, { path, contentType: 'image/png' });

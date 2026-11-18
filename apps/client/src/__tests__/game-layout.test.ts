@@ -92,16 +92,20 @@ describe('game presentation', () => {
     w.unmount();
   });
 
-  it('uses the asset adapters for button reasons and shows projected house pips', () => {
+  it('uses the asset adapters for button reasons and shows projected house pips', async () => {
     const view = playingView(['a', 'b']);
     const asset = view.board!.cells[1]!.asset!;
     const context = {
       view: { ...view, owners: { [asset.assetId]: pid('a') }, houses: { [asset.assetId]: 1 } },
       me: pid('a'), now, connected: true, pending: [],
     };
-    const w = mount(withUi(() => h(MyAssets, { context })));
+    const inspect = vi.fn();
+    const w = mount(withUi(() => h(MyAssets, { context, onInspect: inspect })));
     expect(w.get(hook('owned-group')).attributes('style')).toContain('--group-m1');
     expect(w.get(hook('owned-house-pips')).findAll('.filled')).toHaveLength(1);
+    const opener = w.get(hook('owned-asset-inspect'));
+    await opener.trigger('click');
+    expect(inspect).toHaveBeenCalledWith(1, opener.element);
     const reasons = {
       'owned-build': houseControls(context, asset.assetId)!.build.reason,
       'owned-mortgage': mortgageControls(context, asset.assetId)!.mortgage.reason,

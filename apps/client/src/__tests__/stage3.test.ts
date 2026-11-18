@@ -1,5 +1,6 @@
-import { mount, flushPromises } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
+import { h, ref } from 'vue';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Q, timestamp, nextBidAmount, type StateView } from '@game/game-core';
 import { PurchaseDialog } from '../widgets/purchase-card/index';
 import { AuctionPanel } from '../widgets/auction-panel/index';
@@ -7,7 +8,12 @@ import { TurnTimer } from '../widgets/turn-header/index';
 import { AssetCard } from '../widgets/asset-card/index';
 import { BoardScene } from '../widgets/board/index';
 import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../entities/game/index';
-import { playingView, pid, harness, storedSession, room, welcome, update } from './helpers';
+import { playingView, pid, harness, storedSession, room, welcome, update, withUi } from './helpers';
+
+enableAutoUnmount(afterEach);
+const originalWidth = window.innerWidth;
+const resize = (window as Window & { happyDOM?: { setInnerWidth: (width: number) => void } }).happyDOM!;
+afterEach(() => resize.setInnerWidth(originalWidth));
 
 function purchase(): StateView {
   const v = playingView(['a', 'b', 'c'], { rolled: true });
@@ -29,20 +35,35 @@ describe('purchase and auction projection', () => {
     expect(actionAvailability(props(auction()))).toMatchObject({ BuyAsset: false, StartAuction: false, Bid: true, PassAuction: true, RollDice: false, EndTurn: false });
     expect(actionAvailability({ ...props(auction()), me: pid('b') })).toMatchObject({ Bid: false, PassAuction: false });
   });
-  it('purchase affordability, viewer roles and emitted intent', async () => {
+  it('keeps the deciding player purchase dialog open, lets purchase bystanders dismiss, and checks affordability and intent', async () => {
     const view = purchase(); const price = view.board!.cells[view.purchase!.cell]!.asset!.price;
-    const w = mount(PurchaseDialog, { props: props({ ...view, balances: { ...view.balances, a: price } }) });
-    expect(w.get('[data-testid="buy"]').attributes('disabled')).toBeUndefined();
-    await w.get('[data-testid="buy"]').trigger('click'); expect(w.emitted('command')).toEqual([['BuyAsset']]);
-    await w.setProps({ view: { ...view, balances: { a: Q(price - 10) } } });
-    expect(w.get('[data-testid="buy"]').attributes('disabled')).toBeDefined();
-    expect(w.get('[data-testid="start-auction"]').attributes('disabled')).toBeUndefined();
+    const state = ref(props({ ...view, balances: { ...view.balances, a: price } }));
+    const command = vi.fn();
+    mount(withUi(() => h(PurchaseDialog, { ...state.value, onCommand: command })), { attachTo: document.body });
+    const target = (selector: string) => document.querySelector<HTMLElement>(selector)!;
+    await flushPromises();
+    expect(target('[role="dialog"]').getAttribute('aria-modal')).toBe('true');
+    expect(target('[data-testid="purchase-rent-preview"]')).toBeTruthy();
+    expect(target('[data-testid="purchase-timer"]')).toBeTruthy();
+    expect(target('[data-testid="purchase-logo"], [data-testid="purchase-logo-fallback"]')).toBeTruthy();
+    target('[role="dialog"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    expect(target('[data-testid="purchase"]')).toBeTruthy();
+    expect(target('[data-testid="buy"]').hasAttribute('disabled')).toBe(false);
+    target('[data-testid="buy"]').click(); expect(command).toHaveBeenCalledWith('BuyAsset');
+    state.value = { ...state.value, view: { ...view, balances: { a: Q(price - 10) } } }; await flushPromises();
+    expect(target('[data-testid="buy"]').hasAttribute('disabled')).toBe(true);
+    expect(target('[data-testid="buy"]').getAttribute('aria-describedby')).toBeTruthy();
+    expect(target('[data-testid="start-auction"]').hasAttribute('disabled')).toBe(false);
     for (const extra of [{ connected: false }, { now: 100_000 }, { pending: ['StartAuction'] }] satisfies Partial<ActionContext>[]) {
       const context = { ...props(view), ...extra };
       expect(canIssue(context, 'StartAuction')).toBe(false);
     }
-    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false); expect(w.text()).toContain('Player a решает');
-    await w.setProps({ me: pid('a'), view: { ...view, eliminated: [pid('a')] } }); expect(w.find('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]').exists()).toBe(false);
+    state.value = { ...state.value, me: pid('b'), view }; await flushPromises();
+    expect(document.querySelector('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]')).toBeNull(); expect(target('[data-testid="purchase"]').textContent).toContain('Player a решает');
+    target('[role="dialog"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await flushPromises();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    state.value = { ...state.value, me: pid('a'), view: { ...view, eliminated: [pid('a')] } }; await flushPromises();
+    expect(document.querySelector('[data-testid="buy"], [data-testid="start-auction"], [data-testid="bid"], [data-testid="pass"]')).toBeNull();
   });
   it('auction roles, projected amounts, deadlines and restored leader', async () => {
     const view = auction(); const a = view.auction!;
@@ -51,6 +72,8 @@ describe('purchase and auction projection', () => {
     await w.get('[data-testid="pass"]').trigger('click'); expect(w.emitted('command')).toEqual([['PassAuction']]);
     const raised = { ...view, auction: { ...a, leader: pid('b'), leadingBid: Q(a.startBid + a.step), passed: [pid('c')], responseId: 'r2', responseDeadline: timestamp(52_400) } };
     await w.setProps({ view: raised }); expect(w.text()).toContain('Player b'); expect(w.text()).toContain('Player c');
+    expect(w.get('[data-testid="auction-leader"]').attributes('style')).toContain('var(--player-2)');
+    expect(w.get('[data-testid="auction-timer"]').attributes('data-last-seconds')).toBe('true');
     expect(w.get('[data-testid="bid"]').text()).toBe(`Поднять до ${nextBidAmount(raised.auction)}`); expect(w.get('[data-testid="auction-timer"]').text()).toBe('3 с');
     await w.setProps({ view: { ...raised, balances: { a: Q(0) } } }); expect(w.get('[data-testid="bid"]').attributes('disabled')).toBeDefined();
     await w.setProps({ now: 53_000 }); expect(w.get('[data-testid="auction-timer"]').text()).toBe('0 с'); expect(w.get('[data-testid="pass"]').attributes('disabled')).toBeDefined(); expect(w.find('[data-testid="auction"]').exists()).toBe(true);
@@ -61,6 +84,26 @@ describe('purchase and auction projection', () => {
       expect(canIssue({ ...props(view), ...extra }, 'PassAuction')).toBe(false);
     }
     expect(canIssue(props(view), 'EndTurn')).toBe(false); expect(canIssue(props(view), 'RollDice')).toBe(false);
+  });
+  it('shows the required auction response in a non-dismissible mobile sheet', async () => {
+    resize.setInnerWidth(390);
+    mount(AuctionPanel, { props: props(auction()), attachTo: document.body });
+    await flushPromises();
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    expect(document.querySelector('[data-testid="auction"]')).toBeTruthy();
+  });
+  it('lets mobile auction bystanders dismiss the sheet and reopens it when their response becomes required', async () => {
+    resize.setInnerWidth(390);
+    const w = mount(AuctionPanel, { props: { ...props(auction()), me: pid('b') }, attachTo: document.body });
+    await flushPromises();
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+    document.querySelector<HTMLElement>('[role="dialog"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    await w.setProps({ me: pid('a') }); await flushPromises();
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
   });
   it('shows paused even at zero and follows a resumed deadline', async () => {
     const w = mount(TurnTimer, { props: { deadline: 10, now: 50_000, paused: true } }); expect(w.text()).toBe('таймер хода на паузе');

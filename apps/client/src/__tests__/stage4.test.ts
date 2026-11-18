@@ -4,7 +4,7 @@ import { withUi } from './helpers';
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import {
-  buildLegality, saleLegality, energyRentFor, houseCost, houseRefund, projectState, seedRng,
+  Q, buildLegality, saleLegality, energyRentFor, houseCost, houseRefund, projectState, seedRng,
   type AssetId, type CommandId, type GameState, type HouseErrorCode, type Money, type StateView,
 } from '@game/game-core';
 import { decodeClientFrame, type ClientCommandType } from '@game/protocol';
@@ -104,8 +104,11 @@ describe('rent settlement', () => {
   it('offers Pay rent with amount and owner only to the payer and shows the line to everyone', async () => {
     const view = project(withRent(owning()));
     const w = mount(RentPanel, { props: props(view) });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    expect(w.find('[data-testid="rent"]').exists()).toBe(true); // Rent payment is a required response and remains open.
     expect(w.get('[data-testid="rent-line"]').text()).toBe(`Alice должен игроку Bob 170 за «${view.board!.cells[5]!.asset!.name}».`);
     expect(w.get('[data-testid="pay-rent"]').text()).toBe('Оплатить ренту 170 игроку Bob');
+    await w.get('[data-testid="rent-liquidation-entry"]').trigger('click'); expect(w.emitted('manageAssets')).toEqual([[]]);
     await w.get('[data-testid="pay-rent"]').trigger('click'); expect(w.emitted('command')).toEqual([['PayRent']]);
     for (const me of [pid('b'), pid('c'), null]) {
       await w.setProps({ me }); expect(w.find('[data-testid="pay-rent"]').exists()).toBe(false); expect(w.find('[data-testid="rent-line"]').exists()).toBe(true);
@@ -120,6 +123,14 @@ describe('rent settlement', () => {
     }
     const energy = project(withRent(owning(), 'a', 'b', 28, 'energy', 9));
     expect(mount(RentPanel, { props: props(energy) }).get('[data-testid="rent-line"]').text()).toContain('(сумма костей 9)');
+  });
+  it('shows only the current projected rent shortfall', async () => {
+    const view = project(withRent(owning()));
+    const payer = view.rent!.payerId;
+    const short = mount(RentPanel, { props: props({ ...view, balances: { ...view.balances, [payer]: Q(view.rent!.amount - 30) } }) });
+    expect(short.get('[data-testid="rent-shortfall"]').text()).toBe('Не хватает 30 для оплаты.');
+    const enough = mount(RentPanel, { props: props({ ...view, balances: { ...view.balances, [payer]: view.rent!.amount } }) });
+    expect(enough.find('[data-testid="rent-shortfall"]').exists()).toBe(false);
   });
   it('keeps EndTurn enabled with an open settlement and tells the payer it pays automatically', async () => {
     const view = project(withRent(owning()));
@@ -145,6 +156,8 @@ describe('asset card: houses, quotes and controls', () => {
     const regular = card(view, 1);
     expect(regular.get('[data-testid="asset-houses"]').text()).toBe('0 / 4');
     expect(regular.get('[data-testid="asset-rent"]').text()).toBe(String((view.rentQuotes[at(view, 1)] as { amount: number }).amount));
+    expect(regular.findAll('[data-testid^="rent-tier-"]')).toHaveLength(6);
+    expect(regular.get('[data-testid="rent-tier-regular-group"]').attributes('aria-current')).toBe('true');
     const logistics = card(view, 5);
     expect(logistics.find('[data-testid="asset-houses"]').exists()).toBe(false);
     expect(logistics.get('[data-testid="asset-rent"]').text()).toBe(String((view.rentQuotes[at(view, 5)] as { amount: number }).amount));
@@ -155,6 +168,8 @@ describe('asset card: houses, quotes and controls', () => {
     expect(energy.get('[data-testid="asset-energy"]').text()).toContain(`Рента = Q(2\u202F660 × сумма костей × ${quote.holdings} / (200 × ${quote.groupSize}))`);
     expect(energy.get('[data-testid="energy-examples"]').text()).toBe(`Сумма костей 2: ${energyRentFor(quote, 2)}, Сумма костей 7: ${energyRentFor(quote, 7)}, Сумма костей 12: ${energyRentFor(quote, 12)}`);
     expect(energy.find('[data-testid="asset-rent"]').exists()).toBe(false);
+    expect(energy.get('[data-testid="asset-rent-table"]').text()).toContain('12');
+    expect(energy.get('[data-testid="rent-tier-energy-1"]').attributes('aria-current')).toBe('true');
     expect(card(view, 13).find('[data-testid="asset-rent"]').exists()).toBe(false); // free asset: no quote
     const settled = project(withRent(owning({ owner: 'b' }), 'b', 'a', 12, 'energy', 9));
     expect(card(settled, 12).get('[data-testid="asset-settlement"]').text()).toBe('Рента к оплате: 170 (сумма костей 9)');

@@ -106,6 +106,7 @@ test('stage 5: a mortgage expires after its eighth collective lap', async ({ act
     await card(p, cell.index);
     await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(adv)}, осталось кругов: 1`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(name(players, owner.id));
+    await close(p);
   }
   inWindow(owner.view!, 'final turn of the lap');
   await click(players, owner, 'EndTurn');
@@ -115,6 +116,7 @@ test('stage 5: a mortgage expires after its eighth collective lap', async ({ act
     expect(p.view!.mortgages).toEqual({});
     expect(p.view!.owners[assetId]).toBeUndefined();
     expect(p.view!.turn!.playerId).not.toBe(owner.id);
+    await card(p, cell.index);
     await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
     await expect(p.page.locator(sel('asset-rent'))).toHaveCount(0);
@@ -212,6 +214,8 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   await expect(payer.page.locator(sel('redeem-reason'))).toHaveText('Сначала оплатите ренту.');
   await close(payer);
   for (const p of players) await card(p, builtCell.index);
+  // Asset inspection is dismissible so the required rent response remains reachable.
+  for (const p of players) await close(p);
 
   inWindow(payer.view!, 'payment');
   await click(players, payer, 'pay-rent');
@@ -230,9 +234,6 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
       expect(p.view!.houses[id]).toBeUndefined();
       expect(p.view!.mortgages[id]).toBeUndefined();
     }
-    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
-    await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
     const notice = p.page.locator(sel('debt-notices')).locator(sel('bankruptcy')).last();
     await expect(notice.locator(sel('bankruptcy-amounts'))).toHaveText(
       `Долг игроку ${name(players, creditor.id)}: ${money(rent.amount)}. Оплачено ${money(paid)}, списано ${money(rent.amount - paid)}.`);
@@ -243,6 +244,15 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   }
   await balances(players, { ...before.balances, [payer.id]: 0, [creditor.id]: before.balances[creditor.id]! + paid });
   await shoot(players, info, 'bankruptcy');
+  await payer.page.locator(sel('continue-watching')).click();
+  for (const p of players) {
+    await card(p, builtCell.index);
+    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
+    await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
+  }
+  await shoot(players, info, 'bankruptcy-assets-released');
+  for (const p of players) await close(p);
 
   // The game goes on for the others, and the bankrupt client keeps receiving it.
   const next = await active(players);
@@ -268,6 +278,7 @@ test('stage 5: resignation frees the resigned player\'s assets on every client',
     await card(p, first.index);
     await expect(p.page.locator(sel('asset-owner'))).toHaveText(name(players, payer.id));
     await expect(p.page.locator(sel('asset-houses'))).toHaveText('1 / 4');
+    await close(p);
   }
   await resign(payer);
   await expect.poll(() => players.map(p => p.view!.revision), fast).toEqual(players.map(() => payer.view!.revision));
@@ -277,10 +288,12 @@ test('stage 5: resignation frees the resigned player\'s assets on every client',
     expect(p.view!.rent).toBeNull();
     expect(p.events.some(e => e.event.type === 'RentPaid')).toBe(false);
     expect(p.view!.eliminations).toEqual([expect.objectContaining({ playerId: payer.id, reason: 'resigned', creditorId: null })]);
+    if (p.view!.eliminated.some(id => id === p.id)) await p.page.keyboard.press('Escape');
     for (const id of portfolio) {
       expect(p.view!.owners[id]).toBeUndefined();
       expect(p.view!.houses[id]).toBeUndefined();
     }
+    await card(p, first.index);
     await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
     await expect(p.page.locator(sel('rent'))).toHaveCount(0);
@@ -369,6 +382,7 @@ test('stage 5: a server restart keeps mortgages and terms; the next boundary sti
     await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[expiring]!.advance)}, осталось кругов: 1`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(name(players, payer.id));
   }
+  for (const p of players) await close(p);
   inWindow(payer.view!, 'restart completed and the boundary turn');
   await click(players, payer, 'EndTurn');
   expect(same(players, 'MortgageExpired')).toEqual({ playerId: payer.id, assetId: expiring, advance: before.mortgages[expiring]!.advance });
@@ -376,6 +390,7 @@ test('stage 5: a server restart keeps mortgages and terms; the next boundary sti
   for (const p of players) {
     expect(p.view!.mortgages).toEqual({ [later]: { ...before.mortgages[later]!, pending: remaining } });
     expect(p.view!.owners[expiring]).toBeUndefined();
+    await card(p, expiringCell.index);
     await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await close(p);
     await card(p, laterCell.index);
