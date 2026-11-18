@@ -13,6 +13,8 @@ export interface Actor {
   welcomes: { playerId: string; revision: number }[];
   events: { at: number; revision: number; event: GameEvent }[];
   acks: { at: number; commandId: string; outcome: string; revision: number; error?: { code: string } }[];
+  chats: { seq: number; authorId: string; text: string }[];
+  chatAcks: { clientMsgId: string; ok: boolean; reason?: string }[];
   networkStage: 'login' | 'lobby' | 'room' | 'game' | 'reload-game';
   network: { stage: Actor['networkStage']; url: string; method: string; resourceType: string; status?: number; contentLength?: number; contentEncoding?: string }[];
 }
@@ -38,7 +40,7 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
             }
           };
         });
-        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [], networkStage: 'login', network: [] };
+        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [], chats: [], chatAcks: [], networkStage: 'login', network: [] };
         actors.push(actor); added.push(actor);
         if (observe) {
           const requests = new Map<Request, Actor['network'][number]>();
@@ -73,6 +75,8 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
             log.push({ at: Date.now(), actor: actors.indexOf(actor), frame: 'Ack', commandId: frame.commandId, outcome: frame.outcome, revision: frame.revision, error: frame.error?.code });
           }
           if (frame.t === 'Welcome') actor.welcomes.push({ playerId: frame.playerId, revision: frame.revision });
+          if (frame.t === 'Chat') actor.chats.push(frame.message);
+          if (frame.t === 'ChatAck') actor.chatAcks.push(frame);
           if (frame.t === 'Welcome' || frame.t === 'Update') {
             actor.view = frame.view;
             log.push({ at: Date.now(), actor: actors.indexOf(actor), frame: frame.t, revision: frame.revision, phase: frame.view.phase });
@@ -137,11 +141,23 @@ export async function start(players: Actor[]): Promise<void> {
   await expect(players[0]!.page.locator(sel('member'))).toHaveCount(players.length);
   await players[0]!.page.locator(sel('start')).click();
   for (const p of players) {
-    await expect(p.page.locator(sel('screen-game'))).toBeVisible();
-    await expect(p.page.locator(sel('board-canvas'))).toBeVisible();
+    await waitGameReady(p);
   }
 }
+/** Wait for the async game chunk and board mount through observable UI state. */
+export async function waitGameReady(actor: Actor): Promise<void> {
+  await expect(actor.page.locator(sel('screen-game'))).toBeVisible();
+  await expect(actor.page.locator(sel('game-loading'))).toHaveCount(0);
+  await expect(actor.page.locator(sel('board-canvas'))).toBeVisible();
+}
 export async function action(actor: Actor, type: string): Promise<void> {
+  if (type === 'EndTurn' && actor.view?.turn?.rolled) {
+    const turnId = actor.view.turn.turnId;
+    if (actor.view.turn.deadline <= Date.now()) {
+      await expect.poll(() => actor.view?.turn?.turnId).not.toBe(turnId);
+      return;
+    }
+  }
   const revision = actor.view!.revision;
   await actor.page.locator(sel(type)).click();
   await expect.poll(() => actor.view?.revision).toBeGreaterThan(revision);

@@ -2,8 +2,9 @@ import { money } from './ru-text';
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { BOARD_SIZE, cellRect } from '../apps/client/src/widgets/board/layout';
-import { test, expect, sel, createRoom, join, start, setup, active, sendRaw, type Actor } from './helpers';
+import { writeFileSync } from 'node:fs';
+import { BOARD_SIZE, cellRect, tokenSlot } from '../apps/client/src/widgets/board/layout';
+import { test, expect, sel, createRoom, join, start, setup, active, sendRaw, waitGameReady, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
 
 /**
@@ -40,8 +41,28 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(observer.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
   await expect(observer.page.locator('[role="status"]')).toContainText(assetAt(observer, bought.cell).name);
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
+  await observer.page.locator(sel('game-tab-journal')).click();
   await observer.page.locator(sel('chat-input')).fill('Chat during purchase');
   await observer.page.locator(sel('chat-send')).click();
+  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
+  for (const recipient of players) {
+    await expect.poll(() => recipient.chats.some(message => message.text === 'Chat during purchase' && message.authorId === observer.id)).toBe(true);
+  }
+  const invalidId = `e2e-invalid-chat-${Date.now()}`;
+  await observer.page.evaluate(({ clientMsgId }) => {
+    (window as unknown as { __e2eSocket: WebSocket }).__e2eSocket.send(JSON.stringify({
+      t: 'ChatSend', clientMsgId, text: 'bad\ttext',
+    }));
+  }, { clientMsgId: invalidId });
+  await expect.poll(() => observer.chatAcks.find(ack => ack.clientMsgId === invalidId)).toMatchObject({ ok: false, reason: 'CONTROL_CHARACTER' });
+  await observer.page.locator(sel('chat-input')).fill('bad\ttext');
+  await expect(observer.page.locator(sel('chat-validation'))).toHaveText('Сообщение содержит недопустимый символ.');
+  await expect(observer.page.locator(sel('chat-send'))).toBeDisabled();
+  const chatWelcomeCount = observer.welcomes.length;
+  await observer.page.reload();
+  await waitGameReady(observer);
+  await expect.poll(() => observer.welcomes.length).toBeGreaterThan(chatWelcomeCount);
+  await observer.page.locator(sel('game-tab-journal')).click();
   await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
   const buyFrom = actor.events.length;
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'purchase-open');
@@ -51,7 +72,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     { type: 'AssetPurchased', payload: { playerId: actor.id, assetId: bought.assetId, price } },
   ]);
   await expectBalances(players, { ...beforeBuy, [actor.id]: beforeBuy[actor.id]! - price });
-  await expectOwner(players, bought.cell, actor);
+  await expectOwner(players, bought.cell, actor, info);
   await shoot(players, info, 'bought');
 
   // 2. Decline into an auction: the landing player passes, the next bids, the last passes.
@@ -92,7 +113,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   expect(wonEvents.find(e => e.type === 'AuctionWon')!.payload).toEqual({ auctionId: won.auctionId, playerId: bidder.id, assetId: won.assetId, amount: won.startBid });
   expect(bidder.id).not.toBe(actor.id);
   await expectBalances(players, { ...beforeWon, [bidder.id]: beforeWon[bidder.id]! - won.startBid });
-  await expectOwner(players, declined.cell, bidder);
+  await expectOwner(players, declined.cell, bidder, info);
   await shoot(players, info, 'auction-won');
 
   // 3. Unsold auction; the second participant is AFK and passes after the real 10 s.
@@ -109,7 +130,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   expect(unsoldEvents.map(e => e.type)).toEqual(['AuctionStarted', 'AuctionPassed', 'AuctionPassed', 'AuctionPassed', 'AuctionEndedUnsold']);
   expect(unsoldEvents.filter(e => e.type === 'AuctionPassed').map(e => (e.payload as { auto: boolean }).auto)).toEqual([false, true, false]);
   await expectBalances(players, beforeUnsold);
-  await expectOwner(players, unsoldOffer.cell, null);
+  await expectOwner(players, unsoldOffer.cell, null, info);
   await shoot(players, info, 'auction-unsold');
 
   // 4. Bidding until a responder cannot cover the next bid: the button is
@@ -173,7 +194,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const contestEvents = eventsOf(players[0]!, saved.auction!.auctionId);
   expect(contestEvents.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: leader.id, amount: saved.auction!.leadingBid });
   await expectBalances(players, { ...saved.balances, [leader.id]: saved.balances[leader.id]! - saved.auction!.leadingBid! });
-  await expectOwner(players, contested.cell, leader);
+  await expectOwner(players, contested.cell, leader, info);
 });
 
 test('stage 3: turn deadline starts the auction, reload and server restart keep it, the turn closes', async ({ actors }, info) => {
@@ -198,7 +219,7 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   const beforeReload = structuredClone(reloaded.view!);
   const welcomes = reloaded.welcomes.length;
   await reloaded.page.reload();
-  await expect(reloaded.page.locator(sel('screen-game'))).toBeVisible();
+  await waitGameReady(reloaded);
   await expect.poll(() => reloaded.welcomes.length).toBeGreaterThan(welcomes);
   expect(reloaded.view!.revision).toBe(beforeReload.revision);
   expect(reloaded.view!.auction).toEqual(beforeReload.auction);
@@ -244,7 +265,7 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   while (host.view!.auction) await respond(players, 'pass');
   const events = eventsOf(host, auction.auctionId);
   expect(events.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: reloaded.id, amount: saved.auction!.leadingBid });
-  await expectOwner(players, offer.cell, reloaded);
+  await expectOwner(players, offer.cell, reloaded, info);
   // An auction opened by the deadline closes the turn after settlement.
   const settledAt = host.events.findIndex(e => (e.event.type === 'AuctionWon' || e.event.type === 'AuctionEndedUnsold')
     && (e.event.payload as { auctionId: string }).auctionId === auction.auctionId);
@@ -264,6 +285,7 @@ async function threePlayers(actors: Actors): Promise<Actor[]> {
   for (const p of players.slice(1)) await join(p, room);
   await start(players);
   await setup(players);
+  await Promise.all(players.map(p => p.page.setViewportSize({ width: 390, height: 844 })));
   return players;
 }
 
@@ -396,19 +418,40 @@ async function expectBalances(players: Actor[], balances: Record<string, number>
 }
 
 /** The owner as every client shows it: projection, canvas owner marker and asset card. */
-async function expectOwner(players: Actor[], cell: number, owner: Actor | null): Promise<void> {
+async function expectOwner(players: Actor[], cell: number, owner: Actor | null, info: TestInfo): Promise<void> {
   const assetId = assetAt(players[0]!, cell).assetId;
   for (const p of players) {
     await expect.poll(() => p.view?.owners[assetId]).toBe(owner?.id);
+    if ((p.page.viewportSize()?.width ?? 1440) < 1024) await p.page.locator(sel('game-tab-board')).click();
     const playerColors = await p.page.evaluate(() => {
       const style = getComputedStyle(document.documentElement);
       return Array.from({ length: 6 }, (_, index) => Number.parseInt(style.getPropertyValue(`--player-${index + 1}`).trim().slice(1), 16));
     });
-    const color = owner === null ? null : playerColors[p.view!.players.findIndex(x => x.id === owner.id)];
-    await expect.poll(async () => {
-      const pixel = await markerPixel(p, cell);
-      return color === null ? !playerColors.includes(pixel) : pixel === color;
-    }).toBe(true);
+    const color = owner === null ? null : playerColors[p.view!.players.findIndex(x => x.id === owner.id)]!;
+    let lastSample: Awaited<ReturnType<typeof markerSamples>> | undefined;
+    try {
+      await expect.poll(async () => {
+        lastSample = await markerSamples(p, cell);
+        const matches = lastSample.samples.filter(({ pixels }) => color === null
+          ? pixels.every(pixel => !playerColors.some(playerColor => closeToColor(pixel, playerColor)))
+          : pixels.some(pixel => closeToColor(pixel, color))).length;
+        return lastSample.samples.length > 0 && matches > lastSample.samples.length / 2;
+      }).toBe(true);
+    } catch (error) {
+      if (lastSample !== undefined) {
+        const path = info.outputPath(`marker-failure-${p.id}.png`);
+        const diagnosticPath = info.outputPath(`marker-failure-${p.id}.json`);
+        const diagnostic = {
+          cell, ownerId: owner?.id ?? null, expectedColor: color, sample: { ...lastSample, png: undefined },
+          positions: p.view?.positions, playerOrder: p.view?.players.map(({ id }) => id),
+        };
+        writeFileSync(path, lastSample.png);
+        writeFileSync(diagnosticPath, JSON.stringify(diagnostic, null, 2));
+        await info.attach(`marker-failure-${p.id}.png`, { path, contentType: 'image/png' });
+        await info.attach(`marker-failure-${p.id}.json`, { path: diagnosticPath, contentType: 'application/json' });
+      }
+      throw error;
+    }
     const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
     const box = (await canvas.boundingBox())!;
     const rect = cellRect(cell, box.width);
@@ -421,16 +464,39 @@ async function expectOwner(players: Actor[], cell: number, owner: Actor | null):
   }
 }
 
-/** RGB of the canvas pixel at the centre of the owner marker of `cell`, read from a screenshot. */
-async function markerPixel(p: Actor, cell: number): Promise<number> {
+function closeToColor(pixel: number, target: number): boolean {
+  const r = (pixel >> 16) & 0xff, g = (pixel >> 8) & 0xff, b = pixel & 0xff;
+  const tr = (target >> 16) & 0xff, tg = (target >> 8) & 0xff, tb = target & 0xff;
+  return (r - tr) ** 2 + (g - tg) ** 2 + (b - tb) ** 2 <= 12 ** 2;
+}
+
+/** RGB at several unoccluded points along the ownership border. */
+async function markerSamples(p: Actor, cell: number): Promise<{
+  samples: { pixels: number[]; x: number; y: number }[]; box: { x: number; y: number; width: number; height: number };
+  devicePixelRatio: number; screenshotSize: { width: number; height: number }; png: Buffer;
+}> {
   const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
   const box = (await canvas.boundingBox())!;
   const r = cellRect(cell, BOARD_SIZE);
-  // Sample the middle of the owner border on the left edge.
-  const scale = box.width / BOARD_SIZE;
-  const x = Math.floor((r.x + 3) * scale), y = Math.floor((r.y + r.height / 2) * scale);
-  const png = (await canvas.screenshot()).toString('base64');
-  return p.page.evaluate(async ({ png, x, y }) => {
+  const candidates: { x: number; y: number }[] = [];
+  const inset = 3.5, corner = 10, spacing = 6;
+  for (let offset = corner; offset <= r.width - corner; offset += spacing) {
+    candidates.push({ x: r.x + offset, y: r.y + inset });
+    candidates.push({ x: r.x + offset, y: r.y + r.height - inset });
+  }
+  for (let offset = corner; offset <= r.height - corner; offset += spacing) {
+    candidates.push({ x: r.x + inset, y: r.y + offset });
+    candidates.push({ x: r.x + r.width - inset, y: r.y + offset });
+  }
+  // Avoid token and active-ring positions in the projected view. The generous
+  // 15-unit exclusion covers the token radius and active ring even as tokens
+  // settle after their movement animation.
+  const tokenCenters = p.view!.players.flatMap((player, index) =>
+    p.view!.positions[player.id] === cell ? [tokenSlot(r, index)] : []);
+  const safe = candidates.filter(point => tokenCenters.every(center => Math.hypot(point.x - center.x, point.y - center.y) >= 15));
+  const png = await canvas.screenshot();
+  const encoded = png.toString('base64');
+  const sample = await p.page.evaluate(async ({ png, points, box }) => {
     const image = new Image();
     image.src = `data:image/png;base64,${png}`;
     await image.decode();
@@ -438,9 +504,30 @@ async function markerPixel(p: Actor, cell: number): Promise<number> {
     c.width = image.width; c.height = image.height;
     const ctx = c.getContext('2d')!;
     ctx.drawImage(image, 0, 0);
-    const [red, green, blue] = ctx.getImageData(x, y, 1, 1).data;
-    return (red! << 16) | (green! << 8) | blue!;
-  }, { png, x, y });
+    const samples = points.map(({ cssX, cssY }) => {
+      // Convert canvas logical coordinates to CSS, then CSS to actual captured
+      // PNG pixels. This remains correct if the screenshot scale differs from
+      // the element's CSS box after a viewport change.
+      const x = Math.floor(cssX * image.width / box.width);
+      const y = Math.floor(cssY * image.height / box.height);
+      const pixels: number[] = [];
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const px = Math.max(0, Math.min(image.width - 1, x + dx));
+        const py = Math.max(0, Math.min(image.height - 1, y + dy));
+        const [red, green, blue] = ctx.getImageData(px, py, 1, 1).data;
+        pixels.push((red! << 16) | (green! << 8) | blue!);
+      }
+      return { pixels, x, y };
+    });
+    return {
+      samples, box, devicePixelRatio: window.devicePixelRatio,
+      screenshotSize: { width: image.width, height: image.height },
+    };
+  }, {
+    png: encoded, box,
+    points: safe.map(point => ({ cssX: point.x * box.width / BOARD_SIZE, cssY: point.y * box.height / BOARD_SIZE })),
+  });
+  return { ...sample, png };
 }
 
 async function shoot(players: Actor[], info: TestInfo, name: string): Promise<void> {

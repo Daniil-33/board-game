@@ -263,6 +263,17 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   same(players, 'DiceRolled');
   await expect(payer.page.locator(sel('RollDice'))).toBeDisabled();
   await expect(payer.page.locator(sel('spectator'))).toBeVisible();
+  await payer.page.locator(sel('chat-input')).fill('Chat from bankrupt spectator');
+  await payer.page.locator(sel('chat-send')).click();
+  for (const recipient of players) {
+    await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
+    await expect.poll(() => recipient.chats.some(message => message.text === 'Chat from bankrupt spectator' && message.authorId === payer.id)).toBe(true);
+  }
+  const welcomeCount = payer.welcomes.length;
+  await payer.page.reload();
+  await expect(payer.page.locator(sel('board-canvas'))).toBeVisible();
+  await expect.poll(() => payer.welcomes.length).toBeGreaterThan(welcomeCount);
+  await expect(payer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
   await shoot(players, info, 'bankrupt-watching');
 });
 

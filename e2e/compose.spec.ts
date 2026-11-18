@@ -3,7 +3,7 @@ import { AUCTION_RESPONSE_MS, CONTINUATION_MS } from '../packages/game-core/src/
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
 import { cellRect } from '../apps/client/src/widgets/board/layout';
-import { test, expect, sel, createRoom, join, start, setup, active, action, resign } from './helpers';
+import { test, expect, sel, createRoom, join, start, setup, active, action, resign, waitGameReady } from './helpers';
 
 test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }, info) => {
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Recovery uses production CSPRNG');
@@ -35,7 +35,7 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   const beforeReload = structuredClone(current.view!);
   const welcomeCount = current.welcomes.length;
   await current.page.reload();
-  await expect(current.page.locator(sel('screen-game'))).toBeVisible();
+  await waitGameReady(current);
   await expect.poll(() => current.view?.revision).toBe(revision);
   await expect.poll(() => current.welcomes.length).toBeGreaterThan(welcomeCount);
   expect(current.welcomes.at(-1)!.playerId).toBe(id);
