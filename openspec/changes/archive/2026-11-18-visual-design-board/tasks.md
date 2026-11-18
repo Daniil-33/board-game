@@ -15,5 +15,5 @@
 ## 3. Evidence and delivery
 
 - [x] 3.1 Verify 360, 390 and 430 px sizing and tap behavior. Save live and design screenshots at 1440×900 and 390×844 and a movement frame-time measurement with the emulated phone and CPU profile in `/srv/agents/evidence/TASK-vd-board/`.
-- [ ] 3.2 Run `pnpm build`, `pnpm test`, `pnpm --filter @game/client build:bundle`, `pnpm --filter @game/client lint`, `openspec validate --all --strict` and `git diff --check <base> HEAD`. Record bundle sizes and browser coverage.
-- [ ] 3.3 Open the task PR and request independent review for its exact head. Address findings and archive the change in the PR once review passes. Verify current-head review and all four CI jobs before handoff.
+- [x] 3.2 Run `pnpm build`, `pnpm test`, `pnpm --filter @game/client build:bundle`, `pnpm --filter @game/client lint`, `openspec validate --all --strict` and `git diff --check <base> HEAD`. Record bundle sizes and browser coverage.
+- [x] 3.3 Open the task PR and request independent review for its exact head. Address findings and archive the change in the PR once review passes. Verify current-head review and all four CI jobs before handoff.
