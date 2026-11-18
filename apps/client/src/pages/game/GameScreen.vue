@@ -3,6 +3,7 @@ import { actionAvailability } from '../../entities/game/index';
 import { ChatComposer } from '../../features/send-chat/index';
 import { ResignControl } from '../../features/resign/index';
 import { MobileNav } from '../../widgets/mobile-nav/index';
+import { SoundControls } from '../../shared/sound/index';
 import { MyTurn } from '../../widgets/my-turn/index';
 import { MyAssets } from '../../widgets/my-assets/index';
 import { EventFeed } from '../../widgets/event-feed/index';
@@ -184,7 +185,7 @@ onBeforeUnmount(() => {
               <summary>{{ t('game_layout.rules') }}</summary>
               <p>{{ t('game_layout.rules_summary') }}</p>
             </details>
-            <div data-testid="game-sound-slot" />
+            <div data-testid="game-sound-slot"><SoundControls /></div>
             <Button data-testid="game-leave" :disabled="!canLeaveGame"
               :reason="canLeaveGame ? '' : t('game_layout.leave_requires_resign')" @click="leaveGame">
               {{ t('game_over.back_to_lobby') }}

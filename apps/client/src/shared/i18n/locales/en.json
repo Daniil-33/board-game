@@ -389,5 +389,11 @@
     "insufficient_funds": "Insufficient funds.",
     "persistence_failed": "The command could not be saved.",
     "invalid": "Invalid command."
+  },
+  "sound": {
+    "controls": "Sound controls",
+    "mute": "Mute sound",
+    "unmute": "Unmute sound",
+    "volume": "Sound volume"
   }
 }

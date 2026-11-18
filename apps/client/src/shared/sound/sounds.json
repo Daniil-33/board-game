@@ -1,0 +1,118 @@
+{
+  "dice-roll": {
+    "file": "./files/dice-roll.mp3",
+    "source": "Kenney Interface Sounds (drop_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "dice-double": {
+    "file": "./files/dice-double.mp3",
+    "source": "Kenney Interface Sounds (confirmation_002.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "token-step": {
+    "file": "./files/token-step.mp3",
+    "source": "Kenney Interface Sounds (tick_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "purchase": {
+    "file": "./files/purchase.mp3",
+    "source": "Kenney Interface Sounds (confirmation_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "money-in": {
+    "file": "./files/money-in.mp3",
+    "source": "Kenney Interface Sounds (glass_002.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "money-out": {
+    "file": "./files/money-out.mp3",
+    "source": "Kenney Interface Sounds (back_002.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "auction-bid": {
+    "file": "./files/auction-bid.mp3",
+    "source": "Kenney Interface Sounds (select_003.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "auction-tick": {
+    "file": "./files/auction-tick.mp3",
+    "source": "Kenney Interface Sounds (tick_004.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "auction-win": {
+    "file": "./files/auction-win.mp3",
+    "source": "Kenney Interface Sounds (confirmation_003.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "turn-start": {
+    "file": "./files/turn-start.mp3",
+    "source": "Kenney Interface Sounds (open_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "turn-timeout": {
+    "file": "./files/turn-timeout.mp3",
+    "source": "Kenney Interface Sounds (error_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "house-built": {
+    "file": "./files/house-built.mp3",
+    "source": "Kenney Interface Sounds (drop_002.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "asset-mortgaged": {
+    "file": "./files/asset-mortgaged.mp3",
+    "source": "Kenney Interface Sounds (close_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "bankrupt": {
+    "file": "./files/bankrupt.mp3",
+    "source": "Kenney Interface Sounds (error_002.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "victory": {
+    "file": "./files/victory.mp3",
+    "source": "Kenney Interface Sounds (bong_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "chat": {
+    "file": "./files/chat.mp3",
+    "source": "Kenney Interface Sounds (select_001.wav)",
+    "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+    "license": "CC0",
+    "author": "Kenney Vleugels"
+  },
+  "casino": null,
+  "chance": null,
+  "jail": null,
+  "trade-offer": null
+}

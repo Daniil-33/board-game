@@ -7,6 +7,7 @@ import type { ClientFrame, RoomSummary, ServerFrame } from '@game/protocol';
 import type { FetchLike } from '../shared/api/index';
 import { createClient, type Board, type BoardMount, type Client } from '../features/client-session/index';
 import type { AnimationStep } from '../entities/game/index';
+import type { SoundId } from '../shared/sound/index';
 import type { SocketFactory, SocketHandlers } from '../shared/api/index';
 
 export const pid = (id: string): PlayerId => id as PlayerId;
@@ -235,7 +236,7 @@ export interface Harness {
 }
 
 /** The whole client against fakes. Command ids are c1, c2, ... */
-export function harness(options: { stored?: Record<string, string>; route?: Route; now?: number } = {}): Harness {
+export function harness(options: { stored?: Record<string, string>; route?: Route; now?: number; sound?: (id: SoundId, opts?: { own?: boolean }) => void } = {}): Harness {
   const sockets = fakeSockets();
   const storage = fakeStorage(options.stored);
   const { fetchFn, calls } = fakeFetch(options.route ?? (() => ({ body: { rooms: [] } })));
@@ -248,6 +249,7 @@ export function harness(options: { stored?: Record<string, string>; route?: Rout
     socketUrl: 'ws://test/ws',
     now: () => clock.now,
     newCommandId: () => `c${nextCommand++}`,
+    ...(options.sound !== undefined && { sound: options.sound }),
   });
   const board = recordingBoard();
   const mount: BoardMount = async () => ({ board, destroy: () => {} });

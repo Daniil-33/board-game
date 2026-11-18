@@ -10,6 +10,7 @@ import { ResignControl } from '../../features/resign/index';
 import HudStatus from './HudStatus.vue';
 import TurnOrder from './TurnOrder.vue';
 import TurnTimer from './TurnTimer.vue';
+import { SoundControls } from '../../shared/sound/index';
 
 const props = defineProps<{
   view: StateView | null;
@@ -109,6 +110,7 @@ const phase = computed(() => {
 
 <template>
   <section class="game-surface turn-header" data-testid="turn-header">
+    <SoundControls class="desktop-sound" />
     <HudStatus v-if="!setupOpen && !externalStatus" :fatal="fatal" :connected="connected" :problem="problem" :messages="messages" @dismiss="emit('dismiss', $event)" />
 
     <div class="turn-meta">
@@ -156,6 +158,7 @@ const phase = computed(() => {
 
 <style scoped>
 .turn-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.desktop-sound { justify-content: flex-end; margin-bottom: var(--space-2); }
 .turn-meta h2 { margin: 0; }
 .turn-meta :deep(.timer) { font-family: var(--design-font-display); font-size: 1rem; margin: 0; }
 .current-order { font-size: .85rem; color: var(--text-secondary); }
@@ -167,4 +170,5 @@ const phase = computed(() => {
 .setup-dialog { overflow-wrap: anywhere; }
 .setup-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
 .setup-actions :deep(.timer) { font-size: 1rem; margin: var(--space-1) 0 0; }
+@media (max-width: 1023px) { .desktop-sound { display: none; } }
 </style>

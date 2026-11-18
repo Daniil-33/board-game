@@ -2,7 +2,9 @@
 import { Button } from '../../shared/ui/index';
 import { formatMoney, formatSeconds } from '../../shared/lib/index';
 import { t } from '../../shared/i18n/index';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import { playSound } from '../../shared/sound/index';
+import { createAuctionTickSoundMapper } from '../../entities/event/index';
 import { nextBidAmount, type PlayerId, type StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { canIssue, remainingSeconds, type NullPayloadType } from '../../entities/game/index';
@@ -11,6 +13,13 @@ const emit = defineEmits<{ command: [type: NullPayloadType] }>();
 const asset = computed(() => props.view.board?.cells.find(c => c.index === props.view.auction?.cell)?.asset);
 const responding = computed(() => props.view.auction?.responder === props.me && props.me !== null && !props.view.eliminated.includes(props.me));
 const seconds = computed(() => props.view.auction ? remainingSeconds(props.view.auction.responseDeadline, props.now) : 0);
+const mapAuctionTick = createAuctionTickSoundMapper();
+watch(() => [props.view.auction?.auctionId, props.view.auction?.responseId, seconds.value] as const, ([auctionId, responseId, remaining]) => {
+  const sound = mapAuctionTick(auctionId ?? null, responseId ?? null, remaining, props.view.auction?.responder ?? null, props.me);
+  if (sound) {
+    playSound(sound.id, { own: sound.own });
+  }
+});
 const leaderColor = computed(() => {
   const leader = props.view.auction?.leader;
   const index = leader === null || leader === undefined ? -1 : props.view.players.findIndex(player => player.id === leader);
