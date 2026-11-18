@@ -80,8 +80,12 @@ for env in staging production; do
     -out "$tmp/certs/live/$env/fullchain.pem" >/dev/null 2>&1
 done
 docker exec "$edge" sh /edge/reload.sh
-docker exec "$edge" wget -t 1 -T 4 -S --no-check-certificate -O /dev/null \
-  https://focusima.space/ > "$tmp/absent" 2>&1 || true
+for _attempt in 1 2 3 4 5; do
+  docker exec "$edge" wget -t 1 -T 4 -S --no-check-certificate -O /dev/null \
+    https://focusima.space/ > "$tmp/absent" 2>&1 || true
+  if grep -q '502 Bad Gateway' "$tmp/absent"; then break; fi
+  sleep 1
+done
 grep -q '502 Bad Gateway' "$tmp/absent"
 docker exec "$edge" sh -c 'printf "HEAD /path?secret-query=must-not-log HTTP/1.0\r\nHost: stage.focusima.space\r\n\r\n" | nc -w 2 127.0.0.1 80' > "$tmp/http"
 grep -q '308 Permanent Redirect' "$tmp/http"
