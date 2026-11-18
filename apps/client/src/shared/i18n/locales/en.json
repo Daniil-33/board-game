@@ -178,7 +178,7 @@
     "order_roll": "{player} rolls for order",
     "dice_roll": "{player} rolls",
     "custom_banner": "{player} {text}",
-    "mortgage_marker": "M"
+    "mortgage_marker": "Mortgaged"
   },
   "display": {
     "start": "Start",

@@ -1,7 +1,7 @@
 import { money } from './ru-text';
 /** Shared helpers of the isolated fixture-stack specs (stage 4 and later). */
 import type { TestInfo } from '@playwright/test';
-import { cellRect } from '../apps/client/src/widgets/board/index';
+import { cellRect } from '../apps/client/src/widgets/board/layout';
 import { expect, sel, type Actor } from './helpers';
 
 export const fast = { intervals: [20] };

@@ -76,22 +76,35 @@ the server deadline has passed.
 - **THEN** RollDice and EndTurn SHALL be disabled
 
 ### Requirement: Generated board
-The board SHALL render all 40 projected cells with company names for assets and Start, Jail, Casino, Go to jail or Chance for other cells. Assets SHALL show projected prices and distinct markers per groupId; long names SHALL wrap or truncate legibly. No placeholder marker SHALL remain. Player colors SHALL remain stable. Eliminated tokens SHALL be hidden; authoritative elimination and finished updates SHALL cancel obsolete animations before snapping to the projection.
+
+The board SHALL render all 40 projected cells in CLASSIC_40 order, with theme group strips and surface-appropriate logos for assets. It SHALL distinguish Start, Jail, Casino, Go to jail and Chance per the design. Player colors SHALL remain stable and same-cell tokens SHALL occupy separate slots.
+
+#### Scenario: Board contents
+- **WHEN** a readable-size board is built for a view with three players
+- **THEN** it SHALL contain the 40 cells, jail box and three tokens, show projected prices on their group strips, and shorten company names to fit their measured widths
+
+#### Scenario: Group distinction
+- **WHEN** a board displays groups M1 through M8, logistics and energy
+- **THEN** each group uses its distinct theme gradient consistently
+
+#### Scenario: Missing or failed logo
+- **WHEN** an asset has no matching logo URL or its texture fails to load
+- **THEN** the cell displays the resolved monogram on the group gradient
+
+#### Scenario: Compact board
+- **WHEN** the board renders at a 360–430 px viewport width
+- **THEN** it fits the available width and compact asset cells retain their strip, logo or monogram and projected markers with text hidden
 
 #### Scenario: Elimination during animation
 - **WHEN** an elimination update arrives while the player's movement is queued
-- **THEN** that player's token SHALL disappear and queued motion SHALL NOT restore it
+- **THEN** the eliminated player's token SHALL be hidden and queued motion SHALL NOT restore it
 
-#### Scenario: Board contents
-- **WHEN** the board is built for a view with three players
-- **THEN** it SHALL contain the 40 projected cells, a jail box marker and three tokens, with asset names, prices and group markers and no placeholder caption
-
-#### Scenario: Group distinction
-- **WHEN** a generated board contains M1 through M8, logistics and energy
-- **THEN** every group SHALL have a distinct marker used consistently across its cells
+#### Scenario: Authoritative snap on elimination or game finish
+- **WHEN** an authoritative elimination or finished update arrives
+- **THEN** the board SHALL cancel obsolete animations before snapping to the projection
 
 ### Requirement: Animation follows events in order
-The client SHALL animate authoritative Update events sequentially and synchronize tokens to the view when idle or receiving Welcome.
+The client SHALL animate authoritative Update events sequentially and synchronize tokens to the view when idle or receiving Welcome. Token movement and rent transfer SHALL shorten or skip their visual effects when the browser prefers reduced motion. The client SHALL apply authoritative state independently of animation playback.
 
 #### Scenario: Animation detail contract
 - **WHEN** this requirement is exercised
@@ -121,6 +134,10 @@ positions.
 #### Scenario: Welcome during animation
 - **WHEN** `Welcome` arrives while steps are waiting
 - **THEN** the waiting steps SHALL be dropped and tokens SHALL stand on the `Welcome` view's positions
+
+#### Scenario: Reduced motion
+- **WHEN** a live update carries movement or rent events and reduced motion is requested
+- **THEN** the respective visual effects are shortened or skipped and the current authoritative view is applied independently
 
 ### Requirement: Confirmed resignation and spectator
 Setup and play SHALL offer Resign to connected active participants, independent
@@ -171,7 +188,15 @@ A player panel SHALL show every participant's nickname, projected balance, activ
 - **THEN** the panel SHALL retain their nickname, projected balance and eliminated mark
 
 ### Requirement: Asset inspection
-Clicking an asset cell SHALL open a Vue card showing its projected company name, category, group, monopoly rank when present, price, owner name or "free", and other group members with their prices and cell indices. A close control or Escape SHALL close the card. Clicking a non-asset cell SHALL open no card. The card SHALL use the current server board and view only; its actions SHALL be Build and Sell for the viewer's own monopoly assets and Mortgage and Redeem for any of the viewer's own assets.
+Clicking or tapping an asset cell SHALL open a Vue card that uses only the current server board and view.
+
+#### Scenario: Card content
+- **WHEN** an asset card opens
+- **THEN** it SHALL show its projected company name, category, group, monopoly rank when present, price, owner name or "free", and other group members with their prices and cell indices
+
+#### Scenario: Actions on owned assets
+- **WHEN** the viewer opens their own asset card
+- **THEN** it SHALL offer Mortgage and Redeem for the asset and Build and Sell for a monopoly asset. Cards for other assets SHALL omit these actions
 
 #### Scenario: Monopoly details
 - **WHEN** a player clicks a monopoly asset
@@ -192,6 +217,10 @@ Clicking an asset cell SHALL open a Vue card showing its projected company name,
 #### Scenario: Ownership changes
 - **WHEN** a new view assigns the selected asset an owner
 - **THEN** the open card SHALL display that owner from the current projection
+
+#### Scenario: Desktop hover
+- **WHEN** the pointer hovers over an asset cell on a hover-capable desktop
+- **THEN** a tooltip shows the full company name and formatted projected price
 
 ### Requirement: Purchase decision display
 While view.purchase exists, the landing viewer SHALL see a Vue dialog with asset, fixed price, own balance, Buy and Start auction. Buy SHALL be disabled below price. Other viewers SHALL see who is deciding. Controls SHALL require connection, an active viewer, an unexpired turn deadline and no same-type pending command.
@@ -224,7 +253,7 @@ While view.auction exists every viewer SHALL see asset, start bid, step, leading
 - **THEN** the timer SHALL show zero without locally passing anyone or closing the auction; a later view SHALL determine the displayed outcome
 
 ### Requirement: Projected owner markers
-Owned asset cells SHALL show a PixiJS marker in the owner's player colour, distinct from the group marker. Ownership SHALL come only from view.owners and SHALL refresh on each authoritative view independently of movement animations.
+Owned asset cells SHALL show a PixiJS border or ribbon in the owner's player colour, distinct from the group marker. Ownership SHALL come only from view.owners and SHALL refresh on each authoritative view independently of movement animations.
 
 #### Scenario: Owner changes without board regeneration
 - **WHEN** a new view changes ownership while the generated board stays identical
@@ -322,11 +351,15 @@ A rejected Ack SHALL show its code and message. For a rejected `BuildHouse` or `
 - **THEN** the HUD SHALL show the code and message without a house reason
 
 ### Requirement: House markers
-Every asset cell SHALL show 1-4 PixiJS house markers equal to `view.houses` for that asset and none when absent. Markers SHALL refresh on each view independently of movement animations, like owner markers.
+Every asset cell SHALL show 1-4 PixiJS house pips equal to `view.houses` for that asset and none when absent. Markers SHALL refresh on each view independently of movement animations, like owner markers.
 
 #### Scenario: Houses change without board regeneration
 - **WHEN** a new view changes an asset's houses from 2 to 3
 - **THEN** that cell SHALL show three markers
+
+#### Scenario: Pips alongside asset details
+- **WHEN** a readable-size asset cell shows house pips on any side of the board
+- **THEN** the pips SHALL sit clear of the company name and price strip
 
 ### Requirement: Rent payment animation
 A `RentPaid` event in an `Update` with `amount > 0` SHALL queue one step that shows the paid amount moving from the payer's token to the owner's token, in event order with other steps. Houses, mortgages, balances and the settlement SHALL render from the view independently of event notices. A `Welcome` SHALL queue no rent animation, so a reload skips it. A malformed `RentPaid` payload SHALL yield no step.
@@ -388,7 +421,7 @@ Every viewer SHALL see each PlayerBankrupt notice with player, creditor, debt, p
 - **THEN** the notice SHALL show the bankruptcy and an empty freed asset list
 
 ### Requirement: Mortgage cell markers
-Each asset in view.mortgages SHALL have a distinct PixiJS mortgage marker. Each view SHALL refresh these independently of movement animations.
+Each asset in view.mortgages SHALL have a diagonal hatch and dimming. Each view SHALL refresh these independently of movement animations.
 
 #### Scenario: Mortgage changes on the same board
 - **WHEN** a new view adds or removes a mortgage without regenerating the board

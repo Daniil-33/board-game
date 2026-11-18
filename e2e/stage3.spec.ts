@@ -2,8 +2,7 @@ import { money } from './ru-text';
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { cellRect } from '../apps/client/src/widgets/board/index';
-import { BOARD_SIZE, TOKEN_COLORS } from '../apps/client/src/widgets/board/index';
+import { BOARD_SIZE, cellRect } from '../apps/client/src/widgets/board/layout';
 import { test, expect, sel, createRoom, join, start, setup, active, sendRaw, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
 
@@ -376,10 +375,14 @@ async function expectOwner(players: Actor[], cell: number, owner: Actor | null):
   const assetId = assetAt(players[0]!, cell).assetId;
   for (const p of players) {
     await expect.poll(() => p.view?.owners[assetId]).toBe(owner?.id);
-    const color = owner === null ? null : TOKEN_COLORS[p.view!.players.findIndex(x => x.id === owner.id)]!;
+    const playerColors = await p.page.evaluate(() => {
+      const style = getComputedStyle(document.documentElement);
+      return Array.from({ length: 6 }, (_, index) => Number.parseInt(style.getPropertyValue(`--player-${index + 1}`).trim().slice(1), 16));
+    });
+    const color = owner === null ? null : playerColors[p.view!.players.findIndex(x => x.id === owner.id)];
     await expect.poll(async () => {
       const pixel = await markerPixel(p, cell);
-      return color === null ? !TOKEN_COLORS.includes(pixel as never) : pixel === color;
+      return color === null ? !playerColors.includes(pixel) : pixel === color;
     }).toBe(true);
     const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
     const box = (await canvas.boundingBox())!;
@@ -398,9 +401,9 @@ async function markerPixel(p: Actor, cell: number): Promise<number> {
   const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
   const box = (await canvas.boundingBox())!;
   const r = cellRect(cell, BOARD_SIZE);
-  // BoardScene draws the 10x10 marker 14 units in from the cell's bottom-right corner.
+  // Sample the middle of the owner border on the left edge.
   const scale = box.width / BOARD_SIZE;
-  const x = Math.floor((r.x + r.width - 9) * scale), y = Math.floor((r.y + r.height - 9) * scale);
+  const x = Math.floor((r.x + 3) * scale), y = Math.floor((r.y + r.height / 2) * scale);
   const png = (await canvas.screenshot()).toString('base64');
   return p.page.evaluate(async ({ png, x, y }) => {
     const image = new Image();

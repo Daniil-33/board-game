@@ -2,7 +2,6 @@
 import { t } from '../../shared/i18n/index';
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { boardDisplayKey } from '../../widgets/board/index';
-import { TOKEN_COLORS } from '../../widgets/board/index';
 import { BOARD_MOUNT_KEY, useClient } from '../../features/client-session/index';
 import { PlayerPanel } from '../../widgets/players-panel/index';
 import { AssetCard } from '../../widgets/asset-card/index';
@@ -43,12 +42,10 @@ watch(
 
 const pendingTypes = computed(() => client.game.pending.map((c) => c.type));
 
-/** The setup roster uses the same seat palette as the waiting room. */
+/** Player identities use the same seat palette in the waiting room, setup and on the board. */
 function colorOf(playerId: string): string {
-  const index = Math.max(0, client.game.view?.players.findIndex((p) => p.id === playerId) ?? 0);
-  if (client.game.view?.phase === 'setup') return `var(--player-${index + 1})`;
-  const color = TOKEN_COLORS[index % TOKEN_COLORS.length]!;
-  return `#${color.toString(16).padStart(6, '0')}`;
+  const index = client.game.view?.players.findIndex((p) => p.id === playerId) ?? -1;
+  return `var(--player-${Math.max(0, index) + 1})`;
 }
 
 onMounted(async () => {
