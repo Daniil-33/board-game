@@ -4,12 +4,16 @@ import type { GameCommand, GameEvent } from './engine.js';
 import { settleDebt, type DebtResult } from './debt.js';
 import { scheduleAfterSettlement } from './turns.js';
 import type { Timestamp } from './types.js';
+import type { GeneratedBoard } from './board/generate.js';
 import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
 
 /** All rent and building callers share the persisted mortgage flag. */
 export function isMortgaged(state: GameState, assetId: AssetId): boolean { return Object.hasOwn(state.mortgages, assetId); }
 export type RentQuote = { readonly kind: 'fixed'; readonly amount: Money } |
   { readonly kind: 'energy'; readonly sumPrices: Money; readonly groupSize: number; readonly holdings: number };
+const REGULAR_RENT_PERCENT = [5, 15, 35, 65, 100] as const;
+const LOGISTICS_RENT_PERCENT = [0, 5, 10, 20, 40] as const;
+const COMPLETE_GROUP_BASE_MULTIPLIER = 2;
 export const quantumRatio = (numerator: number, denominator: number): Money => 10 * Math.floor(numerator / (10 * denominator)) as Money;
 export function energyRentFor(quote: Extract<RentQuote, { kind: 'energy' }>, diceSum: number): Money {
   return quantumRatio(quote.sumPrices * diceSum * quote.holdings, 200 * quote.groupSize);
@@ -22,11 +26,46 @@ function quoteFor(state: GameState, assetId: AssetId): RentQuote {
   const group = state.board!.cells.filter(c => c.asset?.groupId === cell.asset!.groupId);
   const holdings = group.filter(c => state.owners[c.asset!.assetId] === owner && !isMortgaged(state, c.asset!.assetId)).length;
   if (cell.kind === 'energy') return { kind: 'energy', sumPrices: group.reduce((n,c) => n + c.asset!.price, 0) as Money, groupSize: group.length, holdings };
-  if (cell.kind === 'logistics') return { kind: 'fixed', amount: quantumRatio(cell.asset.price * [0,5,10,20,40][holdings]!, 100) };
+  if (cell.kind === 'logistics') return { kind: 'fixed', amount: quantumRatio(cell.asset.price * LOGISTICS_RENT_PERCENT[holdings]!, 100) };
   const houses = state.houses[assetId] ?? 0;
-  const base = quantumRatio(cell.asset.price * [5,15,35,65,100][houses]!, 100);
+  const base = quantumRatio(cell.asset.price * REGULAR_RENT_PERCENT[houses]!, 100);
   const complete = group.every(c => state.owners[c.asset!.assetId] === owner);
-  return { kind: 'fixed', amount: (base * (houses === 0 && complete ? 2 : 1)) as Money };
+  return { kind: 'fixed', amount: (base * (houses === 0 && complete ? COMPLETE_GROUP_BASE_MULTIPLIER : 1)) as Money };
+}
+
+export type RentTier =
+  | { readonly kind: 'regular'; readonly houses: number; readonly completeGroup: boolean; readonly amount: Money }
+  | { readonly kind: 'logistics'; readonly holdings: number; readonly amount: Money }
+  | { readonly kind: 'energy'; readonly holdings: number; readonly diceSum: number; readonly amount: Money };
+
+/** Public rent schedule computed from immutable board data, with no state assumptions. */
+export function rentTiers(board: GeneratedBoard | null | undefined, assetId: AssetId): readonly RentTier[] {
+  const cell = board?.cells.find(candidate => candidate.asset?.assetId === assetId);
+  if (!cell?.asset || (cell.kind !== 'monopoly' && cell.kind !== 'logistics' && cell.kind !== 'energy')) return [];
+  const group = board!.cells.filter(candidate => candidate.asset?.groupId === cell.asset!.groupId);
+  if (cell.kind === 'logistics') {
+    return LOGISTICS_RENT_PERCENT.slice(1).map((percent, index) => ({
+      kind: 'logistics' as const, holdings: index + 1,
+      amount: quantumRatio(cell.asset!.price * percent, 100),
+    }));
+  }
+  if (cell.kind === 'energy') {
+    const sumPrices = group.reduce((sum, candidate) => sum + candidate.asset!.price, 0) as Money;
+    return group.flatMap((_, index) => Array.from({ length: 11 }, (_, dieIndex) => ({
+      kind: 'energy' as const, holdings: index + 1, diceSum: dieIndex + 2,
+      amount: energyRentFor({ kind: 'energy', sumPrices, groupSize: group.length, holdings: index + 1 }, dieIndex + 2),
+    })));
+  }
+  const baseTiers = REGULAR_RENT_PERCENT.map((percent, houses) => ({
+    kind: 'regular' as const, houses, completeGroup: false,
+    amount: quantumRatio(cell.asset!.price * percent, 100),
+  }));
+  const groupBase = baseTiers[0]!;
+  return [
+    groupBase,
+    { ...groupBase, completeGroup: true, amount: (groupBase.amount * COMPLETE_GROUP_BASE_MULTIPLIER) as Money },
+    ...baseTiers.slice(1),
+  ];
 }
 export function rentFor(state: GameState, assetId: AssetId, diceSum: number | null): Money {
   const quote = quoteFor(state, assetId);

@@ -4,7 +4,7 @@ import { formatMoney } from '../../shared/lib/index';
 
 import { t } from '../../shared/i18n/index';
 import { computed, onMounted, onBeforeUnmount } from 'vue';
-import { energyRentFor, type BoardCell, type GeneratedBoard, type PlayerId, type StateView } from '@game/game-core';
+import { energyRentFor, rentTiers, type BoardCell, type GeneratedBoard, type PlayerId, type RentTier, type StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { houseControls } from '../../entities/game/index';
 import { mortgageControls, mortgageTerms } from '../../entities/game/index';
@@ -23,6 +23,46 @@ const assetId = computed(() => props.cell.asset?.assetId);
 const houses = computed(() => (assetId.value === undefined ? 0 : props.view?.houses[assetId.value] ?? 0));
 const owned = computed(() => assetId.value !== undefined && props.view?.owners[assetId.value] !== undefined);
 const quote = computed(() => (owned.value && assetId.value !== undefined ? props.view?.rentQuotes[assetId.value] ?? null : null));
+const schedule = computed(() => assetId.value === undefined ? [] : rentTiers(props.board, assetId.value));
+const scheduleRows = computed(() => {
+  if (schedule.value[0]?.kind === 'regular') return schedule.value.map(tier => ({
+    key: `regular-${tier.kind === 'regular' && tier.completeGroup ? 'group' : tier.kind === 'regular' ? tier.houses : 0}`,
+    label: tier.kind === 'regular' ? (tier.houses === 0 && tier.completeGroup ? t('asset_card.rent_tier_complete_group') : t('asset_card.rent_tier_houses', { houses: tier.houses })) : '',
+    amount: tier.kind === 'regular' ? tier.amount : 0,
+  }));
+  if (schedule.value[0]?.kind === 'logistics') return schedule.value.map(tier => ({
+    key: `logistics-${tier.kind === 'logistics' ? tier.holdings : 0}`,
+    label: tier.kind === 'logistics' ? t('asset_card.rent_tier_holdings', { holdings: tier.holdings }) : '',
+    amount: tier.kind === 'logistics' ? tier.amount : 0,
+  }));
+  return [];
+});
+const energyRows = computed(() => {
+  if (schedule.value[0]?.kind !== 'energy') return [];
+  return [...new Set(schedule.value.filter((tier): tier is Extract<RentTier, { kind: 'energy' }> => tier.kind === 'energy').map(tier => tier.holdings))]
+    .map(holdings => ({ holdings, tiers: schedule.value.filter((tier): tier is Extract<RentTier, { kind: 'energy' }> => tier.kind === 'energy' && tier.holdings === holdings) }));
+});
+const highlightedTier = computed(() => {
+  if (!props.view || !assetId.value || !owned.value) return null;
+  const owner = props.view.owners[assetId.value];
+  const group = props.board.cells.filter(cell => cell.asset?.groupId === props.cell.asset?.groupId && cell.asset);
+  if (props.cell.kind === 'monopoly') {
+    const complete = group.every(cell => props.view!.owners[cell.asset!.assetId] === owner);
+    const houseCount = props.view.houses[assetId.value] ?? 0;
+    const key = houseCount === 0 && complete ? 'regular-group' : `regular-${houseCount}`;
+    const currentQuote = props.view.rentQuotes[assetId.value];
+    const row = scheduleRows.value.find(item => item.key === key);
+    return currentQuote?.kind === 'fixed' && row?.amount === currentQuote.amount ? key : null;
+  }
+  const holdings = group.filter(cell => props.view!.owners[cell.asset!.assetId] === owner).length;
+  if (props.cell.kind === 'logistics') {
+    const fixedQuote = quote.value?.kind === 'fixed' ? quote.value : null;
+    const expected = schedule.value.find((tier): tier is Extract<RentTier, { kind: 'logistics' }> => tier.kind === 'logistics' && tier.holdings === holdings);
+    const quoted = schedule.value.find((tier): tier is Extract<RentTier, { kind: 'logistics' }> => tier.kind === 'logistics' && tier.amount === fixedQuote?.amount);
+    return fixedQuote && expected?.amount === fixedQuote.amount && quoted ? `logistics-${quoted.holdings}` : null;
+  }
+  return quote.value?.kind === 'energy' && quote.value.holdings === holdings ? `energy-${holdings}` : null;
+});
 /** Example dice sums for the energy quote; the amounts come from game-core's energyRentFor. */
 const ENERGY_EXAMPLES = [2, 7, 12] as const;
 const energyExamples = computed(() => {
@@ -60,6 +100,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
         <dt>{{ t('asset_card.lap_waits_for') }}</dt><dd data-testid="asset-mortgage-pending">{{ pendingNames || t('asset_card.nobody') }}</dd></template>
       <template v-if="quote?.kind === 'fixed'"><dt>{{ t('common.rent') }}</dt><dd data-testid="asset-rent">{{ formatMoney(quote.amount) }}</dd></template>
     </dl>
+    <table v-if="scheduleRows.length" class="rent-table" data-testid="asset-rent-table">
+      <caption>{{ t('asset_card.rent_table') }}</caption>
+      <tbody><tr v-for="row in scheduleRows" :key="row.key" :data-testid="'rent-tier-' + row.key" :aria-current="highlightedTier === row.key ? 'true' : undefined">
+        <th scope="row">{{ row.label }}</th><td>{{ formatMoney(row.amount) }}</td>
+      </tr></tbody>
+    </table>
+    <table v-else-if="energyRows.length" class="rent-table" data-testid="asset-rent-table">
+      <caption>{{ t('asset_card.rent_table_energy') }}</caption>
+      <thead><tr><th scope="col">{{ t('asset_card.rent_tier_holdings_header') }}</th><th v-for="sum in 11" :key="sum">{{ sum + 1 }}</th></tr></thead>
+      <tbody><tr v-for="row in energyRows" :key="row.holdings" :data-testid="'rent-tier-energy-' + row.holdings" :aria-current="highlightedTier === `energy-${row.holdings}` ? 'true' : undefined">
+        <th scope="row">{{ row.holdings }}</th><td v-for="sum in row.tiers" :key="sum.diceSum">{{ formatMoney(sum.amount) }}</td>
+      </tr></tbody>
+    </table>
     <div v-if="quote?.kind === 'energy'" data-testid="asset-energy">
       <p>{{ t('asset_card.energy_formula', { sumPrices: formatMoney(quote.sumPrices), holdings: quote.holdings, groupSize: quote.groupSize }) }}</p>
       <p data-testid="energy-examples">{{ energyExampleText }}</p>

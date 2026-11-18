@@ -9,9 +9,12 @@ import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { canIssue, type NullPayloadType } from '../../entities/game/index';
 const props = defineProps<{ view: StateView; me: PlayerId | null; connected: boolean; pending: readonly ClientCommandType[]; now: number; nameOf: (id: string) => string }>();
-const emit = defineEmits<{ command: [type: NullPayloadType] }>();
+const emit = defineEmits<{ command: [type: NullPayloadType]; manageAssets: [] }>();
 const asset = computed(() => props.view.board?.cells.find(c => c.asset?.assetId === props.view.rent?.assetId)?.asset);
 const paying = computed(() => props.me !== null && props.view.rent?.payerId === props.me && !props.view.eliminated.includes(props.me));
+// The projection already contains the payer's current balance. Keep this
+// hint view-derived; the server remains authoritative for settlement.
+const shortfall = computed(() => props.view.rent === null ? 0 : Math.max(0, props.view.rent.amount - (props.view.balances[props.view.rent.payerId] ?? 0)));
 </script>
 <template>
   <section v-if="view.rent" class="asset-card decision-panel" :aria-label="t('common.rent')" data-testid="rent">
@@ -23,9 +26,11 @@ const paying = computed(() => props.me !== null && props.view.rent?.payerId === 
       <template #asset>{{ asset?.name ?? view.rent.assetId }}</template>
       <template #diceSum>{{ view.rent.kind === 'energy' ? view.rent.diceSum : '' }}</template>
     </i18n-t>
+    <p v-if="shortfall > 0" class="warn-box" data-testid="rent-shortfall">{{ t('rent_panel.shortfall', { amount: formatMoney(shortfall) }) }}</p>
     <template v-if="paying">
       <Button variant="primary" data-testid="pay-rent" :disabled="!canIssue(props, 'PayRent')" @click="emit('command', 'PayRent')"> {{ t('rent_panel.pay', { amount: formatMoney(view.rent.amount), owner: nameOf(view.rent.ownerId) }) }}
       </Button>
+      <Button data-testid="rent-liquidation-entry" @click="emit('manageAssets')">{{ t('rent_panel.manage_assets') }}</Button>
     </template>
   </section>
 </template>

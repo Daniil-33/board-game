@@ -212,6 +212,8 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   await expect(payer.page.locator(sel('redeem-reason'))).toHaveText('Сначала оплатите ренту.');
   await close(payer);
   for (const p of players) await card(p, builtCell.index);
+  // Asset inspection is dismissible so the required rent response remains reachable.
+  for (const p of players) await close(p);
 
   inWindow(payer.view!, 'payment');
   await click(players, payer, 'pay-rent');
@@ -230,9 +232,6 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
       expect(p.view!.houses[id]).toBeUndefined();
       expect(p.view!.mortgages[id]).toBeUndefined();
     }
-    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
-    await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
     const notice = p.page.locator(sel('debt-notices')).locator(sel('bankruptcy')).last();
     await expect(notice.locator(sel('bankruptcy-amounts'))).toHaveText(
       `Долг игроку ${name(players, creditor.id)}: ${money(rent.amount)}. Оплачено ${money(paid)}, списано ${money(rent.amount - paid)}.`);
@@ -243,6 +242,15 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   }
   await balances(players, { ...before.balances, [payer.id]: 0, [creditor.id]: before.balances[creditor.id]! + paid });
   await shoot(players, info, 'bankruptcy');
+  await payer.page.locator(sel('continue-watching')).click();
+  for (const p of players) {
+    await card(p, builtCell.index);
+    await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
+    await expect(p.page.locator(sel('asset-houses'))).toHaveText('0 / 4');
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveCount(0);
+  }
+  await shoot(players, info, 'bankruptcy-assets-released');
+  for (const p of players) await close(p);
 
   // The game goes on for the others, and the bankrupt client keeps receiving it.
   const next = await active(players);

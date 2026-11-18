@@ -86,6 +86,8 @@ export class BoardScene {
   private requestRender: (() => void) | null = null;
   private readonly detailLabels: Text[] = [];
   private readonly markerByCell = new Map<number, Marker>();
+  private readonly hoverByCell = new Map<number, { bounds: Rect; name: string; price: string }>();
+  private hoveredCell: number | null = null;
   private readonly gradients = new Map<string, FillGradient>();
   private hover: ((details: HoverDetails | null) => void) | null = null;
   private selectAsset: ((index: number) => void) | null = null;
@@ -145,7 +147,6 @@ export class BoardScene {
 
   /** Apply only changed display values, independently of queued movement. */
   refreshOwnership(view: BoardView): void {
-    this.hover?.(null);
     this.renderBoard(view.board);
     const players = new Map(view.players.map(({ id }, index) => [id, this.theme.players[index]]));
     for (const cell of view.board?.cells ?? []) {
@@ -183,6 +184,12 @@ export class BoardScene {
         if (mortgaged) this.drawMortgage(index, bounds);
       }
       this.markerByCell.set(index, { owner, color, houses, mortgaged });
+    }
+    // Ownership and mortgage state can change without pointer motion. Re-emit
+    // the hovered asset after marker state has been refreshed.
+    if (this.hoveredCell !== null) {
+      const details = this.hoverByCell.get(this.hoveredCell);
+      if (details) this.hover?.({ ...details, mortgaged: this.markerByCell.get(this.hoveredCell)?.mortgaged ?? false });
     }
     this.requestRender?.();
   }
@@ -329,12 +336,14 @@ export class BoardScene {
         box.cursor = 'pointer';
         box.on('pointertap', () => { this.hover?.(null); this.selectAsset?.(cell.index); });
         const details = { bounds, name: display.name, price: display.price };
+        this.hoverByCell.set(cell.index, details);
         box.on('pointerenter', event => {
           if (event.pointerType === 'mouse') {
+            this.hoveredCell = cell.index;
             this.hover?.({ ...details, mortgaged: this.markerByCell.get(cell.index)?.mortgaged ?? false });
           }
         });
-        box.on('pointerleave', () => this.hover?.(null));
+        box.on('pointerleave', () => { if (this.hoveredCell === cell.index) this.hoveredCell = null; this.hover?.(null); });
       } else {
         const icon = specialIcon(cell.kind, theme);
         icon.position.set(cx, y + (cell.kind === 'jail' ? 15 : 23));

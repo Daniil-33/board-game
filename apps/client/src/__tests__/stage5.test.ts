@@ -346,8 +346,8 @@ describe('debt notices in the room session', () => {
     h.sockets.last().receive(update(finished, [bankrupt(), releasedEvent(), { type: 'GameEnded', payload: { winner: 'b' } }]));
     await flushPromises(); finish(); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('finished');
-    expect(wrapper.get('[data-testid="bankruptcy-amounts"]').text()).toBe('Долг игроку Bob: 900. Оплачено 600, списано 300.');
-    expect(wrapper.get('[data-testid="spectator"]').text()).toBe('Вы выбыли из-за банкротства.');
+    expect(document.querySelector('[data-testid="bankruptcy-amounts"]')?.textContent).toBe('Долг игроку Bob: 900. Оплачено 600, списано 300.');
+    expect(document.querySelector('[data-testid="spectator"]')?.textContent).toBe('Вы выбыли из-за банкротства.');
     wrapper.unmount(); h.client.returnToLobby();
   });
 });
@@ -372,6 +372,36 @@ describe('elimination and game over', () => {
     }
   });
 
+  it('keeps the eliminated viewer on the live game with chat after dismissing the elimination sheet', async () => {
+    const s = owning();
+    const view = project({ ...s, order: [pid('b'), pid('c')], eliminated: [pid('a')], eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
+    const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
+    const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises();
+    expect(document.querySelector('[data-testid="elimination-screen"]')?.textContent).toContain('Вы выбыли: вы сдались');
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-modal')).toBe('true');
+    document.querySelector<HTMLElement>('[data-testid="continue-watching"]')!.click(); await flushPromises();
+    expect(wrapper.attributes('data-screen')).toBe('game');
+    expect(wrapper.find('[data-testid="chat-input"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="spectator"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('opens asset inspection from My Assets and restores focus to the portfolio opener on Escape', async () => {
+    const view = project(owning());
+    const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
+    const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises();
+    const opener = wrapper.get('[data-testid="owned-asset-inspect"]');
+    (opener.element as HTMLElement).focus(); await opener.trigger('click'); await flushPromises();
+    expect(document.querySelector('[data-testid="asset-rent-table"]')).toBeTruthy();
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(document.querySelector('[data-testid="asset-card"]')).toBeNull();
+    expect(document.activeElement).toBe(opener.element);
+    wrapper.unmount();
+  });
+
   it('renders the result from the view, survives a reload without events and shows no game controls', async () => {
     const view = project(finishedState());
     expect(view.result).not.toBeNull();
@@ -382,14 +412,18 @@ describe('elimination and game over', () => {
       if (remount) { wrapper.unmount(); }
       const w = remount ? mount(App, provide(h)) : wrapper; await flushPromises();
       expect(w.attributes('data-screen')).toBe('finished');
-      expect(w.get('[data-testid="winner"]').text()).toBe('Победитель: Bob');
-      expect(w.get('[data-testid="finished-at"]').text()).toBe(`Время завершения: ${formatTime(61_000)}`);
-      expect(w.findAll('[data-testid="elimination-row"]').map(li => li.text())).toEqual([`Carol: сдача, ${formatTime(1_000)}`, `Alice: банкротство, ${formatTime(61_000)}`]);
-      expect(w.findAll('[data-testid="final-balance-row"]').map(li => li.text())).toEqual(['Alice: 0', 'Bob: 4\u202F200', 'Carol: 0']);
-      expect(w.get('[data-testid="spectator"]').text()).toBe('Вы выбыли из-за банкротства.');
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="winner"]')?.textContent).toBe('Победитель: Bob');
+      expect(document.querySelector('[data-testid="finished-at"]')?.textContent).toBe(`Время завершения: ${formatTime(61_000)}`);
+      expect([...document.querySelectorAll('[data-testid="elimination-row"]')].map(li => li.textContent)).toEqual([`Carol: сдача, ${formatTime(1_000)}`, `Alice: банкротство, ${formatTime(61_000)}`]);
+      expect([...document.querySelectorAll('[data-testid="final-balance-row"]')].map(li => li.textContent)).toEqual(['Alice: 0', 'Bob: 4\u202F200', 'Carol: 0']);
+      expect(document.querySelector('[data-testid="spectator"]')?.textContent).toBe('Вы выбыли из-за банкротства.');
       for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-testid="${sel}"]`).exists(), sel).toBe(false);
-      expect(w.find('[data-testid="return-lobby"]').exists()).toBe(true);
-      expect(w.find('[data-testid="debt-notices"]').exists()).toBe(false);
+      expect(document.querySelector('[data-testid="return-lobby"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="debt-notices"]')).toBeNull();
       w.unmount(); h.client.returnToLobby();
     }
     expect(formatTime(0)).toBe('01.01.1970, 00:00:00 UTC');
@@ -397,6 +431,18 @@ describe('elimination and game over', () => {
 });
 
 describe('mortgage markers', () => {
+  it('refreshes the desktop hover mortgage suffix while the pointer remains on the asset cell', () => {
+    const state = owning(), view = project(state), cell = 9;
+    const scene = new BoardScene(); scene.snap(view, 'a');
+    const states: boolean[] = [];
+    scene.setHover(details => { if (details) states.push(details.mortgaged); });
+    scene.cells.children[cell]!.emit('pointerenter', { pointerType: 'mouse' } as never);
+    expect(states).toEqual([false]);
+    scene.refreshOwnership(project(mortgaged(state, cell)));
+    expect(states).toEqual([false, true]);
+    scene.refreshOwnership(view);
+    expect(states).toEqual([false, true, false]);
+  });
   it('adds and removes one marker per mortgaged cell from each view, keeping cells, owners and houses, also during movement', async () => {
     const s = owning(); const scene = new BoardScene(); scene.snap(project(s), 'a');
     const first = scene.cells.children[0];

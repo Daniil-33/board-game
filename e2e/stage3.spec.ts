@@ -33,6 +33,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('buy'))).toHaveCount(p === actor ? 1 : 0);
   }
   const buyFrom = actor.events.length;
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'purchase-open');
   await click(actor, players, 'buy');
   expect(actor.events.slice(buyFrom).map(e => e.event)).toEqual([
     { type: 'BalanceChanged', payload: { playerId: actor.id, delta: -price, balance: beforeBuy[actor.id]! - price, reason: 'purchase' } },
@@ -48,6 +49,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const turnId = actor.view!.turn!.turnId;
   const beforeWon = structuredClone(actor.view!.balances);
   await click(actor, players, 'start-auction');
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
   expect(won).toMatchObject({ reason: 'choice', assetId: declined.assetId, responder: actor.id, leader: null, leadingBid: null });
   for (const p of players) {
@@ -424,4 +426,15 @@ async function shoot(players: Actor[], info: TestInfo, name: string): Promise<vo
     await p.page.screenshot({ path, fullPage: true });
     await info.attach(`${name}-${i}`, { path, contentType: 'image/png' });
   }
+}
+
+async function capture(actor: Actor, info: TestInfo, name: string): Promise<void> {
+  const original = actor.page.viewportSize() ?? { width: 1280, height: 720 };
+  for (const [tag, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]] as const) {
+    await actor.page.setViewportSize({ width, height });
+    const path = info.outputPath(`${name}-${tag}.png`);
+    await actor.page.screenshot({ path, fullPage: false });
+    await info.attach(`${name}-${tag}`, { path, contentType: 'image/png' });
+  }
+  await actor.page.setViewportSize(original);
 }

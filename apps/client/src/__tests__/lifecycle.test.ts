@@ -295,8 +295,8 @@ describe('resignation, spectator and game over', () => {
     const finished: StateView = { ...before, revision: 20 as never, phase: 'finished', eliminated: [pid('a')], winner: pid('b'), setup: null, turn: null,
       eliminations, finishedAt: 15 as never, result: { winner: pid('b'), finishedAt: 15 as never, eliminations, finalBalances: before.balances } };
     h.sockets.last().receive(update(finished)); await flushPromises();
-    expect(wrapper.attributes('data-screen')).toBe('finished'); expect(wrapper.get('[data-testid="winner"]').text()).toBe('Победитель: Bob');
-    await wrapper.get('[data-testid="return-lobby"]').trigger('click'); await flushPromises();
+    expect(wrapper.attributes('data-screen')).toBe('finished'); expect(document.querySelector('[data-testid="winner"]')?.textContent).toBe('Победитель: Bob');
+    document.querySelector<HTMLElement>('[data-testid="return-lobby"]')!.click(); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('lobby'); expect(h.calls.some((c) => c.path.endsWith('/leave'))).toBe(false);
     expect(h.sockets.last().closed).toBe(true); wrapper.unmount();
   });

@@ -66,6 +66,11 @@
     "balance_entry": "{player}: {amount}",
     "back_to_lobby": "В лобби"
   },
+  "elimination": {
+    "title": "Выбывание из партии",
+    "watching": "Вы можете продолжить наблюдать за партией и пользоваться чатом.",
+    "continue": "Продолжить просмотр"
+  },
   "lobby": {
     "heading": "Лобби",
     "profile": "Войти / профиль",
@@ -133,6 +138,12 @@
     "version_mismatch": "Версия страницы устарела. Обновите её, чтобы продолжить."
   },
   "asset_card": {
+    "rent_table": "Таблица ренты",
+    "rent_table_energy": "Рента по сумме костей",
+    "rent_tier_holdings_header": "Активы",
+    "rent_tier_houses": "{houses} домов",
+    "rent_tier_complete_group": "Полная группа без домов",
+    "rent_tier_holdings": "Активов в группе: {holdings}",
     "house_count": "{houses} / 4",
     "asset_details": "Карточка актива",
     "close_asset_card": "Закрыть карточку актива",
@@ -215,7 +226,9 @@
     "rent_due": "Рента к оплате",
     "pay": "Оплатить ренту {amount} игроку {owner}",
     "sentence": "{payer} должен игроку {owner} {amount} за «{asset}».",
-    "energy_sentence": "{payer} должен игроку {owner} {amount} за «{asset}» (сумма костей {diceSum})."
+    "energy_sentence": "{payer} должен игроку {owner} {amount} за «{asset}» (сумма костей {diceSum}).",
+    "shortfall": "Не хватает {amount} для оплаты.",
+    "manage_assets": "Управлять своими активами"
   },
   "hud": {
     "waiting": "Ждём ответа сервера",
@@ -242,7 +255,8 @@
     "undecided": "порядок не определён"
   },
   "turn_timer": {
-    "paused": "таймер хода на паузе"
+    "paused": "таймер хода на паузе",
+    "expired": "Время хода вышло."
   },
   "reasons": {
     "house": {

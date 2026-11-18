@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-18
+goal: Make purchase, auction, asset, rent, debt, elimination and game-over
+  surfaces responsive and accessible without changing game behavior.

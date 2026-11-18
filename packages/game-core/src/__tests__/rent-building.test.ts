@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rentFor, energyRentFor, rentQuotes, buildLegality, saleLegality, houseCost, houseRefund, gameEngine, createSession, restoreSession, replay, pendingDeadlines, checkInvariants, projectState, projectEvents, type GameState, type AssetId, type Money, type GameCommand } from '../index.js';
+import { rentFor, energyRentFor, rentQuotes, rentTiers, buildLegality, saleLegality, houseCost, houseRefund, gameEngine, createSession, restoreSession, replay, pendingDeadlines, checkInvariants, projectState, projectEvents, type GameState, type AssetId, type Money, type GameCommand } from '../index.js';
 import { offerRent } from '../rent.js';
 import { playingGame } from './helpers/game.js';
 import { cmd, ctx, pid, player, deepFreeze } from './helpers/fixtures.js';
@@ -30,6 +30,28 @@ function due(): GameState {
   return offerRent({...s, owners:{[cell.asset!.assetId]:pid('b')}, positions:{...s.positions,a:3},turn:{...s.turn!,rolled:true}},3).state;
 }
 describe('rent formula tables across prices-1', () => {
+  it('board-only rent tiers match rentFor for every regular, logistics, and energy tier', () => {
+    const s = base(), board = s.board!;
+    for (const cell of board.cells.filter(c => c.kind === 'monopoly')) {
+      const asset = cell.asset!, members = board.cells.filter(c => c.asset?.groupId === asset.groupId);
+      const tiers = rentTiers(board, asset.assetId).filter(tier => tier.kind === 'regular');
+      expect(tiers).toHaveLength(6);
+      for (const tier of tiers) {
+        const state = { ...s, owners: Object.fromEntries((tier.completeGroup ? members : [cell]).map(c => [c.asset!.assetId, pid('b')])), houses: { [asset.assetId]: tier.houses } };
+        expect(tier.amount).toBe(rentFor(state, asset.assetId, null));
+      }
+    }
+    const logistics = board.cells.filter(c => c.kind === 'logistics');
+    for (const cell of logistics) for (const tier of rentTiers(board, cell.asset!.assetId).filter((entry): entry is Extract<typeof entry, { kind: 'logistics' }> => entry.kind === 'logistics')) {
+      const ownedCells = [cell, ...logistics.filter(other => other !== cell)].slice(0, tier.holdings);
+      expect(tier.amount).toBe(rentFor({ ...s, owners: Object.fromEntries(ownedCells.map(c => [c.asset!.assetId, pid('b')])) }, cell.asset!.assetId, null));
+    }
+    const energy = board.cells.filter(c => c.kind === 'energy');
+    for (const cell of energy) for (const tier of rentTiers(board, cell.asset!.assetId).filter((entry): entry is Extract<typeof entry, { kind: 'energy' }> => entry.kind === 'energy')) {
+      const ownedCells = [cell, ...energy.filter(other => other !== cell)].slice(0, tier.holdings);
+      expect(tier.amount).toBe(rentFor({ ...s, owners: Object.fromEntries(ownedCells.map(c => [c.asset!.assetId, pid('b')])) }, cell.asset!.assetId, tier.diceSum));
+    }
+  });
   it('regular: every price, 0..4 houses, complete and incomplete groups', () => {
     const s = base();
     for (const c of s.board!.cells.filter(c=>c.kind==='monopoly')) {
