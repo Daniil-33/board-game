@@ -5,7 +5,7 @@ id: TASK-vd-e2e
 revision: 1
 effort: EFF-visual-design
 project: economic-board-game
-source_commit: TBD # main after TASK-vd-sound merges
+source_commit: TBD # main after TASK-vd-sound and TASK-vd-dialogs-followup merge
 owner: team-lead
 status: proposed
 ```
