@@ -13,3 +13,5 @@
 - [x] 3.1 Capture before staging transferred bytes for HTML, app JS, CSS and one large logo, plus Lighthouse mobile LCP/TBT/TTI where available for login and game screen; use the Playwright Chromium container and save evidence under `/srv/agents/evidence/TASK-vd-compression/`.
 - [ ] 3.2 After the CTO-coordinated staging-only edge update, capture the matching after measurements and compare them to the baseline. Do not perform a shared-edge operation or change production.
 - [ ] 3.3 Run deploy tests, `pnpm build`, `pnpm test`, strict OpenSpec validation and diff checks. Record CI and review evidence with the final PR.
+
+Note: Local checks are complete; 3.3 remains unchecked until CI and independent review confirm the final PR head. Task 3.2 alone awaits the CTO-coordinated edge update and staging AFTER evidence.
