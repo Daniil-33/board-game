@@ -186,7 +186,7 @@ it('keeps unchanged marker graphics while updating another property', () => {
   expect(scene.housing.children).toHaveLength(2);
 });
 
-it('keeps the house pips clear of the price strips on every side', () => {
+it('keeps the house pips clear of the price strips and company names on every side', () => {
   const scene = new BoardScene();
   const view = playingView(['a', 'b']);
   const assets = view.board!.cells.filter(cell => cell.asset !== null);
@@ -194,13 +194,19 @@ it('keeps the house pips clear of the price strips on every side', () => {
 
   for (const cell of assets) {
     const strip = cellStrip(cell.index, cellRect(cell.index, scene.size)).bounds;
+    const name = scene.cells.children[cell.index]!.getChildByLabel('company-name')!.getBounds();
+    expect(name.width).toBeGreaterThan(0);
+    expect(name.height).toBeGreaterThan(0);
     const pips = scene.housing.children.filter(pip => pip.label.startsWith(`house-${cell.index}-`));
     expect(pips).toHaveLength(4);
     for (const pip of pips) {
       const bounds = pip.getBounds();
       const overlapsStrip = bounds.maxX > strip.x && bounds.minX < strip.x + strip.width
         && bounds.maxY > strip.y && bounds.minY < strip.y + strip.height;
-      expect(overlapsStrip).toBe(false);
+      expect(overlapsStrip, `cell ${cell.index} price strip`).toBe(false);
+      const overlapsName = bounds.maxX > name.minX && bounds.minX < name.maxX
+        && bounds.maxY > name.minY && bounds.minY < name.maxY;
+      expect(overlapsName, `cell ${cell.index} company name`).toBe(false);
     }
   }
 });

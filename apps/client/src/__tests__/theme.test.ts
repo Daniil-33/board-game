@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { boardTheme } from '../shared/config/index';
 
 const tokens = readFileSync(import.meta.dirname + '/../shared/config/tokens.css', 'utf8');
 
@@ -36,4 +37,16 @@ it.each([
 ])('%s reaches AA on %s', (text, surface) => {
   const values = [luminance(rgb(text)), luminance(rgb(surface))];
   expect((Math.max(...values) + 0.05) / (Math.min(...values) + 0.05)).toBeGreaterThanOrEqual(4.5);
+});
+
+const boardGradients = [...tokens.matchAll(/^\s*--((?:group|gradient-board)-[^:]+):/gm)].map(([, name]) => name!);
+
+it.each(boardGradients)('parses at least two Pixi color stops from --%s', name => {
+  const theme = boardTheme();
+  const stops = name === 'gradient-board-frame'
+    ? theme.frame
+    : name.startsWith('group-')
+      ? theme.group(name.slice('group-'.length))
+      : theme.special(name.slice('gradient-board-'.length));
+  expect(stops.length).toBeGreaterThanOrEqual(2);
 });

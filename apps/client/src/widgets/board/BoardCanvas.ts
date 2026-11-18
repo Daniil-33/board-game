@@ -282,21 +282,22 @@ export class BoardScene {
       box.label = `cell-${cell.index}`;
       const display = cellDisplay(cell);
       const special = theme.special(cell.kind);
-      const surface = special.length === 2 ? this.getGradient(cell.kind, special, 'diagonal') : theme.cell;
+      const surface = special.length >= 2 ? this.getGradient(cell.kind, special, 'diagonal') : theme.cell;
       box.addChild(new Graphics().roundRect(x + 1, y + 1, width - 2, height - 2, theme.radius).fill(surface));
       const cx = x + width / 2;
       if (cell.asset !== null && display.group !== null && display.price !== null) {
         const colors = theme.group(display.group);
         const { bounds: strip, vertical, content } = cellStrip(cell.index, bounds);
-        const groupFill = colors.length === 2 ? this.getGradient(display.group, colors) : theme.inset;
-        const stripFill = vertical && colors.length === 2
+        const groupFill = colors.length >= 2 ? this.getGradient(display.group, colors) : theme.inset;
+        const stripFill = vertical && colors.length >= 2
           ? this.getGradient(`${display.group}-vertical`, colors, 'vertical')
           : groupFill;
         box.addChild(new Graphics().roundRect(strip.x, strip.y, strip.width, strip.height, 3).fill(stripFill));
         const price = label(display.price, 9, theme.ink, theme.ui, true);
         if (vertical) price.rotation = Math.PI / 2;
         this.addDetail(box, price, strip.x + strip.width / 2, strip.y + strip.height / 2, width - 12);
-        const logoY = content.y - 2;
+        const bottomRow = cell.index < CLASSIC_40.jailCell;
+        const logoY = content.y - (bottomRow ? 3 : 2);
         const fallback = new Container();
         fallback.label = 'logo-fallback';
         fallback.position.set(content.x, logoY);
@@ -319,7 +320,9 @@ export class BoardScene {
           this.invalidateCells();
         });
 
-        this.addDetail(box, label(display.name, 9, theme.ink, theme.ui, true), content.x, content.y + 13, width - (vertical ? 18 : 9));
+        const companyName = label(display.name, 9, theme.ink, theme.ui, true);
+        companyName.label = 'company-name';
+        this.addDetail(box, companyName, content.x, content.y + (bottomRow ? 14 : 13), width - (vertical ? 18 : 9));
         box.hitArea = new Rectangle(x, y, width, height);
         box.eventMode = 'static';
         box.interactiveChildren = false;

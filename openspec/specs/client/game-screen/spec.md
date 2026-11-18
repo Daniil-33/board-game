@@ -357,6 +357,10 @@ Every asset cell SHALL show 1-4 PixiJS house pips equal to `view.houses` for tha
 - **WHEN** a new view changes an asset's houses from 2 to 3
 - **THEN** that cell SHALL show three markers
 
+#### Scenario: Pips alongside asset details
+- **WHEN** a readable-size asset cell shows house pips on any side of the board
+- **THEN** the pips SHALL sit clear of the company name and price strip
+
 ### Requirement: Rent payment animation
 A `RentPaid` event in an `Update` with `amount > 0` SHALL queue one step that shows the paid amount moving from the payer's token to the owner's token, in event order with other steps. Houses, mortgages, balances and the settlement SHALL render from the view independently of event notices. A `Welcome` SHALL queue no rent animation, so a reload skips it. A malformed `RentPaid` payload SHALL yield no step.
 

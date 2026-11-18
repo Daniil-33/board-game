@@ -99,6 +99,6 @@ export function cellStrip(index: number, rect: Rect): { bounds: Rect; vertical: 
         vertical: true, content: { x: x + width / 2 + offset, y: y + height / 2 } };
     default:
       return { bounds: { x: x + inset, y: y + inset, width: width - 2 * inset, height: strip },
-        vertical: false, content: { x: x + width / 2, y: y + height / 2 + offset } };
+        vertical: false, content: { x: x + width / 2, y: y + height / 2 } };
   }
 }

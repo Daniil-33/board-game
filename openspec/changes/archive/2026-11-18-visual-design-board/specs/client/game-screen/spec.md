@@ -101,6 +101,10 @@ Every asset cell SHALL show 1-4 PixiJS house pips equal to `view.houses` for tha
 - **WHEN** a new view changes an asset's houses from 2 to 3
 - **THEN** that cell SHALL show three markers
 
+#### Scenario: Pips alongside asset details
+- **WHEN** a readable-size asset cell shows house pips on any side of the board
+- **THEN** the pips SHALL sit clear of the company name and price strip
+
 ### Requirement: Mortgage cell markers
 Each asset in view.mortgages SHALL have a diagonal hatch and dimming. Each view SHALL refresh these independently of movement animations.
 
