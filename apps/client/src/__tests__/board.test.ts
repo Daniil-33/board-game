@@ -152,6 +152,26 @@ it('gives six players sharing a cell distinct token slots', () => {
   expect(points.every(point => within(point, cellRect(4, 660)))).toBe(true);
 });
 
+it('draws each board token with the CSS color for its projected seat', () => {
+  const players = ['p6', 'p2', 'p5', 'p3', 'p1', 'p4'];
+  const scene = new BoardScene();
+  scene.snap(playingView(players), players[0]!);
+  const styles = getComputedStyle(document.documentElement);
+
+  players.forEach((id, index) => {
+    const cssColor = styles.getPropertyValue(`--player-${index + 1}`).trim();
+    expect(cssColor).toMatch(/^#[\da-f]{6}$/i);
+    expect(scene.tokens.children[index]).toMatchObject({
+      label: `token-${id}`,
+      context: { instructions: expect.arrayContaining([
+        expect.objectContaining({ action: 'fill', data: expect.objectContaining({
+          style: expect.objectContaining({ color: Number.parseInt(cssColor.slice(1), 16) }),
+        }) }),
+      ]) },
+    });
+  });
+});
+
 it('keeps unchanged marker graphics while updating another property', () => {
   const scene = new BoardScene();
   const view = playingView(['a', 'b']);
