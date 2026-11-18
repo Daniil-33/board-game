@@ -2,15 +2,15 @@
 
 ## 1. Theme and asset cells
 
-- [ ] 1.1 Extend the shared logo resolver with the geometric monogram and catalog-name fallback. Unit-test both logo sets, light/dark URL selection and the missing monogram path. See `client/logos` · Resolve a fallback company monogram.
-- [ ] 1.2 Extend the Pixi theme adapter to expose the needed colors, group gradients and fonts. Verify the board uses these values and passes the hex lint. See `client/game-screen` · Generated board.
-- [ ] 1.3 Restyle the keyed cell tree, preserve CLASSIC_40 geometry and add lazy URL-cached textures and measured label visibility. Unit-test layout and missing/rejected logo fallback. See `client/game-screen` · Generated board.
+- [x] 1.1 Extend the shared logo resolver with the geometric monogram and catalog-name fallback. Unit-test both logo sets, light/dark URL selection and the missing monogram path. See `client/logos` · Resolve a fallback company monogram.
+- [x] 1.2 Extend the Pixi theme adapter to expose the needed colors, group gradients and fonts. Verify the board uses these values and passes the hex lint. See `client/game-screen` · Generated board.
+- [x] 1.3 Restyle the keyed cell tree, preserve CLASSIC_40 geometry and add lazy URL-cached textures and measured label visibility. Unit-test layout and missing/rejected logo fallback. See `client/game-screen` · Generated board.
 
 ## 2. Live board behavior
 
-- [ ] 2.1 Diff view-derived markers per asset and preserve stable token slots. Unit-test owner changes, one through four pips, mortgage transitions, shared cells and eliminated tokens. See `client/game-screen` · Projected owner markers, House markers, Mortgage cell markers and Generated board.
+- [x] 2.1 Diff view-derived markers per asset and preserve stable token slots. Unit-test owner changes, one through four pips, mortgage transitions, shared cells and eliminated tokens. See `client/game-screen` · Projected owner markers, House markers, Mortgage cell markers and Generated board.
 - [ ] 2.2 Add desktop hover details and retain the pointer selection callback. Verify canvas coordinate interaction and the existing canvas and asset-card selectors. See `client/game-screen` · Asset inspection.
-- [ ] 2.3 Restyle movement and rent, preserve queue ordering and reload cancellation, and honor reduced motion. Exercise both motion preferences plus an authoritative snap during an animation. See `client/game-screen` · Animation follows events in order and Rent payment animation.
+- [x] 2.3 Restyle movement and rent, preserve queue ordering and reload cancellation, and honor reduced motion. Exercise both motion preferences plus an authoritative snap during an animation. See `client/game-screen` · Animation follows events in order and Rent payment animation.
 
 ## 3. Evidence and delivery
 

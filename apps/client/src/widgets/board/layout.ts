@@ -1,5 +1,5 @@
 /**
- * Canvas geometry of the placeholder ring: a square of 11 cells per side.
+ * Canvas geometry of the projected ring: a square of 11 cells per side.
  * Cell 0 (start) is the bottom-right corner; indices grow clockwise, so the
  * corners are 0, 10, 20 and 30.
  */
@@ -15,6 +15,7 @@ export interface Point {
   readonly y: number;
 }
 
+export const BOARD_SIZE = 660;
 export const CELLS_PER_SIDE = 11;
 export const RING_CELLS = (CELLS_PER_SIDE - 1) * 4;
 
@@ -77,4 +78,27 @@ export function jailBox(rect: Rect): Rect {
 export function jailVisitorSlot(rect: Rect, slot: number): Point {
   const s = ((slot % TOKEN_SLOTS) + TOKEN_SLOTS) % TOKEN_SLOTS;
   return { x: rect.x + rect.width * (0.12 + 0.15 * s), y: rect.y + rect.height * 0.84 };
+}
+
+/** Keep the price on the inward edge, following the four sides of the ring. */
+export function cellStrip(index: number, rect: Rect): { bounds: Rect; vertical: boolean; content: Point } {
+  const { x, y, width, height } = rect;
+  const side = Math.floor(index / (CELLS_PER_SIDE - 1));
+  const inset = 4;
+  const strip = 11;
+  const offset = 6;
+  switch (side) {
+    case 1:
+      return { bounds: { x: x + width - inset - strip, y: y + inset, width: strip, height: height - 2 * inset },
+        vertical: true, content: { x: x + width / 2 - offset, y: y + height / 2 } };
+    case 2:
+      return { bounds: { x: x + inset, y: y + height - inset - strip, width: width - 2 * inset, height: strip },
+        vertical: false, content: { x: x + width / 2, y: y + height / 2 - offset } };
+    case 3:
+      return { bounds: { x: x + inset, y: y + inset, width: strip, height: height - 2 * inset },
+        vertical: true, content: { x: x + width / 2 + offset, y: y + height / 2 } };
+    default:
+      return { bounds: { x: x + inset, y: y + inset, width: width - 2 * inset, height: strip },
+        vertical: false, content: { x: x + width / 2, y: y + height / 2 + offset } };
+  }
 }

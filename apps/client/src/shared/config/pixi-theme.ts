@@ -12,3 +12,33 @@ export function readPixiTheme(root = document.documentElement) {
   }
   return Object.freeze(values);
 }
+
+export function boardTheme() {
+  const tokens = readPixiTheme();
+  const value = (name: string): string => tokens[name] ?? '';
+  const colors = (name: string): string[] => value(name).match(/rgba?\([^)]*\)/g) ?? [];
+  const font = (name: string): string[] => value(name).split(',').map(family => family.trim().replace(/['"]/g, ''));
+  return {
+    board: value('bg-deep'),
+    frame: colors('gradient-board-frame'),
+    cell: value('light-cell'),
+    edge: value('light-border'),
+    inset: value('light-inset'),
+    paper: value('light-0'),
+    ink: value('ink-primary'),
+    mutedInk: value('ink-secondary'),
+    text: value('text-primary'),
+    active: value('accent-mint'),
+    house: value('design-board-house'),
+    mortgage: colors('light-mortgage'),
+    rent: value('highlight'),
+    ui: font('design-font-ui'),
+    display: font('design-font-display'),
+    radius: Number.parseFloat(value('design-radius-cell')),
+    players: Array.from({ length: 6 }, (_, index) => value(`player-${index + 1}`)),
+    group: (id: string) => colors(`group-${id.toLowerCase()}`),
+    special: (kind: string) => colors(`gradient-board-${kind}`),
+  };
+}
+
+export type BoardTheme = ReturnType<typeof boardTheme>;

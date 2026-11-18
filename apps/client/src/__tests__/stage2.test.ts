@@ -7,18 +7,20 @@ import { PlayerPanel } from '../widgets/players-panel/index';
 import { AssetCard } from '../widgets/asset-card/index';
 import { GameScreen } from '../pages/game/index';
 import { BoardScene } from '../widgets/board/index';
-import { cellDisplay, GROUP_COLORS } from '../widgets/board/index';
+import { cellDisplay } from '../widgets/board/index';
 import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
 import { harness, playingView, pid, storedSession, room, welcome, update } from './helpers';
 
 const board = generateBoard(seedRng(42)).board;
 describe('stage 2 display', () => {
   it('maps every projected cell and distinguishes all ten groups', () => {
-    expect(new Set(Object.values(GROUP_COLORS)).size).toBe(10);
+    const groups = new Set(board.cells.flatMap(cell => cell.asset ? [cell.asset.groupId] : []));
+    const { theme } = new BoardScene();
+    expect(new Set([...groups].map(group => theme.group(group).join())).size).toBe(10);
     for (const cell of board.cells) {
       const display = cellDisplay(cell);
-      if (cell.asset) expect(display).toEqual({ name: cell.asset.name, group: cell.asset.groupId, price: money(cell.asset.price), color: GROUP_COLORS[cell.asset.groupId] });
-      else expect(display).toEqual({ name: { start: 'Старт', jail: 'Тюрьма', casino: 'Казино', 'go-to-jail': 'В тюрьму', chance: 'Шанс' }[cell.kind as 'start'], group: null, color: null, price: null });
+      if (cell.asset) expect(display).toEqual({ name: cell.asset.name, group: cell.asset.groupId, price: money(cell.asset.price) });
+      else expect(display).toEqual({ name: { start: 'Старт', jail: 'Тюрьма', casino: 'Казино', 'go-to-jail': 'В тюрьму', chance: 'Шанс' }[cell.kind as 'start'], group: null, price: null });
     }
   });
   it('draws projected labels and only selects assets', () => {
@@ -28,7 +30,7 @@ describe('stage 2 display', () => {
       const box = scene.cells.children[cell.index]!;
       const texts = box.children.filter(c => c instanceof Text).map(c => (c as Text).text);
       if (cell.asset) {
-        expect(texts).toContain(money(cell.asset.price)); expect(texts).toContain(cell.asset.groupId);
+        expect(texts).toContain(money(cell.asset.price));
         box.emit('pointertap', {} as never); expect(select).toHaveBeenLastCalledWith(cell.index);
       } else { select.mockClear(); box.emit('pointertap', {} as never); expect(select).not.toHaveBeenCalled(); }
     }

@@ -5,7 +5,7 @@ import { PurchaseDialog } from '../widgets/purchase-card/index';
 import { AuctionPanel } from '../widgets/auction-panel/index';
 import { TurnTimer } from '../widgets/turn-header/index';
 import { AssetCard } from '../widgets/asset-card/index';
-import { BoardScene, TOKEN_COLORS } from '../widgets/board/index';
+import { BoardScene } from '../widgets/board/index';
 import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../entities/game/index';
 import { playingView, pid, harness, storedSession, room, welcome, update } from './helpers';
 
@@ -71,7 +71,7 @@ describe('purchase and auction projection', () => {
     const scene = new BoardScene(); scene.snap(v, 'a'); const first = scene.cells.children[0];
     const w = mount(AssetCard, { props: { cell, board: v.board! } }); expect(w.text()).toContain('свободно');
     scene.refreshOwnership({ ...v, owners: { [p.assetId]: pid('b') } });
-    expect(scene.ownership.children[0]!.tint).toBe(TOKEN_COLORS[1]);
+    expect(scene.ownership.children[0]!.context.instructions[0]).toMatchObject({ action: 'stroke', data: { style: { color: Number.parseInt(scene.theme.players[1]!.slice(1), 16) } } });
     expect(scene.ownership.children.map(c => c.label)).toEqual([`owner-${p.cell}-b`]); expect(scene.cells.children[0]).toBe(first);
     await w.setProps({ owner: 'Player b' }); expect(w.get('[data-testid="asset-owner"]').text()).toBe('Player b'); w.unmount();
   });
