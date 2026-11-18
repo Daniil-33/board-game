@@ -28,6 +28,7 @@ function auction(): StateView {
   } };
 }
 const props = (view: StateView) => ({ view, me: pid('a'), connected: true, pending: [], now: 50_000, nameOf: (id: string) => `Player ${id}` });
+type PurchaseProps = Omit<ReturnType<typeof props>, 'me'> & { me: ReturnType<typeof pid> | null };
 
 describe('purchase and auction projection', () => {
   it('exposes real purchase and auction action availability', () => {
@@ -37,7 +38,7 @@ describe('purchase and auction projection', () => {
   });
   it('locks purchase response to the decider and gives other viewers a live non-modal status', async () => {
     const view = purchase(); const price = view.board!.cells[view.purchase!.cell]!.asset!.price;
-    const state = ref(props({ ...view, balances: { ...view.balances, a: price } }));
+    const state = ref<PurchaseProps>(props({ ...view, balances: { ...view.balances, a: price } }));
     const command = vi.fn();
     mount(withUi(() => h(PurchaseDialog, { ...state.value, onCommand: command })), { attachTo: document.body });
     const target = (selector: string) => document.querySelector<HTMLElement>(selector)!;
