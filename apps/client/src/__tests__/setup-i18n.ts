@@ -21,7 +21,7 @@ if (typeof document !== 'undefined') {
   };
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => context as never);
   vi.spyOn(CanvasTextMetrics, 'measureText').mockImplementation((text, textStyle) => ({
-    height: Number(textStyle.fontSize) * 1.25,
+    height: Number(textStyle.fontSize) * 1.34,
     width: Array.from(text).length * Number(textStyle.fontSize) * 0.55,
   } as CanvasTextMetrics));
 }

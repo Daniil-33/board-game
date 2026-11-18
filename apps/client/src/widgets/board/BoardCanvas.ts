@@ -60,7 +60,7 @@ export const frameClock: SceneClock = {
   },
 };
 
-type HoverDetails = { bounds: Rect; name: string; price: string };
+type HoverDetails = { bounds: Rect; name: string; price: string; mortgaged: boolean };
 type TextureCache = (url: string) => Promise<Texture | null>;
 
 interface Marker {
@@ -329,7 +329,11 @@ export class BoardScene {
         box.cursor = 'pointer';
         box.on('pointertap', () => { this.hover?.(null); this.selectAsset?.(cell.index); });
         const details = { bounds, name: display.name, price: display.price };
-        box.on('pointerenter', event => { if (event.pointerType === 'mouse') this.hover?.(details); });
+        box.on('pointerenter', event => {
+          if (event.pointerType === 'mouse') {
+            this.hover?.({ ...details, mortgaged: this.markerByCell.get(cell.index)?.mortgaged ?? false });
+          }
+        });
         box.on('pointerleave', () => this.hover?.(null));
       } else {
         const icon = specialIcon(cell.kind, theme);

@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n/index';
 import type { BoardScene } from './BoardCanvas';
 
 export function mountCellTooltip(canvas: HTMLCanvasElement, scene: BoardScene): () => void {
@@ -26,7 +27,8 @@ export function mountCellTooltip(canvas: HTMLCanvasElement, scene: BoardScene): 
     const rect = canvas.getBoundingClientRect();
     const scale = rect.width / scene.size;
     const { x, y, width, height } = details.bounds;
-    tooltip.textContent = `${details.name} · ${details.price}`;
+    const summary = `${details.name} · ${details.price}`;
+    tooltip.textContent = details.mortgaged ? `${summary} · ${t('board_canvas.mortgage_marker')}` : summary;
     tooltip.hidden = false;
     const centre = rect.left + (x + width / 2) * scale;
     const left = Math.max(4, Math.min(centre - tooltip.offsetWidth / 2, window.innerWidth - tooltip.offsetWidth - 4));

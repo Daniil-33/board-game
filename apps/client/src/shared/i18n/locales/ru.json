@@ -177,7 +177,8 @@
   "board_canvas": {
     "order_roll": "{player} бросает кость за порядок ходов",
     "dice_roll": "{player} бросает кости",
-    "custom_banner": "{player} {text}"
+    "custom_banner": "{player} {text}",
+    "mortgage_marker": "В залоге"
   },
   "display": {
     "start": "Старт",

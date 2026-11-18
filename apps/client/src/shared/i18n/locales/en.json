@@ -177,7 +177,8 @@
   "board_canvas": {
     "order_roll": "{player} rolls for order",
     "dice_roll": "{player} rolls",
-    "custom_banner": "{player} {text}"
+    "custom_banner": "{player} {text}",
+    "mortgage_marker": "Mortgaged"
   },
   "display": {
     "start": "Start",
