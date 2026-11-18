@@ -113,8 +113,12 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
     if (!context || settings.muted || settings.volume <= 0) return;
     if (opts.own === false && !allowedForOthers.has(id)) return;
     const activeContext = context;
-    void Promise.all([buffer(id), resumeContext(activeContext)]).then(([audio, running]) => {
-      if (!audio || !running || context !== activeContext || settings.muted || settings.volume <= 0) return;
+    if (activeContext.state !== 'running') {
+      void resumeContext(activeContext);
+      return;
+    }
+    void buffer(id).then((audio) => {
+      if (!audio || context !== activeContext || activeContext.state !== 'running' || settings.muted || settings.volume <= 0) return;
       try {
         const source = activeContext.createBufferSource();
         const node = activeContext.createGain();

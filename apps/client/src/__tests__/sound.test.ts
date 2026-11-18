@@ -49,6 +49,13 @@ class FakeAudioContext {
     return { gain, connect: () => {} } as unknown as GainNode;
   }
 }
+class PendingResumeAudioContext extends FakeAudioContext {
+  static pending: Array<() => void> = [];
+  resume: () => Promise<void> = () => new Promise(resolve => {
+    PendingResumeAudioContext.pending.push(() => { this.state = 'running'; resolve(); });
+  });
+  static unlock(): void { for (const release of this.pending.splice(0)) release(); }
+}
 function makeEngine(extra: Partial<SoundEngineOptions> = {}) {
   const store = new Map<string, string>();
   let fetches = 0;
@@ -88,6 +95,26 @@ describe('sound engine', () => {
     events.dispatchEvent(new Event('keydown'));
     expect(FakeAudioContext.resumeAttempts).toBe(2);
     FakeAudioContext.failFirstResume = false;
+  });
+
+  it('drops playback requests while resume is pending instead of queueing stale sounds', async () => {
+    PendingResumeAudioContext.pending = [];
+    let fetches = 0;
+    const { engine } = makeEngine({
+      contextCtor: PendingResumeAudioContext as unknown as NonNullable<SoundEngineOptions['contextCtor']>,
+      fetchFn: (async () => { fetches++; return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) } as Response; }) as typeof fetch,
+    });
+    FakeAudioContext.gains = [];
+    engine.activate();
+    engine.playSound('chat');
+    expect(fetches).toBe(0);
+    PendingResumeAudioContext.unlock();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(FakeAudioContext.gains).toHaveLength(0);
+    engine.playSound('chat');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(fetches).toBe(1);
+    expect(FakeAudioContext.gains).toHaveLength(1);
   });
 
   it('filters other-player sounds and attenuates allowed events by about nine decibels', async () => {
