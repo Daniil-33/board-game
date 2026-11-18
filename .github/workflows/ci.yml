@@ -105,6 +105,8 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: Build and start production stack
         run: docker compose -p s1-e2e up --build -d --wait
+      - name: Build local manifest for browser assertions
+        run: pnpm --filter @game/client build:bundle
       - name: Production browser scenarios
         run: pnpm test:e2e --output=test-results/production
         env:
@@ -229,6 +231,8 @@ jobs:
         run: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml up --build -d --wait
         env:
           WEB_PORT: '8081'
+      - name: Build local manifest for browser assertions
+        run: pnpm --filter @game/client build:bundle
       - name: Seeded browser scenario
         run: pnpm test:e2e --output=test-results/seeded
         env:
