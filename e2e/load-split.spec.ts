@@ -34,9 +34,11 @@ async function clearCache(page: Page): Promise<void> {
   await session.send('Network.setCacheDisabled', { cacheDisabled: true });
 }
 
-test('defers game, board, Pixi, sound and dialogs until game entry and requests only board logos', async ({ actors }, info) => {
+test('defers game, board, Pixi, sound and dialogs until game entry and requests only board logos', async ({ actors, request }, info) => {
   test.setTimeout(180_000);
   const manifest = JSON.parse(readFileSync(resolve('apps/client/dist/.vite/manifest.json'), 'utf8')) as Manifest;
+  const publicManifest = await request.get('/.vite/manifest.json');
+  expect(await publicManifest.text()).not.toContain('"index.html"');
   const app = manifest['index.html']!;
   const gameKey = app.dynamicImports?.find((key) => !key.includes('game-over'));
   const gameOverKey = app.dynamicImports?.find((key) => key.includes('game-over'));

@@ -27,4 +27,4 @@ None.
 
 ## Impact
 
-Affected areas are the Vue client screen composition and bootstrap, game widgets and Pixi mounting, the logo URL resolver and SVG assets, Vite output configuration, browser specifications, and OpenSpec contracts. No server, protocol, or new package changes are expected. Relevant game profile context is under GAME-BREAKDOWN.md headings “MVP: что входит и что отложено” and “Игровой процесс”; no rule behavior changes.
+Affected areas are the Vue client screen composition and bootstrap, game widgets and Pixi mounting, the logo URL resolver and SVG assets, Vite output configuration, browser specifications, and OpenSpec contracts. There are no server or protocol changes. The client adds Terser as a build-time minifier to stay within the emitted-JavaScript budget. Relevant game profile context is under GAME-BREAKDOWN.md headings “MVP: что входит и что отложено” and “Игровой процесс”; no rule behavior changes.

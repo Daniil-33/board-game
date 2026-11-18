@@ -13,3 +13,7 @@ behavior. Loading the game screen SHALL NOT require a protocol or server change.
 #### Scenario: Reconnect after direct reload
 - **WHEN** a direct reload restores an active room and the socket reconnects while game code is being loaded
 - **THEN** the game screen SHALL show the restored projection and clear reconnect feedback after Welcome
+
+#### Scenario: Preserve sound activation through lazy loading
+- **WHEN** a player interacts with the page before entering a game and game events arrive while the game screen chunk is loading
+- **THEN** the lazy sound engine SHALL adopt the browser's prior user activation and play the queued events after it attaches

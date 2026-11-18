@@ -35,8 +35,12 @@ behavior, add an asset service, or change edge configuration.
   visible alteration.
 - Compare emitted JS by chunk with Node zlib against the merge base, and
   report initial-route and deferred chunks separately while enforcing the
-  all-emitted-JS gzip total budget of 343,863 bytes. Enable and inspect the
-  Vite manifest. Capture staging Lighthouse and transferred
+  all-emitted-JS gzip total budget of 343,863 bytes. Use Terser for
+  production minification; on the same source, Terser emits 332,864 B gzip
+  versus 345,929 B with esbuild, saving 13,065 B and bringing the output
+  under the budget. The merge-base total is 339,455 B.
+  Enable and inspect the Vite manifest. It remains available in the CI
+  checkout for assertions but is removed from the public web image. Capture staging Lighthouse and transferred
   bytes before and after using the Playwright/Chromium container.
 - Compare each changed brand SVG at 512x512 and 1024x1024 RGBA raster sizes.
   A candidate passes when no more than 0.5% of pixels exceed a maximum

@@ -18,6 +18,7 @@ export interface SoundEngineOptions {
   fetchFn?: typeof fetch;
   contextCtor?: AudioContextCtor;
   urls?: Record<string, string>;
+  hasUserActivation?: () => boolean;
 }
 type GestureTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 
@@ -30,6 +31,7 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
   const storage = options.storage ?? browserStorage();
   const fetchFn = options.fetchFn ?? globalThis.fetch?.bind(globalThis);
   const contextCtor = options.contextCtor ?? (typeof window !== 'undefined' ? window.AudioContext : undefined);
+  const hasUserActivation = options.hasUserActivation ?? (() => typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive === true);
   const files = options.urls ?? urls;
   let context: AudioContext | null = null;
   const decoded = new Map<SoundId, Promise<AudioBuffer | null>>();
@@ -81,6 +83,10 @@ export function createSoundEngine(options: SoundEngineOptions = {}) {
       activate();
       if (context.state === 'running') stop();
     };
+    // The game chunk can load after the player's first gesture on login or in
+    // the room. Browser user activation is sticky, so adopt it when installing
+    // the lazy engine instead of requiring a second gesture in-game.
+    if (hasUserActivation()) activate();
     target.addEventListener('pointerdown', firstGesture);
     target.addEventListener('keydown', firstGesture);
     target.addEventListener('pointerup', retryGesture);

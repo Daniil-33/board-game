@@ -97,6 +97,15 @@ describe('sound engine', () => {
     FakeAudioContext.failFirstResume = false;
   });
 
+  it('adopts a gesture that happened before the lazy sound engine loaded', async () => {
+    FakeAudioContext.created = 0; FakeAudioContext.resumeAttempts = 0;
+    const { engine } = makeEngine({ hasUserActivation: () => true });
+    engine.installGate(new EventTarget() as unknown as Pick<Window, 'addEventListener' | 'removeEventListener'>);
+    await Promise.resolve();
+    expect(FakeAudioContext.created).toBe(1);
+    expect(FakeAudioContext.resumeAttempts).toBe(1);
+  });
+
   it('drops playback requests while resume is pending instead of queueing stale sounds', async () => {
     PendingResumeAudioContext.pending = [];
     let fetches = 0;
@@ -220,6 +229,20 @@ describe('event sound mapping', () => {
     socket.receive({ t: 'Chat', message: { seq: 2, authorId: pid('a'), text: 'Own message', at: 3 } });
     expect(played).toEqual([{ id: 'turn-start', own: true }]);
     socket.receive({ t: 'Chat', message: { seq: 3, authorId: pid('b'), text: 'Other message', at: 4 } });
+    expect(played).toEqual([{ id: 'turn-start', own: true }, { id: 'chat', own: false }]);
+  });
+
+  it('replays sounds that arrive while the async game screen is loading', () => {
+    const h = harness({ stored: storedSession(room([['a', 'Alice'], ['b', 'Bob']])) });
+    h.client.start();
+    const socket = h.sockets.last(); socket.open();
+    const first = playingView(['a', 'b']);
+    socket.receive(welcome(first));
+    const next = playingView(['a', 'b'], { revision: 10 });
+    socket.receive(update(next, [{ type: 'TurnStarted', payload: { playerId: 'a' } }]));
+    socket.receive({ t: 'Chat', message: { seq: 1, authorId: pid('b'), text: 'Ready', at: 4 } });
+    const played: Array<{ id: string; own?: boolean }> = [];
+    h.client.attachSound((id, opts) => { played.push({ id, ...opts }); });
     expect(played).toEqual([{ id: 'turn-start', own: true }, { id: 'chat', own: false }]);
   });
 });
