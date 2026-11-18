@@ -98,35 +98,12 @@ describe('Hud', () => {
     nameOf,
     colorOf,
   };
-  const enabled = (wrapper: ReturnType<typeof mount>): string[] =>
-    ['RollForOrder', 'RollDice', 'EndTurn'].filter(
-      (type) => wrapper.find(`[data-testid="${type}"]`).attributes('disabled') === undefined,
-    );
-
-  it('before and after the roll: first only RollDice, then only EndTurn', async () => {
-    const wrapper = mount(Hud, { props: { ...base, view: playingView(['a', 'b'], { owner: 'a' }) } });
-    expect(enabled(wrapper)).toEqual(['RollDice']);
-    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Ваш ход');
-    await wrapper.setProps({ view: playingView(['a', 'b'], { owner: 'a', rolled: true, revision: 10 }) });
-    expect(enabled(wrapper)).toEqual(['EndTurn']);
-  });
-
-  it('not my turn, pending, offline and past the deadline: nothing enabled', async () => {
-    const mine = playingView(['a', 'b'], { owner: 'a', deadline: 60_000 });
-    const wrapper = mount(Hud, { props: { ...base, view: playingView(['a', 'b'], { owner: 'b' }) } });
-    expect(enabled(wrapper)).toEqual([]);
-    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Ход: Bob');
-
-    await wrapper.setProps({ view: mine, pending: ['RollDice'] });
-    expect(enabled(wrapper)).toEqual([]);
-    await wrapper.setProps({ pending: [], connected: false });
-    expect(enabled(wrapper)).toEqual([]);
-    expect(wrapper.find('[data-testid="offline"]').exists()).toBe(true);
-    await wrapper.setProps({ connected: true });
-    expect(enabled(wrapper)).toEqual(['RollDice']);
-    await wrapper.setProps({ now: 60_000 });
-    expect(enabled(wrapper)).toEqual([]);
-    expect(wrapper.find('[data-testid="timer"]').text()).toBe('0 с');
+  it('shows the projected turn owner and countdown', async () => {
+    const wrapper = mount(Hud, { props: { ...base, view: playingView(['a', 'b'], { owner: 'b', deadline: 60_000 }) } });
+    expect(wrapper.get('[data-testid="headline"]').text()).toBe('Ход: Bob');
+    await wrapper.setProps({ view: playingView(['a', 'b'], { owner: 'a', deadline: 60_000 }), now: 60_000 });
+    expect(wrapper.get('[data-testid="headline"]').text()).toBe('Ваш ход');
+    expect(wrapper.get('[data-testid="timer"]').text()).toBe('0 с');
   });
 
   it('closes setup on Escape, focuses the opener and allows reopening', async () => {
@@ -192,7 +169,7 @@ describe('Hud', () => {
     expect(wrapper.findAll('[data-testid="order-name"]').map(row => row.text())).toEqual(['Bob', 'Alice']);
   });
 
-  it('shows rejected-command messages and emits commands and dismissals', async () => {
+  it('shows connection messages and emits dismissals', async () => {
     const wrapper = mount(Hud, {
       props: {
         ...base,
@@ -206,8 +183,6 @@ describe('Hud', () => {
     expect(message.text()).toContain('Turn t7 expired');
     expect(wrapper.find('[data-testid="problem"]').text()).toContain('Unreadable message from the server');
     await message.find('[data-testid="message-dismiss"]').trigger('click');
-    await wrapper.find('[data-testid="RollDice"]').trigger('click');
     expect(wrapper.emitted('dismiss')).toEqual([[3]]);
-    expect(wrapper.emitted('command')).toEqual([['RollDice']]);
   });
 });

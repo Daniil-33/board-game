@@ -17,7 +17,7 @@ import type { SocketFactory } from '../../shared/api/index';
 import { createGameState, type GameState } from '../../entities/game/index';
 import { createSessionStore, type SessionStore } from '../../entities/session/index';
 import { createChatStore, type ChatStore } from '../../entities/chat/index';
-import { createEventLog, type EventLog } from '../../entities/event/index';
+import { createEventLog, createJournal, type EventLog } from '../../entities/event/index';
 import type { Board } from '../../entities/game/index';
 export type { Board } from '../../entities/game/index';
 
@@ -52,6 +52,7 @@ export interface Client {
   readonly chat: ChatStore;
   /** The viewer's event log: Welcome history, then each Update's events. */
   readonly events: EventLog;
+  readonly journal: ReturnType<typeof createJournal>;
   readonly connection: Connection;
   now(): number;
   /** Resume after a page load: reconnect to the stored room, if any. */
@@ -79,6 +80,7 @@ export function createClient(deps: ClientDeps): Client {
   const game = createGameState();
   const chat = createChatStore();
   const events = createEventLog();
+  const journal = createJournal();
   const lobby = reactive<LobbyState>({ rooms: [], error: null, notice: null, busy: false, inviteRoomId: null, creatorAccess: null });
   const api: LobbyApi = createLobbyApi(deps.fetchFn);
 
@@ -133,6 +135,7 @@ export function createClient(deps: ClientDeps): Client {
     game.notices.splice(0);
     chat.clear();
     events.clear();
+    journal.clear();
     lobby.creatorAccess = null;
     lobby.busy = false;
     lobby.error = null;
@@ -182,6 +185,7 @@ export function createClient(deps: ClientDeps): Client {
       // The log and chat as of this Welcome; never animated.
       events.replace(history.entries);
       chat.replace(history.chat);
+      journal.replace(history);
       board?.refreshOwnership?.(view);
       eliminatedKey = JSON.stringify(view.eliminated);
       // No delta replay in stage 1: drop what was waiting and show the view as it is.
@@ -191,11 +195,14 @@ export function createClient(deps: ClientDeps): Client {
     },
     onUpdate(view, updateEvents, revision) {
       // The Update frame carries no commit time: the log entry is stamped on receipt.
-      events.append({ revision, at: deps.now(), events: [...updateEvents] });
+      const entry = { revision, at: deps.now(), events: [...updateEvents] };
+      events.append(entry);
+      journal.appendEvents(entry);
       onViewUpdate(view, updateEvents);
     },
     onChat(message) {
       chat.receive(message);
+      journal.appendChat(message);
     },
     onChatAck(ack) {
       chat.acknowledge(ack);
@@ -287,6 +294,7 @@ export function createClient(deps: ClientDeps): Client {
     lobby,
     chat,
     events,
+    journal,
     connection,
     now: deps.now,
     nameOf,

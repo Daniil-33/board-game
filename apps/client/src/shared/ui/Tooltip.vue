@@ -4,7 +4,7 @@ defineProps<{ text: string }>();
 </script>
 
 <template>
-  <TooltipRoot>
+  <TooltipRoot :disabled="!text">
     <TooltipTrigger as-child><slot /></TooltipTrigger>
     <TooltipPortal>
       <TooltipContent class="ds-float" :side-offset="6">{{ text }}</TooltipContent>

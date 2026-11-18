@@ -1,3 +1,5 @@
+import { h as render } from 'vue';
+import { withUi } from './helpers';
 const money = (value: number): string => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F');
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
@@ -46,7 +48,10 @@ describe('stage 2 display', () => {
     const panel = mount(PlayerPanel, { props: { view, nameOf: id => id } });
     expect(panel.findAll('[data-testid="player-balance"]')).toHaveLength(3);
     await panel.setProps({ view: { ...view, balances: { a: 12340 as never, b: 45670 as never, c: 890 as never }, eliminated: [pid('b')], order: [pid('a'), pid('c')] }, nameOf: id => `New ${id}` });
-    expect(panel.findAll('[data-testid="player-balance"]').map(x => x.text())).toEqual(['New a12\u202F340Ходит', 'New b45\u202F670Выбыл', 'New c890']);
+    expect(panel.findAll('[data-testid="player-balance-name"]').map(x => x.text())).toEqual(['New a', 'New b', 'New c']);
+    expect(panel.findAll('[data-testid="player-balance-value"]').map(x => x.text())).toEqual(['12\u202F340', '45\u202F670', '890']);
+    expect(panel.get('[data-player-id="a"] [data-testid="player-active"]').text()).toBe('Ходит');
+    expect(panel.get('[data-player-id="b"] [data-testid="player-eliminated"]').text()).toBe('Выбыл');
     panel.unmount();
   });
   it.each(['M1', 'logistics', 'energy'])('shows projected %s details and group peers', group => {
@@ -66,7 +71,7 @@ describe('stage 2 display', () => {
     const view = playingView(['a', 'b']); h.sockets.last().receive(welcome(view));
     let finish!: () => void;
     h.board.play = () => new Promise<void>(resolve => { finish = resolve; });
-    const wrapper = mount(GameScreen, { global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
+    const wrapper = mount(withUi(() => render(GameScreen)), { global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
     await flushPromises();
     h.sockets.last().receive(update({ ...view, revision: 10 as never, balances: { ...view.balances, a: 98760 as never } }, [
       { type: 'PlayerMoved', payload: { playerId: 'a', from: 39, to: 0, steps: 1 } },
@@ -82,7 +87,7 @@ describe('stage 2 display', () => {
     h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(playingView(['a', 'b'])));
     let select: ((index: number) => void) | null = null;
     h.board.setAssetSelection = cb => { select = cb; };
-    const wrapper = mount(GameScreen, { global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
+    const wrapper = mount(withUi(() => render(GameScreen)), { global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
     await flushPromises();
     const click = async (index: number) => { (select as ((index: number) => void) | null)?.(index); await flushPromises(); };
     await click(0); expect(wrapper.find('[data-testid="asset-card"]').exists()).toBe(false);

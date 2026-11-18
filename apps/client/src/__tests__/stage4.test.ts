@@ -1,3 +1,6 @@
+import { h as render, ref } from 'vue';
+import { MyTurn } from '../widgets/my-turn/index';
+import { withUi } from './helpers';
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import {
@@ -121,12 +124,16 @@ describe('rent settlement', () => {
   it('keeps EndTurn enabled with an open settlement and tells the payer it pays automatically', async () => {
     const view = project(withRent(owning()));
     expect(actionAvailability(ctx(view))).toMatchObject({ EndTurn: true, PayRent: true, RollDice: false });
-    const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, messages: [], problem: null, fatal: null, nameOf, colorOf };
-    const w = mount(Hud, { props: { ...base, view } });
+    const context = ref(ctx(view));
+    const w = mount(withUi(() => render(MyTurn, { context: context.value })));
     expect(w.get('[data-testid="EndTurn"]').attributes('disabled')).toBeUndefined();
     expect(w.get('[data-testid="auto-pay-note"]').text()).toBe('При завершении хода рента будет оплачена автоматически.');
-    await w.setProps({ me: pid('b') }); expect(w.find('[data-testid="auto-pay-note"]').exists()).toBe(false);
-    await w.setProps({ me: pid('a'), view: project(owning()) }); expect(w.find('[data-testid="auto-pay-note"]').exists()).toBe(false);
+    context.value = ctx(view, { me: pid('b') });
+    await flushPromises();
+    expect(w.find('[data-testid="auto-pay-note"]').exists()).toBe(false);
+    context.value = ctx(project(owning()));
+    await flushPromises();
+    expect(w.find('[data-testid="auto-pay-note"]').exists()).toBe(false);
   });
 });
 

@@ -1,3 +1,6 @@
+import { h as render } from 'vue';
+import { MyTurn } from '../widgets/my-turn/index';
+import { withUi } from './helpers';
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import {
@@ -359,13 +362,12 @@ describe('elimination and game over', () => {
 
   it('tells the eliminated viewer the projected reason and keeps gameplay controls disabled', () => {
     const s = owning();
-    const base = { connected: true, pending: [] as ClientCommandType[], now: 50_000, messages: [], problem: null, fatal: null, nameOf, colorOf };
     for (const reason of ['resigned', 'bankrupt'] as const) {
       const view = project({ ...s, turn: { ...s.turn!, playerId: pid('b') }, order: [pid('b'), pid('c')], eliminated: [pid('a')], eliminations: [{ playerId: pid('a'), reason, at: 5 as Timestamp, creditorId: reason === 'bankrupt' ? pid('b') : null }] });
-      const w = mount(Hud, { props: { ...base, me: pid('a'), view } });
+      const w = mount(withUi(() => render(MyTurn, { context: ctx(view) })));
       expect(w.get('[data-testid="spectator"]').text()).toBe(reason === 'bankrupt' ? 'Вы обанкротились и теперь наблюдаете за партией.' : 'Вы сдались и теперь наблюдаете за партией.');
       expect(w.get('[data-testid="spectator"]').text()).toContain(reason === 'bankrupt' ? 'обанкротились' : 'сдались');
-      for (const type of ['RollDice', 'EndTurn', 'Resign']) expect(w.get(`[data-testid="${type}"]`).attributes('disabled'), type).toBeDefined();
+      for (const type of ['RollDice', 'EndTurn']) expect(w.get(`[data-testid="${type}"]`).attributes('disabled'), type).toBeDefined();
       expect(mortgageControls(ctx(view), at(s, 9))?.mortgage.enabled ?? false).toBe(false);
     }
   });

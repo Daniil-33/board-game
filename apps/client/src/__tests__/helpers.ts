@@ -1,3 +1,5 @@
+import { defineComponent, h, type VNode } from 'vue';
+import { UiProvider } from '../shared/ui/index';
 import { PROTOCOL_VERSION } from '@game/protocol';
 import { CURRENT_RULES_VERSION, generateBoard, seedRng, startingCapital, lapReward } from '@game/game-core';
 import type { PlayerId, Revision, StateView, Timestamp } from '@game/game-core';
@@ -250,4 +252,8 @@ export function harness(options: { stored?: Record<string, string>; route?: Rout
   const board = recordingBoard();
   const mount: BoardMount = async () => ({ board, destroy: () => {} });
   return { client, sockets, storage, calls, board, mount, clock };
+}
+
+export function withUi(render: () => VNode) {
+  return defineComponent({ setup: () => () => h(UiProvider, null, { default: render }) });
 }
