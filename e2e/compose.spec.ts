@@ -78,6 +78,7 @@ test('locked code and invite, participant leave and creator closes room', async 
   await expect(guest!.page.locator(sel('screen-lobby'))).toBeVisible();
   await expect(host!.page.locator(sel('member'))).toHaveCount(2);
   await host!.page.locator(sel('leave')).click();
+  await host!.page.locator(sel('confirm-leave')).click();
   await expect(host!.page.locator(sel('screen-lobby'))).toBeVisible();
   await expect(third!.page.locator(sel('screen-lobby'))).toBeVisible();
   await third!.page.locator(sel('refresh')).click();

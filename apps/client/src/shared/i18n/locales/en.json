@@ -67,6 +67,16 @@
     "back_to_lobby": "Back to lobby"
   },
   "lobby": {
+    "heading": "Lobby",
+    "profile": "Sign in / profile",
+    "profile_reason": "Accounts will be available after the MVP.",
+    "join_by_code": "Join with a code",
+    "choose_room": "Locked room",
+    "no_locked_rooms": "No locked rooms have free seats.",
+    "occupancy": "{count} / {capacity}",
+    "closed": "Closed",
+    "finished": "Game finished",
+    "code_required": "Code required",
     "rooms": "Rooms",
     "refresh": "Refresh",
     "create_room": "Create room",
@@ -87,16 +97,24 @@
     "full": "full",
     "locked": "locked",
     "open": "open",
-    "empty": "empty",
-    "access_code_for": "Access code for {roomId}"
+    "empty": "empty"
   },
   "login": {
+    "guidance": "Choose a nickname other players will see.",
     "invalid_nickname": "Enter a nickname of 1 to {maxLength} visible characters.",
     "heading": "Play as a guest",
     "nickname": "Nickname",
     "enter": "Enter"
   },
   "room": {
+    "empty_marker": "+",
+    "heading": "Waiting room · {count} of {capacity} seats",
+    "empty_seat": "Empty",
+    "leave_title": "Close room?",
+    "leave_warning": "If you leave, this room will close for all players.",
+    "cancel_leave": "Stay",
+    "confirm_leave": "Leave and close",
+    "busy": "Waiting for the server…",
     "invite_copied": "Invite copied.",
     "copy_unavailable": "Copy unavailable. Select and copy the link above.",
     "connecting": "Connecting…",
@@ -214,6 +232,9 @@
     "rejected_command": "{code}: {message} — {reason}"
   },
   "turn_order": {
+    "setup_title": "Who goes first",
+    "setup_description": "Each player rolls one die. Ties are rolled again. The die rolls automatically when time runs out.",
+    "awaiting_roll": "Waiting for roll",
     "out": "out",
     "rolled": "rolled {roll}",
     "jail_attempts": "in jail, {attempts} attempts used (interim rule)",

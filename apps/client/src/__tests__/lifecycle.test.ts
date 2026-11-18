@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StateView } from '@game/game-core';
 import { App } from '../app/index';
@@ -10,6 +10,9 @@ import { fakeFetch, fakeSockets, fakeStorage, harness, room, storedSession, lobb
 
 const TWO = room([['a', 'Alice'], ['b', 'Bob']]);
 const THREE = room([['a', 'Alice'], ['b', 'Bob'], ['c', 'Carol']]);
+enableAutoUnmount(afterEach);
+const body = new DOMWrapper(document.body);
+
 const provide = (h: ReturnType<typeof harness>) => ({ global: { provide: { [CLIENT_KEY as symbol]: h.client, [BOARD_MOUNT_KEY as symbol]: h.mount } } });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -115,8 +118,9 @@ describe('invites and creator secrets', () => {
       : c.path === '/api/rooms/r1' ? { body: { room: TWO } } : { body: { rooms: [] } } });
     const wrapper = mount(App, provide(h));
     await flushPromises();
-    await wrapper.get('[data-testid="create-code"]').setValue('abcd');
-    await wrapper.get('[data-testid="create"]').trigger('click'); await flushPromises();
+    await wrapper.get('[data-testid="open-create"]').trigger('click');
+    await body.get('[data-testid="create-code"]').setValue('abcd');
+    await body.get('[role=dialog] form').trigger('submit'); await flushPromises();
     expect(wrapper.get('[data-testid="access-code"]').text()).toBe('abcd');
     expect((wrapper.get('[data-testid="invite-link"]').element as HTMLInputElement).value).toContain('/?room=r1&code=abcd');
     await wrapper.get('[data-testid="copy-invite"]').trigger('click'); await flushPromises();
@@ -139,9 +143,13 @@ describe('lobby availability and recovery', () => {
     expect(rows.map((r) => r.get('[data-testid="room-status"]').text())).toEqual(['Открытая', 'Закрытая', 'Идёт партия', 'Мест нет']);
     expect(rows[2]!.get('[data-testid="join"]').attributes('disabled')).toBeDefined();
     expect(rows[3]!.get('[data-testid="join"]').attributes('disabled')).toBeDefined();
-    await rows[1]!.get('[data-testid="join-code"]').setValue('abcd'); await rows[1]!.get('[data-testid="join-form"]').trigger('submit'); await flushPromises();
-    expect(wrapper.get('[data-testid="error"]').text()).toContain('ACCESS_CODE_INVALID');
-    expect(rows[1]!.find('[data-testid="join-code"]').exists()).toBe(true);
+    await rows[1]!.get('[data-testid="join"]').trigger('click');
+    const form = body.get('[data-testid="join-form"]');
+    expect((form.get('select').element as HTMLSelectElement).value).toBe('locked');
+    await form.get('[data-testid="join-code"]').setValue('abcd');
+    await form.trigger('submit'); await flushPromises();
+    expect(body.get('[role="alert"]').text()).toContain('ACCESS_CODE_INVALID');
+    expect(body.find('[data-testid="join-code"]').exists()).toBe(true);
     await rows[0]!.get('[data-testid="join"]').trigger('click'); await flushPromises();
     expect(h.calls.find((c) => c.path === '/api/rooms/open/join')?.body).toBeUndefined();
     wrapper.unmount();

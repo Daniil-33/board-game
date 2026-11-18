@@ -1,7 +1,7 @@
-import { mount } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { actionAvailability } from '../entities/game/index';
-import { describe, expect, it } from 'vitest';
-import type { StateView } from '@game/game-core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Revision, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { ActionButtons } from '../features/turn-actions/index';
 import { Hud } from '../widgets/turn-header/index';
@@ -9,6 +9,9 @@ import { TurnOrder } from '../widgets/turn-header/index';
 import { TurnTimer } from '../widgets/turn-header/index';
 import { turnOrder } from '../entities/game/index';
 import { pid, playingView, setupView } from './helpers';
+
+enableAutoUnmount(afterEach);
+const body = new DOMWrapper(document.body);
 
 const NAMES: Record<string, string> = { a: 'Alice', b: 'Bob', c: 'Cy' };
 const nameOf = (id: string): string => NAMES[id] ?? id;
@@ -126,11 +129,37 @@ describe('Hud', () => {
     expect(wrapper.find('[data-testid="timer"]').text()).toBe('0 с');
   });
 
-  it('my order roll: only RollForOrder, with the setup timer', () => {
+  it('shows current roller, dice and an all-player tie from authoritative setup updates', async () => {
     const wrapper = mount(Hud, { props: { ...base, view: setupView(['a', 'b'], { roller: 'a', deadline: 62_400 }) } });
-    expect(enabled(wrapper)).toEqual(['RollForOrder']);
-    expect(wrapper.find('[data-testid="timer"]').text()).toBe('13 с');
-    expect(wrapper.find('[data-testid="headline"]').text()).toBe('Розыгрыш порядка ходов: вы');
+    await flushPromises();
+    const dialog = body.get('[role="dialog"]');
+    const roll = dialog.get('[data-testid="RollForOrder"]');
+    expect(roll.attributes('disabled')).toBeUndefined();
+    expect(dialog.get('[data-testid="timer"]').text()).toBe('13 с');
+    expect(dialog.get('[data-testid="headline"]').text()).toBe('Розыгрыш порядка ходов: вы');
+
+    await wrapper.setProps({
+      view: setupView(['a', 'b'], { roller: 'b', deadline: 95_000, rolls: { a: 4 } }),
+    });
+    expect(roll.attributes('disabled')).toBeDefined();
+    expect(dialog.get('[data-testid="order-roll"]').text()).toBe('4');
+    expect(dialog.get('[data-testid="headline"]').text()).toContain('Bob');
+    expect(dialog.get('[data-testid="timer"]').text()).toBe('45 с');
+
+    await wrapper.setProps({
+      view: setupView(['a', 'b'], { roller: 'a', revision: 7, deadline: 96_000 }),
+      history: [{ revision: 7 as Revision, at: 51_000, events: [
+        { type: 'OrderDieRolled', payload: { playerId: pid('a'), value: 4, auto: false } },
+        { type: 'OrderDieRolled', payload: { playerId: pid('b'), value: 4, auto: true } },
+        { type: 'OrderTied', payload: { playerIds: [pid('a'), pid('b')], value: 4 } },
+      ] }],
+    });
+    expect(roll.attributes('disabled')).toBeUndefined();
+    expect(dialog.findAll('[data-testid="tied"]').map(row => row.text())).toEqual(['ничья', 'ничья']);
+    expect(dialog.findAll('[data-testid="order-roll"]').map(row => row.text())).toEqual(['4', '4']);
+    await wrapper.setProps({ view: playingView(['b', 'a'], { owner: 'b' }) });
+    await vi.waitFor(() => expect(body.find('[role="dialog"]').exists()).toBe(false));
+    expect(wrapper.findAll('[data-testid="order-name"]').map(row => row.text())).toEqual(['Bob', 'Alice']);
   });
 
   it('shows rejected-command messages and emits commands and dismissals', async () => {

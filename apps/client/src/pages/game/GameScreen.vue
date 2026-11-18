@@ -100,6 +100,7 @@ onBeforeUnmount(() => {
         :connected="client.game.connected"
         :pending="pendingTypes"
         :now="now"
+        :history="client.events.state.entries"
         :messages="client.game.messages"
         :problem="client.game.problem"
         :fatal="client.game.fatal"

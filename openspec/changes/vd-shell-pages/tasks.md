@@ -1,6 +1,6 @@
 ## 1. Session screens
 
-- [ ] 1.1 Restyle guest login using localized labels, guidance and inline validation. Verify valid and invalid submissions at desktop and phone widths (client/session, Responsive guest entry).
+- [x] 1.1 Restyle guest login using localized labels, guidance and inline validation. Verify valid and invalid submissions at desktop and phone widths (client/session, Responsive guest entry).
 - [ ] 1.2 Restyle the lobby, add room status and N/6 occupancy, and wire the create and locked-room dialogs through the existing session feature. Verify code rejection and correction, invite entry, disabled profile reason and keyboard dismissal (client/session, Lobby room actions and capacity).
 - [ ] 1.3 Restyle the waiting room with six seats, player and creator markers, invite copy feedback, disabled Start reasons and a creator leave confirmation. Verify copy by keyboard, clipboard failure, cancel and confirm, and the two-player start threshold (client/session, Waiting room seats and controls).
 
