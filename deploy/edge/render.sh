@@ -24,10 +24,13 @@ for env in staging production; do
     production) web=focusima.space; api=api.focusima.space ;;
   esac
   cert="$cert_root/live/$env"
-  [ -f "$cert/fullchain.pem" ] && [ -f "$cert/privkey.pem" ] || continue
+  if [ ! -f "$cert/fullchain.pem" ] || [ ! -f "$cert/privkey.pem" ]; then
+    continue
+  fi
   cat <<NGINX
 server {
   listen 443 ssl;
+  http2 on;
   server_name $web;
   ssl_certificate $cert/fullchain.pem;
   ssl_certificate_key $cert/privkey.pem;
@@ -37,12 +40,14 @@ server {
   location / {
     set \$upstream http://$env-web:80;
     proxy_pass \$upstream;
+    proxy_http_version 1.1;
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto https;
   }
 }
 server {
   listen 443 ssl;
+  http2 on;
   server_name $api;
   ssl_certificate $cert/fullchain.pem;
   ssl_certificate_key $cert/privkey.pem;
