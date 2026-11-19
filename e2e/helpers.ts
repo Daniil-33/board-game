@@ -7,14 +7,13 @@ import type { StateView, GameEvent } from '../packages/game-core/src/index';
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
 /** Capture one unchanged app state at both review viewports on the current test head. */
-export async function captureScreens(page: Page, name: string, viewports: readonly ('desktop' | 'mobile')[] = ['desktop', 'mobile']): Promise<void> {
+export async function captureScreens(page: Page, name: string): Promise<void> {
   if (process.env['E2E_SCREEN_EVIDENCE'] !== '1') return;
   const dir = process.env['E2E_SCREEN_EVIDENCE_DIR'];
   if (!dir) throw new Error('E2E_SCREEN_EVIDENCE_DIR is required when E2E_SCREEN_EVIDENCE=1');
   mkdirSync(dir, { recursive: true });
   const original = page.viewportSize() ?? { width: 1280, height: 720 };
-  for (const tag of viewports) {
-    const { width, height } = tag === 'desktop' ? { width: 1440, height: 900 } : { width: 390, height: 844 };
+  for (const [tag, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]] as const) {
     await page.setViewportSize({ width, height });
     await page.screenshot({ path: pathJoin(dir, `${name}-${tag}.png`), fullPage: false });
   }
@@ -27,7 +26,7 @@ export async function captureScreens(page: Page, name: string, viewports: readon
   writeFileSync(pathJoin(dir, `capture-manifest-${name}.json`), JSON.stringify({
     producerHead,
     screen: name,
-    viewports,
+    viewports: ['desktop', 'mobile'],
     servedVersion,
     capturedAtUtc: new Date().toISOString(),
   }, null, 2) + '\n');

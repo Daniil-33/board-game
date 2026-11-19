@@ -67,33 +67,32 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
   expect(won).toMatchObject({ reason: 'choice', assetId: declined.assetId, responder: actor.id, leader: null, leadingBid: null });
-  const auctionObserver = players.find(p => p.id !== won.responder)!;
   for (const p of players) {
     await expect(p.page.locator(sel('auction'))).toBeVisible();
     await expect(p.page.locator(sel('purchase'))).toHaveCount(0);
   }
+  await respond(players, 'pass');
+  const bidder = byId(players, players[0]!.view!.auction!.responder);
+  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
-    await actor.page.setViewportSize({ width: 1440, height: 900 });
-    await captureScreens(actor.page, 'auction', ['desktop']);
+    await bidder.page.setViewportSize({ width: 1440, height: 900 });
+    await bidder.page.locator(sel('auction')).scrollIntoViewIfNeeded();
+    await captureScreens(bidder.page, 'auction');
   }
+  const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
   await expect(auctionObserver.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
   await expect(auctionObserver.page.locator(sel('auction'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-leader'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-timer'))).toBeVisible();
-  if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
-    await captureScreens(auctionObserver.page, 'auction-observer', ['mobile']);
-  }
+  await captureScreens(auctionObserver.page, 'auction-observer');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(auctionObserver, info, 'auction-bystander-390');
-  await respond(players, 'pass');
   await auctionObserver.page.locator(sel('game-tab-journal')).click();
   await auctionObserver.page.locator(sel('chat-input')).fill('Chat during auction');
   await auctionObserver.page.locator(sel('chat-send')).click();
   await expect(auctionObserver.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during auction' })).toBeVisible();
   await auctionObserver.page.locator(sel('game-tab-board')).click();
   await auctionObserver.page.setViewportSize({ width: 1440, height: 900 });
-  const bidder = byId(players, players[0]!.view!.auction!.responder);
-  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   await respond(players, 'bid');
   await respond(players, 'pass');
   // A chosen auction resumes the same turn. Read at settlement: the resumed
@@ -181,14 +180,18 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expectBalances(players, { ...saved.balances, [leader.id]: saved.balances[leader.id]! - saved.auction!.leadingBid! });
   await expectOwner(players, contested.cell, leader, info);
 
+  await Promise.all([
+    observer.page.setViewportSize({ width: 390, height: 844 }),
+    recipient.page.setViewportSize({ width: 390, height: 844 }),
+  ]);
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
   await observer.page.locator(sel('game-tab-assets')).click();
   await captureScreens(observer.page, 'assets');
+  await observer.page.locator(sel('game-tab-board')).click();
   await observer.page.locator(sel('game-tab-more')).click();
   await captureScreens(observer.page, 'more');
   await observer.page.locator(sel('game-tab-journal')).click();
   await captureScreens(observer.page, 'journal');
-  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
   for (const recipient of players) {
     await expect.poll(() => recipient.chats.some(message => message.text === 'Chat during purchase' && message.authorId === observer.id)).toBe(true);
   }
@@ -228,8 +231,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect.poll(() => recipient.welcomes.length).toBeGreaterThan(recipientWelcomes);
   await recipient.page.locator(sel('game-tab-journal')).click();
   await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
-  await observer.page.locator(sel('game-tab-board')).click();
-  await recipient.page.locator(sel('game-tab-board')).click();
 
 });
 
