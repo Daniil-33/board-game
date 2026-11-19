@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-vd-dialogs-2
-revision: 1
+revision: 1 # amended before merge per CTO scope cut 2026-11-19
 effort: EFF-visual-design
 project: economic-board-game
 source_commit: <main after TASK-vd-evidence-frames merges>
@@ -30,8 +30,8 @@ Current app captures: `/srv/agents/evidence/TASK-vd-toast-copy/screens/` and
 | Rent and debts | desktop-09 | No rent card. The design has: a rent card (payer, amount, payee, shortfall, mortgage-or-sell options) and the automatic-liquidation summary. |
 | Elimination | desktop-09 (right) | Check against the frame. |
 | Game over | desktop-10 | Title shown twice and plain text lists. The design has: a winner hero with avatar and final balance; an elimination table (place, avatar, reason, balance); and the actions. |
-| Jail, casino, chance | desktop-08 | Check against the frame. |
-| Product name | lobby desktop-02 | Shell pages say "Настольная игра". TASK-vd-game-layout-2 adds "Economic Board Game" to the game top bar. Use one product name on login, lobby, room and game. |
+| Temporary jail status only | desktop-08 (jail part) | Restyle only the existing temporary-jail status (the double-roll attempts, e.g. "В тюрьме · 1/3") per the frame, using existing projection fields. |
+| Product name | lobby desktop-02 | Shell pages say "Настольная игра". Use "Economic Board Game" everywhere, as in the design (CTO 2026-11-19). |
 
 ## Acceptance criteria
 
@@ -47,8 +47,8 @@ Current app captures: `/srv/agents/evidence/TASK-vd-toast-copy/screens/` and
    rule. No protocol, server or game-core change.
 3. **Behaviour unchanged.** No change to commands, legality or timing. All
    existing test ids stay, and all browser specs pass.
-4. **Product name.** One product name across the shell and game screens.
-   Use the TASK-vd-game-layout-2 top bar's name.
+4. **Product name.** "Economic Board Game" on every screen (login, lobby,
+   room, game), as in the design (CTO 2026-11-19).
 5. **Tests.** Component tests cover:
    - the new structure of each dialog: key elements present, the reason
      texts, the current rent tier highlighted;
@@ -73,7 +73,11 @@ Not in scope:
   (TASK-vd-game-layout-2);
 - protocol, server and game-core;
 - token values;
-- the collector and capture scripts.
+- the collector and capture scripts;
+- **casino and chance dialogs, the chance-card animation and the final
+  "in jail" state.** They have no rules or projection yet; ROADMAP stage 6
+  owns them (CTO 2026-11-19). Do not build them; frame 08's casino and
+  chance parts are out of scope, not deviations.
 
 ## Dependencies
 
