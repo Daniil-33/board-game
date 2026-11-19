@@ -39,7 +39,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   }
   const observer = players.find(p => p !== actor)!;
   await expect(observer.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
-  await expect(observer.page.locator('[role="status"]')).toContainText(assetAt(observer, bought.cell).name);
+  await expect(observer.page.locator('[data-testid="purchase-status"] [role="status"]')).toContainText(assetAt(observer, bought.cell).name);
   await captureScreens(observer.page, 'purchase-observer');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
   await observer.page.locator(sel('game-tab-assets')).click();
