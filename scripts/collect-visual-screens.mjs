@@ -1,20 +1,22 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { assertNonBlankImage } = require('./image-stats.cjs');
 
-const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence';
-const out = process.argv[3] ?? resolve(evidenceRoot, 'TASK-vd-toast-copy/screens');
+const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence/TASK-vd-final-evidence';
+const out = process.argv[3] ?? resolve(evidenceRoot, 'pairs');
+const captureRoot = resolve(evidenceRoot, 'screens');
 const checkoutHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const provenance = [
-  ['TASK-vd-toast-copy/screens/captured-app-fixtures/capture-manifest-build-quota-toast.json', 'build-quota-toast'],
-  ['TASK-vd-toast-copy/screens/captured-app/capture-manifest-reconnect-banner.json', 'reconnect-banner'],
-].map(([path, screen]) => {
-  const manifest = JSON.parse(readFileSync(resolve(evidenceRoot, path), 'utf8'));
+const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'elimination', 'game-over']);
+const provenance = new Map();
+function readManifest(screen) {
+  const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
+  const manifestPath = resolve(captureRoot, captureSet, `capture-manifest-${screen}.json`);
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (manifest.screen !== screen || !Array.isArray(manifest.viewports)
     || !manifest.viewports.includes('desktop') || !manifest.viewports.includes('mobile')) {
     throw new Error(`Invalid capture provenance for ${screen}`);
@@ -22,11 +24,13 @@ const provenance = [
   if (manifest.producerHead !== checkoutHead) {
     throw new Error(`Capture ${screen} was produced by ${manifest.producerHead}, but collector checkout is ${checkoutHead}`);
   }
-  if (typeof manifest.servedVersion !== 'string' || manifest.servedVersion.length === 0) {
-    throw new Error(`Capture ${screen} has no served /version.txt value`);
+  if (manifest.servedVersion !== manifest.producerHead) {
+    throw new Error(`Capture ${screen} producer ${manifest.producerHead} does not match served /version.txt ${manifest.servedVersion}`);
   }
-  return manifest;
-});
+  const result = { ...manifest, captureSet };
+  provenance.set(screen, result);
+  return result;
+}
 const producerHead = checkoutHead;
 const pairs = [
   ['login-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-02-лобби.png', 'Guest login; nearest desktop lobby frame'],
@@ -48,6 +52,8 @@ const pairs = [
   ['purchase-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase bottom sheet'],
   ['auction-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-06-панель-аукциона.png', 'Auction response'],
   ['auction-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction bottom sheet'],
+  ['jail-attempt-status-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Jail attempt status; nearest temporary-jail frame'],
+  ['jail-attempt-status-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Jail attempt status; nearest mobile board frame'],
   ['purchase-observer-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase status for another player'],
   ['auction-observer-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction status for another player'],
   ['asset-card-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-05-карточка-актива-свой-актив.png', 'Asset inspection'],
@@ -67,46 +73,38 @@ const pairs = [
 ].map(([name, designSource, description]) => {
   const viewport = name.endsWith('-mobile') ? 'mobile' : 'desktop';
   const screen = name.replace(/-(desktop|mobile)$/, '');
-  const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'elimination', 'game-over']);
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
   return [name, screen, captureSet, viewport, designSource, description];
 });
 
 for (const [name, screen, captureSet, viewport, designSource] of pairs) {
-  const taskAppSource = `TASK-vd-toast-copy/screens/${captureSet}/${screen}-${viewport}.png`;
-  const legacyAppSource = `TASK-vd-e2e/screens/${captureSet}/${screen}-${viewport}.png`;
-  const appSource = existsSync(resolve(evidenceRoot, taskAppSource)) ? taskAppSource : legacyAppSource;
-  assertNonBlankImage(readFileSync(resolve(evidenceRoot, appSource)), `${name} app screenshot`);
-  assertNonBlankImage(readFileSync(resolve(evidenceRoot, designSource)), `${name} design frame`);
+  if (!provenance.has(screen)) readManifest(screen);
+  const appSource = resolve(captureRoot, captureSet, `${screen}-${viewport}.png`);
+  const designPath = resolve(evidenceRoot, designSource.replace(/^TASK-vd-evidence-frames\//, ''));
+  assertNonBlankImage(readFileSync(appSource), `${name} app screenshot`);
+  assertNonBlankImage(readFileSync(designPath), `${name} design frame`);
 }
 
 mkdirSync(out, { recursive: true });
 const pairIndex = [];
 const rows = pairs.map(([name, screen, captureSet, viewport, designSource, description]) => {
-  const taskAppSource = `TASK-vd-toast-copy/screens/${captureSet}/${screen}-${viewport}.png`;
-  const legacyAppSource = `TASK-vd-e2e/screens/${captureSet}/${screen}-${viewport}.png`;
-  const appSource = existsSync(resolve(evidenceRoot, taskAppSource)) ? taskAppSource : legacyAppSource;
-  const app = resolve(evidenceRoot, appSource);
-  const design = resolve(evidenceRoot, designSource);
+  const manifest = provenance.get(screen) ?? readManifest(screen);
+  const app = resolve(captureRoot, captureSet, `${screen}-${viewport}.png`);
+  const design = resolve(evidenceRoot, designSource.replace(/^TASK-vd-evidence-frames\//, ''));
   const appTarget = resolve(out, `${name}-app.png`);
   const designTarget = resolve(out, `${name}-design.png`);
   mkdirSync(dirname(appTarget), { recursive: true });
   copyFileSync(app, appTarget);
   copyFileSync(design, designTarget);
-  const manifestDir = appSource === taskAppSource ? 'TASK-vd-toast-copy/screens' : 'TASK-vd-e2e/screens';
-  const manifestPath = resolve(evidenceRoot, manifestDir, captureSet, `capture-manifest-${screen}.json`);
-  const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : null;
-  const captureProducer = manifest?.screen === screen && typeof manifest.producerHead === 'string'
-    ? manifest.producerHead
-    : 'TASK-vd-e2e (a0ed3fc)';
-  const servedVersion = typeof manifest?.servedVersion === 'string' ? manifest.servedVersion : 'not recorded';
+  const captureProducer = manifest.producerHead;
+  const servedVersion = manifest.servedVersion;
   let indexed = pairIndex.find(row => row.screen === screen);
   if (!indexed) {
-    indexed = { screen, producer: captureProducer, servedVersion, sourceTask: manifestDir.includes('TASK-vd-toast-copy') ? 'TASK-vd-toast-copy' : 'TASK-vd-e2e', viewports: [] };
+    indexed = { screen, producerHead: captureProducer, servedVersion, captureSet: manifest.captureSet, viewports: [] };
     pairIndex.push(indexed);
   }
   indexed.viewports.push(viewport);
-  return `| ${description} | [App](./${name}-app.png) | ${captureProducer} | ${servedVersion} | [Design frame](./${name}-design.png) |`;
+  return `| ${screen} · ${viewport} | [App](./${name}-app.png) | [Design frame](./${name}-design.png) | ${captureProducer} | ${servedVersion} | ${description} |`;
 });
 writeFileSync(resolve(out, 'capture-manifest.json'), JSON.stringify({
   producerHead,
@@ -114,7 +112,7 @@ writeFileSync(resolve(out, 'capture-manifest.json'), JSON.stringify({
 }, null, 2) + '\n');
 writeFileSync(resolve(out, 'capture-manifest-provenance.json'), JSON.stringify({
   producerHead,
-  manifests: provenance.map(manifest => ({
+  manifests: [...provenance.values()].map(manifest => ({
     screen: manifest.screen,
     producerHead: manifest.producerHead,
     servedVersion: manifest.servedVersion,
@@ -122,22 +120,58 @@ writeFileSync(resolve(out, 'capture-manifest-provenance.json'), JSON.stringify({
     capturedAtUtc: manifest.capturedAtUtc,
   })),
 }, null, 2) + '\n');
-writeFileSync(resolve(out, 'README.md'), [
+const indexReadme = [
   '# Visual design screen pairs',
   '',
-  'Screenshots at 1440×900 and 390×844 for handoff criteria C3 and C4. The provenance column shows the producer commit from a per-screen sidecar, or identifies legacy TASK-vd-e2e evidence where no sidecar exists. Each pair is captured from the same page state at both viewports. Design frames were captured by opening the supplied HTML exports in Chromium as specified in `docs/efforts/visual-design/design.md`. “Nearest” labels identify states without an exact design frame; the pairing is an evidence aid, not an assertion that the states are identical.',
+  `Screenshots at 1440×900 and 390×844 for handoff criteria C3 and C4. All app captures were produced from commit \`${producerHead}\`; each sidecar records the served \`/version.txt\`, which was verified to equal the producer commit. The collector rejects missing manifests, head/version mismatches and blank app or design images. “Nearest” labels identify states without an exact design frame; the pairing is an evidence aid, not an assertion that the states are identical.`,
   '',
-  '| Screen | App capture | App capture producer | Served `/version.txt` | Design frame |',
-  '| --- | --- | --- | --- | --- |',
+  '| Screen | App capture | Design frame | Producer head | Served `/version.txt` | Pairing label |',
+  '| --- | --- | --- | --- | --- | --- |',
   ...rows,
   '',
-  'Board-colour defect: TASK-vd-board-colors fixed the missing production group strips and corner gradients in PR #100; the board captures listed above (see their provenance column) show the fixed production stack.',
+  '## Deviations',
   '',
-  'Staging render (production, 1440×900, version `e2ead69340db160cb37239154aeb8a29e3193198`): [board with group strips and corner gradients](../../TASK-vd-board/staging-render.png).',
+  'The accepted rule is to follow implemented rules and available projection data; these evidence notes record the resulting differences from the design references.',
   '',
-  'The build-quota toast and reconnect-banner app captures were produced by committed head `' + producerHead + '` in Playwright 1.58.2; their per-screen producer manifests record both review viewports and served `/version.txt`. The original TASK-vd-e2e `capture-manifest.json` index was replaced by the first collector version in commit `501ed49`; earlier run and log references remain in [the verification index](../verification.md). This task writes its pair index and provenance manifests only inside its output directory.',
+  '### Brief vs rules',
   '',
-  `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. Each row is labeled from its per-screen sidecar; sources without one are marked \`TASK-vd-e2e (a0ed3fc)\`. The pair index records the producer head and served version for each screen.`,
+  '1. The capacity selector is omitted; rooms show current occupancy out of six.',
+  '2. Joining by code means selecting a listed room and then entering its code.',
+  '3. The players panel has no current-capital figure because the rules define no valuation method.',
+  '4. There is no per-player disconnected badge because projections carry no presence data; a paused turn uses `pausedRemainingMs`.',
+  '5. The purchase “decline” action is `StartAuction`; no decline command exists.',
   '',
-].join('\n'));
+  '### Design details not supplied by the current projection or rules',
+  '',
+  '- No room name or round counter is available; room labels are omitted and no round counter is shown.',
+  '- The turn projection supplies the deadline but no stable total-duration field for the design progress bar.',
+  '- Players use seat-colour initial avatars; avatar artwork is not supplied by the client.',
+  '- Game-over data has no game duration or round count.',
+  '- Restarting a finished game in the same room has no game rule or command.',
+  '- The rent table’s percent-of-price values are derived from the core rent schedule and asset price; they are presentation values, not a separate rule field.',
+  '',
+  'The populated lobby capture shows an open room and a game in progress, both created by other actors before the viewer refreshed the list. The purchase pair is captured from its decider with a separate observer pair; the auction pair is captured from the current responding bidder.',
+  '',
+  '## Known defects',
+  '',
+  'The Team Lead assigned these known visual defects to TASK-vd-layout-polish. They are not fixed in this evidence set:',
+  '',
+  '- At 1440×900, rent/debt notices render below the board.',
+  '- Jail status is not visible; its caption is hidden behind the journal.',
+  '- Room names display raw room IDs.',
+  '- The elimination balance has no label.',
+  '',
+  '## Reproduction',
+  '',
+  'From the task checkout, follow the complete **Final visual-design evidence** recipe in `scripts/README.md`. It includes task-owned Docker networks, fresh task-local databases, standalone checkout mounts, the read-only fixture SQL command, and reconnect commands. The recipe runs the browser suites with one worker. To collect the captured files into this index:',
+  '',
+  `\`\`\`sh\nTASK_EVIDENCE=/srv/agents/evidence/TASK-vd-final-evidence\nnode scripts/collect-visual-screens.mjs "$TASK_EVIDENCE" "$TASK_EVIDENCE/pairs"\n\`\`\``,
+  '',
+].join('\n');
+writeFileSync(resolve(out, 'README.md'), indexReadme);
+const rootLinkPrefix = relative(evidenceRoot, out);
+const rootIndexReadme = rootLinkPrefix
+  ? indexReadme.replace(/\]\(\.\//g, `](./${rootLinkPrefix}/`)
+  : indexReadme;
+writeFileSync(resolve(evidenceRoot, 'README.md'), rootIndexReadme);
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);

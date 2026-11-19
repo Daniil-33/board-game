@@ -1,5 +1,24 @@
 import { test, expect, captureScreens, createRoom, join, sel, setup, start, action } from './helpers';
 
+test('final evidence lobby lists rooms created by other actors', async ({ actors }) => {
+  test.skip(process.env.E2E_SCREEN_EVIDENCE !== '1', 'Evidence-only populated lobby capture');
+  test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room stack');
+  const [openHost, playingHost, playingGuest, viewer] = await actors(4);
+  const openRoom = await createRoom(openHost!);
+  const playingRoom = await createRoom(playingHost!);
+  await join(playingGuest!, playingRoom);
+  await start([playingHost!, playingGuest!]);
+
+  await viewer!.page.locator(sel('refresh')).click();
+  const openRow = viewer!.page.locator(`${sel('room')}[data-room-id="${openRoom}"]`);
+  const playingRow = viewer!.page.locator(`${sel('room')}[data-room-id="${playingRoom}"]`);
+  await expect(openRow).toBeVisible();
+  await expect(openRow.locator(sel('room-status'))).toHaveText('Открытая');
+  await expect(playingRow).toBeVisible();
+  await expect(playingRow.locator(sel('room-status'))).toHaveText('Идёт партия');
+  await captureScreens(viewer!.page, 'lobby');
+});
+
 test('game layout stays within all supported widths and preserves mobile selection', async ({ actors }) => {
   test.setTimeout(300_000);
   test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room setup');

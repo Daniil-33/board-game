@@ -145,7 +145,6 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
         await page.locator(sel('login-enter')).click();
         await expect(page.locator(sel('screen-login'))).toHaveCount(0);
         actor.networkStage = 'lobby';
-        if (actors.length === 1) await captureScreens(page, 'lobby');
       }
       return added;
     });
