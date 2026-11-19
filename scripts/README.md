@@ -1,6 +1,61 @@
 # Visual-design evidence capture
 
-## Required evidence order
+## Final visual-design evidence
+
+This section reproduces `/srv/agents/evidence/TASK-vd-final-evidence/` from
+the task branch. Build disposable task-local stacks from the committed task
+head; do not reuse staging or another task's stack. The primary stack captures
+the lobby, room, game, purchase, auction and reconnect states. The fixture
+stack captures the asset card, rent shortfall, build-quota toast, liquidation,
+elimination and game-over states.
+
+```sh
+TASK_HEAD=$(git rev-parse HEAD)
+TASK_EVIDENCE=/srv/agents/evidence/TASK-vd-final-evidence
+mkdir -p "$TASK_EVIDENCE/screens/captured-app" "$TASK_EVIDENCE/screens/captured-app-fixtures"
+
+sg docker -c "POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8083 docker compose -p vd-final-evidence up --build -d --wait"
+sg docker -c "POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8084 docker compose -p vd-final-evidence-fixtures -f docker-compose.yml -f docker-compose.fixtures.yml up --build -d --wait"
+
+docker run --rm --network host --group-add 111 \
+  -v "$PWD":/workspace -v "$TASK_EVIDENCE":/evidence \
+  -v /usr/bin/docker:/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock \
+  -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
+  -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 \
+  -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app \
+  -e E2E_BASE_URL=http://127.0.0.1:8083 \
+  -e E2E_RECONNECT_STOP_COMMAND='docker compose -p vd-final-evidence stop server' \
+  -e E2E_RESTART_COMMAND='docker compose -p vd-final-evidence start server' \
+  mcr.microsoft.com/playwright:v1.58.2-noble \
+  ./node_modules/.bin/playwright test e2e/game-layout.spec.ts e2e/compose.spec.ts --workers=1
+
+docker run --rm --network host --group-add 111 \
+  -v "$PWD":/workspace -v "$TASK_EVIDENCE":/evidence \
+  -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
+  -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 \
+  -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app-fixtures \
+  -e E2E_FIXTURES=1 -e E2E_BASE_URL=http://127.0.0.1:8084 \
+  mcr.microsoft.com/playwright:v1.58.2-noble \
+  ./node_modules/.bin/playwright test e2e/stage4.spec.ts e2e/stage5.spec.ts --workers=1
+
+docker run --rm -v "$PWD":/workspace -v "$TASK_EVIDENCE":/evidence \
+  -w /workspace mcr.microsoft.com/playwright:v1.58.2-noble \
+  node scripts/capture-design-frames.cjs /evidence/design-frames
+node scripts/collect-visual-screens.mjs "$TASK_EVIDENCE" "$TASK_EVIDENCE/pairs"
+```
+
+The primary browser container needs the Docker socket only for the task-local
+server stop/restart around the reconnect-banner capture. The fixture builders
+are enabled only on the disposable fixture stack. Both capture suites use one
+worker, and every sidecar must record `producerHead` equal to the served
+`/version.txt`. The collector rejects missing or mismatched sidecars and any
+blank app or design image.
+
+## Existing evidence tooling
+
+The older task-specific workflows below are retained for their original task.
+
+### Required evidence order
 
 1. Capture the 18 design frames into `TASK-vd-evidence-frames/design-frames/`.
 2. Capture the app screens, including the stage 3 auction while the responding

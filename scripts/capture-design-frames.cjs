@@ -44,10 +44,20 @@ async function main() {
         let screenshot;
         let lastGuardError;
         let passed = false;
+        const captureFrame = async () => {
+          try {
+            return await iframe.screenshot({
+              animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
+            });
+          } catch (error) {
+            if (error && error.name === 'TimeoutError') {
+              throw new Error(`Frame ${filename} did not render a non-blank image within 30s: screenshot timed out`);
+            }
+            throw error;
+          }
+        };
         while (Date.now() < deadline) {
-          const firstScreenshot = await iframe.screenshot({
-            animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
-          });
+          const firstScreenshot = await captureFrame();
           try {
             assertNonBlankImage(firstScreenshot, filename);
           } catch (error) {
@@ -55,12 +65,16 @@ async function main() {
             await new Promise(resolve => setTimeout(resolve, 500));
             continue;
           }
-          if (Date.now() + 500 >= deadline) break;
+          if (Date.now() + 500 >= deadline) {
+            lastGuardError = new Error('deadline reached before a second stable screenshot');
+            break;
+          }
           await new Promise(resolve => setTimeout(resolve, 500));
-          if (Date.now() >= deadline) break;
-          screenshot = await iframe.screenshot({
-            animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
-          });
+          if (Date.now() >= deadline) {
+            lastGuardError = new Error('deadline reached before a second stable screenshot');
+            break;
+          }
+          screenshot = await captureFrame();
           try {
             assertNonBlankImage(screenshot, filename);
             if (Date.now() <= deadline && firstScreenshot.equals(screenshot)) {
@@ -73,6 +87,7 @@ async function main() {
           }
         }
         if (!passed) {
+          if (Date.now() >= deadline) lastGuardError = new Error('30 second capture deadline reached');
           throw new Error(`Frame ${filename} did not render a non-blank image within 30s: ${lastGuardError?.message ?? 'no screenshot'}`);
         }
         fs.writeFileSync(path.join(out, filename), screenshot);
