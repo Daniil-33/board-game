@@ -4,6 +4,7 @@ import type { Locator } from '@playwright/test';
 import { cellRect, cellStrip } from '../apps/client/src/widgets/board/layout';
 
 test('production board renders group and special colors at desktop and mobile sizes', async ({ actors }, info) => {
+  test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Does not consume entropy reserved for deterministic seeded scenarios');
   const players = await actors(2), host = players[0]!;
   const room = await createRoom(host);
   await join(players[1]!, room);
