@@ -10,6 +10,12 @@ test('game layout stays within all supported widths and preserves mobile selecti
   await start(players);
   await setup(players);
 
+  const turnOwner = players.find(player => player.id === host.view?.turn?.playerId)!;
+  const inactiveViewer = players.find(player => player !== turnOwner)!;
+  await inactiveViewer.page.setViewportSize({ width: 390, height: 844 });
+  await expect(inactiveViewer.page.locator(sel('turn-action-reason'))).toHaveText(`Сейчас ходит Player ${players.indexOf(turnOwner) + 1}.`);
+  await expect(inactiveViewer.page.locator('.actions .ds-disabled-reason:visible')).toHaveCount(0);
+
   const page = host.page;
   const assertNoDesktopPageScroll = async (target: import('./helpers').Actor['page']) => {
     const viewport = target.viewportSize();
@@ -84,6 +90,62 @@ test('game layout stays within all supported widths and preserves mobile selecti
   await expect(page.locator('[role="dialog"]')).toHaveCount(0);
   await leave.click();
   await expect(page.locator(sel('screen-lobby'))).toBeVisible();
+});
+
+test('purchase observers keep the board in the viewport at desktop sizes', async ({ actors }) => {
+  test.setTimeout(300_000);
+  test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room setup');
+  const players = await actors(3);
+  const host = players[0]!;
+  const room = await createRoom(host);
+  for (const guest of players.slice(1)) await join(guest, room);
+  await start(players);
+  await setup(players);
+  const purchase = () => host.view?.purchase ?? null;
+  const auction = () => host.view?.auction ?? null;
+  const rent = () => host.view?.rent ?? null;
+
+  const resolveInterruptions = async () => {
+    while (purchase() || auction() || rent()) {
+      if (purchase()) {
+        const buyer = players.find(player => player.id === purchase()!.playerId)!;
+        await action(buyer, 'start-auction');
+        await syncToActor(players, buyer);
+      } else if (auction()) {
+        const responder = players.find(player => player.id === auction()!.responder)!;
+        await action(responder, 'pass');
+        await syncToActor(players, responder);
+      } else {
+        const payer = players.find(player => player.id === rent()!.payerId)!;
+        await action(payer, 'pay-rent');
+        await syncToActor(players, payer);
+      }
+    }
+  };
+
+  for (let roll = 0; roll < 40; roll++) {
+    await resolveInterruptions();
+    if (purchase()) break;
+    const roller = players.find(player => player.id === host.view!.turn?.playerId)!;
+    await action(roller, 'RollDice');
+    await syncToActor(players, roller);
+    if (purchase()) {
+      const buyerId = purchase()!.playerId;
+      const observer = players.find(player => player.id !== buyerId)!;
+      for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+        await observer.page.setViewportSize({ width, height });
+        await expect(observer.page.locator(sel('purchase-status'))).toBeVisible();
+        await expect.poll(() => observer.page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+        const board = await observer.page.locator(sel('board')).boundingBox();
+        expect(board, `observer board at ${width}x${height}`).not.toBeNull();
+        expect(board!.y + board!.height, `observer board bottom at ${width}x${height}`).toBeLessThanOrEqual(height);
+      }
+      return;
+    }
+    await resolveInterruptions();
+    if (roller.view!.turn?.playerId === roller.id && roller.view!.turn.rolled) await action(roller, 'EndTurn');
+  }
+  throw new Error('No purchase decision reached after 40 rolls');
 });
 
 async function syncToActor(players: import('./helpers').Actor[], actor: import('./helpers').Actor) {

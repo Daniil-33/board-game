@@ -268,6 +268,14 @@ onBeforeUnmount(() => {
     border: 1px solid var(--border-strong);
     box-shadow: var(--shadow-1);
   }
+  .center-column:has(.purchase-status) :deep(.purchase-status) {
+    position: fixed;
+    z-index: 4;
+    inset: 50% auto auto 50%;
+    width: min(420px, calc(100vw - 32px));
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
   .board-column :deep(.turn-header) {
     position: absolute;
     z-index: 2;

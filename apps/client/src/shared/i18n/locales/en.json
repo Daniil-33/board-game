@@ -130,7 +130,7 @@
   },
   "room": {
     "empty_marker": "+",
-    "heading": "Waiting room · {count} of {capacity} seats",
+    "heading": "Waiting room · {players} of {capacity} seats",
     "empty_seat": "Empty",
     "leave_title": "Close room?",
     "leave_warning": "If you leave, this room will close for all players.",

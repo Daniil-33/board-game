@@ -63,4 +63,5 @@ const visibleReasons = computed(() => {
 <style scoped>
 .visible-action-reasons { display: grid; gap: var(--space-1); color: var(--text-muted); font-size: .85rem; }
 .visible-action-reasons p { margin: 0; }
+.actions :deep(.ds-disabled-reason) { display: none; }
 </style>
