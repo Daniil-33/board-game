@@ -45,7 +45,7 @@ The shared logo resolver SHALL provide a fallback monogram by company ID using t
 
 Every light and dark SVG in the brand logo set served by the client SHALL be
 no larger than 20,000 bytes unless it is recorded as an explicit exception in
-the visual-design effort summary. An exception SHALL retain the original or
+`docs/efforts/visual-design/logo-exceptions.md`. An exception SHALL retain the original or
 the smallest candidate that passes the approved visual tolerance, and SHALL
 include raw and gzip byte sizes and the reason it remains oversized.
 

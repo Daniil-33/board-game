@@ -12,9 +12,7 @@ Rejected `BuildHouse` and `SellHouse` acknowledgements SHALL show their client-t
 - **THEN** the HUD SHALL show that command's title and translated reason without the code, server message, or a house reason
 
 ### Requirement: Command rejection and reconnect feedback
-Rejected game commands SHALL show a client-translated action title and translated reason in toasts and HUD messages. They SHALL NOT show protocol codes or server-provided message strings in visible text. When the code has no translated reason, the client SHALL show the action title and a translated retry prompt. The code SHALL remain available in `data-code` for diagnostics. The reconnect banner and offline HUD status SHALL show that the game continues and timers keep running, in the active locale.
-The game SHALL announce reconnecting with a status banner until Welcome restores the session.
-HUD rejection messages without a matching client command SHALL use the generic translated title, show a mapped translated reason when available or the translated retry prompt otherwise, and keep protocol details out of visible text.
+Rejected game commands SHALL show a translated action title and reason in toasts and HUD, without protocol codes or server messages. Missing reasons SHALL use a translated retry prompt; the code SHALL remain in `data-code`. HUD rejections without a command type SHALL use a generic translated title and a mapped reason or retry prompt. The reconnect banner and offline HUD SHALL say in the active locale that the game and timers continue, and SHALL remain until Welcome restores the session.
 
 #### Scenario: Multiple rejections
 - **WHEN** more than three command rejections arrive in quick succession
@@ -33,6 +31,10 @@ HUD rejection messages without a matching client command SHALL use the generic t
 #### Scenario: Unknown rejection reason
 - **WHEN** a client command is rejected with an unknown code
 - **THEN** the client SHALL show the translated title for that command and a translated retry prompt without displaying the code or server message
+
+#### Scenario: Rejection without command type
+- **WHEN** a HUD rejection has no matching client command and has a translated reason
+- **THEN** it SHALL show the generic translated title and mapped reason without the protocol code or server message
 
 #### Scenario: Reconnect status
 - **WHEN** the client is disconnected and reconnecting

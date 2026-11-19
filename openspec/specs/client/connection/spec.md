@@ -63,7 +63,7 @@ outcomes.
 
 #### Scenario: Rejected or accepted mortgage command
 - **WHEN** an Ack rejects or accepts Mortgage or Redeem
-- **THEN** a rejection SHALL show its code and message and neither outcome SHALL change the projected mortgage, balance or rent locally
+- **THEN** a rejection SHALL show its client-translated title and reason without the code or server message, keep the code in `data-code`, and neither outcome SHALL change the projected mortgage, balance or rent locally
 
 ### Requirement: Updates
 On `Update` with a revision greater than the held one the client SHALL
@@ -76,13 +76,16 @@ ignored.
 - **THEN** the view SHALL NOT change and no animation SHALL be queued
 
 ### Requirement: Acknowledgements
-A sent command SHALL stay pending until its `Ack` arrives. A `rejected` `Ack`
-SHALL show its error code and message to the player. An `accepted` `Ack`
-SHALL NOT change the view by itself.
+A sent command SHALL stay pending until its `Ack` arrives. A rejected `Ack`
+SHALL show its client-translated action title and translated reason to the player,
+without protocol codes or server-provided messages in visible text. When no
+translated reason exists, it SHALL show a translated retry prompt. The code
+SHALL remain available in `data-code`. An accepted `Ack` SHALL NOT change the
+view by itself.
 
 #### Scenario: Rejected command
 - **WHEN** `Ack { outcome: 'rejected', error: { code: 'DEADLINE_PASSED', message } }` arrives for a pending command
-- **THEN** the command SHALL no longer be pending and the HUD SHALL show the code and message
+- **THEN** the command SHALL no longer be pending and the HUD SHALL show its client-translated title and reason without the code or server message
 
 ### Requirement: Reconnect
 When the socket closes or errors while a room is joined, the client SHALL
