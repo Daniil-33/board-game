@@ -44,7 +44,8 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   const cell = cellOf(start, assetId), adv = advance(cell.asset!.price), rent = q(cell.asset!.price * 5, 100);
   expect(start.owners[assetId]).toBe(owner.id);
   expect(start.mortgages[assetId]).toEqual({ advance: adv, lapsCompleted: 7, pending: [owner.id], remainingLaps: 1 });
-  await Promise.all(players.map(p => card(p, cell.index)));
+  await card(owner, cell.index);
+  await Promise.all(players.filter(p => p !== owner).map(p => card(p, cell.index)));
   // The clients are checked in parallel to stay well inside the one turn window.
   async function cards(mortgage: string | null, quote: number) {
     await Promise.all(players.map(async p => {
