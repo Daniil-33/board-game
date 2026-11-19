@@ -163,7 +163,7 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
   expect(prisoner.view!.positions[prisoner.id]).toBe((events[1]!.payload as { to: number }).to);
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
   expect(prisoner.view!.turn!.doublesStreak).toBe(0);
-  await expect(prisoner.page.locator(sel('jail'))).toContainText('временное правило');
+  await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 0/3');
   await captureScreens(prisoner.page, 'jail-attempt-status');
   await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
   for (let i = 0; host.view!.turn!.playerId !== prisoner.id; i++) {
