@@ -1,6 +1,7 @@
 const { chromium } = require('/workspace/node_modules/.pnpm/node_modules/playwright');
 const fs = require('node:fs');
 const path = require('node:path');
+const { assertNonBlankImage } = require('./image-stats.cjs');
 
 const root = '/workspace';
 const out = process.argv[2] || '/evidence/design-frames';
@@ -16,8 +17,7 @@ async function main() {
   try {
     for (const [family, source] of sources) {
       const page = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
-      await page.goto(`file://${path.join(root, source)}`, { waitUntil: 'load' });
-      await page.waitForLoadState('networkidle');
+      await page.goto(`file://${path.join(root, source)}`, { waitUntil: 'domcontentloaded' });
       const frames = await page.locator('iframe').evaluateAll(items => items.map(frame => ({
         title: frame.title || 'untitled', width: Number(frame.getAttribute('width')) || 0,
         height: Number(frame.getAttribute('height')) || 0,
@@ -27,7 +27,55 @@ async function main() {
         const filename = `${family}-${String(position + 1).padStart(2, '0')}-${safeTitle}.png`;
         const iframe = page.locator('iframe').nth(position);
         await iframe.waitFor({ state: 'visible' });
-        await iframe.screenshot({ path: path.join(out, filename), animations: 'disabled' });
+        await iframe.scrollIntoViewIfNeeded();
+        const iframeHandle = await iframe.elementHandle();
+        const frameDocument = iframeHandle ? await iframeHandle.contentFrame() : null;
+        if (!frameDocument) throw new Error(`Unable to access the design document in ${filename}`);
+        const deadline = Date.now() + 30_000;
+        const fontsReady = frameDocument.evaluate(() => document.fonts.ready).catch(() => undefined);
+        let fontWaitTimer;
+        await Promise.race([
+          fontsReady,
+          new Promise(resolve => {
+            fontWaitTimer = setTimeout(resolve, Math.max(0, deadline - Date.now()));
+          }),
+        ]);
+        clearTimeout(fontWaitTimer);
+        let screenshot;
+        let lastGuardError;
+        let passed = false;
+        while (Date.now() < deadline) {
+          const firstScreenshot = await iframe.screenshot({
+            animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
+          });
+          try {
+            assertNonBlankImage(firstScreenshot, filename);
+          } catch (error) {
+            lastGuardError = error;
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          if (Date.now() + 500 >= deadline) break;
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (Date.now() >= deadline) break;
+          screenshot = await iframe.screenshot({
+            animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
+          });
+          try {
+            assertNonBlankImage(screenshot, filename);
+            if (Date.now() <= deadline && firstScreenshot.equals(screenshot)) {
+              passed = true;
+              break;
+            }
+            lastGuardError = new Error('two consecutive guarded screenshots differed');
+          } catch (error) {
+            lastGuardError = error;
+          }
+        }
+        if (!passed) {
+          throw new Error(`Frame ${filename} did not render a non-blank image within 30s: ${lastGuardError?.message ?? 'no screenshot'}`);
+        }
+        fs.writeFileSync(path.join(out, filename), screenshot);
         index.push({ family, title: frame.title, width: frame.width, height: frame.height, file: filename, source });
       }
       await page.close();

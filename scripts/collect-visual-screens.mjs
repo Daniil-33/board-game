@@ -2,6 +2,10 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { assertNonBlankImage } = require('./image-stats.cjs');
 
 const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence';
 const out = process.argv[3] ?? resolve(evidenceRoot, 'TASK-vd-toast-copy/screens');
@@ -25,41 +29,41 @@ const provenance = [
 });
 const producerHead = checkoutHead;
 const pairs = [
-  ['login-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-02-лобби.png', 'Guest login; nearest desktop lobby frame'],
-  ['login-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-01-mobile-лобби-copy.png', 'Guest login; nearest mobile lobby frame'],
-  ['lobby-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-02-лобби.png', 'Lobby'],
-  ['lobby-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-01-mobile-лобби-copy.png', 'Lobby'],
-  ['room-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-03-комната-ожидания.png', 'Waiting room'],
-  ['room-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-02-mobile-комната-copy.png', 'Waiting room'],
-  ['turn-order-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-07-розыгрыш-порядка-ходов.png', 'Turn-order roll'],
-  ['turn-order-mobile', 'TASK-vd-e2e/screens/captured-design-frames/desktop-07-розыгрыш-порядка-ходов.png', 'Turn-order roll; nearest desktop frame'],
-  ['create-room-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-02-лобби.png', 'Create-room dialog'],
-  ['create-room-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-01-mobile-лобби-copy.png', 'Create-room bottom sheet'],
-  ['game-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-01-игровой-экран.png', 'Game screen'],
-  ['board-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'Mobile board and navigation'],
-  ['assets-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'My assets'],
-  ['journal-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-05-mobile-журнал-и-чат-copy.png', 'Journal and chat'],
-  ['more-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'More navigation'],
-  ['purchase-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-04-покупка-карточка-при-попадании.png', 'Purchase response'],
-  ['purchase-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase bottom sheet'],
-  ['auction-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-06-панель-аукциона.png', 'Auction response'],
-  ['auction-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction bottom sheet'],
-  ['purchase-observer-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase status for another player'],
-  ['auction-observer-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction status for another player'],
-  ['asset-card-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-05-карточка-актива-свой-актив.png', 'Asset inspection'],
-  ['asset-card-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Asset inspection; nearest My Assets frame'],
-  ['rent-shortfall-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Rent shortfall'],
-  ['rent-shortfall-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Rent shortfall; nearest My Assets frame'],
-  ['build-quota-toast-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Build quota rejection toast; nearest desktop-09 error frame'],
-  ['build-quota-toast-mobile', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Build quota rejection toast; nearest desktop-09 frame for mobile'],
-  ['reconnect-banner-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 connection frame'],
-  ['reconnect-banner-mobile', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 frame for mobile'],
-  ['liquidation-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Automatic liquidation summary'],
-  ['liquidation-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary; nearest My Assets frame'],
-  ['elimination-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer; nearest game frame'],
-  ['elimination-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer; nearest mobile board frame'],
-  ['game-over-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-10-итоги-партии.png', 'Game over'],
-  ['game-over-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'Game over; nearest mobile game frame'],
+  ['login-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-02-лобби.png', 'Guest login; nearest desktop lobby frame'],
+  ['login-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-01-mobile-лобби-copy.png', 'Guest login; nearest mobile lobby frame'],
+  ['lobby-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-02-лобби.png', 'Lobby'],
+  ['lobby-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-01-mobile-лобби-copy.png', 'Lobby'],
+  ['room-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-03-комната-ожидания.png', 'Waiting room'],
+  ['room-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-02-mobile-комната-copy.png', 'Waiting room'],
+  ['turn-order-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-07-розыгрыш-порядка-ходов.png', 'Turn-order roll'],
+  ['turn-order-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-07-розыгрыш-порядка-ходов.png', 'Turn-order roll; nearest desktop frame'],
+  ['create-room-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-02-лобби.png', 'Create-room dialog'],
+  ['create-room-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-01-mobile-лобби-copy.png', 'Create-room bottom sheet'],
+  ['game-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-01-игровой-экран.png', 'Game screen'],
+  ['board-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Mobile board and navigation'],
+  ['assets-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'My assets'],
+  ['journal-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-05-mobile-журнал-и-чат-copy.png', 'Journal and chat'],
+  ['more-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'More navigation'],
+  ['purchase-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-04-покупка-карточка-при-попадании.png', 'Purchase response'],
+  ['purchase-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase bottom sheet'],
+  ['auction-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-06-панель-аукциона.png', 'Auction response'],
+  ['auction-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction bottom sheet'],
+  ['purchase-observer-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase status for another player'],
+  ['auction-observer-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction status for another player'],
+  ['asset-card-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-05-карточка-актива-свой-актив.png', 'Asset inspection'],
+  ['asset-card-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Asset inspection; nearest My Assets frame'],
+  ['rent-shortfall-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Rent shortfall'],
+  ['rent-shortfall-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Rent shortfall; nearest My Assets frame'],
+  ['build-quota-toast-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Build quota rejection toast; nearest desktop-09 error frame'],
+  ['build-quota-toast-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Build quota rejection toast; nearest desktop-09 frame for mobile'],
+  ['reconnect-banner-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 connection frame'],
+  ['reconnect-banner-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 frame for mobile'],
+  ['liquidation-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Automatic liquidation summary'],
+  ['liquidation-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary; nearest My Assets frame'],
+  ['elimination-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer; nearest game frame'],
+  ['elimination-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer; nearest mobile board frame'],
+  ['game-over-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-10-итоги-партии.png', 'Game over'],
+  ['game-over-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Game over; nearest mobile game frame'],
 ].map(([name, designSource, description]) => {
   const viewport = name.endsWith('-mobile') ? 'mobile' : 'desktop';
   const screen = name.replace(/-(desktop|mobile)$/, '');
@@ -67,6 +71,14 @@ const pairs = [
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
   return [name, screen, captureSet, viewport, designSource, description];
 });
+
+for (const [name, screen, captureSet, viewport, designSource] of pairs) {
+  const taskAppSource = `TASK-vd-toast-copy/screens/${captureSet}/${screen}-${viewport}.png`;
+  const legacyAppSource = `TASK-vd-e2e/screens/${captureSet}/${screen}-${viewport}.png`;
+  const appSource = existsSync(resolve(evidenceRoot, taskAppSource)) ? taskAppSource : legacyAppSource;
+  assertNonBlankImage(readFileSync(resolve(evidenceRoot, appSource)), `${name} app screenshot`);
+  assertNonBlankImage(readFileSync(resolve(evidenceRoot, designSource)), `${name} design frame`);
+}
 
 mkdirSync(out, { recursive: true });
 const pairIndex = [];
