@@ -40,34 +40,48 @@ const leaderColor = computed(() => {
 
 <template>
   <section v-if="view.auction" class="asset-card decision-panel auction-card" :aria-label="t('auction_panel.auction')" data-testid="auction">
-    <header class="auction-header"><p>{{ t('auction_panel.title', { asset: asset?.name }) }}</p><small>{{ t('auction_panel.leading_bid') }}</small><strong data-testid="auction-leading-bid">{{ view.auction.leadingBid === null ? t('auction_panel.none') : formatMoney(view.auction.leadingBid) }}</strong>
-      <span class="auction-leader"><span>{{ t('auction_panel.leader') }}</span><strong data-testid="auction-leader" :style="{ color: leaderColor }">{{ view.auction.leader === null ? t('auction_panel.none') : nameOf(view.auction.leader) }}</strong></span>
+    <header class="auction-header">
+      <p>{{ t('auction_panel.title', { asset: asset?.name }) }}</p>
+      <div class="auction-bid-panel">
+        <div class="auction-bid-copy"><small>{{ t('auction_panel.leading_bid') }}</small><strong data-testid="auction-leading-bid">{{ view.auction.leadingBid === null ? t('auction_panel.none') : formatMoney(view.auction.leadingBid) }}</strong>
+          <span class="auction-bid-terms">{{ t('auction_panel.start_bid') }} {{ formatMoney(view.auction.startBid) }} <i class="terms-separator" aria-hidden="true"></i> {{ t('auction_panel.step') }} {{ formatMoney(view.auction.step) }}</span>
+        </div>
+        <span class="auction-leader"><span>{{ t('auction_panel.leader') }}</span><strong data-testid="auction-leader" :style="{ color: leaderColor }">{{ view.auction.leader === null ? t('auction_panel.none') : nameOf(view.auction.leader) }}</strong></span>
+      </div>
     </header>
-    <div class="auction-terms"><div><small>{{ t('auction_panel.start_bid') }}</small><strong>{{ formatMoney(view.auction.startBid) }}</strong></div><div><small>{{ t('auction_panel.step') }}</small><strong>{{ formatMoney(view.auction.step) }}</strong></div></div>
-    <ul class="response-queue" data-testid="auction-queue"><li v-for="id in view.auction.order" :key="id" :data-state="responseState(id)" :data-player-id="id" :style="{ '--seat-color': `var(--player-${Math.max(0, view.players.findIndex(player => player.id === id)) + 1}` }">
-      <span class="queue-dot" aria-hidden="true"></span><strong>{{ nameOf(id) }}</strong><span>{{ responseLabel(id) }}</span>
-    </li></ul>
+    <div class="queue-block"><p class="queue-label">{{ t('auction_panel.queue_label') }}</p>
+      <ul class="response-queue" data-testid="auction-queue"><li v-for="id in view.auction.order" :key="id" :data-state="responseState(id)" :data-player-id="id" :style="{ '--seat-color': `var(--player-${Math.max(0, view.players.findIndex(player => player.id === id)) + 1}` }">
+        <span class="queue-dot" aria-hidden="true"></span><strong>{{ nameOf(id) }}</strong><span>{{ responseLabel(id) }}</span>
+      </li></ul>
+    </div>
     <div class="timer-row"><span data-testid="auction-timer" :data-last-seconds="seconds <= 3">{{ t('common.seconds_remaining', { seconds: formatSeconds(seconds) }) }}</span>
       <div class="auction-progress" role="progressbar" :aria-label="t('auction_panel.response_progress')" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="Math.round(elapsedPercent)"><span :style="{ width: `${elapsedPercent}%` }"></span></div>
     </div>
     <template v-if="responding">
-      <Button variant="primary" data-testid="bid" :disabled="!canIssue(props, 'Bid')" @click="emit('command', 'Bid')">{{ t('auction_panel.bid', { amount: formatMoney(nextBidAmount(view.auction)) }) }}</Button>
-      <Button data-testid="pass" :disabled="!canIssue(props, 'PassAuction')" @click="emit('command', 'PassAuction')">{{ t('auction_panel.pass') }}</Button>
+      <div class="auction-actions">
+        <Button variant="primary" data-testid="bid" :disabled="!canIssue(props, 'Bid')" @click="emit('command', 'Bid')">{{ t('auction_panel.bid', { amount: formatMoney(nextBidAmount(view.auction)) }) }}</Button>
+        <Button data-testid="pass" :disabled="!canIssue(props, 'PassAuction')" @click="emit('command', 'PassAuction')">{{ t('auction_panel.pass') }}</Button>
+      </div>
       <p class="pass-note">{{ t('auction_panel.pass_irrevocable') }}</p>
     </template>
   </section>
 </template>
 
 <style scoped>
-.auction-card { display: grid; gap: var(--space-3); background: var(--bg-deep); border-top: 4px solid var(--highlight); }
-.auction-header { display: grid; justify-items: center; gap: var(--space-1); padding: var(--space-3); border-radius: var(--design-radius-lg); background: var(--surface-1); }
-.auction-header p { margin: 0; color: var(--text-muted); }
-.auction-header > strong { color: var(--highlight); font-size: clamp(1.7rem, 5vw, 2.5rem); font-variant-numeric: tabular-nums; }
-.auction-header small, .auction-leader > span { color: var(--text-muted); }
-.auction-leader { display: flex; align-items: baseline; gap: var(--space-1); }
-.auction-terms { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--space-2); }
-.auction-terms div { display: grid; gap: var(--space-1); padding: var(--space-2); background: var(--surface-1); border-radius: var(--design-radius-md); }
-.auction-terms small, .pass-note { color: var(--text-muted); }
+.auction-card { display: grid; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--border-strong); border-radius: var(--design-radius-xl); background: linear-gradient(145deg, var(--surface-1), var(--bg-deep) 48%, var(--surface-1)); box-shadow: var(--shadow-1); }
+.auction-header { display: grid; gap: var(--space-3); }
+.auction-header p { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.auction-bid-panel { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--design-radius-lg); background: var(--bg-deep); }
+.auction-bid-copy { display: grid; gap: 2px; min-width: 0; }
+.auction-bid-copy > small, .auction-leader > span { color: var(--text-muted); }
+.auction-bid-copy > strong { font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1; font-variant-numeric: tabular-nums; }
+.auction-bid-terms { color: var(--text-muted); font-size: .82rem; }
+.auction-bid-terms i { display: inline-block; width: 3px; height: 3px; margin: 0 var(--space-1); border-radius: 50%; background: currentColor; vertical-align: middle; }
+.auction-leader { display: grid; justify-items: end; gap: var(--space-1); text-align: right; }
+.auction-leader strong { font-size: 1.05rem; }
+.queue-block { display: grid; gap: var(--space-2); }
+.queue-label { margin: 0; color: var(--text-muted); font-size: .85rem; }
+.pass-note { color: var(--text-muted); }
 .response-queue { list-style: none; display: grid; gap: var(--space-1); padding: 0; margin: 0; }
 .response-queue li { display: grid; grid-template-columns: 12px minmax(0,1fr) auto; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--border-subtle); border-radius: var(--design-radius-md); }
 .response-queue li[data-state="responding"] { border-color: var(--highlight); background: var(--surface-1); }
@@ -79,18 +93,24 @@ const leaderColor = computed(() => {
 .auction-progress { height: 8px; overflow: hidden; border-radius: 99px; background: var(--surface-2); }
 .auction-progress span { display: block; height: 100%; background: var(--highlight); transition: width .2s linear; }
 .pass-note { margin: 0; font-size: .85rem; }
+.auction-actions { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-2); }
+.auction-actions :deep(button) { width: 100%; min-height: 52px; margin: 0; }
+.auction-actions :deep(button:first-child) { background: var(--gradient-auction); }
 [data-last-seconds="true"] { color: var(--danger-text); font-weight: 700; }
 @media (max-width: 600px) {
-  .auction-card { gap: var(--space-2); border-top-width: 3px; }
-  .auction-header { grid-template-columns: 1fr auto; justify-items: stretch; text-align: left; padding: var(--space-2); }
-  .auction-header p, .auction-terms { display: none; }
-  .auction-header small { grid-column: 1; grid-row: 1; }
-  .auction-header > strong { grid-column: 1; grid-row: 2; font-size: 2rem; }
-  .auction-leader { grid-column: 2; grid-row: 1 / 3; flex-direction: column; align-items: flex-end; justify-content: center; }
-  .response-queue { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-  .response-queue li { display: flex; gap: var(--space-1); border: 0; border-radius: 999px; padding: var(--space-1) var(--space-2); background: var(--surface-1); font-size: .78rem; }
-  .response-queue li > span:last-child { font-size: .78rem; }
+  .auction-card { gap: var(--space-3); padding: var(--space-4); border-radius: var(--design-radius-lg); }
+  .auction-header { gap: var(--space-2); }
+  .auction-header p { font-size: .92rem; }
+  .auction-bid-panel { padding: var(--space-3); gap: var(--space-2); }
+  .auction-bid-copy > strong { font-size: 2rem; }
+  .auction-bid-terms { font-size: .7rem; }
+  .auction-leader strong { font-size: .9rem; }
+  .response-queue { gap: var(--space-1); }
+  .response-queue li { grid-template-columns: 10px minmax(0,1fr); gap: var(--space-1) var(--space-2); padding: var(--space-2); }
+  .response-queue li > span:last-child { grid-column: 2; text-align: left; }
   .auction-progress { height: 6px; }
   .pass-note { font-size: .8rem; }
+  .auction-actions { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .auction-actions :deep(button) { min-height: 48px; padding-inline: var(--space-2); font-size: .88rem; }
 }
 </style>

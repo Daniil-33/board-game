@@ -262,7 +262,8 @@ onBeforeUnmount(() => {
     position: fixed;
     z-index: 4;
     inset: 50% auto auto 50%;
-    width: min(420px, calc(100vw - 32px));
+    width: min(516px, calc(100vw - 32px));
+    max-width: 516px;
     max-height: calc(100dvh - 32px);
     margin: 0;
     overflow: auto;

@@ -202,6 +202,7 @@
     "title": "Auction: {asset}",
     "start_bid": "Start bid",
     "step": "Step",
+    "queue_label": "Response queue",
     "leading_bid": "Leading bid",
     "leader": "Leader",
     "bid": "Bid {amount}",

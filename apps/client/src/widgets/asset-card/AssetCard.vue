@@ -160,6 +160,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
 
 <style scoped>
 .asset-inspection { position: relative; overflow: hidden; background: var(--bg-deep); }
+.asset-inspection dl { grid-template-columns: minmax(120px, .9fr) minmax(0, 1.6fr); gap: var(--space-1) var(--space-3); align-items: baseline; }
+.asset-inspection dt { min-width: 0; color: var(--text-muted); overflow-wrap: anywhere; }
+.asset-inspection dd { min-width: 0; overflow-wrap: anywhere; }
+.asset-inspection .rent-table { width: 100%; table-layout: auto; }
 .asset-header { display: flex; align-items: center; gap: var(--space-3); margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) var(--space-3); padding: var(--space-4) var(--space-4) var(--space-3); background: var(--asset-gradient); }
 .asset-header img, .asset-monogram { width: 48px; height: 48px; flex: none; object-fit: contain; border-radius: var(--design-radius-md); }
 .asset-monogram { display: grid; place-items: center; background: var(--bg-deep); font-weight: 700; }
@@ -177,4 +181,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
 .member-details { display: block; }
 .rent-table [aria-current="true"] { color: var(--highlight); background: var(--surface-1); font-weight: 700; }
 .rent-table [aria-current="true"] th { border-inline-start: 3px solid var(--highlight); }
+@media (max-width: 600px) {
+  .asset-inspection dl { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); font-size: .88rem; }
+  .asset-inspection .rent-table th, .asset-inspection .rent-table td { padding-inline: var(--space-1); }
+}
 </style>
