@@ -154,9 +154,9 @@ writeFileSync(resolve(out, 'README.md'), [
   '',
   '## Reproduction',
   '',
-  'From the task checkout, follow the complete **Final visual-design evidence** recipe in `scripts/README.md`. It includes the task-owned Docker networks, standalone checkout mounts, read-only fixture SQL command, reconnect commands, and the fresh database required by the seeded stack. The recipe runs the browser suites with one worker and writes only to this task evidence folder. After capture, collect the pairs with:',
+  'From the task checkout, follow the complete **Final visual-design evidence** recipe in `scripts/README.md`. It includes task-owned Docker networks, fresh task-local databases, standalone checkout mounts, the read-only fixture SQL command, and reconnect commands. The recipe runs the browser suites with one worker. To collect the captured files into this index:',
   '',
-  `\`\`\`sh\nnode scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\n\`\`\``,
+  `\`\`\`sh\nTASK_EVIDENCE=/srv/agents/evidence/TASK-vd-final-evidence\nnode scripts/collect-visual-screens.mjs "$TASK_EVIDENCE" "$TASK_EVIDENCE/pairs"\n\`\`\``,
   '',
 ].join('\n'));
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);

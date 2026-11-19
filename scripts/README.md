@@ -28,7 +28,9 @@ sg docker -c 'docker network create --driver bridge --subnet 10.250.0.0/24 vd-fi
 sg docker -c 'docker network create --driver bridge --subnet 10.251.0.0/24 vd-final-evidence-fixtures-net'
 sg docker -c 'docker network create --driver bridge --subnet 10.252.0.0/24 vd-final-evidence-seeded-net'
 
-# The deterministic seed stack must use a fresh DB, including on reruns.
+# Clear only these task-owned projects so every capture starts with a fresh DB.
+sg docker -c "TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8083 docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence down --volumes"
+sg docker -c "TASK_NETWORK=vd-final-evidence-fixtures-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8084 docker compose -f docker-compose.yml -f docker-compose.fixtures.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence-fixtures down --volumes"
 sg docker -c "TASK_NETWORK=vd-final-evidence-seeded-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8085 docker compose -f docker-compose.yml -f docker-compose.e2e.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence-seeded down --volumes"
 
 sg docker -c "TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8083 docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence up --build -d --wait"
