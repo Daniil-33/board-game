@@ -275,6 +275,9 @@ onBeforeUnmount(() => {
     width: min(420px, calc(100vw - 32px));
     margin: 0;
     transform: translate(-50%, -50%);
+    background: var(--bg-deep);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-1);
   }
   .board-column :deep(.turn-header) {
     position: absolute;

@@ -1,4 +1,4 @@
-import { test, expect, createRoom, join, sel, setup, start, action } from './helpers';
+import { test, expect, captureScreens, createRoom, join, sel, setup, start, action } from './helpers';
 
 test('game layout stays within all supported widths and preserves mobile selection', async ({ actors }) => {
   test.setTimeout(300_000);
@@ -8,7 +8,10 @@ test('game layout stays within all supported widths and preserves mobile selecti
   const room = await createRoom(host);
   for (const guest of players.slice(1)) await join(guest, room);
   await start(players);
+  await captureScreens(host.page, 'turn-order');
   await setup(players);
+  await captureScreens(host.page, 'game');
+  await captureScreens(host.page, 'board');
 
   const turnOwner = players.find(player => player.id === host.view?.turn?.playerId)!;
   const inactiveViewer = players.find(player => player !== turnOwner)!;
@@ -131,15 +134,35 @@ test('purchase observers keep the board in the viewport at desktop sizes', async
     await syncToActor(players, roller);
     if (purchase()) {
       const buyerId = purchase()!.playerId;
+      const buyer = players.find(player => player.id === buyerId)!;
       const observer = players.find(player => player.id !== buyerId)!;
       for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
         await observer.page.setViewportSize({ width, height });
-        await expect(observer.page.locator(sel('purchase-status'))).toBeVisible();
+        const purchaseStatus = observer.page.locator(sel('purchase-status'));
+        await expect(purchaseStatus).toBeVisible();
+        await expect.poll(() => purchaseStatus.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(15, 21, 39)');
         await expect.poll(() => observer.page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
         const board = await observer.page.locator(sel('board')).boundingBox();
         expect(board, `observer board at ${width}x${height}`).not.toBeNull();
         expect(board!.y + board!.height, `observer board bottom at ${width}x${height}`).toBeLessThanOrEqual(height);
       }
+      await captureScreens(observer.page, 'purchase-observer');
+      await observer.page.setViewportSize({ width: 390, height: 844 });
+      await observer.page.locator(sel('game-tab-assets')).click();
+      await captureScreens(observer.page, 'assets');
+      await observer.page.locator(sel('game-tab-journal')).click();
+      await captureScreens(observer.page, 'journal');
+      await observer.page.locator(sel('game-tab-more')).click();
+      await captureScreens(observer.page, 'more');
+      await observer.page.locator(sel('game-tab-board')).click();
+      await captureScreens(buyer.page, 'purchase');
+      await action(buyer, 'start-auction');
+      await syncToActor(players, buyer);
+      const auctionState = host.view!.auction!;
+      const responder = players.find(player => player.id === auctionState.responder)!;
+      const auctionObserver = players.find(player => player.id !== auctionState.responder)!;
+      await captureScreens(responder.page, 'auction');
+      await captureScreens(auctionObserver.page, 'auction-observer');
       return;
     }
     await resolveInterruptions();
