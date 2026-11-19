@@ -235,7 +235,9 @@ describe('roster and room entry lifetime', () => {
     expect(h.client.session.state.room).toBeNull(); expect(h.client.lobby.notice).toContain('закрыта');
     const another = harness({ stored: storedSession(TWO) }); another.client.start();
     another.sockets.last().receive({ t: 'Error', code: 'ROOM_CLOSED', message: 'The host closed the room' });
-    expect(another.client.session.state.room).toBeNull(); expect(another.client.lobby.notice).toContain('The host closed the room');
+    expect(another.client.session.state.room).toBeNull(); expect(another.client.lobby.notice).toBe('Комната закрыта. Вы вернулись в лобби.');
+    expect(another.client.lobby.notice).not.toContain('ROOM_CLOSED');
+    expect(another.client.lobby.notice).not.toContain('The host closed the room');
   });
 
   it('leave failure retains the room; successful leave clears local state with a message', async () => {
@@ -265,7 +267,11 @@ describe('resignation, spectator and game over', () => {
     expect(sock.sent.filter((f) => f.t === 'Command')).toEqual([{ t: 'Command', commandId: 'c1', type: 'Resign', expected: { kind: 'revision', revision: 12 }, payload: null }]);
     expect(h.client.game.view?.eliminated).toEqual([]);
     sock.receive({ t: 'Ack', commandId: 'c1', outcome: 'rejected', revision: 12, error: { code: 'REVISION_MISMATCH', message: 'Changed' } } as never);
-    await flushPromises(); expect(wrapper.text()).toContain('REVISION_MISMATCH');
+    await flushPromises();
+    const toast = wrapper.get('.ds-toast');
+    expect(toast.get('.ds-toast-title').text()).toBe('Нельзя сдаться');
+    expect(toast.get('.ds-toast-description').text()).toBe('Состояние партии изменилось. Повторите действие.');
+    expect(wrapper.text()).not.toContain('REVISION_MISMATCH');
     sock.receive({ ...update(view), revision: 13 } as never);
     await wrapper.get('[data-testid="Resign"]').trigger('click'); await wrapper.get('[data-testid="confirm-resign"]').trigger('click');
     expect(sock.sent.at(-1)).toMatchObject({ expected: { kind: 'revision', revision: 13 } });

@@ -6,4 +6,4 @@
 - [x] 3. Generate reproducible design screenshots and logo coverage evidence.
 - [x] 4. Diagnose the disabled EndTurn wait and complete 20 repeated affected-spec runs.
 - [x] 5. Record CI timings and staging-after load-split evidence when deployment prerequisites are met.
-- [ ] 6. Update only the visual-design completion entry in ROADMAP, run required checks, and prepare the PR and independent review.
+- [x] 6. Update only the visual-design completion entry in ROADMAP, run required checks, and prepare the PR and independent review.

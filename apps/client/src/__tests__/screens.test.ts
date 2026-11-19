@@ -377,7 +377,9 @@ describe('App screen selection', () => {
 
     h.sockets.last().receive({ t: 'Ack', commandId: 'c1', outcome: 'rejected', revision: 9, error: { code: 'DEADLINE_PASSED', message: 'Too late' } } as never);
     await flushPromises();
-    expect(wrapper.find('[data-testid="message"]').text()).toContain('DEADLINE_PASSED');
+    expect(wrapper.find('[data-testid="message"] .ds-toast-title').text()).toBe('Нельзя бросить кости');
+    expect(wrapper.find('[data-testid="message"] .ds-toast-description').text()).toBe('Время хода вышло.');
+    expect(wrapper.find('[data-testid="message"]').text()).not.toContain('DEADLINE_PASSED');
     expect(roll.attributes('disabled')).toBeUndefined();
   });
 
@@ -390,6 +392,6 @@ describe('App screen selection', () => {
     await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('lobby');
     expect(h.storage.getItem('game.room')).toBeNull();
-    expect(wrapper.find('[data-testid="notice"]').text()).toContain('ROOM_UNAVAILABLE');
+    expect(wrapper.find('[data-testid="notice"]').text()).toBe('Комната больше недоступна. Вы вернулись в лобби.');
   });
 });

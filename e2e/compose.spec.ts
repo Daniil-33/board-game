@@ -53,6 +53,7 @@ test('three guests: setup, movement, reload, server restart and resignation to w
     const reconnectViewer = players[0]!;
     const reconnectBanner = reconnectViewer.page.locator(sel('offline'));
     await expect(reconnectBanner).toBeVisible();
+    await expect(reconnectBanner).toContainText('Партия продолжается, таймеры идут');
     await reconnectBanner.scrollIntoViewIfNeeded();
     await expect(reconnectBanner).toBeInViewport();
     await captureScreens(reconnectViewer.page, 'reconnect-banner');

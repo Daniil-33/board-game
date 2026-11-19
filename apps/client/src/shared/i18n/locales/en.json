@@ -33,7 +33,6 @@
     "room_left": "You left the room.",
     "room_unavailable": "The room is no longer available. You are back in the lobby.",
     "session_expired": "Your session is no longer valid. Log in again.",
-    "return_reason": "You are back in the lobby: {message} ({code})",
     "error": "{message} ({code})",
     "unexpected_error": "Unexpected error",
     "joining_invite": "Joining the invited room.",
@@ -245,7 +244,7 @@
     "setup_player": "Rolling for turn order: {player}",
     "your_bonus_turn": "Your turn (bonus turn after a double)",
     "player_bonus_turn": "Turn: {player} (bonus turn after a double)",
-    "rejected_command": "{code}: {message} — {reason}"
+    "connection_lost_detail": "The game continues, and timers keep running"
   },
   "turn_order": {
     "setup_title": "Who goes first",
@@ -321,7 +320,6 @@
     "setup_phase": "Determining turn order",
     "rules": "Rules summary",
     "rules_summary": "Roll dice, buy assets, and collect rent. The last active player wins.",
-    "command_rejected": "Command rejected ({code}): {message}",
     "auction_phase": "Auction",
     "after_roll": "Actions after rolling",
     "before_roll": "Waiting for a roll",
@@ -391,7 +389,26 @@
     "auction": "Wait for the auction to end.",
     "insufficient_funds": "Insufficient funds.",
     "persistence_failed": "The command could not be saved.",
-    "invalid": "Invalid command."
+    "invalid": "Invalid command.",
+    "try_again": "Try again.",
+    "with_title": "{title} — {reason}"
+  },
+  "command_title": {
+    "generic": "Action rejected",
+    "server_error": "Server error",
+    "roll_for_order": "Can't roll to determine turn order",
+    "roll_dice": "Can't roll the dice",
+    "end_turn": "Can't end the turn",
+    "resign": "Can't resign",
+    "buy_asset": "Can't buy the asset",
+    "start_auction": "Can't start the auction",
+    "bid": "Can't place a bid",
+    "pass_auction": "Can't leave the auction",
+    "pay_rent": "Can't pay rent",
+    "build_house": "Can't build a house",
+    "sell_house": "Can't sell a house",
+    "mortgage": "Can't mortgage the asset",
+    "redeem": "Can't redeem the asset"
   },
   "sound": {
     "controls": "Sound controls",

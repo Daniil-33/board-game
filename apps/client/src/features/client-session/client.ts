@@ -222,9 +222,11 @@ export function createClient(deps: ClientDeps): Client {
       lobby.notice = t('client.session_expired');
     },
     onRoomLost(error) {
-      cleanup(error.code === 'NOT_A_PARTICIPANT' && leavingEntry === entry
-        ? t('client.room_left')
-        : t('client.return_reason', { message: error.message, code: error.code }));
+      cleanup(error.code === 'ROOM_CLOSED'
+        ? t('client.room_closed')
+        : error.code === 'ROOM_UNAVAILABLE'
+          ? t('client.room_unavailable')
+          : t('client.room_left'));
     },
   });
 

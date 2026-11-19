@@ -204,13 +204,15 @@ it('shows and announces a toast, then dismisses it with the labeled close button
   render(() => h(Toast, {
     open: open.value,
     'onUpdate:open': (value: boolean) => { open.value = value; },
+    title: 'Нельзя построить дом',
     message: 'Приглашение скопировано.',
   }));
   expect(element('.ds-toast')).toBeNull();
   open.value = true;
   await vi.waitFor(() => {
-    expect(element('.ds-toast')?.textContent).toContain('Приглашение скопировано.');
-    expect(element('[role="status"]').textContent).toBe('Приглашение скопировано.');
+    expect(element('.ds-toast .ds-toast-title')?.textContent).toBe('Нельзя построить дом');
+    expect(element('.ds-toast .ds-toast-description')?.textContent).toBe('Приглашение скопировано.');
+    expect(element('[role="status"]').textContent).toBe('Нельзя построить дом. Приглашение скопировано.');
     expect(element('[role=region]').getAttribute('aria-label')).toContain('Уведомления');
   });
   element('.ds-toast button[aria-label="Закрыть"]').click();

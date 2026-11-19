@@ -250,8 +250,10 @@ describe('mortgage intents', () => {
     h.sockets.last().receive({ t: 'Ack', commandId: 'c3' as CommandId, outcome: 'rejected', revision: view.revision, error: { code: 'INSUFFICIENT_FUNDS', message: 'INSUFFICIENT_FUNDS' } });
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view };
     const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-testid="message"]').map(m => m.text());
-    expect(texts[0]).toContain(`HAS_HOUSES: HAS_HOUSES — ${MORTGAGE_REASONS.HAS_HOUSES}`);
-    expect(texts[1]).toContain(`INSUFFICIENT_FUNDS: INSUFFICIENT_FUNDS — ${MORTGAGE_REASONS.INSUFFICIENT_FUNDS}`);
+    expect(texts[0]).toContain(`Нельзя заложить актив — ${MORTGAGE_REASONS.HAS_HOUSES}`);
+    expect(texts[1]).toContain(`Нельзя выкупить актив — ${MORTGAGE_REASONS.INSUFFICIENT_FUNDS}`);
+    expect(texts[0]).not.toContain('HAS_HOUSES');
+    expect(texts[1]).not.toContain('INSUFFICIENT_FUNDS');
     expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
     h.client.returnToLobby();
   });

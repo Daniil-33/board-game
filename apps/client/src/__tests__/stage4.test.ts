@@ -304,7 +304,8 @@ describe('rent and building intents', () => {
     expect(h.client.game.view!.houses).toEqual(view.houses); expect(h.client.game.view!.balances).toEqual(view.balances);
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view };
     const w = mount(Hud, { props: { ...base, messages: h.client.game.messages } });
-    expect(w.get('[data-testid="message"]').text()).toContain(`UNEVEN_BUILD: UNEVEN_BUILD — ${HOUSE_REASONS.UNEVEN_BUILD}`);
+    expect(w.get('[data-testid="message"]').text()).toContain(`Нельзя построить дом — ${HOUSE_REASONS.UNEVEN_BUILD}`);
+    expect(w.get('[data-testid="message"]').text()).not.toContain('UNEVEN_BUILD');
     h.client.returnToLobby();
   });
   it('shows no house reason for a rejected purchase or bid with a shared code (RVW-001)', () => {
@@ -326,9 +327,10 @@ describe('rent and building intents', () => {
     expect(h.client.game.messages.map(m => m.commandType)).toEqual(['BuyAsset', 'Bid', 'BuildHouse']);
     const base = { me: pid('a'), connected: true, pending: [] as ClientCommandType[], now: 50_000, problem: null, fatal: null, nameOf, colorOf, view: auction };
     const texts = mount(Hud, { props: { ...base, messages: h.client.game.messages } }).findAll('[data-testid="message"]').map(m => m.text());
-    expect(texts[0]).toContain('INSUFFICIENT_FUNDS: Purchase exceeds balance'); expect(texts[0]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
-    expect(texts[1]).toContain('INSUFFICIENT_FUNDS: Bid exceeds balance'); expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
-    expect(texts[2]).toContain(`INSUFFICIENT_FUNDS: INSUFFICIENT_FUNDS — ${HOUSE_REASONS.INSUFFICIENT_FUNDS}`);
+    expect(texts[0]).toContain('Нельзя купить актив — Недостаточно средств.'); expect(texts[0]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
+    expect(texts[1]).toContain('Нельзя сделать ставку — Недостаточно средств.'); expect(texts[1]).not.toContain(HOUSE_REASONS.INSUFFICIENT_FUNDS);
+    expect(texts[2]).toContain(`Нельзя построить дом — ${HOUSE_REASONS.INSUFFICIENT_FUNDS}`);
+    expect(texts.every(text => !text.includes('INSUFFICIENT_FUNDS') && !text.includes('balance'))).toBe(true);
     h.client.returnToLobby();
   });
 });

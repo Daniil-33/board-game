@@ -63,7 +63,7 @@ outcomes.
 
 #### Scenario: Rejected or accepted mortgage command
 - **WHEN** an Ack rejects or accepts Mortgage or Redeem
-- **THEN** a rejection SHALL show its code and message and neither outcome SHALL change the projected mortgage, balance or rent locally
+- **THEN** the toast SHALL show the translated Mortgage or Redeem title on a separate bold line and its translated reason below it, the HUD SHALL show both on one line, neither SHALL show the code or server message, the code SHALL remain in `data-code` and diagnostic logs, and neither outcome SHALL change the projected mortgage, balance or rent locally
 
 ### Requirement: Updates
 On `Update` with a revision greater than the held one the client SHALL
@@ -76,13 +76,18 @@ ignored.
 - **THEN** the view SHALL NOT change and no animation SHALL be queued
 
 ### Requirement: Acknowledgements
-A sent command SHALL stay pending until its `Ack` arrives. A `rejected` `Ack`
-SHALL show its error code and message to the player. An `accepted` `Ack`
-SHALL NOT change the view by itself.
+A sent command SHALL stay pending until its `Ack` arrives. A rejected `Ack`
+SHALL show its client-translated title and reason without protocol codes or
+server-provided messages in visible text. When no translated reason exists, it
+SHALL show a translated retry prompt. The code SHALL remain in `data-code` and
+diagnostic logs. Under CTO decision (2026-11-19 ~07:08Z, option A), players
+SHALL see only localized title and reason. An accepted `Ack` SHALL NOT change
+the view by itself.
 
 #### Scenario: Rejected command
 - **WHEN** `Ack { outcome: 'rejected', error: { code: 'DEADLINE_PASSED', message } }` arrives for a pending command
-- **THEN** the command SHALL no longer be pending and the HUD SHALL show the code and message
+- **THEN** the command SHALL no longer be pending, the toast SHALL show its translated bold title above the reason with a live announcement containing both, the HUD SHALL show title and reason on one line, and neither SHALL show the code or server message; the code SHALL remain in `data-code` and diagnostic logs
+
 
 ### Requirement: Reconnect
 When the socket closes or errors while a room is joined, the client SHALL
