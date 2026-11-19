@@ -91,11 +91,11 @@ function cleanupRoom(roomId) {
   if (!cleanupCommand) throw new Error('TASK_ROOM_CLEANUP_COMMAND is required to remove the task-created staging room');
   const sql = [
     'BEGIN;',
-    `DELETE FROM game_results WHERE room_id = '${roomId}';`,
-    `DELETE FROM chat_messages WHERE room_id = '${roomId}';`,
-    `DELETE FROM game_log WHERE game_id = '${roomId}';`,
-    `DELETE FROM game_snapshots WHERE game_id = '${roomId}';`,
-    `DELETE FROM room_members WHERE room_id = '${roomId}';`,
+    `DELETE FROM game_results WHERE room_id IN (SELECT id FROM rooms WHERE id = '${roomId}' AND status = 'finished');`,
+    `DELETE FROM chat_messages WHERE room_id IN (SELECT id FROM rooms WHERE id = '${roomId}' AND status = 'finished');`,
+    `DELETE FROM game_log WHERE game_id IN (SELECT id FROM rooms WHERE id = '${roomId}' AND status = 'finished');`,
+    `DELETE FROM game_snapshots WHERE game_id IN (SELECT id FROM rooms WHERE id = '${roomId}' AND status = 'finished');`,
+    `DELETE FROM room_members WHERE room_id IN (SELECT id FROM rooms WHERE id = '${roomId}' AND status = 'finished');`,
     `DELETE FROM rooms WHERE id = '${roomId}' AND status = 'finished' RETURNING id;`,
     'COMMIT;',
   ].join('\n');

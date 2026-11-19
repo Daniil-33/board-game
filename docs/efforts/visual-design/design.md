@@ -332,7 +332,7 @@ strings. The tokens task translates them to Russian per the design.
 workflow:
 - `compose-browser`: the production stack scenarios (stages 1-3, chat,
   mobile turn, turn-order roll);
-- `compose-browser-fixtures`: the isolated fixture stack (stages 4-5).
+- `compose-browser-fixtures`: the isolated fixture stack (stages 4-5); the mobile house-build step runs here.
 
 `compose-browser-seeded` stays. Each job keeps its own evidence artifact.
 The staging deploy keeps waiting on the CI workflow, so a new job gates it

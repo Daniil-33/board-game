@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence';
 const out = process.argv[3] ?? resolve(evidenceRoot, 'TASK-vd-e2e/screens');
+const producerHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const pairs = [
   ['login-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-02-лобби.png', 'Guest login; nearest desktop lobby frame'],
   ['login-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-01-mobile-лобби-copy.png', 'Guest login; nearest mobile lobby frame'],
@@ -30,6 +32,10 @@ const pairs = [
   ['asset-card-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Asset inspection; nearest My Assets frame'],
   ['rent-shortfall-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Rent shortfall'],
   ['rent-shortfall-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Rent shortfall; nearest My Assets frame'],
+  ['build-quota-toast-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Build quota rejection toast; nearest desktop-09 error frame'],
+  ['build-quota-toast-mobile', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Build quota rejection toast; nearest desktop-09 frame for mobile'],
+  ['reconnect-banner-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 connection frame'],
+  ['reconnect-banner-mobile', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 frame for mobile'],
   ['liquidation-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Automatic liquidation summary'],
   ['liquidation-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary; nearest My Assets frame'],
   ['elimination-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer; nearest game frame'],
@@ -39,7 +45,7 @@ const pairs = [
 ].map(([name, designSource, description]) => {
   const viewport = name.endsWith('-mobile') ? 'mobile' : 'desktop';
   const screen = name.replace(/-(desktop|mobile)$/, '');
-  const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'liquidation', 'elimination', 'game-over']);
+  const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'elimination', 'game-over']);
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
   return [name, `TASK-vd-e2e/screens/${captureSet}/${screen}-${viewport}.png`, designSource, description];
 });
@@ -69,7 +75,7 @@ writeFileSync(resolve(out, 'README.md'), [
   '',
   'Staging render (production, 1440×900, version `e2ead69340db160cb37239154aeb8a29e3193198`): [board with group strips and corner gradients](../../TASK-vd-board/staging-render.png).',
   '',
-  'App source captures were produced by committed head `86b010088c1257ca5a46edd6eac209cb58750593` in Playwright 1.58.2; both local web stacks report product version `e01304f`. The exact capture runs, viewports, and log paths are in [capture-manifest.json](./capture-manifest.json).',
+  'App source captures were produced by committed head `' + producerHead + '` in Playwright 1.58.2; both local web stacks report product version `e01304f`. The exact capture runs, viewports, and log paths are in [capture-manifest.json](./capture-manifest.json).',
   '',
   `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. Current-head app source PNGs are retained in \`captured-app/\` and \`captured-app-fixtures/\`.`,
   '',

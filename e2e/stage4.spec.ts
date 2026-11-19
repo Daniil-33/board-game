@@ -175,6 +175,7 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   await expect(mover.page.locator(sel('build-reason'))).toHaveText('Дом уже построен в этом ходу.');
   await rejectedBuild(players, mover, secondId, 'BUILD_QUOTA_USED');
   await expect(mover.page.locator(`${sel('message')}[data-code="BUILD_QUOTA_USED"]`)).toContainText('Дом уже построен в этом ходу.');
+  await captureScreens(mover.page, 'build-quota-toast');
   await close(mover);
   const turn = mover.view!.turn!.turnId;
   await click(players, mover, 'EndTurn');
