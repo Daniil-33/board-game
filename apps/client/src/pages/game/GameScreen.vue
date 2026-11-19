@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
     transform: translate(-50%, -50%);
   }
   .game-dialogs:has([data-testid="auction"]) :deep(.auction-card) {
-    background: var(--bg-surface);
+    background: var(--bg-deep);
     border: 1px solid var(--border-strong);
     box-shadow: var(--shadow-1);
   }
