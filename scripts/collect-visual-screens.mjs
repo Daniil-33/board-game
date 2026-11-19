@@ -98,9 +98,9 @@ writeFileSync(resolve(out, 'README.md'), [
   '',
   'Staging render (production, 1440×900, version `e2ead69340db160cb37239154aeb8a29e3193198`): [board with group strips and corner gradients](../../TASK-vd-board/staging-render.png).',
   '',
-  'The build-quota toast and reconnect-banner app captures were produced by committed head `' + producerHead + '` in Playwright 1.58.2; their per-screen producer manifests record both review viewports. Other app images and the evidence index manifest are retained from the earlier TASK-vd-e2e evidence run. Both local web stacks report product version `e01304f`.',
+  'The build-quota toast and reconnect-banner app captures were produced by committed head `' + producerHead + '` in Playwright 1.58.2; their per-screen producer manifests record both review viewports. Other app images and the evidence index manifest are retained from the earlier TASK-vd-e2e evidence run.',
   '',
-  `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. Current-head app source PNGs are retained in \`captured-app/\` and \`captured-app-fixtures/\`.`,
+  `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. The current-head toast and reconnect app source PNGs are retained in \`captured-app-fixtures/\` and \`captured-app/\`; all other app source PNGs are retained from the earlier TASK-vd-e2e evidence run.`,
   '',
 ].join('\n'));
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);
