@@ -120,7 +120,7 @@ writeFileSync(resolve(out, 'capture-manifest-provenance.json'), JSON.stringify({
     capturedAtUtc: manifest.capturedAtUtc,
   })),
 }, null, 2) + '\n');
-writeFileSync(resolve(out, 'README.md'), [
+const indexReadme = [
   '# Visual design screen pairs',
   '',
   `Screenshots at 1440×900 and 390×844 for handoff criteria C3 and C4. All app captures were produced from commit \`${producerHead}\`; each sidecar records the served \`/version.txt\`, which was verified to equal the producer commit. The collector rejects missing manifests, head/version mismatches and blank app or design images. “Nearest” labels identify states without an exact design frame; the pairing is an evidence aid, not an assertion that the states are identical.`,
@@ -152,11 +152,22 @@ writeFileSync(resolve(out, 'README.md'), [
   '',
   'The populated lobby capture shows an open room and a game in progress, both created by other actors before the viewer refreshed the list. The purchase pair is captured from its decider with a separate observer pair; the auction pair is captured from the current responding bidder.',
   '',
+  '## Known defects',
+  '',
+  'The Team Lead assigned these known visual defects to TASK-vd-layout-polish. They are not fixed in this evidence set:',
+  '',
+  '- At 1440×900, rent/debt notices render below the board.',
+  '- Jail status is not visible; its caption is hidden behind the journal.',
+  '- Room names display raw room IDs.',
+  '- The elimination balance has no label.',
+  '',
   '## Reproduction',
   '',
   'From the task checkout, follow the complete **Final visual-design evidence** recipe in `scripts/README.md`. It includes task-owned Docker networks, fresh task-local databases, standalone checkout mounts, the read-only fixture SQL command, and reconnect commands. The recipe runs the browser suites with one worker. To collect the captured files into this index:',
   '',
   `\`\`\`sh\nTASK_EVIDENCE=/srv/agents/evidence/TASK-vd-final-evidence\nnode scripts/collect-visual-screens.mjs "$TASK_EVIDENCE" "$TASK_EVIDENCE/pairs"\n\`\`\``,
   '',
-].join('\n'));
+].join('\n');
+writeFileSync(resolve(out, 'README.md'), indexReadme);
+writeFileSync(resolve(evidenceRoot, 'README.md'), indexReadme);
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);

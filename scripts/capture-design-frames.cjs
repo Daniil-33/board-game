@@ -87,7 +87,12 @@ async function main() {
           }
         }
         if (!passed) {
-          if (Date.now() >= deadline) lastGuardError = new Error('30 second capture deadline reached');
+          if (Date.now() >= deadline) {
+            const cause = lastGuardError?.message;
+            lastGuardError = new Error(cause
+              ? `30 second capture deadline reached; last guard error: ${cause}`
+              : '30 second capture deadline reached');
+          }
           throw new Error(`Frame ${filename} did not render a non-blank image within 30s: ${lastGuardError?.message ?? 'no screenshot'}`);
         }
         fs.writeFileSync(path.join(out, filename), screenshot);

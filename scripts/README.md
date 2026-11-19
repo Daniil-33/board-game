@@ -122,11 +122,7 @@ stage 3 purchase/auction test with `E2E_SCREEN_EVIDENCE=1` and
 `auction-mobile.png` from the bidder whose response is currently enabled. The
 desktop file is a full-page screenshot so the auction panel, rendered below the
 board, is included; the mobile file shows the responsive auction sheet.
-Finally collect the full comparison set when its app captures are current:
-
-```sh
-node scripts/collect-visual-screens.mjs /srv/agents/evidence /srv/agents/evidence/TASK-vd-e2e/screens
-```
+This older collector invocation was superseded by the **Final visual-design evidence** recipe at the top of this file. Use that task-scoped recipe for current captures and collection.
 
 The pure PNG statistics helper is covered by:
 
