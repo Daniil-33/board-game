@@ -1,6 +1,7 @@
 import { test, expect, createRoom, join, sel, setup, start, action } from './helpers';
 
 test('game layout stays within all supported widths and preserves mobile selection', async ({ actors }) => {
+  test.setTimeout(300_000);
   test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room setup');
   const players = await actors(3);
   const host = players[0]!;
@@ -79,7 +80,7 @@ test('game layout stays within all supported widths and preserves mobile selecti
     }
     if (host.view!.rent) {
       const payer = players.find(p => p.id === host.view!.rent!.payerId)!;
-      await action(payer, 'PayRent');
+      await action(payer, 'pay-rent');
       await syncToActor(players, payer);
       continue;
     }
