@@ -1,14 +1,22 @@
-// Reproduction: see scripts/README.md. Run from the repository root in
-// mcr.microsoft.com/playwright:v1.58.2-noble with /workspace and /evidence
-// mounts. Lighthouse is pinned to 12.8.2 below; STAGING_URL selects the origin.
+// Reproduction: docker run --rm --network host --group-add 111
+// -v "$PWD":/workspace -v "$TASK_EVIDENCE_DIR":/evidence
+// -v /usr/bin/docker:/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock
+// -e TASK_ROOM_CLEANUP_COMMAND='docker exec -i game-staging-db-1 psql -U game -d game -v ON_ERROR_STOP=1 -At'
+// mcr.microsoft.com/playwright:v1.58.2-noble node scripts/capture-staging-after.cjs
+// Lighthouse is pinned in the root package.json. Configure STAGING_URL and
+// TASK_EVIDENCE_DIR when the defaults do not fit the host environment.
 const { chromium } = require('/workspace/node_modules/.pnpm/node_modules/playwright');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const cleanupCommand = process.env.TASK_ROOM_CLEANUP_COMMAND;
 
 const base = process.env.STAGING_URL || 'https://stage.focusima.space';
-const evidence = '/evidence';
+const evidence = process.env.TASK_EVIDENCE_DIR || '/evidence';
+const workspace = process.env.TASK_WORKSPACE_DIR || '/workspace';
+const boardEvidence = process.env.TASK_BOARD_EVIDENCE_DIR;
+fs.mkdirSync(evidence, { recursive: true });
 const selector = id => `[data-testid="${id}"]`;
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'vd-e2e-game-'));
 
@@ -69,12 +77,33 @@ async function transferCapture(page, name, stagingVersion) {
 
 function lighthouse(url, output, userDataDir) {
   const flags = `--headless --no-sandbox --disable-dev-shm-usage --disable-cache --user-data-dir=${userDataDir}`;
-  const result = spawnSync('npx', [
-    '--yes', 'lighthouse@12.8.2', url, '--output=json', `--output-path=${path.join(evidence, output)}`,
+  const lighthouseCli = path.join(workspace, 'node_modules/lighthouse/cli/index.js');
+  const result = spawnSync(process.execPath, [
+    lighthouseCli, url, '--output=json', `--output-path=${path.join(evidence, output)}`,
     '--only-categories=performance', '--form-factor=mobile', '--throttling-method=simulate',
     '--disable-storage-reset', `--chrome-flags=${flags}`,
   ], { env: { ...process.env, CHROME_PATH: '/ms-playwright/chromium-1208/chrome-linux64/chrome' }, stdio: 'inherit' });
   if (result.status !== 0) throw new Error(`Lighthouse ${output} failed with status ${result.status}`);
+}
+
+function cleanupRoom(roomId) {
+  if (!/^r_[A-Za-z0-9_-]+$/.test(roomId)) throw new Error(`Invalid task-created room id: ${roomId}`);
+  if (!cleanupCommand) throw new Error('TASK_ROOM_CLEANUP_COMMAND is required to remove the task-created staging room');
+  const sql = [
+    'BEGIN;',
+    `DELETE FROM game_results WHERE room_id = '${roomId}';`,
+    `DELETE FROM chat_messages WHERE room_id = '${roomId}';`,
+    `DELETE FROM game_log WHERE game_id = '${roomId}';`,
+    `DELETE FROM game_snapshots WHERE game_id = '${roomId}';`,
+    `DELETE FROM room_members WHERE room_id = '${roomId}';`,
+    `DELETE FROM rooms WHERE id = '${roomId}' AND status = 'finished' RETURNING id;`,
+    'COMMIT;',
+  ].join('\n');
+  const result = spawnSync('sh', ['-c', cleanupCommand], { input: sql, encoding: 'utf8', maxBuffer: 1024 * 1024 });
+  if (result.status !== 0 || !result.stdout.includes(roomId)) {
+    throw new Error(`Staging cleanup failed for finished room ${roomId}: ${result.stderr || result.stdout}`);
+  }
+  return { roomId, removed: true, method: 'transactional deletion of this finished task room and its room-scoped records' };
 }
 
 async function main() {
@@ -157,6 +186,16 @@ async function main() {
   await hostPage.waitForFunction(() => window.__e2eView?.phase === 'playing');
   await hostPage.locator(selector('board-canvas')).waitFor({ state: 'visible' });
 
+  if (boardEvidence) {
+    await hostPage.setViewportSize({ width: 1440, height: 900 });
+    await hostPage.locator(selector('board-canvas')).waitFor({ state: 'visible' });
+    fs.mkdirSync(boardEvidence, { recursive: true });
+    await hostPage.screenshot({ path: path.join(boardEvidence, 'staging-render.png'), fullPage: false });
+    fs.writeFileSync(path.join(boardEvidence, 'staging-render.json'), JSON.stringify({
+      requestedUrl: base, stagingVersion, viewport: '1440x900', renderedFromStaging: true,
+    }, null, 2));
+  }
+
   await transferCapture(hostPage, 'staging-after-game-transferred.json', stagingVersion);
   await hostContext.close();
   lighthouse(`${base}/`, 'staging-after-login-lighthouse.json', fs.mkdtempSync(path.join(os.tmpdir(), 'vd-e2e-login-')));
@@ -181,11 +220,12 @@ async function main() {
   await guestPage.locator(selector('Resign')).click();
   await guestPage.locator(selector('confirm-resign')).click();
   await guestPage.locator(selector('game-over-title')).waitFor({ state: 'visible' });
+  const roomCleanup = cleanupRoom(roomId);
   await guestContext.close();
   await guestBrowser.close();
   await browser.close();
   fs.writeFileSync(path.join(evidence, 'staging-after-capture.json'), JSON.stringify({
-    stagingVersion, lighthouseVersion: '12.8.2', playwrightVersion: '1.58.2', viewport: '390x844', throttling: 'mobile simulated navigation',
+    stagingVersion, lighthouseVersion: '12.8.2', playwrightVersion: '1.58.2', viewport: '390x844', throttling: 'mobile simulated navigation', roomCleanup,
   }, null, 2));
 }
 

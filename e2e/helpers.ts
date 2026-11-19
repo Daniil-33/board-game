@@ -1,10 +1,24 @@
 import { test as base, expect, type Page, type BrowserContext, type Request } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join as pathJoin } from 'node:path';
 import type { StateView, GameEvent } from '../packages/game-core/src/index';
 
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
+/** Capture one unchanged app state at both review viewports on the current test head. */
+export async function captureScreens(page: Page, name: string): Promise<void> {
+  if (process.env['E2E_SCREEN_EVIDENCE'] !== '1') return;
+  const dir = process.env['E2E_SCREEN_EVIDENCE_DIR'];
+  if (!dir) throw new Error('E2E_SCREEN_EVIDENCE_DIR is required when E2E_SCREEN_EVIDENCE=1');
+  mkdirSync(dir, { recursive: true });
+  const original = page.viewportSize() ?? { width: 1280, height: 720 };
+  for (const [tag, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.screenshot({ path: pathJoin(dir, `${name}-${tag}.png`), fullPage: false });
+  }
+  await page.setViewportSize(original);
+}
 export interface Actor {
   page: Page;
   context: BrowserContext;
@@ -89,10 +103,12 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
         await page.goto(invite ?? '/');
         await expect(page.locator(sel('nickname'))).toHaveAccessibleName('Ник');
         await expect(page.locator(sel('login-enter'))).toHaveAccessibleName('Войти');
+        if (actors.length === 1) await captureScreens(page, 'login');
         await page.locator(sel('nickname')).fill(`Player ${actors.length}`);
         await page.locator(sel('login-enter')).click();
         await expect(page.locator(sel('screen-login'))).toHaveCount(0);
         actor.networkStage = 'lobby';
+        if (actors.length === 1) await captureScreens(page, 'lobby');
       }
       return added;
     });
@@ -118,11 +134,13 @@ export { expect };
 export async function createRoom(host: Actor, code?: string): Promise<string> {
   await host.page.locator(sel('open-create')).click();
   if (code) await host.page.locator(sel('create-code')).fill(code);
+  await captureScreens(host.page, 'create-room');
   await host.page.locator(sel('create')).click();
   await expect(host.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => host.view?.phase).toBe('lobby');
   await expect(host.page.locator(sel('room-title'))).toHaveRole('heading');
   await expect(host.page.locator(sel('room-title'))).toHaveText(/^Комната r_/);
+  await captureScreens(host.page, 'room');
   return (await host.page.locator(sel('room-title')).innerText()).replace('Комната ', '');
 }
 export async function join(actor: Actor, roomId: string, code?: string): Promise<void> {
@@ -155,14 +173,17 @@ export async function action(actor: Actor, type: string): Promise<void> {
     const turnId = actor.view.turn.turnId;
     const endTurn = actor.page.locator(sel(type));
     await expect(endTurn).toBeVisible();
-    // Check and dispatch in one browser task so the UI countdown cannot disable
-    // the button between a test-runner clock check and Playwright's click.
-    // If it is already disabled, the authoritative server timeout is resolving;
-    // either way, finish on the projected turn transition.
-    await endTurn.evaluate((element) => {
-      if (!(element instanceof HTMLButtonElement) || element.disabled) return;
-      element.click();
-    });
+    // Race the rendered action against the authoritative turn projection. If
+    // the timeout wins, the changed turn is the successful outcome. If the
+    // button is enabled first, dispatch it atomically with the enabled check;
+    // a timeout that wins between those observations is still accepted below.
+    await expect.poll(async () => actor.view?.turn?.turnId !== turnId || await endTurn.isEnabled()).toBe(true);
+    if (actor.view?.turn?.turnId === turnId) {
+      await endTurn.evaluate((element) => {
+        if (!(element instanceof HTMLButtonElement) || element.disabled) return;
+        element.click();
+      });
+    }
     await expect.poll(() => actor.view?.turn?.turnId).not.toBe(turnId);
     return;
   }

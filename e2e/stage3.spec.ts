@@ -4,7 +4,7 @@ import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { BOARD_SIZE, cellRect, tokenSlot } from '../apps/client/src/widgets/board/layout';
-import { test, expect, sel, createRoom, join, start, setup, active, action, sendRaw, waitGameReady, type Actor } from './helpers';
+import { test, expect, sel, createRoom, join, start, setup, active, action, sendRaw, waitGameReady, captureScreens, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
 
 /**
@@ -40,11 +40,19 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const observer = players.find(p => p !== actor)!;
   await expect(observer.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
   await expect(observer.page.locator('[role="status"]')).toContainText(assetAt(observer, bought.cell).name);
+  await captureScreens(observer.page, 'purchase-observer');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
+  await observer.page.locator(sel('game-tab-assets')).click();
+  await captureScreens(observer.page, 'assets');
+  await observer.page.locator(sel('game-tab-board')).click();
   await observer.page.locator(sel('game-tab-journal')).click();
+  await captureScreens(observer.page, 'journal');
   await observer.page.locator(sel('chat-input')).fill('Chat during purchase');
   await observer.page.locator(sel('chat-send')).click();
   await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
+  await observer.page.locator(sel('game-tab-more')).click();
+  await captureScreens(observer.page, 'more');
+  await observer.page.locator(sel('game-tab-journal')).click();
   for (const recipient of players) {
     await expect.poll(() => recipient.chats.some(message => message.text === 'Chat during purchase' && message.authorId === observer.id)).toBe(true);
   }
@@ -86,6 +94,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await recipient.page.locator(sel('game-tab-journal')).click();
   await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
   const buyFrom = actor.events.length;
+  await captureScreens(actor.page, 'purchase');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'purchase-open');
   await click(actor, players, 'buy');
   expect(actor.events.slice(buyFrom).map(e => e.event)).toEqual([
@@ -102,6 +111,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const turnId = actor.view!.turn!.turnId;
   const beforeWon = structuredClone(actor.view!.balances);
   await click(actor, players, 'start-auction');
+  await captureScreens(actor.page, 'auction');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
   expect(won).toMatchObject({ reason: 'choice', assetId: declined.assetId, responder: actor.id, leader: null, leadingBid: null });
@@ -116,6 +126,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(auctionObserver.page.locator(sel('auction'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-leader'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-timer'))).toBeVisible();
+  await captureScreens(auctionObserver.page, 'auction-observer');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(auctionObserver, info, 'auction-bystander-390');
   await auctionObserver.page.locator(sel('game-tab-journal')).click();
   await auctionObserver.page.locator(sel('chat-input')).fill('Chat during auction');
@@ -217,6 +228,7 @@ test('stage 3: turn deadline starts the auction, reload and server restart keep 
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Server restart needs the production stack');
   test.setTimeout(600_000);
   const players = await threePlayers(actors), host = players[0]!;
+  await Promise.all(players.map(p => p.page.setViewportSize({ width: 1440, height: 900 })));
   const actor = await nextOffer(players);
   const offer = actor.view!.purchase!;
   const turn = structuredClone(actor.view!.turn!);
@@ -300,7 +312,10 @@ async function threePlayers(actors: Actors, mobile = false): Promise<Actor[]> {
   const room = await createRoom(players[0]!);
   for (const p of players.slice(1)) await join(p, room);
   await start(players);
+  await captureScreens(players[0]!.page, 'turn-order');
   await setup(players);
+  await captureScreens(players[0]!.page, 'game');
+  await captureScreens(players[0]!.page, 'board');
   if (mobile) await Promise.all(players.map(p => p.page.setViewportSize({ width: 390, height: 844 })));
   return players;
 }
@@ -362,7 +377,7 @@ async function nextOffer(players: Actor[]): Promise<Actor> {
       await expect(actor.page.locator(sel('buy'))).toBeVisible();
       return actor;
     }
-    await click(actor, players, view.turn!.rolled ? 'EndTurn' : 'RollDice');
+    await action(actor, view.turn!.rolled ? 'EndTurn' : 'RollDice');
   }
   throw Error('No purchase offer in 100 actions');
 }
