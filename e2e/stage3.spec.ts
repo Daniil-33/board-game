@@ -58,56 +58,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expectOwner(players, bought.cell, actor, info);
   await shoot(players, info, 'bought');
 
-  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
-  await observer.page.locator(sel('game-tab-assets')).click();
-  await captureScreens(observer.page, 'assets');
-  await observer.page.locator(sel('game-tab-more')).click();
-  await captureScreens(observer.page, 'more');
-  await observer.page.locator(sel('game-tab-journal')).click();
-  await captureScreens(observer.page, 'journal');
-  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
-  for (const recipient of players) {
-    await expect.poll(() => recipient.chats.some(message => message.text === 'Chat during purchase' && message.authorId === observer.id)).toBe(true);
-  }
-  // Submit a second valid message immediately: the server's TOO_FAST reason
-  // must reach the visible rejection status, not only the socket observer.
-  await observer.page.evaluate(() => {
-    const form = document.querySelector<HTMLFormElement>('[data-testid="chat-composer"]')!;
-    const input = form.querySelector<HTMLTextAreaElement>('[data-testid="chat-input"]')!;
-    for (const text of ['Chat before rejection', 'Chat sent too fast']) {
-      input.value = text;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      form.requestSubmit();
-    }
-  });
-  const tooFast = observer.page.locator(`${sel('chat-rejection')}[data-reason="TOO_FAST"]`).filter({ hasText: 'Chat sent too fast' });
-  await expect(tooFast).toContainText('Chat sent too fast');
-  await expect(tooFast).toContainText('Подождите перед отправкой следующего сообщения.');
-  const invalidId = `e2e-invalid-chat-${Date.now()}`;
-  await observer.page.evaluate(({ clientMsgId }) => {
-    (window as unknown as { __e2eSocket: WebSocket }).__e2eSocket.send(JSON.stringify({
-      t: 'ChatSend', clientMsgId, text: 'bad\ttext',
-    }));
-  }, { clientMsgId: invalidId });
-  await expect.poll(() => observer.chatAcks.find(ack => ack.clientMsgId === invalidId)).toMatchObject({ ok: false, reason: 'CONTROL_CHARACTER' });
-  await observer.page.locator(sel('chat-input')).fill('bad\ttext');
-  await expect(observer.page.locator(sel('chat-validation'))).toHaveText('Сообщение содержит недопустимый символ.');
-  await expect(observer.page.locator(sel('chat-send'))).toBeDisabled();
-  const chatWelcomeCount = observer.welcomes.length;
-  await observer.page.reload();
-  await waitGameReady(observer);
-  await expect.poll(() => observer.welcomes.length).toBeGreaterThan(chatWelcomeCount);
-  await observer.page.locator(sel('game-tab-journal')).click();
-  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
-  const recipientWelcomes = recipient.welcomes.length;
-  await recipient.page.reload();
-  await waitGameReady(recipient);
-  await expect.poll(() => recipient.welcomes.length).toBeGreaterThan(recipientWelcomes);
-  await recipient.page.locator(sel('game-tab-journal')).click();
-  await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
-  await observer.page.locator(sel('game-tab-board')).click();
-  await recipient.page.locator(sel('game-tab-board')).click();
-
   // 2. Decline into an auction: the landing player passes, the next bids, the last passes.
   actor = await nextOffer(players);
   const declined = actor.view!.purchase!;
@@ -230,6 +180,56 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   expect(contestEvents.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: leader.id, amount: saved.auction!.leadingBid });
   await expectBalances(players, { ...saved.balances, [leader.id]: saved.balances[leader.id]! - saved.auction!.leadingBid! });
   await expectOwner(players, contested.cell, leader, info);
+
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
+  await observer.page.locator(sel('game-tab-assets')).click();
+  await captureScreens(observer.page, 'assets');
+  await observer.page.locator(sel('game-tab-more')).click();
+  await captureScreens(observer.page, 'more');
+  await observer.page.locator(sel('game-tab-journal')).click();
+  await captureScreens(observer.page, 'journal');
+  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
+  for (const recipient of players) {
+    await expect.poll(() => recipient.chats.some(message => message.text === 'Chat during purchase' && message.authorId === observer.id)).toBe(true);
+  }
+  // Submit a second valid message immediately: the server's TOO_FAST reason
+  // must reach the visible rejection status, not only the socket observer.
+  await observer.page.evaluate(() => {
+    const form = document.querySelector<HTMLFormElement>('[data-testid="chat-composer"]')!;
+    const input = form.querySelector<HTMLTextAreaElement>('[data-testid="chat-input"]')!;
+    for (const text of ['Chat before rejection', 'Chat sent too fast']) {
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      form.requestSubmit();
+    }
+  });
+  const tooFast = observer.page.locator(`${sel('chat-rejection')}[data-reason="TOO_FAST"]`).filter({ hasText: 'Chat sent too fast' });
+  await expect(tooFast).toContainText('Chat sent too fast');
+  await expect(tooFast).toContainText('Подождите перед отправкой следующего сообщения.');
+  const invalidId = `e2e-invalid-chat-${Date.now()}`;
+  await observer.page.evaluate(({ clientMsgId }) => {
+    (window as unknown as { __e2eSocket: WebSocket }).__e2eSocket.send(JSON.stringify({
+      t: 'ChatSend', clientMsgId, text: 'bad\ttext',
+    }));
+  }, { clientMsgId: invalidId });
+  await expect.poll(() => observer.chatAcks.find(ack => ack.clientMsgId === invalidId)).toMatchObject({ ok: false, reason: 'CONTROL_CHARACTER' });
+  await observer.page.locator(sel('chat-input')).fill('bad\ttext');
+  await expect(observer.page.locator(sel('chat-validation'))).toHaveText('Сообщение содержит недопустимый символ.');
+  await expect(observer.page.locator(sel('chat-send'))).toBeDisabled();
+  const chatWelcomeCount = observer.welcomes.length;
+  await observer.page.reload();
+  await waitGameReady(observer);
+  await expect.poll(() => observer.welcomes.length).toBeGreaterThan(chatWelcomeCount);
+  await observer.page.locator(sel('game-tab-journal')).click();
+  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
+  const recipientWelcomes = recipient.welcomes.length;
+  await recipient.page.reload();
+  await waitGameReady(recipient);
+  await expect.poll(() => recipient.welcomes.length).toBeGreaterThan(recipientWelcomes);
+  await recipient.page.locator(sel('game-tab-journal')).click();
+  await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
+  await observer.page.locator(sel('game-tab-board')).click();
+  await recipient.page.locator(sel('game-tab-board')).click();
 
 });
 
