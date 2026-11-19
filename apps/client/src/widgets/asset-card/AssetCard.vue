@@ -114,7 +114,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
       <div class="asset-header-band"></div>
       <img v-if="logo && !logoFailed" class="asset-logo" :src="logo" alt="" data-testid="asset-logo" @error="logoFailed = true">
       <span v-else class="asset-logo asset-monogram" data-testid="asset-logo-fallback" aria-hidden="true">{{ logoMonogram(cell.asset.assetId) || cell.asset.name.slice(0, 2) }}</span>
-      <div class="asset-heading"><p>{{ t('asset_card.category_price', { category: cell.asset.categoryName, price: formatMoney(cell.asset.price) }) }}<template v-if="cell.asset.rank !== null"> {{ t('asset_card.group_separator') }} {{ t('asset_card.rank') }} {{ cell.asset.rank }}</template></p><h2 data-testid="asset-title">{{ cell.asset.name }}</h2></div>
+      <div class="asset-heading"><p>{{ t('asset_card.category_price', { category: cell.asset.categoryName, price: formatMoney(cell.asset.price) }) }}<template v-if="cell.asset.rank !== null">{{ t('asset_card.group_separator') }}{{ t('asset_card.rank') }} {{ cell.asset.rank }}</template></p><h2 data-testid="asset-title">{{ cell.asset.name }}</h2></div>
     </header>
     <section class="asset-group" data-testid="asset-group">
       <h3>{{ t('asset_card.group_line', { group: cell.asset.groupId }) }}</h3>

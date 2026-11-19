@@ -171,7 +171,7 @@
     "price_percent_value": "{percent}%",
     "price_percent_range": "{range}",
     "category_price": "{category} · Price {price}",
-    "group_separator": "·",
+    "group_separator": " · ",
     "rent_amount": "Rent",
     "group_line": "Group · {group}",
     "mortgage_terms": "mortgaged, advance {advance}, {laps} lap left | mortgaged, advance {advance}, {laps} laps left",

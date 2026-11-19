@@ -71,7 +71,7 @@ describe('stage 2 display', () => {
   it('shows Ранг when rank !== null', () => {
     const cell = board.cells.find(c => c.asset && c.asset.rank !== null)!;
     const card = mount(AssetCard, { props: { cell, board } });
-    expect(card.text()).toContain('Ранг');
+    expect(card.text()).toContain(`Цена ${money(cell.asset!.price)} · Ранг ${cell.asset!.rank}`);
     card.unmount();
   });
   it('shows an Update balance while movement animation is still pending', async () => {

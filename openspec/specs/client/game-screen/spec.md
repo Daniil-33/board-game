@@ -562,7 +562,7 @@ Purchase response SHALL use a modal dialog on desktop or bottom sheet on mobile 
 - **AND** a mortgage term SHALL be shown only when supplied by the projection
 
 ### Requirement: Rent shortfall and debt resolution surfaces
-The rent surface SHALL show payer, creditor, asset, amount due and a shortfall when projected balance is below rent; derive the gap only from those values. Keep existing PayRent and manage-assets actions. Debt notices SHALL list liquidation steps and amounts supplied by the view; clients SHALL NOT calculate settlement amounts.
+The rent surface SHALL show the amount due and creditor, a shortfall hint with the amount missing when projected data indicates a shortfall, and entry points for manual mortgage and sale. Debt notices SHALL show the liquidation summary, including sold or mortgaged assets and amounts from the view. Clients SHALL NOT calculate amounts from design examples.
 
 #### Scenario: Rent with and without shortfall
 - **WHEN** a rent view shows the payer's shortfall or sufficient funds
@@ -573,7 +573,7 @@ The rent surface SHALL show payer, creditor, asset, amount due and a shortfall w
 - **THEN** the summary SHALL list each sold or mortgaged asset and its projected amount
 
 ### Requirement: Elimination and game-over presentation
-Elimination and game-over surfaces SHALL show projected reasons and times, winner-first standings with final balances, and existing actions. Initials SHALL reuse the player-panel avatar and seat color; no avatar art, identity fields, duration, round count or new in-room game action SHALL be added. Eliminated viewers SHALL retain game watching and chat.
+Elimination and game-over surfaces SHALL show final standings from the view and offer leave or back-to-lobby actions. An eliminated player SHALL remain able to watch the game and use chat.
 
 #### Scenario: Eliminated player keeps watching
 - **WHEN** the viewer is eliminated while the game continues
@@ -649,6 +649,31 @@ behavior. Loading the game screen SHALL NOT require a protocol or server change.
 #### Scenario: Preserve sound activation through lazy loading
 - **WHEN** a player interacts with the page before entering a game
 - **THEN** the lazy sound engine SHALL adopt the AudioContext created by the shell gesture gate without requiring another gesture
+
+### Requirement: Board-centre phase caption
+The board-centre caption SHALL describe the current projected game phase: turn-order roll, regular roll, rent or debt, and game over. It SHALL update when the projected phase changes and SHALL NOT retain a caption from a prior phase.
+
+#### Scenario: Auction caption
+- **WHEN** the projection contains an active auction
+- **THEN** the board-centre caption SHALL be hidden using the board display input
+
+#### Scenario: Finished game caption
+- **WHEN** the projection phase is finished
+- **THEN** the board-centre caption describes the completed game
+
+### Requirement: Projected rent details
+The rent surface SHALL identify payer and asset, show the projected creditor and amount due, and derive any displayed shortfall only from projected balance and rent.
+
+#### Scenario: Projected rent context
+- **WHEN** a rent view is shown
+- **THEN** the payer, asset, creditor and amount due SHALL come from the projection
+
+### Requirement: Projected elimination details
+Elimination and game-over surfaces SHALL show projected reasons and times, winner-first standings with final balances, and existing projected actions. Initials SHALL reuse the player-panel avatar and seat color; no avatar art, identity fields, duration, round count or new in-room game action SHALL be added.
+
+#### Scenario: Projected elimination summary
+- **WHEN** an elimination or game-over surface is shown
+- **THEN** projected reasons, times, standings and available actions SHALL be shown
 
 ### Requirement: Responsive game layout and navigation
 The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal with chat in the center, and My Turn and My Assets on the right. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The centre SHALL contain the turn header, dice and last roll, and journal with chat.
@@ -749,16 +774,12 @@ Asset-card rent schedules SHALL label house tiers as tiers and SHALL reserve the
 - **WHEN** an asset rent schedule is rendered
 - **THEN** house-based schedules use a tier heading and logistics or energy holdings schedules use the holdings heading
 
-### Requirement: Board-centre caption for observable phases
-The board-centre caption SHALL describe projected turn-order, regular roll, rent/debt, and game-over phases and update when the phase changes. During a purchase decision it SHALL be hidden or repositioned using the board display input so it never peeks beneath the surface.
+### Requirement: Board-centre caption during decision surfaces
+While a purchase or auction decision surface is visible, the board-centre caption SHALL be hidden using the board display input so it never peeks beneath the surface.
 
-#### Scenario: Purchase decision caption
-- **WHEN** a purchase decision surface is visible
-- **THEN** the board-centre caption is hidden or repositioned out of view
-
-#### Scenario: Finished game caption
-- **WHEN** the projection phase is finished
-- **THEN** the board-centre caption describes the completed game
+#### Scenario: Purchase or auction decision caption
+- **WHEN** a purchase or auction decision surface is visible
+- **THEN** the board-centre caption SHALL be hidden using the board display input
 
 ### Requirement: Game-over action visibility
 At 1440×900 the return-to-lobby action SHALL remain visible without scrolling, or the card body SHALL scroll with the action pinned visible.

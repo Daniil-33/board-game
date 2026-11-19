@@ -171,7 +171,7 @@
     "price_percent_value": "{percent}%",
     "price_percent_range": "{range}",
     "category_price": "{category} · Цена {price}",
-    "group_separator": "·",
+    "group_separator": " · ",
     "rent_amount": "Рента",
     "group_line": "Группа · {group}",
     "mortgage_terms": "В залоге: получено {advance}, осталось {laps} кругов | В залоге: получено {advance}, остался {laps} круг | В залоге: получено {advance}, осталось {laps} круга | В залоге: получено {advance}, осталось {laps} кругов",
