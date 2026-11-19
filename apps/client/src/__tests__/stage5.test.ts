@@ -202,6 +202,9 @@ describe('asset card: mortgage', () => {
     expect(w.get('[data-testid="asset-owner"]').text()).toBe('свободно');
     const energy = card(project(mortgaged(s, 12)), 12);
     expect(energy.get('[data-testid="asset-rent"]').text()).toBe('0');
+    expect(energy.get('[data-testid="asset-current-rent"]').text()).toContain('0');
+    expect(energy.get('[data-testid="asset-rent-table"]').findAll('tbody tr')).toHaveLength(2);
+    expect(energy.find('[data-testid="rent-tier-energy-1"]').attributes('aria-current')).toBeUndefined();
     expect(energy.find('[data-testid="asset-energy"]').exists()).toBe(false);
     expect(mortgageTerms(project(s), at(s, 9))).toBeNull();
   });

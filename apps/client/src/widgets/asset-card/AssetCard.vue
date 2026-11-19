@@ -58,6 +58,9 @@ const energyRows = computed(() => {
   return [...new Set(schedule.value.filter((tier): tier is Extract<RentTier, { kind: 'energy' }> => tier.kind === 'energy').map(tier => tier.holdings))]
     .map(holdings => ({ holdings, tiers: schedule.value.filter((tier): tier is Extract<RentTier, { kind: 'energy' }> => tier.kind === 'energy' && tier.holdings === holdings) }));
 });
+const rentTierHeader = computed(() => schedule.value[0]?.kind === 'regular'
+  ? t('asset_card.rent_tier_header')
+  : t('asset_card.rent_tier_holdings_header'));
 function energyPriceRange(rates: readonly Extract<RentTier, { kind: 'energy' }>[]): string {
   const price = props.cell.asset?.price ?? 0;
   if (!price || !rates.length) return '0%';
@@ -111,7 +114,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
       <div class="asset-header-band"></div>
       <img v-if="logo && !logoFailed" class="asset-logo" :src="logo" alt="" data-testid="asset-logo" @error="logoFailed = true">
       <span v-else class="asset-logo asset-monogram" data-testid="asset-logo-fallback" aria-hidden="true">{{ logoMonogram(cell.asset.assetId) || cell.asset.name.slice(0, 2) }}</span>
-      <div class="asset-heading"><p>{{ t('asset_card.category_price', { category: cell.asset.categoryName, price: formatMoney(cell.asset.price) }) }}</p><h2 data-testid="asset-title">{{ cell.asset.name }}</h2></div>
+      <div class="asset-heading"><p>{{ t('asset_card.category_price', { category: cell.asset.categoryName, price: formatMoney(cell.asset.price) }) }}<template v-if="cell.asset.rank !== null"> {{ t('asset_card.group_separator') }} {{ t('asset_card.rank') }} {{ cell.asset.rank }}</template></p><h2 data-testid="asset-title">{{ cell.asset.name }}</h2></div>
     </header>
     <section class="asset-group" data-testid="asset-group">
       <h3>{{ t('asset_card.group_line', { group: cell.asset.groupId }) }}</h3>
@@ -123,13 +126,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
     </section>
     <div v-if="scheduleRows.length" class="rent-table-scroll"><table class="rent-table" data-testid="asset-rent-table">
       <caption>{{ t('asset_card.rent_table') }}</caption>
-      <thead><tr><th scope="col">{{ t('asset_card.rent_tier_holdings_header') }}</th><th scope="col">{{ t('asset_card.price_percent') }}</th><th scope="col">{{ t('asset_card.rent_amount') }}</th></tr></thead>
+      <thead><tr><th scope="col">{{ rentTierHeader }}</th><th scope="col">{{ t('asset_card.price_percent') }}</th><th scope="col">{{ t('asset_card.rent_amount') }}</th></tr></thead>
       <tbody><tr v-for="row in scheduleRows" :key="row.key" :data-testid="'rent-tier-' + row.key" :aria-current="highlightedTier === row.key ? 'true' : undefined">
         <th scope="row">{{ row.label }}</th><td>{{ t('asset_card.price_percent_value', { percent: row.percent }) }}</td><td :data-testid="highlightedTier === row.key && quote?.kind === 'fixed' ? 'asset-rent' : undefined">{{ formatMoney(row.amount) }}</td>
       </tr></tbody>
     </table></div>
-    <p v-if="quote?.kind === 'fixed' && quote.amount === 0" class="asset-current-rent"><small>{{ t('common.rent') }}</small><strong data-testid="asset-rent">{{ formatMoney(quote.amount) }}</strong></p>
-    <div v-else-if="energyRows.length" class="rent-table-scroll"><table class="rent-table energy-table" data-testid="asset-rent-table">
+    <p v-if="quote?.kind === 'fixed' && quote.amount === 0" class="asset-current-rent" data-testid="asset-current-rent"><small>{{ t('common.rent') }}</small><strong data-testid="asset-rent">{{ formatMoney(quote.amount) }}</strong></p>
+    <div v-if="energyRows.length" class="rent-table-scroll"><table class="rent-table energy-table" data-testid="asset-rent-table">
       <caption>{{ t('asset_card.rent_table_energy') }}</caption>
       <thead><tr><th scope="col">{{ t('asset_card.rent_tier_holdings_header') }}</th><th v-for="sum in 11" :key="sum">{{ sum + 1 }}</th><th scope="col">{{ t('asset_card.price_percent') }}</th></tr></thead>
       <tbody><tr v-for="row in energyRows" :key="row.holdings" :data-testid="'rent-tier-energy-' + row.holdings" :aria-current="highlightedTier === `energy-${row.holdings}` ? 'true' : undefined">

@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Action buttons follow the view
-Setup and regular-turn actions SHALL follow the current phase and viewer ownership. RollDice and EndTurn SHALL be disabled while disconnected, pending, or past deadline. Unavailable actions SHALL remain visible with reasons; only applicable actions are primary. A not-my-turn reason SHALL identify the active player instead of repeating a reason for each button.
+`RollForOrder` SHALL require setup and viewer `setup.playerId`. `RollDice` SHALL require playing, viewer turn ownership and `rolled: false`; `EndTurn` SHALL require playing, viewer ownership and `rolled: true`. Buttons SHALL be disabled while disconnected, while the command type is pending, or past the server deadline. The turn panel SHALL show current-phase actions only, make the applicable action primary, and keep unavailable actions visible, disabled, with visible text reasons.
 
 #### Scenario: Before and after the roll
 - **WHEN** it is the viewer's regular turn before the roll, then after the roll
@@ -22,40 +22,8 @@ Setup and regular-turn actions SHALL follow the current phase and viewer ownersh
 #### Scenario: Auction in progress
 - **WHEN** a player views an ongoing auction or purchase decision
 - **THEN** regular-turn RollDice and EndTurn actions SHALL NOT be shown
-### Requirement: Responsive game layout
-The game screen SHALL preserve existing action contracts. At 1024 px and above it SHALL place players left, turn header, scaling board and journal/chat center, and My Turn/My Assets right. Side columns SHALL be about 240 px below 1280 px and 280 px otherwise. Mobile SHALL provide Board, Assets, Journal and More tabs.
-
-#### Scenario: Desktop game screen
-- **WHEN** the game is rendered at 1440×900
-- **THEN** the top bar shows the product name “Economic Board Game”, correctly localized player count, connection status including reconnect state, and settings control, without a room label; the centre contains the turn header, dice and last roll, and journal with chat; and the turn header shows current player, phase, countdown and available dice
-
-#### Scenario: Room label and round counter are omitted
-- **WHEN** the top bar is rendered
-- **THEN** it omits the room label and round counter, does not expose the join secret or internal room id, and does not require new projection fields
-
-#### Scenario: Sound settings
-- **WHEN** the settings control is opened
-- **THEN** the existing volume and mute controls are available with their existing behavior and test identifiers
-
-#### Scenario: Desktop viewport fit
-- **WHEN** the game is rendered at 1440×900 or 1920×1080, including a purchase or auction decision
-- **THEN** the whole board, decision controls and bottom row fit without page scrolling; the progress bar is omitted because the projection has a deadline but no turn duration, and no duration estimate or projection fields are added
-
-#### Scenario: Mobile game navigation
-- **WHEN** the viewport is below 1024 px
-- **THEN** the game SHALL offer bottom tabs for Board, Assets, Journal and More, with the board sized to the available width and resign, rules summary and leave accessible in More
-- **AND** a server view update SHALL preserve the selected tab
-
-#### Scenario: Leaving an active game
-- **WHEN** an active player opens More
-- **THEN** leaving for the lobby SHALL remain disabled with a reason until the view shows their elimination. Players who choose to leave SHALL use the existing resignation confirmation
-- **AND** eliminated and non-playing viewers SHALL be able to return to the lobby
-
-#### Scenario: Supported widths
-- **WHEN** the game is rendered at widths 360, 390, 768, 1024, 1440 and 1920 px
-- **THEN** the page SHALL have no horizontal overflow
 ### Requirement: Responsive decision and asset surfaces
-Purchase response SHALL be a decider-only dialog or mobile sheet; other viewers SHALL see non-modal status. Auctions SHALL be inline on desktop and a responder-only mobile sheet, with inline content for others. Asset inspection SHALL use a responsive dialog or sheet. These surfaces SHALL use current projected values and existing legality adapters.
+Purchase response SHALL use a modal dialog on desktop or bottom sheet on mobile only for the decider; others SHALL see non-modal status. Auctions SHALL be inline on desktop. On mobile, only the current responder SHALL see a sheet; others SHALL see inline content, and it SHALL open when its viewer becomes responder. Decision surfaces SHALL use the current projection and legality adapters. Asset inspection SHALL use a responsive dialog on desktop and bottom sheet on mobile.
 
 #### Scenario: Purchase surface by viewport
 - **WHEN** a projected purchase decision is visible on desktop or mobile
@@ -66,7 +34,7 @@ Purchase response SHALL be a decider-only dialog or mobile sheet; other viewers 
 
 #### Scenario: Auction surface by viewport
 - **WHEN** a projected auction is visible on desktop or mobile
-- **THEN** desktop SHALL show it inline in the centre column and mobile SHALL show a bottom sheet for the current responder and inline content for everyone else, with the asset, current bid, starting bid, step, leader, ordered response states, timer bar, legal Raise and Pass actions, and irrevocable-pass note
+- **THEN** desktop SHALL show it inline in the centre column and mobile SHALL show a bottom sheet for the current responder and inline content for everyone else, with the asset, projected leading bid and leader in that player's seat color, the existing legal bid increments, pass action, and response timer with a visible last-seconds state
 - **AND** only the active responder's mobile sheet SHALL be non-dismissible
 
 #### Scenario: Purchase response and bystanders
@@ -113,18 +81,36 @@ Elimination and game-over surfaces SHALL show projected reasons and times, winne
 #### Scenario: Game over standings
 - **WHEN** the projected game is complete
 - **THEN** the winner SHALL be first with place 1, followed by eliminated players in standings order with projected reasons, times and final balances; the screen SHALL provide a leave or back-to-lobby action
-### Requirement: Board-centre phase caption
-The board-centre caption SHALL describe the projected turn-order roll, regular roll, rent/debt or game-over phase, and update when the phase changes. While a purchase or auction decision surface is visible, it SHALL be hidden or repositioned using the board display input so it never peeks beneath the surface.
-
-#### Scenario: Auction caption
-- **WHEN** the projection contains an active auction decision surface
-- **THEN** the board-centre caption SHALL be hidden or repositioned out of view rather than describing the auction beneath the surface
-
-#### Scenario: Finished game caption
-- **WHEN** the projection phase is finished
-- **THEN** the board-centre caption describes the completed game
-
 ## ADDED Requirements
+### Requirement: Responsive game layout and navigation
+The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal with chat in the center, and My Turn and My Assets on the right. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The centre SHALL contain the turn header, dice and last roll, and journal with chat.
+
+#### Scenario: Desktop game screen
+- **WHEN** the game is rendered at 1440×900
+- **THEN** the top bar shows the product name “Economic Board Game”, correctly localized player count, connection status including reconnect state, and settings control, without a room label; the centre contains the turn header, dice and last roll, and journal with chat; and the turn header shows current player, phase, countdown and available dice
+
+#### Scenario: Room label and round counter are omitted
+- **WHEN** the top bar is rendered
+- **THEN** it omits the room label and round counter, does not expose the join secret or internal room id, and does not require new projection fields
+
+#### Scenario: Sound settings
+- **WHEN** the settings control is opened
+- **THEN** the existing volume and mute controls are available with their existing behavior and test identifiers
+
+#### Scenario: Mobile game navigation
+- **WHEN** the viewport is below 1024 px
+- **THEN** the game SHALL offer bottom tabs for Board, Assets, Journal and More, with the board sized to the available width and resign, rules summary and leave accessible in More
+- **AND** a server view update SHALL preserve the selected tab
+
+#### Scenario: Leaving an active game
+- **WHEN** an active player opens More
+- **THEN** leaving for the lobby SHALL remain disabled with a reason until the view shows their elimination. Players who choose to leave SHALL use the existing resignation confirmation
+- **AND** eliminated and non-playing viewers SHALL be able to return to the lobby
+
+#### Scenario: Supported widths
+- **WHEN** the game is rendered at widths 360, 390, 768, 1024, 1440 and 1920 px
+- **THEN** the page SHALL have no horizontal overflow
+
 ### Requirement: Product name on every screen
 The login, lobby, room and game headers, including the mobile game header, and the document title SHALL display “Economic Board Game”.
 
@@ -153,7 +139,7 @@ The turn header SHALL show the current player, phase, countdown and dice using t
 - **THEN** the current player, phase, countdown and available dice match the current projection
 
 ### Requirement: Desktop viewport fit
-At 1440×900 and 1920×1080, the board and decision controls SHALL fit without page scrolling, including the bottom row. The progress bar deviation is that desktop omits it because the projection has no turn duration; no duration estimate or new projection fields SHALL be added.
+At 1440×900 and 1920×1080, the board and decision controls SHALL fit without page scrolling, including the bottom row.
 
 #### Scenario: Desktop decision viewport fit
 - **WHEN** a purchase or auction decision is shown at 1440×900 or 1920×1080
@@ -181,11 +167,29 @@ Auction panels SHALL show current bid with start and step, leader, ordered respo
 - **THEN** the ordered queue and each player's state SHALL match the current projection
 
 ### Requirement: Asset card content
-Asset cards SHALL show category, price and name in dark-on-light text with WCAG AA contrast; group chips with projected owners and houses; a rent schedule with the current projected tier and percent of price; house-cost and mortgage tiles; and existing owner actions in a two-column grid with each reason below its button. A mortgage term SHALL appear only when supplied by the projection.
+Asset cards SHALL show category, projected rank when present, price and name in dark-on-light text with WCAG AA contrast; group chips with projected owners and houses; a rent schedule with the current projected tier and percent of price; house-cost and mortgage tiles; and existing owner actions in a two-column grid with each reason below its button. A mortgage term SHALL appear only when supplied by the projection.
 
 #### Scenario: Owned asset details
 - **WHEN** the viewer opens an owned asset
 - **THEN** the current group member and rent tier are highlighted, and each available action retains its existing command and projected reason
+
+### Requirement: Asset rent schedule headings
+Asset-card rent schedules SHALL label house tiers as tiers and SHALL reserve the “Assets” heading for logistics and holdings schedules.
+
+#### Scenario: House and holdings headings
+- **WHEN** an asset rent schedule is rendered
+- **THEN** house-based schedules use a tier heading and logistics or energy holdings schedules use the holdings heading
+
+### Requirement: Board-centre caption for observable phases
+The board-centre caption SHALL describe projected turn-order, regular roll, rent/debt, and game-over phases and update when the phase changes. During a purchase decision it SHALL be hidden or repositioned using the board display input so it never peeks beneath the surface.
+
+#### Scenario: Purchase decision caption
+- **WHEN** a purchase decision surface is visible
+- **THEN** the board-centre caption is hidden or repositioned out of view
+
+#### Scenario: Finished game caption
+- **WHEN** the projection phase is finished
+- **THEN** the board-centre caption describes the completed game
 
 ### Requirement: Game-over action visibility
 At 1440×900 the return-to-lobby action SHALL remain visible without scrolling, or the card body SHALL scroll with the action pinned visible.
@@ -193,3 +197,49 @@ At 1440×900 the return-to-lobby action SHALL remain visible without scrolling, 
 #### Scenario: Game over at desktop height
 - **WHEN** the game-over screen is rendered at 1440×900
 - **THEN** the return-to-lobby action is visible in the viewport
+
+## REMOVED Requirements
+### Requirement: Responsive game layout
+The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal with chat in the center, and My Turn and My Assets on the right. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The centre SHALL contain the turn header, dice and last roll, and journal with chat.
+
+#### Scenario: Desktop game screen
+- **WHEN** the game is rendered at 1440×900
+- **THEN** the top bar shows the product name “Economic Board Game”, correctly localized player count, connection status including reconnect state, and settings control, without a room label; the centre contains the turn header, dice and last roll, and journal with chat; and the turn header shows current player, phase, countdown and available dice
+
+#### Scenario: Room label and round counter are omitted
+- **WHEN** the top bar is rendered
+- **THEN** it omits the room label and round counter, does not expose the join secret or internal room id, and does not require new projection fields
+
+#### Scenario: Sound settings
+- **WHEN** the settings control is opened
+- **THEN** the existing volume and mute controls are available with their existing behavior and test identifiers
+
+#### Scenario: Desktop viewport fit
+- **WHEN** the game is rendered at 1440×900 or 1920×1080, including a purchase or auction decision
+- **THEN** the whole board and decision controls fit without page scrolling; a progress bar is omitted because the projection supplies a deadline but no turn duration, and no projection fields or duration estimate are added
+
+#### Scenario: Mobile game navigation
+- **WHEN** the viewport is below 1024 px
+- **THEN** the game SHALL offer bottom tabs for Board, Assets, Journal and More, with the board sized to the available width and resign, rules summary and leave accessible in More
+- **AND** a server view update SHALL preserve the selected tab
+
+#### Scenario: Leaving an active game
+- **WHEN** an active player opens More
+- **THEN** leaving for the lobby SHALL remain disabled with a reason until the view shows their elimination. Players who choose to leave SHALL use the existing resignation confirmation
+- **AND** eliminated and non-playing viewers SHALL be able to return to the lobby
+
+#### Scenario: Supported widths
+- **WHEN** the game is rendered at widths 360, 390, 768, 1024, 1440 and 1920 px
+- **THEN** the page SHALL have no horizontal overflow
+
+### Requirement: Board-centre phase caption
+The board-centre caption SHALL describe the current projected game phase: turn-order roll, regular roll, purchase decision, auction, rent or debt, and game over. It SHALL update when the projected phase changes and SHALL NOT retain a caption from a prior phase.
+
+#### Scenario: Auction caption
+- **WHEN** the projection contains an active auction
+- **THEN** the board-centre caption describes the auction rather than a turn-order or dice roll
+
+#### Scenario: Finished game caption
+- **WHEN** the projection phase is finished
+- **THEN** the board-centre caption describes the completed game
+
