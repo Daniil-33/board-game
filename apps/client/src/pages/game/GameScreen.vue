@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
           <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
           <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" @manage-assets="selectedTab = 'assets'" />
           <ResponsiveDialog v-if="selectedCell && client.game.view?.board" v-model:open="assetDialogOpen"
-            :title="selectedCell.asset!.name" :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
+            :title="selectedCell.asset!.name" title-visually-hidden :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
             <AssetCard
               :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board"
               :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf"

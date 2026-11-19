@@ -164,7 +164,6 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
   expect(prisoner.view!.turn!.doublesStreak).toBe(0);
   await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 0/3');
-  await captureScreens(prisoner.page, 'jail-attempt-status');
   await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
   for (let i = 0; host.view!.turn!.playerId !== prisoner.id; i++) {
     expect(i).toBeLessThan(10);
@@ -182,6 +181,7 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailAttemptFailed']);
     expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
     await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
+    await captureScreens(prisoner.page, 'jail-attempt-status');
   } else {
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
     expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });

@@ -80,4 +80,17 @@ const leaderColor = computed(() => {
 .auction-progress span { display: block; height: 100%; background: var(--highlight); transition: width .2s linear; }
 .pass-note { margin: 0; font-size: .85rem; }
 [data-last-seconds="true"] { color: var(--danger-text); font-weight: 700; }
+@media (max-width: 600px) {
+  .auction-card { gap: var(--space-2); border-top-width: 3px; }
+  .auction-header { grid-template-columns: 1fr auto; justify-items: stretch; text-align: left; padding: var(--space-2); }
+  .auction-header p, .auction-terms { display: none; }
+  .auction-header small { grid-column: 1; grid-row: 1; }
+  .auction-header > strong { grid-column: 1; grid-row: 2; font-size: 2rem; }
+  .auction-leader { grid-column: 2; grid-row: 1 / 3; flex-direction: column; align-items: flex-end; justify-content: center; }
+  .response-queue { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .response-queue li { display: flex; gap: var(--space-1); border: 0; border-radius: 999px; padding: var(--space-1) var(--space-2); background: var(--surface-1); font-size: .78rem; }
+  .response-queue li > span:last-child { font-size: .78rem; }
+  .auction-progress { height: 6px; }
+  .pass-note { font-size: .8rem; }
+}
 </style>

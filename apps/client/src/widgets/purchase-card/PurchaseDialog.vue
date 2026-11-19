@@ -101,4 +101,9 @@ const disabledReason = (type: NullPayloadType): string => {
 .rent-table { width: 100%; border-collapse: collapse; margin-block: var(--space-3); }
 .rent-table th, .rent-table td { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: 1px solid var(--border-subtle); }
 .rent-table th { text-align: left; }
+@media (max-width: 600px) {
+  .purchase-card { gap: var(--space-2); }
+  .purchase-header { padding: var(--space-2); }
+  .rent-table { display: none; }
+}
 </style>
