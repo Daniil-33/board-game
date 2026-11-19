@@ -1,7 +1,7 @@
 import { money } from './ru-text';
 import { execFileSync } from 'node:child_process';
 import type { StateView } from '../packages/game-core/src/index';
-import { test, expect, sel, active, resign, type Actor } from './helpers';
+import { test, expect, sel, active, resign, waitGameReady, captureScreens, type Actor } from './helpers';
 import { fast, q, click, load, shoot, balances, card, close } from './fixture-helpers';
 
 // Explicit opt-in: earlier stages always run against their original stacks.
@@ -195,6 +195,7 @@ for (const [fixture, expectedSteps] of Object.entries(LIQUIDATION)) {
     }
     await balances(players, { ...before.balances, [payer.id]: cash + raised - rent.amount, [rent.ownerId]: before.balances[rent.ownerId]! + rent.amount });
     info.annotations.push({ type: 'liquidation-steps', description: steps.map(s => `T${s.tier} ${s.kind} +${s.amount}`).join(', ') });
+    if (fixture === 'liquidation-multi-tier') await captureScreens(payer.page, 'liquidation');
     await shoot(players, info, fixture);
   });
 }
@@ -243,6 +244,7 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
     else await expect(p.page.locator(sel('spectator'))).toHaveCount(0);
   }
   await balances(players, { ...before.balances, [payer.id]: 0, [creditor.id]: before.balances[creditor.id]! + paid });
+  await captureScreens(payer.page, 'elimination');
   await shoot(players, info, 'bankruptcy');
   await payer.page.locator(sel('continue-watching')).click();
   for (const p of players) {
@@ -263,6 +265,23 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   same(players, 'DiceRolled');
   await expect(payer.page.locator(sel('RollDice'))).toBeDisabled();
   await expect(payer.page.locator(sel('spectator'))).toBeVisible();
+  await payer.page.locator(sel('chat-input')).fill('Chat from bankrupt spectator');
+  await payer.page.locator(sel('chat-send')).click();
+  for (const recipient of players) {
+    await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
+    await expect.poll(() => recipient.chats.some(message => message.text === 'Chat from bankrupt spectator' && message.authorId === payer.id)).toBe(true);
+  }
+  const chatRecipient = players.find(p => p !== payer)!;
+  const recipientWelcomes = chatRecipient.welcomes.length;
+  await chatRecipient.page.reload();
+  await waitGameReady(chatRecipient);
+  await expect.poll(() => chatRecipient.welcomes.length).toBeGreaterThan(recipientWelcomes);
+  await expect(chatRecipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
+  const welcomeCount = payer.welcomes.length;
+  await payer.page.reload();
+  await waitGameReady(payer);
+  await expect.poll(() => payer.welcomes.length).toBeGreaterThan(welcomeCount);
+  await expect(payer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
   await shoot(players, info, 'bankrupt-watching');
 });
 
@@ -337,6 +356,7 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
     }
   }
   await gameOver();
+  await captureScreens(creditor.page, 'game-over');
   await shoot(players, info, 'game-over');
   for (const p of players) {
     const welcomes = p.welcomes.length;

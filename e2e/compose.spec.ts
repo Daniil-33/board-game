@@ -3,7 +3,7 @@ import { AUCTION_RESPONSE_MS, CONTINUATION_MS } from '../packages/game-core/src/
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
 import { cellRect } from '../apps/client/src/widgets/board/layout';
-import { test, expect, sel, createRoom, join, start, setup, active, action, resign } from './helpers';
+import { test, expect, sel, createRoom, join, start, setup, active, action, resign, waitGameReady, captureScreens } from './helpers';
 
 test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }, info) => {
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Recovery uses production CSPRNG');
@@ -35,7 +35,7 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   const beforeReload = structuredClone(current.view!);
   const welcomeCount = current.welcomes.length;
   await current.page.reload();
-  await expect(current.page.locator(sel('screen-game'))).toBeVisible();
+  await waitGameReady(current);
   await expect.poll(() => current.view?.revision).toBe(revision);
   await expect.poll(() => current.welcomes.length).toBeGreaterThan(welcomeCount);
   expect(current.welcomes.at(-1)!.playerId).toBe(id);
@@ -47,6 +47,16 @@ test('three guests: setup, movement, reload, server restart and resignation to w
   await expect.poll(() => host.view?.revision).toBe(current.view!.revision);
   const saved = JSON.parse(JSON.stringify(host.view));
   const welcomesBeforeRestart = players.map(p => p.welcomes.length);
+  const stopForReconnectEvidence = process.env['E2E_RECONNECT_STOP_COMMAND'];
+  if (process.env['E2E_SCREEN_EVIDENCE'] === '1' && stopForReconnectEvidence) {
+    execFileSync('bash', ['-lc', stopForReconnectEvidence], { stdio: 'pipe' });
+    const reconnectViewer = players[0]!;
+    const reconnectBanner = reconnectViewer.page.locator(sel('offline'));
+    await expect(reconnectBanner).toBeVisible();
+    await reconnectBanner.scrollIntoViewIfNeeded();
+    await expect(reconnectBanner).toBeInViewport();
+    await captureScreens(reconnectViewer.page, 'reconnect-banner');
+  }
   execFileSync('bash', ['-lc', process.env['E2E_RESTART_COMMAND'] ?? "sg docker -c 'docker compose -p s1-e2e restart server'"], { stdio: 'pipe' });
   for (const p of players) {
     await expect.poll(() => p.welcomes.length).toBeGreaterThan(welcomesBeforeRestart[players.indexOf(p)]!);

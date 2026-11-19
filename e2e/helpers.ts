@@ -1,10 +1,24 @@
 import { test as base, expect, type Page, type BrowserContext, type Request } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join as pathJoin } from 'node:path';
 import type { StateView, GameEvent } from '../packages/game-core/src/index';
 
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
+/** Capture one unchanged app state at both review viewports on the current test head. */
+export async function captureScreens(page: Page, name: string): Promise<void> {
+  if (process.env['E2E_SCREEN_EVIDENCE'] !== '1') return;
+  const dir = process.env['E2E_SCREEN_EVIDENCE_DIR'];
+  if (!dir) throw new Error('E2E_SCREEN_EVIDENCE_DIR is required when E2E_SCREEN_EVIDENCE=1');
+  mkdirSync(dir, { recursive: true });
+  const original = page.viewportSize() ?? { width: 1280, height: 720 };
+  for (const [tag, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.screenshot({ path: pathJoin(dir, `${name}-${tag}.png`), fullPage: false });
+  }
+  await page.setViewportSize(original);
+}
 export interface Actor {
   page: Page;
   context: BrowserContext;
@@ -13,6 +27,8 @@ export interface Actor {
   welcomes: { playerId: string; revision: number }[];
   events: { at: number; revision: number; event: GameEvent }[];
   acks: { at: number; commandId: string; outcome: string; revision: number; error?: { code: string } }[];
+  chats: { seq: number; authorId: string; text: string }[];
+  chatAcks: { clientMsgId: string; ok: boolean; reason?: string }[];
   networkStage: 'login' | 'lobby' | 'room' | 'game' | 'reload-game';
   network: { stage: Actor['networkStage']; url: string; method: string; resourceType: string; status?: number; contentLength?: number; contentEncoding?: string }[];
 }
@@ -38,7 +54,7 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
             }
           };
         });
-        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [], networkStage: 'login', network: [] };
+        const actor: Actor = { context, page, id: '', view: null, welcomes: [], events: [], acks: [], chats: [], chatAcks: [], networkStage: 'login', network: [] };
         actors.push(actor); added.push(actor);
         if (observe) {
           const requests = new Map<Request, Actor['network'][number]>();
@@ -73,6 +89,8 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
             log.push({ at: Date.now(), actor: actors.indexOf(actor), frame: 'Ack', commandId: frame.commandId, outcome: frame.outcome, revision: frame.revision, error: frame.error?.code });
           }
           if (frame.t === 'Welcome') actor.welcomes.push({ playerId: frame.playerId, revision: frame.revision });
+          if (frame.t === 'Chat') actor.chats.push(frame.message);
+          if (frame.t === 'ChatAck') actor.chatAcks.push(frame);
           if (frame.t === 'Welcome' || frame.t === 'Update') {
             actor.view = frame.view;
             log.push({ at: Date.now(), actor: actors.indexOf(actor), frame: frame.t, revision: frame.revision, phase: frame.view.phase });
@@ -85,10 +103,12 @@ export const test = base.extend<{ actors: (count: number, invite?: string, obser
         await page.goto(invite ?? '/');
         await expect(page.locator(sel('nickname'))).toHaveAccessibleName('Ник');
         await expect(page.locator(sel('login-enter'))).toHaveAccessibleName('Войти');
+        if (actors.length === 1) await captureScreens(page, 'login');
         await page.locator(sel('nickname')).fill(`Player ${actors.length}`);
         await page.locator(sel('login-enter')).click();
         await expect(page.locator(sel('screen-login'))).toHaveCount(0);
         actor.networkStage = 'lobby';
+        if (actors.length === 1) await captureScreens(page, 'lobby');
       }
       return added;
     });
@@ -114,11 +134,13 @@ export { expect };
 export async function createRoom(host: Actor, code?: string): Promise<string> {
   await host.page.locator(sel('open-create')).click();
   if (code) await host.page.locator(sel('create-code')).fill(code);
+  await captureScreens(host.page, 'create-room');
   await host.page.locator(sel('create')).click();
   await expect(host.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => host.view?.phase).toBe('lobby');
   await expect(host.page.locator(sel('room-title'))).toHaveRole('heading');
   await expect(host.page.locator(sel('room-title'))).toHaveText(/^Комната r_/);
+  await captureScreens(host.page, 'room');
   return (await host.page.locator(sel('room-title')).innerText()).replace('Комната ', '');
 }
 export async function join(actor: Actor, roomId: string, code?: string): Promise<void> {
@@ -137,11 +159,34 @@ export async function start(players: Actor[]): Promise<void> {
   await expect(players[0]!.page.locator(sel('member'))).toHaveCount(players.length);
   await players[0]!.page.locator(sel('start')).click();
   for (const p of players) {
-    await expect(p.page.locator(sel('screen-game'))).toBeVisible();
-    await expect(p.page.locator(sel('board-canvas'))).toBeVisible();
+    await waitGameReady(p);
   }
 }
+/** Wait for the async game chunk and board mount through observable UI state. */
+export async function waitGameReady(actor: Actor): Promise<void> {
+  await expect(actor.page.locator(sel('screen-game'))).toBeVisible();
+  await expect(actor.page.locator(sel('game-loading'))).toHaveCount(0);
+  await expect(actor.page.locator(sel('board-canvas'))).toBeVisible();
+}
 export async function action(actor: Actor, type: string): Promise<void> {
+  if (type === 'EndTurn' && actor.view?.turn?.rolled) {
+    const turnId = actor.view.turn.turnId;
+    const endTurn = actor.page.locator(sel(type));
+    await expect(endTurn).toBeVisible();
+    // Race the rendered action against the authoritative turn projection. If
+    // the timeout wins, the changed turn is the successful outcome. If the
+    // button is enabled first, dispatch it atomically with the enabled check;
+    // a timeout that wins between those observations is still accepted below.
+    await expect.poll(async () => actor.view?.turn?.turnId !== turnId || await endTurn.isEnabled()).toBe(true);
+    if (actor.view?.turn?.turnId === turnId) {
+      await endTurn.evaluate((element) => {
+        if (!(element instanceof HTMLButtonElement) || element.disabled) return;
+        element.click();
+      });
+    }
+    await expect.poll(() => actor.view?.turn?.turnId).not.toBe(turnId);
+    return;
+  }
   const revision = actor.view!.revision;
   await actor.page.locator(sel(type)).click();
   await expect.poll(() => actor.view?.revision).toBeGreaterThan(revision);
@@ -165,9 +210,12 @@ export async function setup(players: Actor[]): Promise<number> {
   return rolls;
 }
 export async function active(players: Actor[]): Promise<Actor> {
+  await expect.poll(() => {
+    const revisions = players.map(p => p.view?.revision);
+    return revisions.every(revision => revision !== undefined) && new Set(revisions).size === 1;
+  }).toBe(true);
   const first = players[0]!;
   const actor = players.find(p => p.id === first.view?.turn?.playerId)!;
-  await expect.poll(() => actor.view?.revision).toBe(first.view!.revision);
   return actor;
 }
 /** Sends a command frame on the page's live socket, bypassing the UI's button guard. */

@@ -2,10 +2,11 @@ import { money } from './ru-text';
 /** Shared helpers of the isolated fixture-stack specs (stage 4 and later). */
 import type { TestInfo } from '@playwright/test';
 import { cellRect } from '../apps/client/src/widgets/board/layout';
-import { expect, sel, type Actor } from './helpers';
+import { expect, sel, waitGameReady, captureScreens, type Actor } from './helpers';
 
 export const fast = { intervals: [20] };
 export const q = (numerator: number, denominator: number) => 10 * Math.floor(numerator / (10 * denominator));
+let assetCardCaptured = false;
 
 export async function sync(players: Actor[], revision: number) {
   for (const p of players) await expect.poll(() => p.view?.revision, fast).toBe(revision);
@@ -35,7 +36,7 @@ export async function load(players: Actor[], fixture: string): Promise<string> {
     const welcomes = p.welcomes.length;
     await p.page.reload();
     await expect.poll(() => p.welcomes.length, fast).toBeGreaterThan(welcomes);
-    await expect(p.page.locator(sel('screen-game'))).toBeVisible();
+    await waitGameReady(p);
   }));
   await sync(players, players[0]!.view!.revision);
   return roomId;
@@ -69,11 +70,18 @@ export async function balances(players: Actor[], expected: Readonly<Record<strin
   }
 }
 export async function card(p: Actor, cell: number) {
+  if ((p.page.viewportSize()?.width ?? 1440) < 1024) {
+    await p.page.locator(sel('game-tab-board')).click();
+  }
   const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
   const box = (await canvas.boundingBox())!;
   const rect = cellRect(cell, box.width);
   await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
   await expect(p.page.locator(sel('asset-card'))).toBeVisible();
+  if (!assetCardCaptured && process.env['E2E_SCREEN_EVIDENCE'] === '1') {
+    assetCardCaptured = true;
+    await captureScreens(p.page, 'asset-card');
+  }
 }
 export async function close(p: Actor) {
   await expect(p.page.locator(sel('asset-close'))).toHaveAccessibleName('Закрыть карточку актива');

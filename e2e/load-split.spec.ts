@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type Page } from '@playwright/test';
-import { test, expect, sel, createRoom, join, start, resign } from './helpers';
+import { test, expect, sel, createRoom, join, start, resign, waitGameReady } from './helpers';
 
 type ManifestEntry = { file: string; imports?: string[]; dynamicImports?: string[]; assets?: string[] };
 type Manifest = Record<string, ManifestEntry>;
@@ -94,8 +94,7 @@ test('defers game, board, Pixi, sound and dialogs until game entry and requests 
   host.networkStage = 'reload-game';
   await clearCache(host.page);
   await host.page.reload();
-  await expect(host.page.locator(sel('screen-game'))).toBeVisible();
-  await expect(host.page.locator(sel('board-canvas'))).toBeVisible();
+  await waitGameReady(host);
   await expect.poll(() => host.welcomes.length).toBeGreaterThan(welcomes);
   const reloadRequests = host.network.filter((item) => item.stage === 'reload-game');
   expect(reloadRequests.some((item) => gameFiles.has(fileForRequest(item.url)))).toBe(true);

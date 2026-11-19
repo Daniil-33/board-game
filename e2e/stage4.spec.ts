@@ -1,6 +1,6 @@
 import { money } from './ru-text';
 import { execFileSync } from 'node:child_process';
-import { test, expect, sel, active, type Actor } from './helpers';
+import { test, expect, sel, active, captureScreens, type Actor } from './helpers';
 import { fast, q, click, load, shoot, balances, card, close } from './fixture-helpers';
 
 // Explicit opt-in: earlier stages always run against their original stacks.
@@ -64,6 +64,7 @@ for (const fixture of ['regular-rent', 'full-group-rent', 'logistics-rent', 'ene
       : fixture === 'logistics-rent' ? q(asset.price * 10, 100)
       : q(asset.price * 5, 100) * (fixture === 'full-group-rent' ? 2 : 1);
     expect(rent.amount).toBe(expected);
+    if (fixture === 'shortfall') await captureScreens(mover.page, 'rent-shortfall');
     if (fixture === 'logistics-rent') expect(h).toBe(2);
     if (fixture === 'full-group-rent') expect(h).toBe(group.length);
     if (fixture === 'regular-rent') expect(h).toBeLessThan(group.length);
@@ -155,21 +156,26 @@ test('stage 4: even building, quota, real double bonus turn and selling', async 
   }
   expect(owner, 'no real double in 100 attempts').toBeDefined();
   const mover = owner!;
+  await mover.page.setViewportSize({ width: 390, height: 844 });
   const before = structuredClone(mover.view!);
   const cost = q(before.board!.cells[firstCell]!.asset!.price * 50, 100);
-  await card(mover, firstCell);
-  await click(players, mover, 'build-house');
+  await mover.page.locator(sel('game-tab-assets')).click();
+  const mobileAsset = mover.page.locator(`${sel('owned-asset')}[data-asset-id="${firstId}"]`);
+  await expect(mobileAsset).toBeVisible();
+  await mobileAsset.locator(sel('owned-build')).click();
+  await expect.poll(() => mover.view?.revision, fast).toBeGreaterThan(before.revision);
+  for (const player of players) await expect.poll(() => player.view?.revision, fast).toBe(mover.view!.revision);
   await balances(players, { ...before.balances, [mover.id]: before.balances[mover.id]! - cost });
   for (const p of players) {
     expect(p.view!.houses[firstId]).toBe(1); expect(p.view!.turn!.quotas.builds).toBe(0);
     expect(p.events.findLast(e => e.event.type === 'HouseBuilt')!.event.payload).toEqual({ playerId: mover.id, assetId: firstId, houses: 1, cost });
   }
-  await close(mover);
   await card(mover, secondCell);
   await expect(mover.page.locator(sel('build-house'))).toBeDisabled();
   await expect(mover.page.locator(sel('build-reason'))).toHaveText('Дом уже построен в этом ходу.');
   await rejectedBuild(players, mover, secondId, 'BUILD_QUOTA_USED');
   await expect(mover.page.locator(`${sel('message')}[data-code="BUILD_QUOTA_USED"]`)).toContainText('Дом уже построен в этом ходу.');
+  await captureScreens(mover.page, 'build-quota-toast');
   await close(mover);
   const turn = mover.view!.turn!.turnId;
   await click(players, mover, 'EndTurn');
