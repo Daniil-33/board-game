@@ -111,7 +111,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const turnId = actor.view!.turn!.turnId;
   const beforeWon = structuredClone(actor.view!.balances);
   await click(actor, players, 'start-auction');
-  await captureScreens(actor.page, 'auction');
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
   expect(won).toMatchObject({ reason: 'choice', assetId: declined.assetId, responder: actor.id, leader: null, leadingBid: null });
@@ -120,6 +119,14 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('purchase'))).toHaveCount(0);
   }
   await respond(players, 'pass');
+  const bidder = byId(players, players[0]!.view!.auction!.responder);
+  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
+  if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
+    await bidder.page.setViewportSize({ width: 1440, height: 900 });
+    await captureScreens(bidder.page, 'auction');
+    const evidenceDir = process.env['E2E_SCREEN_EVIDENCE_DIR']!;
+    writeFileSync(`${evidenceDir}/auction-desktop.png`, await bidder.page.screenshot({ fullPage: true, animations: 'disabled' }));
+  }
   const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
   await expect(auctionObserver.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
@@ -134,8 +141,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(auctionObserver.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during auction' })).toBeVisible();
   await auctionObserver.page.locator(sel('game-tab-board')).click();
   await auctionObserver.page.setViewportSize({ width: 1440, height: 900 });
-  const bidder = byId(players, players[0]!.view!.auction!.responder);
-  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   await respond(players, 'bid');
   await respond(players, 'pass');
   // A chosen auction resumes the same turn. Read at settlement: the resumed
