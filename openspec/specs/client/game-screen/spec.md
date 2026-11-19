@@ -47,33 +47,31 @@ changes the timer SHALL follow it.
 - **WHEN** the view supplies a non-null paused remainder during an auction
 - **THEN** the turn timer SHALL show "paused", regardless of the old deadline
 
-### Requirement: Action buttons follow the view
-`RollForOrder` SHALL require setup and the viewer as `setup.playerId`.
-`RollDice` SHALL require playing, the viewer as turn owner and `rolled: false`;
-`EndTurn` SHALL require playing, the viewer as turn owner and `rolled: true`.
-RollDice and EndTurn SHALL be disabled during auctions. Buttons SHALL be
-disabled while disconnected, while their command type is pending, and once
-the server deadline has passed.
-
-#### Scenario: Not my turn
-- **WHEN** the view's `turn.playerId` is another player
-- **THEN** RollDice and EndTurn SHALL be disabled
+### Requirement: Action button legality
+`RollForOrder` SHALL require setup and the viewer as `setup.playerId`. `RollDice` SHALL require playing, the viewer as turn owner and `rolled: false`; `EndTurn` SHALL require playing, the viewer as turn owner and `rolled: true`. Buttons SHALL be disabled while disconnected, while their command type is pending, and once the server deadline has passed.
 
 #### Scenario: Before and after the roll
-- **WHEN** it is the viewer's turn with `rolled: false`, then with `rolled: true`
-- **THEN** first only RollDice SHALL be enabled, then only EndTurn
+- **WHEN** it is the viewer's regular turn before the roll, then after the roll
+- **THEN** only the applicable action is enabled and primary, any unavailable regular-turn action remains disabled with its reason, and the setup-only order roll is hidden
 
 #### Scenario: My order roll
-- **WHEN** the phase is `setup` and `setup.playerId` is the viewer
-- **THEN** only RollForOrder SHALL be enabled
+- **WHEN** the phase is setup and setup.playerId is the viewer
+- **THEN** only the setup flow's RollForOrder action is shown as applicable and regular-turn actions are hidden
+
+#### Scenario: Not my turn
+- **WHEN** the view's turn.playerId is another player
+- **THEN** RollDice and EndTurn SHALL be disabled and one visible reason line SHALL identify the active player
 
 #### Scenario: Pending command
-- **WHEN** the viewer pressed RollDice and its `Ack` has not arrived
+- **WHEN** the viewer pressed RollDice and its Ack has not arrived
 - **THEN** RollDice SHALL be disabled
 
+### Requirement: Phase-aware action presentation
+The turn panel SHALL show only actions belonging to the current phase. The currently applicable primary action SHALL be visually primary. An unavailable action belonging to the current phase SHALL remain visible, disabled, with its reason as visible text; actions exclusive to another phase SHALL be hidden. When another player owns the turn, one visible reason line SHALL identify that player instead of repeating a reason for each button.
+
 #### Scenario: Auction in progress
-- **WHEN** the turn owner views an ongoing auction
-- **THEN** RollDice and EndTurn SHALL be disabled
+- **WHEN** a player views an ongoing auction or purchase decision
+- **THEN** regular-turn RollDice and EndTurn actions SHALL NOT be shown
 
 ### Requirement: Generated board
 
@@ -470,7 +468,7 @@ During setup the client SHALL present a dialog on desktop and a bottom sheet on 
 - **AND** dismissal SHALL preserve the current setup state and deadline
 
 ### Requirement: Responsive game layout
-The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal in the center, and My Turn and My Assets on the right. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The turn header SHALL show current player, phase, countdown and available dice.
+The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal with chat in the center, and My Turn and My Assets on the right. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The turn header SHALL show current player, phase, countdown and available dice.
 
 #### Scenario: Mobile game navigation
 - **WHEN** the viewport is below 1024 px
@@ -485,6 +483,28 @@ The game screen SHALL keep existing in-game actions reachable and preserve their
 #### Scenario: Supported widths
 - **WHEN** the game is rendered at widths 360, 390, 768, 1024, 1440 and 1920 px
 - **THEN** the page SHALL have no horizontal overflow
+
+### Requirement: Desktop game header
+A desktop top bar SHALL show the product name “Economic Board Game”, correctly localized player count, connection status (including reconnect state), and a settings control. It SHALL omit the room label entirely and omit the round counter; this effort SHALL NOT add projection fields. Sound controls SHALL be available behind the settings control.
+
+#### Scenario: Desktop game screen
+- **WHEN** the game is rendered at 1440×900
+- **THEN** the top bar shows the product name, localized player count, connection status and settings control, without a room label; the centre contains the turn header, dice, journal and chat; and the entire board is visible without page scrolling
+
+#### Scenario: Room label and round counter are omitted
+- **WHEN** the top bar is rendered
+- **THEN** it omits the room label and round counter, does not expose the join secret or internal room id, and does not require new projection fields
+
+#### Scenario: Sound settings
+- **WHEN** the settings control is opened
+- **THEN** the existing volume and mute controls are available with their existing behavior and test identifiers
+
+### Requirement: Desktop viewport fit
+The whole board, including the bottom row, SHALL fit at 1440×900 and 1920×1080 without page scrolling. Purchase and auction decision controls SHALL also fit in the viewport without page scrolling. A turn progress bar is omitted because the projection exposes a deadline but no turn duration and this effort adds no projection fields or duration estimate.
+
+#### Scenario: Desktop viewport fit
+- **WHEN** the game is displayed at 1440×900 or 1920×1080, including a purchase or auction decision
+- **THEN** the whole board and all decision controls fit without page scrolling
 
 ### Requirement: Turn and asset panels
 My Turn SHALL distinguish its primary action from secondary and danger controls. My Assets SHALL group owned assets by color group and display group gradients, the dark-surface logo or monogram, house pips and mortgage status. Build, sell house, mortgage and redeem SHALL use existing legality adapters. Disabled controls SHALL expose their reasons by tooltip on desktop and visible text on mobile.
@@ -668,3 +688,14 @@ behavior. Loading the game screen SHALL NOT require a protocol or server change.
 #### Scenario: Preserve sound activation through lazy loading
 - **WHEN** a player interacts with the page before entering a game
 - **THEN** the lazy sound engine SHALL adopt the AudioContext created by the shell gesture gate without requiring another gesture
+
+### Requirement: Board-centre phase caption
+The board-centre caption SHALL describe the current projected game phase: turn-order roll, regular roll, purchase decision, auction, rent or debt, and game over. It SHALL update when the projected phase changes and SHALL NOT retain a caption from a prior phase.
+
+#### Scenario: Auction caption
+- **WHEN** the projection contains an active auction
+- **THEN** the board-centre caption describes the auction rather than a turn-order or dice roll
+
+#### Scenario: Finished game caption
+- **WHEN** the projection phase is finished
+- **THEN** the board-centre caption describes the completed game
