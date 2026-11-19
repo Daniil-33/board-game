@@ -1,11 +1,11 @@
 ## MODIFIED Requirements
 
 ### Requirement: Action buttons follow the view
-`RollForOrder` SHALL require setup and the viewer as `setup.playerId`. `RollDice` SHALL require playing, the viewer as turn owner and `rolled: false`; `EndTurn` SHALL require playing, the viewer as turn owner and `rolled: true`. Buttons SHALL be disabled while disconnected, while their command type is pending, and once the server deadline has passed. The turn panel SHALL show only actions belonging to the current phase. The currently applicable primary action SHALL be visually primary. An unavailable action belonging to the current phase SHALL remain visible, disabled, with its reason as visible text; actions exclusive to another phase SHALL be hidden. When another player owns the turn, one visible reason line SHALL identify that player instead of repeating a reason for each button.
+`RollForOrder` SHALL require setup and viewer `setup.playerId`. `RollDice` SHALL require playing, viewer turn ownership and `rolled: false`; `EndTurn` SHALL require playing, viewer ownership and `rolled: true`. Buttons SHALL be disabled while disconnected, while the command type is pending, or past the server deadline. The turn panel SHALL show current-phase actions only, make the applicable action primary, and keep unavailable actions visible, disabled, with visible text reasons.
 
 #### Scenario: Before and after the roll
 - **WHEN** it is the viewer's regular turn before the roll, then after the roll
-- **THEN** only the applicable action is enabled and primary, any unavailable regular-turn action remains disabled with its reason, and the setup-only order roll is hidden
+- **THEN** only the applicable action is enabled and primary, unavailable regular-turn actions remain visible and disabled with their visible reasons, and the setup-only order roll is hidden
 
 #### Scenario: My order roll
 - **WHEN** the phase is setup and setup.playerId is the viewer
@@ -13,7 +13,7 @@
 
 #### Scenario: Not my turn
 - **WHEN** the view's turn.playerId is another player
-- **THEN** RollDice and EndTurn SHALL be disabled
+- **THEN** RollDice and EndTurn SHALL be disabled and one visible reason line SHALL identify that player
 
 #### Scenario: Pending command
 - **WHEN** the viewer pressed RollDice and its Ack has not arrived
@@ -24,11 +24,11 @@
 - **THEN** regular-turn RollDice and EndTurn actions SHALL NOT be shown
 
 ### Requirement: Responsive game layout
-The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal in the center, and My Turn and My Assets on the right. The centre SHALL contain the turn header, dice and last roll, and journal with chat. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The turn header SHALL show current player, phase, countdown and available dice. A progress bar is omitted because the projection exposes a deadline but no turn duration and this effort adds no projection fields or duration estimate. A desktop top bar SHALL show the product name “Economic Board Game”, correctly localized player count, connection status (including reconnect state), and a settings control. It SHALL omit the room label entirely and omit the round counter; this effort SHALL NOT add projection fields. Sound controls SHALL be available behind the settings control. The whole board, including the bottom row, SHALL fit at 1440×900 and 1920×1080 without page scrolling; purchase and auction decision controls SHALL also fit in the viewport without page scrolling.
+The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal with chat in the center, and My Turn and My Assets on the right. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The centre SHALL contain the turn header, dice and last roll, and journal with chat.
 
 #### Scenario: Desktop game screen
 - **WHEN** the game is rendered at 1440×900
-- **THEN** the top bar shows the product name, localized player count, connection status and settings control, without a room label; the centre contains the turn header, dice, journal and chat; and the entire board is visible without page scrolling
+- **THEN** the top bar shows the product name “Economic Board Game”, correctly localized player count, connection status including reconnect state, and settings control, without a room label; the centre contains the turn header, dice and last roll, and journal with chat; and the turn header shows current player, phase, countdown and available dice
 
 #### Scenario: Room label and round counter are omitted
 - **WHEN** the top bar is rendered
@@ -37,6 +37,10 @@ The game screen SHALL keep existing in-game actions reachable and preserve their
 #### Scenario: Sound settings
 - **WHEN** the settings control is opened
 - **THEN** the existing volume and mute controls are available with their existing behavior and test identifiers
+
+#### Scenario: Desktop viewport fit
+- **WHEN** the game is rendered at 1440×900 or 1920×1080, including a purchase or auction decision
+- **THEN** the whole board and decision controls fit without page scrolling; a progress bar is omitted because the projection supplies a deadline but no turn duration, and no projection fields or duration estimate are added
 
 #### Scenario: Mobile game navigation
 - **WHEN** the viewport is below 1024 px
