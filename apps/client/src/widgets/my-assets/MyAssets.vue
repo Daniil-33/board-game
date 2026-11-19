@@ -55,7 +55,7 @@ const groups = computed(() => {
           <button class="asset-inspect" data-testid="owned-asset-inspect" @click="emit('inspect', cellIndex, $event.currentTarget as HTMLElement)"><strong>{{ asset.name }}</strong></button>
         </div>
         <div v-if="house" class="house-pips" data-testid="owned-house-pips"
-          role="img" :aria-label="t('game_layout.house_count', { count: houses })">
+          role="img" :aria-label="t('game_layout.house_count', { count: houses }, houses)">
           <span v-for="pip in 4" :key="pip" :class="{ filled: pip <= houses }" />
         </div>
         <p v-if="mortgaged" class="note" data-testid="owned-mortgaged">{{ t('asset_card.mortgage') }}</p>

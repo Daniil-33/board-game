@@ -19,7 +19,7 @@ function housesOf(id: string): number {
         <strong data-testid="player-balance-name">{{ nameOf(player.id) }}</strong>
         <Money v-if="view.balances[player.id] !== undefined" data-testid="player-balance-value" :value="view.balances[player.id]!" />
         <span v-else data-testid="player-balance-value">{{ t('common.unreported') }}</span>
-        <small data-testid="player-houses">{{ t('game_layout.house_count', { count: housesOf(player.id) }) }}</small>
+        <small data-testid="player-houses">{{ t('game_layout.house_count', { count: housesOf(player.id) }, housesOf(player.id)) }}</small>
         <Badge v-if="view.rent?.payerId === player.id" data-testid="player-debt">{{ t('game_layout.debt') }}</Badge>
         <Badge v-if="activePlayerId(view) === player.id && view.turn?.pausedRemainingMs != null" data-testid="player-paused">{{ t('turn_timer.paused') }}</Badge>
         <Badge v-if="activePlayerId(view) === player.id" data-testid="player-active">{{ t('player_panel.active_turn') }}</Badge>

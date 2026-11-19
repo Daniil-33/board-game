@@ -6,6 +6,21 @@
     "notification": "Уведомление",
     "notifications": "Уведомления ({hotkey})"
   },
+  "game_top_bar": {
+    "product_name": "Economic Board Game",
+    "players": "{count} игроков | {count} игрок | {count} игрока | {count} игроков",
+    "online": "В сети",
+    "reconnecting": "Переподключаемся",
+    "settings": "Настройки"
+  },
+  "board_caption": {
+    "order_roll": "{player} бросает кость за порядок ходов",
+    "regular_roll": "{player} бросает кости",
+    "purchase": "Решение о покупке",
+    "auction": "Аукцион",
+    "rent": "Рента и долг",
+    "finished": "Партия завершена"
+  },
   "animation": {
     "jail_attempt_failed": "{player} остаётся в тюрьме: попытка {attempts} не удалась (временное правило)",
     "jail_released_double": "{player} выходит из тюрьмы после дубля (временное правило)",
@@ -115,7 +130,7 @@
   },
   "room": {
     "empty_marker": "+",
-    "heading": "Комната ожидания · {count} из {capacity} мест",
+    "heading": "Комната ожидания · {players} из {capacity} места | Комната ожидания · {players} из {capacity} места | Комната ожидания · {players} из {capacity} мест | Комната ожидания · {players} из {capacity} мест",
     "empty_seat": "Свободно",
     "leave_title": "Закрыть комнату?",
     "leave_warning": "Если создатель выйдет, комната закроется для всех игроков.",
@@ -143,9 +158,9 @@
     "rent_table": "Таблица ренты",
     "rent_table_energy": "Рента по сумме костей",
     "rent_tier_holdings_header": "Активы",
-    "rent_tier_houses": "{houses} домов",
+    "rent_tier_houses": "{houses} домов | {houses} дом | {houses} дома | {houses} домов",
     "rent_tier_complete_group": "Полная группа без домов",
-    "rent_tier_holdings": "Активов в группе: {holdings}",
+    "rent_tier_holdings": "{holdings} активов | {holdings} актив | {holdings} актива | {holdings} активов",
     "house_count": "{houses} / 4",
     "asset_details": "Карточка актива",
     "close_asset_card": "Закрыть карточку актива",
@@ -158,7 +173,7 @@
     "cell": "Клетка",
     "houses": "Дома",
     "mortgage": "Залог",
-    "mortgage_terms": "В залоге: получено {advance}, осталось кругов: {laps}",
+    "mortgage_terms": "В залоге: получено {advance}, осталось {laps} кругов | В залоге: получено {advance}, остался {laps} круг | В залоге: получено {advance}, осталось {laps} круга | В залоге: получено {advance}, осталось {laps} кругов",
     "lap_waits_for": "Завершения круга ждут",
     "energy_formula": "Рента = Q({sumPrices} × сумма костей × {holdings} / (200 × {groupSize}))",
     "energy_example": "Сумма костей {diceSum}: {rent}",
@@ -188,8 +203,6 @@
     "none": "Нет"
   },
   "board_canvas": {
-    "order_roll": "{player} бросает кость за порядок ходов",
-    "dice_roll": "{player} бросает кости",
     "custom_banner": "{player} {text}",
     "mortgage_marker": "В залоге"
   },
@@ -310,13 +323,16 @@
     "more": "Ещё",
     "navigation": "Разделы партии",
     "unread": "Новые сообщения",
-    "house_count": "Домов: {count}",
+    "house_count": "{count} домов | {count} дом | {count} дома | {count} домов",
     "debt": "В долгу",
     "my_turn": "Мой ход",
     "my_assets": "Мои активы",
+    "action_reason": "{action}: {reason}",
     "no_assets": "У вас пока нет активов.",
-    "other_turn": "Сейчас ход другого игрока.",
+    "other_turn": "Сейчас ходит {player}.",
     "action_unavailable": "Действие недоступно на этом этапе хода.",
+    "already_rolled": "Кости уже брошены в этом ходу.",
+    "roll_required": "Кости ещё не брошены.",
     "setup_phase": "Определение порядка",
     "rules": "Краткие правила",
     "rules_summary": "Бросайте кости, покупайте активы и получайте ренту. Последний активный игрок побеждает.",

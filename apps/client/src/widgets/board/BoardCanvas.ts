@@ -371,6 +371,11 @@ export class BoardScene {
   setNames(nameOf: (playerId: string) => string): void {
     this.nameOf = nameOf;
   }
+  setPhaseCaption(caption: string): void {
+    this.diceLabel.text = caption;
+    this.diceLabel.visible = caption.length > 0;
+    this.requestRender?.();
+  }
   setViewer(playerId: string | null): void { this.viewerId = playerId; }
 
   /**
@@ -406,12 +411,10 @@ export class BoardScene {
         this.setActive(step.playerId);
         return;
       case 'orderDie':
-        this.diceLabel.text = t('board_canvas.order_roll', { player: this.nameOf(step.playerId) });
         this.dice[1].visible = false;
         await this.tumble([step.value], wait);
         return;
       case 'dice':
-        this.diceLabel.text = t('board_canvas.dice_roll', { player: this.nameOf(step.playerId) });
         await this.tumble(step.dice, wait);
         return;
       case 'hop':

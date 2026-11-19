@@ -33,7 +33,7 @@ const screen = computed(() => {
 <template>
   <main class="app" :data-screen="screen" :data-testid="`screen-${screen}`">
     <UiProvider>
-      <header class="app-header">
+      <header class="app-header game-global-header">
         <h1>{{ t('app.board_game') }}</h1>
         <span v-if="client.session.state.guest" class="who" data-testid="who">{{ client.session.state.guest.nickname }}</span>
         <label v-if="showLanguageSelector">
@@ -52,3 +52,9 @@ const screen = computed(() => {
     </UiProvider>
   </main>
 </template>
+
+<style scoped>
+@media (min-width: 1024px) {
+  :global(.app[data-screen="game"] .game-global-header) { display: none; }
+}
+</style>

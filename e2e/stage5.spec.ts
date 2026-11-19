@@ -58,7 +58,7 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   }
   const projected = (expected: Readonly<Record<string, number>>) => { for (const p of players) expect(p.view!.balances).toEqual(expected); };
   const mortgageButton = owner.page.locator(sel('mortgage')), redeemButton = owner.page.locator(sel('redeem'));
-  await cards(`В залоге: получено ${money(adv)}, осталось кругов: 1`, 0);
+  await cards(`В залоге: получено ${money(adv)}, остался 1 круг`, 0);
   await expect(mortgageButton).toBeDisabled();
   await expect(mortgageButton).toHaveText(`Заложить · +${money(adv)}`);
   await expect(owner.page.locator(sel('mortgage-reason'))).toHaveText('Актив уже в залоге.');
@@ -83,7 +83,7 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(start.order!.map(id => name(players, id)).join(', '));
   }));
   projected(start.balances);
-  await cards(`В залоге: получено ${money(adv)}, осталось кругов: 8`, 0);
+  await cards(`В залоге: получено ${money(adv)}, осталось 8 кругов`, 0);
   await expect(mortgageButton).toBeDisabled();
 
   inWindow(owner.view!, 'second redeem');
@@ -104,7 +104,7 @@ test('stage 5: a mortgage expires after its eighth collective lap', async ({ act
   // Seven laps are counted in the fixture; the owner is the last player the eighth lap waits for.
   for (const p of players) {
     await card(p, cell.index);
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(adv)}, осталось кругов: 1`);
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(adv)}, остался 1 круг`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(name(players, owner.id));
     await close(p);
   }
@@ -263,7 +263,12 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   inWindow(next.view!, 'next roll');
   await click(players, next, 'RollDice');
   same(players, 'DiceRolled');
-  await expect(payer.page.locator(sel('RollDice'))).toBeDisabled();
+  if (payer.view!.purchase || payer.view!.auction) {
+    await expect(payer.page.locator(sel('RollDice'))).toHaveCount(0);
+    await expect(payer.page.locator(sel('EndTurn'))).toHaveCount(0);
+  } else {
+    await expect(payer.page.locator(sel('RollDice'))).toBeDisabled();
+  }
   await expect(payer.page.locator(sel('spectator'))).toBeVisible();
   await payer.page.locator(sel('chat-input')).fill('Chat from bankrupt spectator');
   await payer.page.locator(sel('chat-send')).click();
@@ -399,7 +404,7 @@ test('stage 5: a server restart keeps mortgages and terms; the next boundary sti
     expect(p.view!.owners).toEqual(before.owners);
     expect(p.view!.turn).toEqual(before.turn);
     expect(p.view!.balances).toEqual(before.balances);
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[expiring]!.advance)}, осталось кругов: 1`);
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[expiring]!.advance)}, остался 1 круг`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(name(players, payer.id));
   }
   for (const p of players) await close(p);
@@ -414,7 +419,7 @@ test('stage 5: a server restart keeps mortgages and terms; the next boundary sti
     await expect(p.page.locator(sel('asset-owner'))).toHaveText('свободно');
     await close(p);
     await card(p, laterCell.index);
-    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[later]!.advance)}, осталось кругов: 5`);
+    await expect(p.page.locator(sel('asset-mortgage'))).toHaveText(`В залоге: получено ${money(before.mortgages[later]!.advance)}, осталось 5 кругов`);
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(remaining.map(id => name(players, id)).join(', '));
   }
   await shoot(players, info, 'restart-boundary');

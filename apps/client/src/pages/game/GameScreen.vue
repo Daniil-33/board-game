@@ -23,6 +23,8 @@ import { RentPanel } from '../../widgets/rent-panel/index';
 import { DebtNotices } from '../../widgets/debt-notices/index';
 import { EliminationNotice } from '../../widgets/elimination/index';
 import { Hud, HudStatus } from '../../widgets/turn-header/index';
+import { GameTopBar } from '../../widgets/game-top-bar/index';
+import { boardPhaseCaption } from '../../widgets/board/index';
 
 const TICK_MS = 250;
 
@@ -58,7 +60,10 @@ let unmounted = false;
 // A new view is measured against the clock of its arrival, not the last tick.
 watch(
   () => client.game.view,
-  () => (now.value = client.now()),
+  (view) => {
+    now.value = client.now();
+    mountedBoard?.setPhaseCaption?.(boardPhaseCaption(view, client.nameOf));
+  },
 );
 
 const selectedTab = ref('board');
@@ -112,6 +117,7 @@ onMounted(async () => {
     if (unmounted) return mounted.destroy();
     destroyBoard = mounted.destroy;
     mountedBoard = mounted.board;
+    mounted.board.setPhaseCaption?.(boardPhaseCaption(client.game.view, client.nameOf));
     mounted.board.setAssetSelection?.((index) => {
       if (client.game.view?.board?.cells.some(c => c.index === index && c.asset !== null)) {
         const canvas = host.value?.querySelector('canvas') ?? null;
@@ -139,6 +145,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="game-screen">
+    <GameTopBar class="desktop-top-bar" :player-count="client.game.view?.players.length ?? 0" :connected="client.game.connected" />
     <ReconnectBanner :reconnecting="!setupOpen && !client.game.connected && !client.game.fatal" />
     <HudStatus v-if="!setupOpen" :messages="connectionMessages" :connected="true"
       :problem="client.game.problem" :fatal="client.game.fatal" @dismiss="client.connection.dismissMessage" />
@@ -150,12 +157,12 @@ onBeforeUnmount(() => {
       <div class="center-column">
         <PurchaseDialog v-if="client.game.view?.purchase" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
         <div class="board-column">
-          <Hud v-model:setup-open="setupOpen" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected"
-            :pending="pendingTypes" :now="now" :history="client.events.state.entries"
-            :messages="connectionMessages" :problem="client.game.problem"
-            :fatal="client.game.fatal" :name-of="client.nameOf" :color-of="colorOf" :external-status="true"
-            @command="client.sendCommand" @dismiss="client.connection.dismissMessage" />
           <div class="board-assembly">
+            <Hud v-model:setup-open="setupOpen" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected"
+              :pending="pendingTypes" :now="now" :history="client.events.state.entries"
+              :messages="connectionMessages" :problem="client.game.problem"
+              :fatal="client.game.fatal" :name-of="client.nameOf" :color-of="colorOf" :external-status="true"
+              @command="client.sendCommand" @dismiss="client.connection.dismissMessage" />
             <div ref="host" class="board" id="game-panel-board" :role="desktop ? undefined : 'tabpanel'"
               :aria-label="t('game_layout.board')" data-testid="board">
               <p v-if="boardError" class="error" data-testid="board-error">{{ boardError }}</p>
@@ -184,7 +191,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="controls-column">
         <div class="turn-column">
-          <MyTurn :context="context" @command="client.sendCommand" />
+          <MyTurn :context="context" :name-of="client.nameOf" @command="client.sendCommand" />
         </div>
         <section class="more-column game-surface" id="game-panel-more" :role="desktop ? undefined : 'tabpanel'" :aria-label="t('game_layout.more')">
           <div class="mobile-only">
@@ -211,15 +218,17 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.game-screen { display: grid; gap: var(--space-2); }
 .game, .center-column, .board-column, .controls-column { display: grid; gap: var(--space-3); align-content: start; }
 .game > *, .board-column, .board { min-width: 0; overflow-wrap: anywhere; }
-.board-assembly { width: 100%; margin-inline: auto; }
+.board-assembly { position: relative; width: 100%; margin-inline: auto; }
 .board { width: 100%; aspect-ratio: 1; }
 .game-dialogs { width: 100%; max-width: 420px; margin-inline: auto; }
 .game-dialogs:empty { display: none; }
 .more-column :deep(.resign) { margin-top: var(--space-2); }
 .more-column details { margin-bottom: var(--space-3); }
 @media (max-width: 1023px) {
+  .desktop-top-bar { display: none; }
   .game { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .game:not([data-tab="board"]) :is(.turn-header, .board, .turn-column, .roster-column),
   .game:not([data-tab="journal"]) .journal-column,
@@ -238,11 +247,51 @@ onBeforeUnmount(() => {
   .game:not([data-tab="board"]):not([data-tab="journal"]) .board-column { display: none; }
 }
 @media (min-width: 1024px) {
+  .board-column { gap: 0; }
   .game {
     --side-width: 240px;
     grid-template-columns: var(--side-width) minmax(0, 1fr) var(--side-width);
   }
-  .board-assembly { position: relative; max-width: 660px; }
+  .board-assembly { max-width: min(100%, calc(100dvh - 120px)); }
+  .game-dialogs:has([data-testid="auction"]) {
+    position: fixed;
+    z-index: 4;
+    inset: 50% auto auto 50%;
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    margin: 0;
+    overflow: auto;
+    transform: translate(-50%, -50%);
+  }
+  .game-dialogs:has([data-testid="auction"]) :deep(.auction-card) {
+    background: var(--bg-deep);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-1);
+  }
+  .center-column:has(.purchase-status) :deep(.purchase-status) {
+    position: fixed;
+    z-index: 4;
+    inset: 50% auto auto 50%;
+    width: min(420px, calc(100vw - 32px));
+    margin: 0;
+    transform: translate(-50%, -50%);
+    background: var(--bg-deep);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-1);
+  }
+  .board-column :deep(.turn-header) {
+    position: absolute;
+    z-index: 2;
+    inset: 9% 20% auto;
+    max-height: 42%;
+    overflow: auto;
+    padding: var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+    box-shadow: var(--shadow-1);
+  }
+  .board-column :deep(.turn-header .current-order) { margin-top: var(--space-1); }
   /* Leave the ring and the renderer’s dice and status area unobstructed. */
   .board-column:has(canvas) .journal-column {
     position: absolute;
@@ -259,6 +308,7 @@ onBeforeUnmount(() => {
   .board-column:has(canvas) .journal-column :deep(h2) { margin-bottom: var(--space-1); }
   .board-column:has(canvas) .journal-column :deep(.journal-list) { min-height: 0; }
   .board-column:has(canvas) .journal-column :deep(.chat-composer) { margin-top: var(--space-2); }
+  .game-dialogs:has([data-testid="auction"]) { grid-column: 2; }
   .mobile-only { display: none; }
   .more-column { padding: 0 var(--space-3) var(--space-3); border-top: 0; border-radius: 0 0 12px 12px; margin-top: calc(-1 * var(--space-3)); }
   .turn-column :deep(.game-surface) { border-bottom: 0; border-radius: 12px 12px 0 0; }

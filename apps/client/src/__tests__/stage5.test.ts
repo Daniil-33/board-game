@@ -184,12 +184,12 @@ describe('asset card: mortgage', () => {
   it('shows projected terms, pending names and zero rent, and follows each view until the mortgage ends', async () => {
     const s = owning();
     const w = card(project(mortgaged(s, 9, { laps: 2, pending: ['b', 'c'] })), 9);
-    expect(w.get('[data-testid="asset-mortgage"]').text()).toBe(`В залоге: получено ${mortgageAdvance(priceAt(s, 9))}, осталось кругов: 6`);
+    expect(w.get('[data-testid="asset-mortgage"]').text()).toBe(`В залоге: получено ${mortgageAdvance(priceAt(s, 9))}, осталось 6 кругов`);
     expect(w.get('[data-testid="asset-mortgage-pending"]').text()).toBe('Bob, Carol');
     expect(w.get('[data-testid="asset-rent"]').text()).toBe('0');
     expect(w.get('[data-testid="redeem"]').text()).toBe(`Выкупить · ${mortgageAdvance(priceAt(s, 9))}`);
     await w.setProps({ view: project(mortgaged(s, 9, { laps: 7, pending: ['c'] })) });
-    expect(w.get('[data-testid="asset-mortgage"]').text()).toContain('осталось кругов: 1');
+    expect(w.get('[data-testid="asset-mortgage"]').text()).toContain('остался 1 круг');
     expect(w.get('[data-testid="asset-mortgage-pending"]').text()).toBe('Carol');
     await w.setProps({ view: project(s) });
     expect(w.find('[data-testid="asset-mortgage"]').exists()).toBe(false);
