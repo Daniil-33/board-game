@@ -13,6 +13,7 @@ See proposal.md for motivation and specs/client/game-screen/spec.md for observab
 ## Decisions
 
 - Put the top bar in the game page with the product name, localized player count, current connection/reconnect status, and settings control. Omit the room label entirely: never expose the join secret or internal room id. Omit the round counter because the projection has no round field; do not add projection fields.
+- Keep the existing numeric countdown without the reference progress bar: the projection has a deadline but not the matching duration, so do not estimate progress or add projection fields.
 - Keep turn header, dice and event feed in the centre composition. Keep existing Pixi rendering and board behavior; adjust available dimensions and page grid around the existing square board.
 - Use the existing Reka popover primitive for settings, retaining sound control components and their test ids.
 - Derive action visibility and captions from the existing `StateView` phase and its purchase, auction, rent/debt, turn, and result fields. Keep game legality in existing selectors.

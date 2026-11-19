@@ -166,7 +166,7 @@ body:has(.app:is([data-screen="login"], [data-screen="lobby"], [data-screen="roo
 .ds-dialog-wide > h2 { font-family: var(--design-font-display); }
 .ds-dialog-wide > p { color: var(--text-muted); }
 
-.app[data-screen="game"] { min-height: 100dvh; max-width: 1440px; }
+.app[data-screen="game"] { min-height: 100dvh; width: 100%; max-width: none; }
 body:has(.app[data-screen="game"]) { background: radial-gradient(ellipse at 12% 0%, var(--bg-glow-1), transparent 50%), var(--bg-base); }
 .game-surface h2, .player-panel h2 { font-family: var(--design-font-display); font-size: .95rem; }
 .game-surface { padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface-1); }

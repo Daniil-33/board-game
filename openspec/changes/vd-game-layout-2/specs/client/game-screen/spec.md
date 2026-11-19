@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Action buttons follow the view
-`RollForOrder` SHALL require setup and the viewer as `setup.playerId`. `RollDice` SHALL require playing, the viewer as turn owner and `rolled: false`; `EndTurn` SHALL require playing, the viewer as turn owner and `rolled: true`. RollDice and EndTurn SHALL be disabled during auctions. Buttons SHALL be disabled while disconnected, while their command type is pending, and once the server deadline has passed. The turn panel SHALL show only actions belonging to the current phase. The currently applicable primary action SHALL be visually primary. An unavailable action belonging to the current phase SHALL remain visible, disabled, with its reason; actions exclusive to another phase SHALL be hidden.
+`RollForOrder` SHALL require setup and the viewer as `setup.playerId`. `RollDice` SHALL require playing, the viewer as turn owner and `rolled: false`; `EndTurn` SHALL require playing, the viewer as turn owner and `rolled: true`. Buttons SHALL be disabled while disconnected, while their command type is pending, and once the server deadline has passed. The turn panel SHALL show only actions belonging to the current phase. The currently applicable primary action SHALL be visually primary. An unavailable action belonging to the current phase SHALL remain visible, disabled, with its reason as visible text; actions exclusive to another phase SHALL be hidden. When another player owns the turn, one visible reason line SHALL identify that player instead of repeating a reason for each button.
 
 #### Scenario: Before and after the roll
 - **WHEN** it is the viewer's regular turn before the roll, then after the roll
@@ -20,11 +20,11 @@
 - **THEN** RollDice SHALL be disabled
 
 #### Scenario: Auction in progress
-- **WHEN** the turn owner views an ongoing auction
-- **THEN** RollDice and EndTurn SHALL be disabled
+- **WHEN** a player views an ongoing auction or purchase decision
+- **THEN** regular-turn RollDice and EndTurn actions SHALL NOT be shown
 
 ### Requirement: Responsive game layout
-The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal in the center, and My Turn and My Assets on the right. The centre SHALL contain the turn header, dice and last roll, and journal with chat. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The turn header SHALL show current player, phase, countdown and available dice. A desktop top bar SHALL show the product name “Economic Board Game”, correctly localized player count, connection status (including reconnect state), and a settings control. It SHALL omit the room label entirely and omit the round counter; this effort SHALL NOT add projection fields. Sound controls SHALL be available behind the settings control. The whole board, including the bottom row, SHALL fit at 1440×900 without page scrolling.
+The game screen SHALL keep existing in-game actions reachable and preserve their command and legality contracts. At 1024 px and above it SHALL place players on the left, the turn header, scaling board and journal in the center, and My Turn and My Assets on the right. The centre SHALL contain the turn header, dice and last roll, and journal with chat. Side columns SHALL be approximately 240 px wide from 1024 to 1279 px and approximately 280 px from 1280 px. The turn header SHALL show current player, phase, countdown and available dice. A progress bar is omitted because the projection exposes a deadline but no turn duration and this effort adds no projection fields or duration estimate. A desktop top bar SHALL show the product name “Economic Board Game”, correctly localized player count, connection status (including reconnect state), and a settings control. It SHALL omit the room label entirely and omit the round counter; this effort SHALL NOT add projection fields. Sound controls SHALL be available behind the settings control. The whole board, including the bottom row, SHALL fit at 1440×900 and 1920×1080 without page scrolling; purchase and auction decision controls SHALL also fit in the viewport without page scrolling.
 
 #### Scenario: Desktop game screen
 - **WHEN** the game is rendered at 1440×900

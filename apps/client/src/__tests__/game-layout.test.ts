@@ -64,10 +64,11 @@ describe('game presentation', () => {
   it('makes the available roll or end turn primary and preserves disabled reasons', async () => {
     const view = playingView(['a', 'b']);
     const context = ref<ActionContext>({ view, me: pid('a'), now, connected: true, pending: [] });
-    const w = mount(withUi(() => h(MyTurn, { context: context.value })));
+    const w = mount(withUi(() => h(MyTurn, { context: context.value, nameOf })));
     expect(w.get(hook('RollDice')).classes()).toContain('primary');
     expect(w.get(hook('EndTurn')).classes()).toContain('secondary');
     expect(w.find(hook('RollForOrder')).exists()).toBe(false);
+    expect(w.get(hook('turn-action-reason')).text()).toContain('Кости ещё не брошены');
     expect(w.get(`[id="${w.get(hook('EndTurn')).attributes('aria-describedby')}"]`).text()).toContain('Кости ещё не брошены');
     expect(w.get(hook('EndTurn')).attributes('aria-describedby')).toBeTruthy();
     context.value = { ...context.value, view: { ...view, turn: { ...view.turn!, rolled: true } } };
@@ -75,6 +76,7 @@ describe('game presentation', () => {
     expect(w.get(hook('EndTurn')).classes()).toContain('primary');
     expect(w.get(hook('EndTurn')).attributes('disabled')).toBeUndefined();
     expect(w.get(`[id="${w.get(hook('RollDice')).attributes('aria-describedby')}"]`).text()).toContain('Кости уже брошены в этом ходу');
+    expect(w.get(hook('turn-action-reason')).text()).toContain('Кости уже брошены в этом ходу');
     context.value = { ...context.value, connected: false };
     await flushPromises();
     for (const type of ['RollDice', 'EndTurn']) {
@@ -95,6 +97,10 @@ describe('game presentation', () => {
       context.value = before;
       await flushPromises();
     }
+    context.value = { ...context.value, connected: true, me: pid('b') };
+    await flushPromises();
+    expect(w.findAll(hook('turn-action-reason'))).toHaveLength(1);
+    expect(w.get(hook('turn-action-reason')).text()).toBe('Сейчас ходит Alice.');
     w.unmount();
   });
 

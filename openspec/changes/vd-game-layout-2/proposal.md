@@ -37,3 +37,4 @@ None.
 
 - The room label is omitted entirely: the join secret must not be shown and the internal room id is not user-facing.
 - The round counter is omitted because the projection has no game-round counter; this effort adds no projection fields.
+- The turn timer keeps its numeric countdown and omits the design's progress bar because the projection exposes a deadline but no turn duration; this effort adds no projection fields or client-side duration estimate.

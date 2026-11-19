@@ -86,6 +86,23 @@ describe('localization contracts', () => {
       .toEqual(['1 игрок', '2 игрока', '4 игрока', '5 игроков', '11 игроков', '21 игрок']);
     expect(t('asset_card.rent_tier_holdings', { holdings: 2 }, 2)).toBe('2 актива');
     expect([1, 2, 5].map(count => t('game_layout.house_count', { count }, count))).toEqual(['1 дом', '2 дома', '5 домов']);
+    expect([1, 2, 5, 11, 21].map(laps => t('asset_card.mortgage_terms', { advance: '360', laps }, laps))).toEqual([
+      'В залоге: получено 360, остался 1 круг',
+      'В залоге: получено 360, осталось 2 круга',
+      'В залоге: получено 360, осталось 5 кругов',
+      'В залоге: получено 360, осталось 11 кругов',
+      'В залоге: получено 360, остался 21 круг',
+    ]);
+    expect([1, 2, 5].map(attempts => t('turn_order.jail_attempts', { attempts }, attempts))).toEqual([
+      'в тюрьме, использовано попыток: 1 (временное правило)',
+      'в тюрьме, использовано попыток: 2 (временное правило)',
+      'в тюрьме, использовано попыток: 5 (временное правило)',
+    ]);
+    expect([1, 2, 5].map(count => t('room.heading', { players: 1, capacity: count, count }, count))).toEqual([
+      'Комната ожидания · 1 из 1 места',
+      'Комната ожидания · 1 из 2 мест',
+      'Комната ожидания · 1 из 5 мест',
+    ]);
     expect(t('room.heading', { players: 4, capacity: 6, count: 6 }, 6)).toBe('Комната ожидания · 4 из 6 мест');
     i18n.global.locale.value = 'en';
     try {

@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="controls-column">
         <div class="turn-column">
-          <MyTurn :context="context" @command="client.sendCommand" />
+          <MyTurn :context="context" :name-of="client.nameOf" @command="client.sendCommand" />
         </div>
         <section class="more-column game-surface" id="game-panel-more" :role="desktop ? undefined : 'tabpanel'" :aria-label="t('game_layout.more')">
           <div class="mobile-only">
@@ -252,7 +252,17 @@ onBeforeUnmount(() => {
     --side-width: 240px;
     grid-template-columns: var(--side-width) minmax(0, 1fr) var(--side-width);
   }
-  .board-assembly { max-width: min(660px, calc(100dvh - 100px)); }
+  .board-assembly { max-width: min(100%, calc(100dvh - 120px)); }
+  .game-dialogs:has([data-testid="auction"]) {
+    position: fixed;
+    z-index: 4;
+    inset: 50% auto auto 50%;
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    margin: 0;
+    overflow: auto;
+    transform: translate(-50%, -50%);
+  }
   .board-column :deep(.turn-header) {
     position: absolute;
     z-index: 2;
@@ -282,6 +292,7 @@ onBeforeUnmount(() => {
   .board-column:has(canvas) .journal-column :deep(h2) { margin-bottom: var(--space-1); }
   .board-column:has(canvas) .journal-column :deep(.journal-list) { min-height: 0; }
   .board-column:has(canvas) .journal-column :deep(.chat-composer) { margin-top: var(--space-2); }
+  .game-dialogs:has([data-testid="auction"]) { grid-column: 2; }
   .mobile-only { display: none; }
   .more-column { padding: 0 var(--space-3) var(--space-3); border-top: 0; border-radius: 0 0 12px 12px; margin-top: calc(-1 * var(--space-3)); }
   .turn-column :deep(.game-surface) { border-bottom: 0; border-radius: 12px 12px 0 0; }

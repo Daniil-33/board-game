@@ -71,7 +71,7 @@ describe('TurnOrder', () => {
   it('marks a jailed player, labelled as the interim rule', () => {
     const rows = render(playingView(['a', 'b'], { jail: { b: { attemptsUsed: 2 } } }));
     expect(rows[0]!.find('[data-testid="jail"]').exists()).toBe(false);
-    expect(rows[1]!.find('[data-testid="jail"]').text()).toMatch(/в тюрьме, использовано 2 попытки \(временное правило\)/);
+    expect(rows[1]!.find('[data-testid="jail"]').text()).toMatch(/в тюрьме, использовано попыток: 2 \(временное правило\)/);
   });
 });
 
