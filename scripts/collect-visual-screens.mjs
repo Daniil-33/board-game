@@ -69,7 +69,9 @@ writeFileSync(resolve(out, 'README.md'), [
   '',
   'Staging render (production, 1440×900, version `e2ead69340db160cb37239154aeb8a29e3193198`): [board with group strips and corner gradients](../../TASK-vd-board/staging-render.png).',
   '',
-  `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. App captures are retained under their originating TASK evidence directories.`,
+  'App source captures were produced by committed head `86b010088c1257ca5a46edd6eac209cb58750593` in Playwright 1.58.2; both local web stacks report product version `e01304f`. The exact capture runs, viewports, and log paths are in [capture-manifest.json](./capture-manifest.json).',
+  '',
+  `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. Current-head app source PNGs are retained in \`captured-app/\` and \`captured-app-fixtures/\`.`,
   '',
 ].join('\n'));
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);
