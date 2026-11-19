@@ -1,7 +1,7 @@
 import { money } from './ru-text';
 import { execFileSync } from 'node:child_process';
 import type { StateView } from '../packages/game-core/src/index';
-import { test, expect, sel, active, resign, type Actor } from './helpers';
+import { test, expect, sel, active, resign, waitGameReady, type Actor } from './helpers';
 import { fast, q, click, load, shoot, balances, card, close } from './fixture-helpers';
 
 // Explicit opt-in: earlier stages always run against their original stacks.
@@ -269,9 +269,15 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
     await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
     await expect.poll(() => recipient.chats.some(message => message.text === 'Chat from bankrupt spectator' && message.authorId === payer.id)).toBe(true);
   }
+  const chatRecipient = players.find(p => p !== payer)!;
+  const recipientWelcomes = chatRecipient.welcomes.length;
+  await chatRecipient.page.reload();
+  await waitGameReady(chatRecipient);
+  await expect.poll(() => chatRecipient.welcomes.length).toBeGreaterThan(recipientWelcomes);
+  await expect(chatRecipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
   const welcomeCount = payer.welcomes.length;
   await payer.page.reload();
-  await expect(payer.page.locator(sel('board-canvas'))).toBeVisible();
+  await waitGameReady(payer);
   await expect.poll(() => payer.welcomes.length).toBeGreaterThan(welcomeCount);
   await expect(payer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat from bankrupt spectator' })).toBeVisible();
   await shoot(players, info, 'bankrupt-watching');

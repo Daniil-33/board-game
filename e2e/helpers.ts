@@ -153,10 +153,18 @@ export async function waitGameReady(actor: Actor): Promise<void> {
 export async function action(actor: Actor, type: string): Promise<void> {
   if (type === 'EndTurn' && actor.view?.turn?.rolled) {
     const turnId = actor.view.turn.turnId;
-    if (actor.view.turn.deadline <= Date.now()) {
-      await expect.poll(() => actor.view?.turn?.turnId).not.toBe(turnId);
-      return;
-    }
+    const endTurn = actor.page.locator(sel(type));
+    await expect(endTurn).toBeVisible();
+    // Check and dispatch in one browser task so the UI countdown cannot disable
+    // the button between a test-runner clock check and Playwright's click.
+    // If it is already disabled, the authoritative server timeout is resolving;
+    // either way, finish on the projected turn transition.
+    await endTurn.evaluate((element) => {
+      if (!(element instanceof HTMLButtonElement) || element.disabled) return;
+      element.click();
+    });
+    await expect.poll(() => actor.view?.turn?.turnId).not.toBe(turnId);
+    return;
   }
   const revision = actor.view!.revision;
   await actor.page.locator(sel(type)).click();

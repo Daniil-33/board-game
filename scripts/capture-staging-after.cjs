@@ -1,3 +1,6 @@
+// Reproduction: see scripts/README.md. Run from the repository root in
+// mcr.microsoft.com/playwright:v1.58.2-noble with /workspace and /evidence
+// mounts. Lighthouse is pinned to 12.8.2 below; STAGING_URL selects the origin.
 const { chromium } = require('/workspace/node_modules/.pnpm/node_modules/playwright');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');

@@ -27,13 +27,13 @@ const pairs = [
   ['purchase-observer-mobile', 'TASK-vd-dialogs-followup/purchase-bystander-mobile-390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase status for another player'],
   ['auction-observer-mobile', 'TASK-vd-dialogs-followup/auction-bystander-mobile-390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction status for another player'],
   ['asset-card-desktop', 'TASK-vd-game-dialogs/screenshots/asset-inspection/1440x900.png', 'TASK-vd-e2e/screens/captured-design-frames/desktop-05-карточка-актива-свой-актив.png', 'Asset inspection'],
-  ['asset-card-mobile', 'TASK-vd-game-dialogs/screenshots/asset-inspection/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Asset inspection'],
+  ['asset-card-mobile', 'TASK-vd-game-dialogs/screenshots/asset-inspection/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Asset inspection; nearest My Assets frame'],
   ['rent-shortfall-desktop', 'TASK-vd-game-dialogs/screenshots/rent-shortfall/1440x900.png', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Rent shortfall'],
-  ['rent-shortfall-mobile', 'TASK-vd-game-dialogs/screenshots/rent-shortfall/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Rent shortfall'],
+  ['rent-shortfall-mobile', 'TASK-vd-game-dialogs/screenshots/rent-shortfall/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Rent shortfall; nearest My Assets frame'],
   ['liquidation-desktop', 'TASK-vd-game-dialogs/screenshots/liquidation/1440x900.png', 'TASK-vd-e2e/screens/captured-design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Automatic liquidation summary'],
-  ['liquidation-mobile', 'TASK-vd-game-dialogs/screenshots/liquidation/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary'],
-  ['elimination-desktop', 'TASK-vd-game-dialogs/screenshots/elimination/1440x900.png', 'TASK-vd-e2e/screens/captured-design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer'],
-  ['elimination-mobile', 'TASK-vd-game-dialogs/screenshots/elimination/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer'],
+  ['liquidation-mobile', 'TASK-vd-game-dialogs/screenshots/liquidation/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary; nearest My Assets frame'],
+  ['elimination-desktop', 'TASK-vd-game-dialogs/screenshots/elimination/1440x900.png', 'TASK-vd-e2e/screens/captured-design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer; nearest game frame'],
+  ['elimination-mobile', 'TASK-vd-game-dialogs/screenshots/elimination/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer; nearest mobile board frame'],
   ['game-over-desktop', 'TASK-vd-game-dialogs/screenshots/game-over/1440x900.png', 'TASK-vd-e2e/screens/captured-design-frames/desktop-10-итоги-партии.png', 'Game over'],
   ['game-over-mobile', 'TASK-vd-game-dialogs/screenshots/game-over/390x844.png', 'TASK-vd-e2e/screens/captured-design-frames/mobile-03-mobile-поле-copy.png', 'Game over; nearest mobile game frame'],
 ];
@@ -47,15 +47,16 @@ const rows = pairs.map(([name, appSource, designSource, description]) => {
   mkdirSync(dirname(appTarget), { recursive: true });
   copyFileSync(app, appTarget);
   copyFileSync(design, designTarget);
-  return `| ${description} | [App](./${name}-app.png) | [Design frame](./${name}-design.png) |`;
+  const sourceTask = appSource.split('/')[0];
+  return `| ${description} | [App](./${name}-app.png) | ${sourceTask} | [Design frame](./${name}-design.png) |`;
 });
 writeFileSync(resolve(out, 'README.md'), [
   '# Visual design screen pairs',
   '',
-  'Screenshots at 1440×900 and 390×844 for handoff criteria C3 and C4. App captures and design frames are paired below. Design frames were captured by opening the supplied HTML exports in Chromium as specified in `docs/efforts/visual-design/design.md`.',
+  'Screenshots at 1440×900 and 390×844 for handoff criteria C3 and C4. App captures come from the durable evidence of their originating tasks; each source task README records the local Playwright stack and viewport. No client/product code changed in TASK-vd-e2e. Design frames were captured by opening the supplied HTML exports in Chromium as specified in `docs/efforts/visual-design/design.md`. “Nearest” labels identify states without an exact design frame; the pairing is an evidence aid, not an assertion that the states are identical.',
   '',
-  '| Screen | App capture | Design frame |',
-  '| --- | --- | --- |',
+  '| Screen | App capture | App source task | Design frame |',
+  '| --- | --- | --- | --- |',
   ...rows,
   '',
   `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. App captures are retained under their originating TASK evidence directories.`,
