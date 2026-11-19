@@ -1,1 +1,1 @@
-export { boardTheme, readPixiTheme, type BoardTheme } from './pixi-theme';
+export { boardTheme, parseCssColors, readPixiTheme, type BoardTheme } from './pixi-theme';

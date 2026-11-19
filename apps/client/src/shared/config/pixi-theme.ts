@@ -13,10 +13,28 @@ export function readPixiTheme(root = document.documentElement) {
   return Object.freeze(values);
 }
 
+const namedColors = new Set(('aliceblue,antiquewhite,aqua,aquamarine,azure,beige,bisque,black,blanchedalmond,blue,blueviolet,brown,burlywood,cadetblue,chartreuse,chocolate,coral,cornflowerblue,cornsilk,crimson,cyan,darkblue,darkcyan,darkgoldenrod,darkgray,darkgreen,darkgrey,darkkhaki,darkmagenta,darkolivegreen,darkorange,darkorchid,darkred,darksalmon,darkseagreen,darkslateblue,darkslategray,darkslategrey,darkturquoise,darkviolet,deeppink,deepskyblue,dimgray,dimgrey,dodgerblue,firebrick,floralwhite,forestgreen,fuchsia,gainsboro,ghostwhite,gold,goldenrod,gray,green,greenyellow,grey,honeydew,hotpink,indianred,indigo,ivory,khaki,lavender,lavenderblush,lawngreen,lemonchiffon,lightblue,lightcoral,lightcyan,lightgoldenrodyellow,lightgray,lightgreen,lightgrey,lightpink,lightsalmon,lightseagreen,lightskyblue,lightslategray,lightslategrey,lightsteelblue,lightyellow,lime,limegreen,linen,magenta,maroon,mediumaquamarine,mediumblue,mediumorchid,mediumpurple,mediumseagreen,mediumslateblue,mediumspringgreen,mediumturquoise,mediumvioletred,midnightblue,mintcream,mistyrose,moccasin,navajowhite,navy,oldlace,olive,olivedrab,orange,orangered,orchid,palegoldenrod,palegreen,paleturquoise,palevioletred,papayawhip,peachpuff,peru,pink,plum,powderblue,purple,rebeccapurple,red,rosybrown,royalblue,saddlebrown,salmon,sandybrown,seagreen,seashell,sienna,silver,skyblue,slateblue,slategray,slategrey,snow,springgreen,steelblue,tan,teal,thistle,tomato,turquoise,violet,wheat,white,whitesmoke,yellow,yellowgreen,transparent').split(','));
+
+/** Extract CSS colors from gradient layers without relying on the CSS serializer's spelling. */
+export function parseCssColors(value: string): string[] {
+  const colors: string[] = [];
+  const candidates = value.match(/#[\da-f]{3,8}\b|rgba?\([^)]*\)|\b[a-z]+\b/gi) ?? [];
+  for (const candidate of candidates) {
+    if (/^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(candidate)) {
+      colors.push(candidate);
+    } else if (/^rgba?\(/i.test(candidate) && /^rgba?\(\s*[-+\d.%]+(?:\s*[,/]\s*|\s+)[-+\d.%]+(?:\s*[,/]\s*|\s+)[-+\d.%]+(?:\s*(?:[,/]\s*|\s+)\s*[-+\d.%]+)?\s*\)$/i.test(candidate)) {
+      colors.push(candidate);
+    } else if (namedColors.has(candidate.toLowerCase())) {
+      colors.push(candidate);
+    }
+  }
+  return colors;
+}
+
 export function boardTheme() {
   const tokens = readPixiTheme();
   const value = (name: string): string => tokens[name] ?? '';
-  const colors = (name: string): string[] => value(name).match(/rgba?\([^)]*\)/g) ?? [];
+  const colors = (name: string): string[] => parseCssColors(value(name));
   const font = (name: string): string[] => value(name).split(',').map(family => family.trim().replace(/['"]/g, ''));
   return {
     board: value('bg-deep'),
