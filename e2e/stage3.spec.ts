@@ -2,7 +2,7 @@ import { money } from './ru-text';
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { BOARD_SIZE, cellRect, tokenSlot } from '../apps/client/src/widgets/board/layout';
 import { test, expect, sel, createRoom, join, start, setup, active, action, sendRaw, waitGameReady, captureScreens, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
@@ -38,21 +38,34 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('buy'))).toHaveCount(p === actor ? 1 : 0);
   }
   const observer = players.find(p => p !== actor)!;
+  const recipient = players.find(p => p !== observer && p !== actor)!;
   await expect(observer.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
   await expect(observer.page.locator('[data-testid="purchase-status"] [role="status"]')).toContainText(assetAt(observer, bought.cell).name);
+  await captureScreens(actor.page, 'purchase');
   await captureScreens(observer.page, 'purchase-observer');
-  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
-  await observer.page.locator(sel('game-tab-assets')).click();
-  await captureScreens(observer.page, 'assets');
-  await observer.page.locator(sel('game-tab-board')).click();
   await observer.page.locator(sel('game-tab-journal')).click();
-  await captureScreens(observer.page, 'journal');
   await observer.page.locator(sel('chat-input')).fill('Chat during purchase');
   await observer.page.locator(sel('chat-send')).click();
   await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
+  const buyFrom = actor.events.length;
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'purchase-open');
+  await click(actor, players, 'buy');
+  expect(actor.events.slice(buyFrom).map(e => e.event)).toEqual([
+    { type: 'BalanceChanged', payload: { playerId: actor.id, delta: -price, balance: beforeBuy[actor.id]! - price, reason: 'purchase' } },
+    { type: 'AssetPurchased', payload: { playerId: actor.id, assetId: bought.assetId, price } },
+  ]);
+  await expectBalances(players, { ...beforeBuy, [actor.id]: beforeBuy[actor.id]! - price });
+  await expectOwner(players, bought.cell, actor, info);
+  await shoot(players, info, 'bought');
+
+  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
+  await observer.page.locator(sel('game-tab-assets')).click();
+  await captureScreens(observer.page, 'assets');
   await observer.page.locator(sel('game-tab-more')).click();
   await captureScreens(observer.page, 'more');
   await observer.page.locator(sel('game-tab-journal')).click();
+  await captureScreens(observer.page, 'journal');
+  await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
   for (const recipient of players) {
     await expect.poll(() => recipient.chats.some(message => message.text === 'Chat during purchase' && message.authorId === observer.id)).toBe(true);
   }
@@ -86,24 +99,14 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect.poll(() => observer.welcomes.length).toBeGreaterThan(chatWelcomeCount);
   await observer.page.locator(sel('game-tab-journal')).click();
   await expect(observer.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
-  const recipient = players.find(p => p !== observer && p !== actor)!;
   const recipientWelcomes = recipient.welcomes.length;
   await recipient.page.reload();
   await waitGameReady(recipient);
   await expect.poll(() => recipient.welcomes.length).toBeGreaterThan(recipientWelcomes);
   await recipient.page.locator(sel('game-tab-journal')).click();
   await expect(recipient.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during purchase' })).toBeVisible();
-  const buyFrom = actor.events.length;
-  await captureScreens(actor.page, 'purchase');
-  if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'purchase-open');
-  await click(actor, players, 'buy');
-  expect(actor.events.slice(buyFrom).map(e => e.event)).toEqual([
-    { type: 'BalanceChanged', payload: { playerId: actor.id, delta: -price, balance: beforeBuy[actor.id]! - price, reason: 'purchase' } },
-    { type: 'AssetPurchased', payload: { playerId: actor.id, assetId: bought.assetId, price } },
-  ]);
-  await expectBalances(players, { ...beforeBuy, [actor.id]: beforeBuy[actor.id]! - price });
-  await expectOwner(players, bought.cell, actor, info);
-  await shoot(players, info, 'bought');
+  await observer.page.locator(sel('game-tab-board')).click();
+  await recipient.page.locator(sel('game-tab-board')).click();
 
   // 2. Decline into an auction: the landing player passes, the next bids, the last passes.
   actor = await nextOffer(players);
@@ -114,31 +117,25 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(actor, info, 'auction-open');
   const won = actor.view!.auction!;
   expect(won).toMatchObject({ reason: 'choice', assetId: declined.assetId, responder: actor.id, leader: null, leadingBid: null });
+  const auctionObserver = players.find(p => p.id !== won.responder)!;
   for (const p of players) {
     await expect(p.page.locator(sel('auction'))).toBeVisible();
     await expect(p.page.locator(sel('purchase'))).toHaveCount(0);
   }
-  await respond(players, 'pass');
   if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
-    const captureBidder = byId(players, players[0]!.view!.auction!.responder);
-    await captureBidder.page.setViewportSize({ width: 1440, height: 900 });
-    await captureBidder.page.locator(sel('bid')).waitFor({ state: 'visible' });
-    await captureScreens(captureBidder.page, 'auction');
-    const evidenceDir = process.env['E2E_SCREEN_EVIDENCE_DIR']!;
-    writeFileSync(`${evidenceDir}/auction-desktop.png`, await captureBidder.page.screenshot({ fullPage: true, animations: 'disabled' }));
-    const manifestPath = `${evidenceDir}/capture-manifest-auction.json`;
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    manifest.desktopFullPage = true;
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    await actor.page.setViewportSize({ width: 1440, height: 900 });
+    await captureScreens(actor.page, 'auction', ['desktop']);
   }
-  const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
   await expect(auctionObserver.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);
   await expect(auctionObserver.page.locator(sel('auction'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-leader'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-timer'))).toBeVisible();
-  await captureScreens(auctionObserver.page, 'auction-observer');
+  if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
+    await captureScreens(auctionObserver.page, 'auction-observer', ['mobile']);
+  }
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(auctionObserver, info, 'auction-bystander-390');
+  await respond(players, 'pass');
   await auctionObserver.page.locator(sel('game-tab-journal')).click();
   await auctionObserver.page.locator(sel('chat-input')).fill('Chat during auction');
   await auctionObserver.page.locator(sel('chat-send')).click();
@@ -233,6 +230,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   expect(contestEvents.find(e => e.type === 'AuctionWon')!.payload).toMatchObject({ playerId: leader.id, amount: saved.auction!.leadingBid });
   await expectBalances(players, { ...saved.balances, [leader.id]: saved.balances[leader.id]! - saved.auction!.leadingBid! });
   await expectOwner(players, contested.cell, leader, info);
+
 });
 
 test('stage 3: turn deadline starts the auction, reload and server restart keep it, the turn closes', async ({ actors }, info) => {
