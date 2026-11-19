@@ -37,14 +37,25 @@ async function main() {
         let lastGuardError;
         let passed = false;
         while (Date.now() < deadline) {
-          screenshot = await iframe.screenshot({ animations: 'disabled' });
+          const firstScreenshot = await iframe.screenshot({ animations: 'disabled' });
           try {
-            assertNonBlankImage(screenshot, filename);
-            passed = true;
-            break;
+            assertNonBlankImage(firstScreenshot, filename);
           } catch (error) {
             lastGuardError = error;
             await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          await new Promise(resolve => setTimeout(resolve, 500));
+          screenshot = await iframe.screenshot({ animations: 'disabled' });
+          try {
+            assertNonBlankImage(screenshot, filename);
+            if (Date.now() <= deadline && firstScreenshot.equals(screenshot)) {
+              passed = true;
+              break;
+            }
+            lastGuardError = new Error('two consecutive guarded screenshots differed');
+          } catch (error) {
+            lastGuardError = error;
           }
         }
         if (!passed) {

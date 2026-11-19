@@ -77,7 +77,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
     await bidder.page.setViewportSize({ width: 1440, height: 900 });
     await bidder.page.locator(sel('auction')).scrollIntoViewIfNeeded();
-    await captureScreens(bidder.page, 'auction');
+    await captureScreens(bidder.page, 'auction', ['desktop']);
   }
   const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
@@ -85,7 +85,7 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(auctionObserver.page.locator(sel('auction'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-leader'))).toBeVisible();
   await expect(auctionObserver.page.locator(sel('auction-timer'))).toBeVisible();
-  await captureScreens(auctionObserver.page, 'auction-observer');
+  await captureScreens(auctionObserver.page, 'auction-observer', ['mobile']);
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(auctionObserver, info, 'auction-bystander-390');
   await auctionObserver.page.locator(sel('game-tab-journal')).click();
   await auctionObserver.page.locator(sel('chat-input')).fill('Chat during auction');
@@ -187,7 +187,6 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   if (process.env['E2E_DIALOG_EVIDENCE'] === '1') await capture(observer, info, 'purchase-bystander-1440');
   await observer.page.locator(sel('game-tab-assets')).click();
   await captureScreens(observer.page, 'assets');
-  await observer.page.locator(sel('game-tab-board')).click();
   await observer.page.locator(sel('game-tab-more')).click();
   await captureScreens(observer.page, 'more');
   await observer.page.locator(sel('game-tab-journal')).click();
