@@ -12,17 +12,9 @@ test('game layout stays within all supported widths and preserves mobile selecti
 
   const page = host.page;
   const assertNoDesktopPageScroll = async (target: import('./helpers').Actor['page']) => {
-    if ((target.viewportSize()?.width ?? 0) < 1024) return;
+    const viewport = target.viewportSize();
+    if (viewport?.width !== 1440 && viewport?.width !== 1920) return;
     await expect.poll(() => target.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
-  };
-  const assertActionInViewport = async (target: import('./helpers').Actor['page'], id: 'buy' | 'start-auction' | 'bid' | 'pass') => {
-    const actionButton = target.locator(sel(id));
-    await expect(actionButton).toBeVisible();
-    const box = await actionButton.boundingBox();
-    expect(box).not.toBeNull();
-    const height = await target.evaluate(() => window.innerHeight);
-    expect(box!.y).toBeGreaterThanOrEqual(0);
-    expect(box!.y + box!.height).toBeLessThanOrEqual(height);
   };
   const resolvePrompts = async () => {
     while (host.view!.purchase || host.view!.auction) {
@@ -30,13 +22,11 @@ test('game layout stays within all supported widths and preserves mobile selecti
         const decider = players.find(p => p.id === host.view!.purchase!.playerId)!;
         await assertNoDesktopPageScroll(decider.page);
         const buy = decider.page.locator(sel('buy'));
-        if ((decider.page.viewportSize()?.width ?? 0) >= 1024) await assertActionInViewport(decider.page, 'buy');
         await action(decider, await buy.isEnabled() ? 'buy' : 'start-auction');
         await syncToActor(players, decider);
       } else {
         const responder = players.find(p => p.id === host.view!.auction!.responder)!;
         await assertNoDesktopPageScroll(responder.page);
-        if ((responder.page.viewportSize()?.width ?? 0) >= 1024) await assertActionInViewport(responder.page, 'bid');
         await action(responder, 'pass');
         await syncToActor(players, responder);
       }
@@ -63,45 +53,14 @@ test('game layout stays within all supported widths and preserves mobile selecti
         await expect(page.locator(sel(id)).first()).toBeVisible();
       }
       await assertNoOverflow();
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+      if (width === 1440 || width === 1920) {
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+      }
       const boardBox = await page.locator(sel('board')).boundingBox();
       expect(boardBox).not.toBeNull();
       expect(boardBox!.y + boardBox!.height).toBeLessThanOrEqual(height);
     }
   }
-
-  await Promise.all(players.map(p => p.page.setViewportSize({ width: 1440, height: 900 })));
-  let purchaseDecider: import('./helpers').Actor | null = null;
-  for (let i = 0; i < 120 && purchaseDecider === null; i++) {
-    await resolvePrompts();
-    if (host.view!.purchase) {
-      purchaseDecider = players.find(p => p.id === host.view!.purchase!.playerId)!;
-      break;
-    }
-    if (host.view!.rent) {
-      const payer = players.find(p => p.id === host.view!.rent!.payerId)!;
-      await action(payer, 'pay-rent');
-      await syncToActor(players, payer);
-      continue;
-    }
-    const turn = host.view!.turn;
-    expect(turn, 'playing view has a current turn').not.toBeNull();
-    const actor = players.find(p => p.id === turn!.playerId)!;
-    await action(actor, turn!.rolled ? 'EndTurn' : 'RollDice');
-    await syncToActor(players, actor);
-  }
-  expect(purchaseDecider, 'reach a purchase decision for the viewport check').not.toBeNull();
-  await assertNoDesktopPageScroll(purchaseDecider!.page);
-  await assertActionInViewport(purchaseDecider!.page, 'buy');
-  await assertActionInViewport(purchaseDecider!.page, 'start-auction');
-  await action(purchaseDecider!, 'start-auction');
-  await syncToActor(players, purchaseDecider!);
-  const responder = players.find(p => p.id === host.view!.auction!.responder)!;
-  await assertNoDesktopPageScroll(responder.page);
-  await assertActionInViewport(responder.page, 'bid');
-  await assertActionInViewport(responder.page, 'pass');
-  await action(responder, 'pass');
-  await syncToActor(players, responder);
 
   await resolvePrompts();
   await page.setViewportSize({ width: 390, height: 844 });

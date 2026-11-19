@@ -263,7 +263,12 @@ test('stage 5: bankruptcy to a player creditor; the bankrupt client keeps watchi
   inWindow(next.view!, 'next roll');
   await click(players, next, 'RollDice');
   same(players, 'DiceRolled');
-  await expect(payer.page.locator(sel('RollDice'))).toBeDisabled();
+  if (payer.view!.purchase || payer.view!.auction) {
+    await expect(payer.page.locator(sel('RollDice'))).toHaveCount(0);
+    await expect(payer.page.locator(sel('EndTurn'))).toHaveCount(0);
+  } else {
+    await expect(payer.page.locator(sel('RollDice'))).toBeDisabled();
+  }
   await expect(payer.page.locator(sel('spectator'))).toBeVisible();
   await payer.page.locator(sel('chat-input')).fill('Chat from bankrupt spectator');
   await payer.page.locator(sel('chat-send')).click();
