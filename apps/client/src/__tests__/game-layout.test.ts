@@ -49,7 +49,7 @@ describe('game presentation', () => {
     const panel = mount(PlayerPanel, { props: { view, nameOf } });
     const rows = panel.findAll(hook('player-balance'));
     expect(rows.map(row => row.attributes('style'))).toEqual([1, 2, 3].map(seat => `--seat-color: var(--player-${seat});`));
-    expect(rows.map(row => row.get(hook('player-houses')).text())).toEqual(['Домов: 2', 'Домов: 1', 'Домов: 0']);
+    expect(rows.map(row => row.get(hook('player-houses')).text())).toEqual(['2 дома', '1 дом', '0 домов']);
     expect(rows[0]!.find(hook('player-debt')).exists()).toBe(true);
     expect(rows[0]!.find(hook('player-active')).exists()).toBe(true);
     expect(rows[0]!.get(hook('player-paused')).text()).toBe('таймер хода на паузе');
@@ -67,11 +67,14 @@ describe('game presentation', () => {
     const w = mount(withUi(() => h(MyTurn, { context: context.value })));
     expect(w.get(hook('RollDice')).classes()).toContain('primary');
     expect(w.get(hook('EndTurn')).classes()).toContain('secondary');
+    expect(w.find(hook('RollForOrder')).exists()).toBe(false);
+    expect(w.get(`[id="${w.get(hook('EndTurn')).attributes('aria-describedby')}"]`).text()).toContain('Кости ещё не брошены');
     expect(w.get(hook('EndTurn')).attributes('aria-describedby')).toBeTruthy();
     context.value = { ...context.value, view: { ...view, turn: { ...view.turn!, rolled: true } } };
     await flushPromises();
     expect(w.get(hook('EndTurn')).classes()).toContain('primary');
     expect(w.get(hook('EndTurn')).attributes('disabled')).toBeUndefined();
+    expect(w.get(`[id="${w.get(hook('RollDice')).attributes('aria-describedby')}"]`).text()).toContain('Кости уже брошены в этом ходу');
     context.value = { ...context.value, connected: false };
     await flushPromises();
     for (const type of ['RollDice', 'EndTurn']) {
@@ -187,6 +190,35 @@ describe('game presentation', () => {
       expect(w.find(hook('unread-chat')).exists()).toBe(false);
       w.unmount();
     } finally { matchMedia.mockRestore(); }
+  });
+
+  it('shows the top bar without room secrets and sends projected phase captions to the board', async () => {
+    const test = game();
+    const view = playingView(['a', 'b']);
+    const socket = test.sockets.last();
+    socket.receive(welcome(view));
+    const w = mountGame(test);
+    await flushPromises();
+    expect(w.get(hook('game-top-bar')).text()).toContain('Economic Board Game');
+    expect(w.get(hook('game-player-count')).text()).toBe('2 игрока');
+    expect(w.get(hook('game-connection')).text()).toContain('В сети');
+    expect(test.board.captions.at(-1)).toBe('Alice бросает кости');
+    await w.get(hook('game-settings')).trigger('click');
+    await flushPromises();
+    expect(document.body.textContent).toContain('Громкость звука');
+    expect(document.body.textContent).toContain('Выключить звук');
+
+    const auctionCell = view.board!.cells.find(cell => cell.asset !== null)!;
+    socket.receive(update({ ...view, revision: 11 as Revision, auction: {
+      auctionId: 'auction-1', assetId: auctionCell.asset!.assetId, cell: auctionCell.index,
+      price: 100 as never, startBid: 60 as never, step: 10 as never, reason: 'choice', order: view.order!,
+      passed: [], leader: null, leadingBid: null, bids: [], responder: pid('a'), responseId: 'response-1', responseDeadline: 60_000 as never,
+    } }));
+    await flushPromises();
+    expect(test.board.captions.at(-1)).toBe('Аукцион');
+    expect(w.find(hook('RollDice')).exists()).toBe(false);
+    expect(w.find(hook('EndTurn')).exists()).toBe(false);
+    w.unmount();
   });
 
   it('permits returning to the lobby only after the server projects resignation', async () => {

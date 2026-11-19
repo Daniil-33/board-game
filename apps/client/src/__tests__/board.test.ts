@@ -6,6 +6,7 @@ import { cellRect, cellStrip, jailBox } from '../widgets/board/index';
 import { playingView, setupView } from './helpers';
 import { boardTheme } from '../shared/config/index';
 import { cacheLogoTextures } from '../widgets/board/textures';
+import { boardPhaseCaption } from '../widgets/board/display';
 
 /** Runs every animation to its end at once. */
 const instant: SceneClock = {
@@ -22,6 +23,25 @@ const within = (p: { x: number; y: number }, r: { x: number; y: number; width: n
 
 // Smoke test: the scene graph only, no renderer (there is no WebGL here).
 describe('board scene', () => {
+  it('updates the Pixi phase caption through an explicit display method without replacing it during a roll', async () => {
+    const scene = new BoardScene(660, instant);
+    scene.setPhaseCaption('Аукцион');
+    await scene.play({ kind: 'dice', playerId: 'a', dice: [3, 4] });
+    const caption = scene.root.children.find(child => child instanceof Text && child.text === 'Аукцион') as Text | undefined;
+    expect(caption?.text).toBe('Аукцион');
+  });
+
+  it('derives centre captions from setup, turn, purchase, auction, rent, and finished projections', () => {
+    const view = playingView(['a', 'b']);
+    const nameOf = (id: string) => id === 'a' ? 'Alice' : 'Bob';
+    expect(boardPhaseCaption(setupView(['a', 'b']), nameOf)).toBe('Alice бросает кость за порядок ходов');
+    expect(boardPhaseCaption(view, nameOf)).toBe('Alice бросает кости');
+    expect(boardPhaseCaption({ ...view, purchase: {} as never }, nameOf)).toBe('Решение о покупке');
+    expect(boardPhaseCaption({ ...view, auction: {} as never }, nameOf)).toBe('Аукцион');
+    expect(boardPhaseCaption({ ...view, rent: {} as never }, nameOf)).toBe('Рента и долг');
+    expect(boardPhaseCaption({ ...view, phase: 'finished' }, nameOf)).toBe('Партия завершена');
+  });
+
   it('holds 40 cells, a jail marker, generated labels and one token per player', () => {
     const scene = new BoardScene(660, instant);
     scene.snap(playingView(['a', 'b', 'c']), 'a');

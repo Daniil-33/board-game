@@ -213,11 +213,14 @@ export function storedSession(roomSummary?: RoomSummary): Record<string, string>
 }
 
 /** A board that records what it is told instead of drawing. */
-export function recordingBoard(): Board & { steps: AnimationStep[]; snaps: { positions: Record<string, number>; activeId: string | null }[] } {
+export function recordingBoard(): Board & { steps: AnimationStep[]; captions: string[]; snaps: { positions: Record<string, number>; activeId: string | null }[] } {
   const steps: AnimationStep[] = [];
+  const captions: string[] = [];
   const snaps: { positions: Record<string, number>; activeId: string | null }[] = [];
   return {
     steps,
+    captions,
+    setPhaseCaption: caption => void captions.push(caption),
     snaps,
     setNames: () => {},
     snap: (view, activeId) => void snaps.push({ positions: { ...view.positions }, activeId }),

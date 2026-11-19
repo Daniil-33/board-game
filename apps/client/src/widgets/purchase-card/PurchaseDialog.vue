@@ -20,12 +20,12 @@ const rentRows = computed(() => {
   const tiers = rentSchedule.value;
   if (tiers[0]?.kind === 'regular' || tiers[0]?.kind === 'logistics') return tiers.map(tier => ({
     key: tier.kind === 'regular' ? `regular-${tier.completeGroup ? 'group' : tier.houses}` : `logistics-${tier.holdings}`,
-    label: tier.kind === 'regular' ? (tier.houses === 0 && tier.completeGroup ? t('asset_card.rent_tier_complete_group') : t('asset_card.rent_tier_houses', { houses: tier.houses })) : t('asset_card.rent_tier_holdings', { holdings: tier.holdings }),
+    label: tier.kind === 'regular' ? (tier.houses === 0 && tier.completeGroup ? t('asset_card.rent_tier_complete_group') : t('asset_card.rent_tier_houses', { houses: tier.houses }, tier.houses)) : t('asset_card.rent_tier_holdings', { holdings: tier.holdings }, tier.holdings),
     amount: tier.amount, rates: null as { readonly diceSum: number; readonly amount: number }[] | null,
   }));
   if (tiers[0]?.kind === 'energy') return [...new Set(tiers.map(tier => tier.kind === 'energy' ? tier.holdings : 0))].map(holdings => ({
     key: `energy-${holdings}`,
-    label: t('asset_card.rent_tier_holdings', { holdings }),
+    label: t('asset_card.rent_tier_holdings', { holdings }, holdings),
     amount: null as number | null,
     rates: tiers.filter((tier): tier is Extract<RentTier, { kind: 'energy' }> => tier.kind === 'energy' && tier.holdings === holdings),
   }));

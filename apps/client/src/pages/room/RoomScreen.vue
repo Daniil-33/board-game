@@ -42,7 +42,7 @@ const startReason = computed(() => {
 <template>
   <section v-if="room" class="room-view">
     <header class="room-heading">
-      <p class="muted">{{ t('room.heading', { count: members.length, capacity: MAX_PLAYERS }) }}</p>
+      <p class="muted">{{ t('room.heading', { players: members.length, capacity: MAX_PLAYERS, count: MAX_PLAYERS }, MAX_PLAYERS) }}</p>
       <h2 class="shell-heading" data-testid="room-title">{{ t('common.room', { roomId: room.roomId }) }}</h2>
     </header>
     <p v-if="client.game.fatal" class="error" data-testid="fatal">{{ client.game.fatal }}</p>

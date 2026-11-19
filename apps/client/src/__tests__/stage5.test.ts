@@ -189,7 +189,7 @@ describe('asset card: mortgage', () => {
     expect(w.get('[data-testid="asset-rent"]').text()).toBe('0');
     expect(w.get('[data-testid="redeem"]').text()).toBe(`Выкупить · ${mortgageAdvance(priceAt(s, 9))}`);
     await w.setProps({ view: project(mortgaged(s, 9, { laps: 7, pending: ['c'] })) });
-    expect(w.get('[data-testid="asset-mortgage"]').text()).toContain('осталось кругов: 1');
+    expect(w.get('[data-testid="asset-mortgage"]').text()).toContain('остался круг: 1');
     expect(w.get('[data-testid="asset-mortgage-pending"]').text()).toBe('Carol');
     await w.setProps({ view: project(s) });
     expect(w.find('[data-testid="asset-mortgage"]').exists()).toBe(false);

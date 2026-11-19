@@ -71,7 +71,7 @@ describe('TurnOrder', () => {
   it('marks a jailed player, labelled as the interim rule', () => {
     const rows = render(playingView(['a', 'b'], { jail: { b: { attemptsUsed: 2 } } }));
     expect(rows[0]!.find('[data-testid="jail"]').exists()).toBe(false);
-    expect(rows[1]!.find('[data-testid="jail"]').text()).toMatch(/в тюрьме, использовано попыток: 2 \(временное правило\)/);
+    expect(rows[1]!.find('[data-testid="jail"]').text()).toMatch(/в тюрьме, использовано 2 попытки \(временное правило\)/);
   });
 });
 
@@ -79,7 +79,8 @@ describe('ActionButtons', () => {
   it('disables per availability and emits the command type', async () => {
     const wrapper = mount(ActionButtons, { props: { available: actionAvailability({ view: playingView(['a', 'b']), me: pid('a'), connected: true, pending: [], now: 50_000 }) } });
     const disabled = (type: string): boolean => wrapper.find(`[data-testid="${type}"]`).attributes('disabled') !== undefined;
-    expect([disabled('RollForOrder'), disabled('RollDice'), disabled('EndTurn')]).toEqual([true, false, true]);
+    expect(wrapper.find('[data-testid="RollForOrder"]').exists()).toBe(false);
+    expect([disabled('RollDice'), disabled('EndTurn')]).toEqual([false, true]);
     await wrapper.find('[data-testid="RollDice"]').trigger('click');
     await wrapper.find('[data-testid="EndTurn"]').trigger('click');
     expect(wrapper.emitted('command')).toEqual([['RollDice']]);

@@ -27,12 +27,12 @@ const schedule = computed(() => assetId.value === undefined ? [] : rentTiers(pro
 const scheduleRows = computed(() => {
   if (schedule.value[0]?.kind === 'regular') return schedule.value.map(tier => ({
     key: `regular-${tier.kind === 'regular' && tier.completeGroup ? 'group' : tier.kind === 'regular' ? tier.houses : 0}`,
-    label: tier.kind === 'regular' ? (tier.houses === 0 && tier.completeGroup ? t('asset_card.rent_tier_complete_group') : t('asset_card.rent_tier_houses', { houses: tier.houses })) : '',
+    label: tier.kind === 'regular' ? (tier.houses === 0 && tier.completeGroup ? t('asset_card.rent_tier_complete_group') : t('asset_card.rent_tier_houses', { houses: tier.houses }, tier.houses)) : '',
     amount: tier.kind === 'regular' ? tier.amount : 0,
   }));
   if (schedule.value[0]?.kind === 'logistics') return schedule.value.map(tier => ({
     key: `logistics-${tier.kind === 'logistics' ? tier.holdings : 0}`,
-    label: tier.kind === 'logistics' ? t('asset_card.rent_tier_holdings', { holdings: tier.holdings }) : '',
+    label: tier.kind === 'logistics' ? t('asset_card.rent_tier_holdings', { holdings: tier.holdings }, tier.holdings) : '',
     amount: tier.kind === 'logistics' ? tier.amount : 0,
   }));
   return [];
@@ -94,7 +94,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown));
       <dt>{{ t('asset_card.price') }}</dt><dd>{{ formatMoney(cell.asset.price) }}</dd>
       <dt>{{ t('asset_card.cell') }}</dt><dd>{{ cell.index }}</dd>
       <template v-if="cell.kind === 'monopoly' && view"><dt>{{ t('asset_card.houses') }}</dt><dd data-testid="asset-houses">{{ t('asset_card.house_count', { houses: houses }) }}</dd></template>
-      <template v-if="terms"><dt>{{ t('asset_card.mortgage') }}</dt><dd data-testid="asset-mortgage">{{ t('asset_card.mortgage_terms', { advance: formatMoney(terms.advance), laps: terms.remainingLaps }) }}</dd>
+      <template v-if="terms"><dt>{{ t('asset_card.mortgage') }}</dt><dd data-testid="asset-mortgage">{{ t('asset_card.mortgage_terms', { advance: formatMoney(terms.advance), laps: terms.remainingLaps }, terms.remainingLaps) }}</dd>
         <dt>{{ t('asset_card.lap_waits_for') }}</dt><dd data-testid="asset-mortgage-pending">{{ pendingNames || t('asset_card.nobody') }}</dd></template>
       <template v-if="quote?.kind === 'fixed'"><dt>{{ t('common.rent') }}</dt><dd data-testid="asset-rent">{{ formatMoney(quote.amount) }}</dd></template>
     </dl>

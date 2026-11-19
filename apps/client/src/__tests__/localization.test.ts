@@ -78,6 +78,23 @@ describe('localization contracts', () => {
   it('detects both missing and unused key probes', () => {
     expect(difference(new Set(['used']), new Set(['unused']))).toEqual({ missing: ['used'], unused: ['unused'] });
   });
+  it('uses Russian and English plural forms for player, house, holdings, and room-place counts', () => {
+    for (const [count, expected] of [[1, '1 дом'], [2, '2 дома'], [5, '5 домов'], [11, '11 домов'], [21, '21 дом']] as const) {
+      expect(t('asset_card.rent_tier_houses', { houses: count }, count)).toBe(expected);
+    }
+    expect([1, 2, 4, 5, 11, 21].map(count => t('game_top_bar.players', { count }, count)))
+      .toEqual(['1 игрок', '2 игрока', '4 игрока', '5 игроков', '11 игроков', '21 игрок']);
+    expect(t('asset_card.rent_tier_holdings', { holdings: 2 }, 2)).toBe('2 актива');
+    expect([1, 2, 5].map(count => t('game_layout.house_count', { count }, count))).toEqual(['1 дом', '2 дома', '5 домов']);
+    expect(t('room.heading', { players: 4, capacity: 6, count: 6 }, 6)).toBe('Комната ожидания · 4 из 6 мест');
+    i18n.global.locale.value = 'en';
+    try {
+      expect(t('asset_card.rent_tier_houses', { houses: 1 }, 1)).toBe('1 house');
+      expect(t('asset_card.rent_tier_houses', { houses: 2 }, 2)).toBe('2 houses');
+      expect(t('game_top_bar.players', { count: 1 }, 1)).toBe('1 player');
+      expect(t('game_top_bar.players', { count: 4 }, 4)).toBe('4 players');
+    } finally { i18n.global.locale.value = 'ru'; }
+  });
   it('reorders a complete rich rent sentence while retaining the emphasized amount', async () => {
     const view = playingView(['a', 'b']);
     const cell = view.board!.cells.find(cell => cell.asset !== null)!;

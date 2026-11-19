@@ -6,6 +6,21 @@
     "notification": "Notification",
     "notifications": "Notifications ({hotkey})"
   },
+  "game_top_bar": {
+    "product_name": "Economic Board Game",
+    "players": "{count} player | {count} players",
+    "online": "Online",
+    "reconnecting": "Reconnecting",
+    "settings": "Settings"
+  },
+  "board_caption": {
+    "order_roll": "{player} rolls for turn order",
+    "regular_roll": "{player} rolls the dice",
+    "purchase": "Purchase decision",
+    "auction": "Auction",
+    "rent": "Rent and debt",
+    "finished": "Game over"
+  },
   "animation": {
     "jail_attempt_failed": "{player} stays in jail: attempt {attempts} failed (interim rule)",
     "jail_released_double": "{player} leaves jail on a double (interim rule)",
@@ -143,9 +158,9 @@
     "rent_table": "Rent table",
     "rent_table_energy": "Rent by dice sum",
     "rent_tier_holdings_header": "Holdings",
-    "rent_tier_houses": "{houses} houses",
+    "rent_tier_houses": "{houses} house | {houses} houses",
     "rent_tier_complete_group": "Complete group, no houses",
-    "rent_tier_holdings": "Group holdings: {holdings}",
+    "rent_tier_holdings": "{holdings} holding | {holdings} holdings",
     "house_count": "{houses} / 4",
     "asset_details": "Asset details",
     "close_asset_card": "Close asset card",
@@ -158,7 +173,7 @@
     "cell": "Cell",
     "houses": "Houses",
     "mortgage": "Mortgage",
-    "mortgage_terms": "mortgaged, advance {advance}, {laps} laps left",
+    "mortgage_terms": "mortgaged, advance {advance}, {laps} lap left | mortgaged, advance {advance}, {laps} laps left",
     "lap_waits_for": "Lap waits for",
     "energy_formula": "Rent = Q({sumPrices} × dice sum × {holdings} / (200 × {groupSize}))",
     "energy_example": "dice {diceSum}: {rent}",
@@ -188,8 +203,6 @@
     "none": "None"
   },
   "board_canvas": {
-    "order_roll": "{player} rolls for order",
-    "dice_roll": "{player} rolls",
     "custom_banner": "{player} {text}",
     "mortgage_marker": "Mortgaged"
   },
@@ -252,7 +265,7 @@
     "awaiting_roll": "Waiting for roll",
     "out": "out",
     "rolled": "rolled {roll}",
-    "jail_attempts": "in jail, {attempts} attempts used (interim rule)",
+    "jail_attempts": "in jail, {attempts} attempt used (interim rule) | in jail, {attempts} attempts used (interim rule)",
     "tied": "tied",
     "undecided": "order undecided"
   },
@@ -310,13 +323,15 @@
     "more": "More",
     "navigation": "Game sections",
     "unread": "Unread chat",
-    "house_count": "Houses: {count}",
+    "house_count": "{count} house | {count} houses",
     "debt": "In debt",
     "my_turn": "My turn",
     "my_assets": "My assets",
     "no_assets": "You have no assets yet.",
     "other_turn": "Another player is taking their turn.",
     "action_unavailable": "This action is unavailable at this stage of the turn.",
+    "already_rolled": "The dice have already been rolled this turn.",
+    "roll_required": "Roll the dice first.",
     "setup_phase": "Determining turn order",
     "rules": "Rules summary",
     "rules_summary": "Roll dice, buy assets, and collect rent. The last active player wins.",
