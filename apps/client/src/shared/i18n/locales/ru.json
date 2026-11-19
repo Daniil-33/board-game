@@ -245,7 +245,6 @@
     "setup_player": "Розыгрыш порядка ходов: {player}",
     "your_bonus_turn": "Ваш ход (дополнительный ход после дубля)",
     "player_bonus_turn": "Ход: {player} (дополнительный ход после дубля)",
-    "server_error": "Ошибка сервера",
     "connection_lost_detail": "Партия продолжается, таймеры идут"
   },
   "turn_order": {
@@ -396,6 +395,7 @@
     "with_title": "{title} — {reason}"
   },
   "command_title": {
+    "generic": "Действие отклонено",
     "roll_for_order": "Нельзя бросить кость за порядок",
     "roll_dice": "Нельзя бросить кости",
     "end_turn": "Нельзя завершить ход",

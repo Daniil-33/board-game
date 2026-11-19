@@ -57,12 +57,12 @@ export interface RejectedCommandCopy {
 export function rejectedCommandCopy(message: HudMessage): RejectedCommandCopy {
   const title = message.commandType
     ? commandTitle(message.commandType)
-    : t('hud.server_error');
-  const reason = message.commandType
+    : t('command_title.generic');
+  const reason = (message.commandType
     ? houseReason(message.code, message.commandType)
       ?? mortgageReason(message.code, message.commandType)
-      ?? otherReason(message.code)
-    : null;
+      : null)
+    ?? otherReason(message.code);
   return { title, reason: reason ?? t('command_reason.try_again') };
 }
 

@@ -245,7 +245,6 @@
     "setup_player": "Rolling for turn order: {player}",
     "your_bonus_turn": "Your turn (bonus turn after a double)",
     "player_bonus_turn": "Turn: {player} (bonus turn after a double)",
-    "server_error": "Server error",
     "connection_lost_detail": "The game continues, and timers keep running"
   },
   "turn_order": {
@@ -396,6 +395,7 @@
     "with_title": "{title} — {reason}"
   },
   "command_title": {
+    "generic": "Action rejected",
     "roll_for_order": "Can't roll to determine turn order",
     "roll_dice": "Can't roll the dice",
     "end_turn": "Can't end the turn",

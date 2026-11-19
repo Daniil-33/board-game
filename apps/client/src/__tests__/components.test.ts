@@ -179,7 +179,7 @@ describe('Hud', () => {
       },
     });
     const message = wrapper.find('[data-testid="message"]');
-    expect(message.text()).toContain('Ошибка сервера — Попробуйте ещё раз.');
+    expect(message.text()).toContain('Действие отклонено — Время хода вышло.');
     expect(message.text()).not.toContain('DEADLINE_PASSED');
     expect(message.text()).not.toContain('Turn t7 expired');
     expect(wrapper.find('[data-testid="problem"]').text()).toContain('Unreadable message from the server');

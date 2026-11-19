@@ -8,7 +8,7 @@ Rejected command feedback currently exposes protocol codes and server message st
 
 - Show client-translated titles and reasons for rejected game commands in toasts and HUD messages. Unknown reasons use the translated retry fallback. Keep protocol codes only in `data-code` diagnostics.
 - Add the designed continuation line to reconnect feedback in Russian and English.
-- Update the game-screen requirement and correct the collector to validate screenshot producer provenance.
+- Update the game-screen and connection requirements and correct the collector to validate screenshot producer provenance.
 
 ## Out of Scope
 

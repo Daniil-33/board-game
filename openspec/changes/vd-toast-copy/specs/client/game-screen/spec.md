@@ -13,6 +13,8 @@ Rejected `BuildHouse` and `SellHouse` acknowledgements SHALL show their client-t
 
 ### Requirement: Command rejection and reconnect feedback
 Rejected game commands SHALL show a client-translated action title and translated reason in toasts and HUD messages. They SHALL NOT show protocol codes or server-provided message strings in visible text. When the code has no translated reason, the client SHALL show the action title and a translated retry prompt. The code SHALL remain available in `data-code` for diagnostics. The reconnect banner and offline HUD status SHALL show that the game continues and timers keep running, in the active locale.
+The game SHALL announce reconnecting with a status banner until Welcome restores the session.
+HUD rejection messages without a matching client command SHALL use the generic translated title, show a mapped translated reason when available or the translated retry prompt otherwise, and keep protocol details out of visible text.
 
 #### Scenario: Multiple rejections
 - **WHEN** more than three command rejections arrive in quick succession
@@ -35,3 +37,10 @@ Rejected game commands SHALL show a client-translated action title and translate
 #### Scenario: Reconnect status
 - **WHEN** the client is disconnected and reconnecting
 - **THEN** the banner and offline HUD status SHALL include the localized equivalent of “Партия продолжается, таймеры идут”
+
+### Requirement: Purchase and auction intents
+Purchase and auction controls SHALL send null-payload intents through the existing protocol connection. Purchase intents SHALL target the projected turn; Bid and PassAuction SHALL target the projected auction responseId. Ack errors SHALL remain visible as the client-translated action title and reason, without protocol codes or server-provided messages in visible text. The code SHALL remain available in `data-code`, and accepted Acks SHALL NOT locally change ownership or settle an auction.
+
+#### Scenario: Rejected stale bid
+- **WHEN** the server rejects a bid with an Ack error
+- **THEN** the Bid title and translated reason SHALL be shown without the code or server message, and the client SHALL retain the latest projected auction
