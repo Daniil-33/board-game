@@ -12,7 +12,7 @@ Rejected `BuildHouse` and `SellHouse` acknowledgements SHALL show their client-t
 - **THEN** the HUD SHALL show that command's title and translated reason without the code, server message, or a house reason
 
 ### Requirement: Command rejection and reconnect feedback
-Rejected game commands SHALL show a translated action title and reason in toasts and HUD, without protocol codes or server messages. Missing reasons SHALL use a translated retry prompt; the code SHALL remain in `data-code`. HUD rejections without a command type SHALL use a generic translated title and a mapped reason or retry prompt. The reconnect banner and offline HUD SHALL say in the active locale that the game and timers continue, and SHALL remain until Welcome restores the session.
+Rejected commands SHALL show translated titles and reasons in toasts and HUD, and SHALL hide protocol codes and server messages. Unknown reasons SHALL show localized retry copy. HUD errors without a command type SHALL use a generic translated title and mapped reason or retry copy. Reconnect banner and offline HUD SHALL say in the active locale that the game and timers continue. The game SHALL announce reconnecting with a status banner until Welcome restores the session.
 
 #### Scenario: Multiple rejections
 - **WHEN** more than three command rejections arrive in quick succession
