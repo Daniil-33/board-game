@@ -210,9 +210,12 @@ export async function setup(players: Actor[]): Promise<number> {
   return rolls;
 }
 export async function active(players: Actor[]): Promise<Actor> {
+  await expect.poll(() => {
+    const revisions = players.map(p => p.view?.revision);
+    return revisions.every(revision => revision !== undefined) && new Set(revisions).size === 1;
+  }).toBe(true);
   const first = players[0]!;
   const actor = players.find(p => p.id === first.view?.turn?.playerId)!;
-  await expect.poll(() => actor.view?.revision).toBe(first.view!.revision);
   return actor;
 }
 /** Sends a command frame on the page's live socket, bypassing the UI's button guard. */
