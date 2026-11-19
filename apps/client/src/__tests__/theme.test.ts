@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { boardTheme } from '../shared/config/index';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { boardTheme, parseCssColors } from '../shared/config/index';
 
 const tokens = readFileSync(import.meta.dirname + '/../shared/config/tokens.css', 'utf8');
 
@@ -49,4 +50,48 @@ it.each(boardGradients)('parses at least two Pixi color stops from --%s', name =
       ? theme.group(name.slice('group-'.length))
       : theme.special(name.slice('gradient-board-'.length));
   expect(stops.length).toBeGreaterThanOrEqual(2);
+});
+
+it.each([
+  ['#abc', ['#abc']], ['#abcd', ['#abcd']], ['#aabbcc', ['#aabbcc']], ['#aabbccdd', ['#aabbccdd']],
+  ['rgb(12, 34, 56)', ['rgb(12, 34, 56)']], ['rgba(12, 34, 56, 0.5)', ['rgba(12, 34, 56, 0.5)']],
+  ['rgb(12 34 56)', ['rgb(12 34 56)']], ['rgb(12 34 56 / 50%)', ['rgb(12 34 56 / 50%)']],
+  ['red, rebeccapurple', ['red', 'rebeccapurple']],
+])('parses CSS color syntax %s', (input, expected) => {
+  expect(parseCssColors(input)).toEqual(expected);
+});
+
+it('parses the exact minified board color declarations, including alpha and non-color layers', () => {
+  const exactMinified = [
+    'linear-gradient(145deg,#7cc4ff38,#5cf0c01a 40%,#f25c9a24),none',
+    'linear-gradient(135deg,#b9f5e1,#9ccbff)',
+    'linear-gradient(135deg,#e2e8f0,#b8c2d4)',
+    'repeating-linear-gradient(135deg,#d5dbe6 0px,#d5dbe6 6px,#e6eaf1 6px,#e6eaf1 12px)',
+    '--group-m1:linear-gradient(90deg,#c4b5fd,#9b7bff)',
+  ];
+  expect(exactMinified.map(parseCssColors)).toEqual([
+    ['#7cc4ff38', '#5cf0c01a', '#f25c9a24'],
+    ['#b9f5e1', '#9ccbff'],
+    ['#e2e8f0', '#b8c2d4'],
+    ['#d5dbe6', '#d5dbe6', '#e6eaf1', '#e6eaf1'],
+    ['#c4b5fd', '#9b7bff'],
+  ]);
+});
+
+const builtAssets = join(import.meta.dirname, '../../dist/assets');
+
+it.skipIf(!existsSync(builtAssets))('keeps two parsed colors for every board color token in built CSS (run build:bundle first)', () => {
+  const cssFiles = readdirSync(builtAssets).filter(file => file.endsWith('.css'));
+  expect(cssFiles.length, 'client production CSS should be built before running tests').toBeGreaterThan(0);
+  const css = cssFiles.map(file => readFileSync(join(builtAssets, file), 'utf8')).join('\n');
+  const exactDeclarations = [
+    '--gradient-board-frame:linear-gradient(145deg,#7cc4ff38,#5cf0c01a 40%,#f25c9a24),none',
+    '--light-mortgage:repeating-linear-gradient(135deg,#d5dbe6 0px,#d5dbe6 6px,#e6eaf1 6px,#e6eaf1 12px)',
+  ];
+  for (const declaration of exactDeclarations) expect(css).toContain(declaration);
+  const declarations = [...css.matchAll(/--((?:group|gradient-board)-[\w-]+|light-mortgage):([^;}]+)/g)];
+  expect(declarations.length).toBeGreaterThan(0);
+  for (const [, name, value] of declarations) {
+    expect(parseCssColors(value!).length, `built --${name} should yield at least two colors: ${value}`).toBeGreaterThanOrEqual(2);
+  }
 });

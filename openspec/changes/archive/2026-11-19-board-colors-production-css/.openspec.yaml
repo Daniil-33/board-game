@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-19
+goal: Parse all production CSS color forms used by group and special board
+  gradients and verify the rendered production board
