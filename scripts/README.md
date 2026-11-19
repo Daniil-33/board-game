@@ -10,37 +10,66 @@ stack captures the asset card, rent shortfall, build-quota toast, liquidation,
 elimination and game-over states.
 
 ```sh
-TASK_HEAD=$(git rev-parse HEAD)
+TASK_SOURCE=$PWD
+TASK_RUNNER=$(mktemp -d)/checkout
 TASK_EVIDENCE=/srv/agents/evidence/TASK-vd-final-evidence
+git clone --no-hardlinks --branch agent/task-vd-final-evidence "$TASK_SOURCE" "$TASK_RUNNER"
+cd "$TASK_RUNNER"
+TASK_HEAD=$(git rev-parse HEAD)
 mkdir -p "$TASK_EVIDENCE/screens/captured-app" "$TASK_EVIDENCE/screens/captured-app-fixtures"
 
-sg docker -c "POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8083 docker compose -p vd-final-evidence up --build -d --wait"
-sg docker -c "POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8084 docker compose -p vd-final-evidence-fixtures -f docker-compose.yml -f docker-compose.fixtures.yml up --build -d --wait"
+cat > /tmp/vd-final-evidence-network.yml <<'YAML'
+networks:
+  default:
+    external: true
+    name: ${TASK_NETWORK:?set TASK_NETWORK to the task-owned network}
+YAML
+sg docker -c 'docker network create --driver bridge --subnet 10.250.0.0/24 vd-final-evidence-net'
+sg docker -c 'docker network create --driver bridge --subnet 10.251.0.0/24 vd-final-evidence-fixtures-net'
+sg docker -c 'docker network create --driver bridge --subnet 10.252.0.0/24 vd-final-evidence-seeded-net'
 
-docker run --rm --network host --group-add 111 \
-  -v "$PWD":/workspace -v "$TASK_EVIDENCE":/evidence \
-  -v /usr/bin/docker:/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock \
+sg docker -c "TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8083 docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence up --build -d --wait"
+sg docker -c "TASK_NETWORK=vd-final-evidence-fixtures-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8084 docker compose -f docker-compose.yml -f docker-compose.fixtures.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence-fixtures up --build -d --wait"
+sg docker -c "TASK_NETWORK=vd-final-evidence-seeded-net POSTGRES_PASSWORD=local-final-evidence GIT_SHA=$TASK_HEAD WEB_PORT=8085 docker compose -f docker-compose.yml -f docker-compose.e2e.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence-seeded up --build -d --wait"
+
+E2E_RECONNECT_STOP_COMMAND="TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence stop server"
+E2E_RESTART_COMMAND="TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence start server"
+E2E_WEB_LOGS_COMMAND="TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence logs --no-color web"
+export TASK_SOURCE TASK_RUNNER TASK_EVIDENCE TASK_HEAD E2E_RECONNECT_STOP_COMMAND E2E_RESTART_COMMAND E2E_WEB_LOGS_COMMAND
+
+sg docker -c 'docker run --rm --network host --group-add 111 \
+  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
+  -v /usr/bin/docker:/usr/bin/docker -v /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/vd-final-evidence-network.yml:/tmp/vd-final-evidence-network.yml \
   -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
   -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 \
   -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app \
   -e E2E_BASE_URL=http://127.0.0.1:8083 \
-  -e E2E_RECONNECT_STOP_COMMAND='docker compose -p vd-final-evidence stop server' \
-  -e E2E_RESTART_COMMAND='docker compose -p vd-final-evidence start server' \
+  -e E2E_RECONNECT_STOP_COMMAND -e E2E_RESTART_COMMAND -e E2E_WEB_LOGS_COMMAND \
   mcr.microsoft.com/playwright:v1.58.2-noble \
-  ./node_modules/.bin/playwright test e2e/game-layout.spec.ts e2e/compose.spec.ts --workers=1
+  ./node_modules/.bin/playwright test e2e/game-layout.spec.ts e2e/compose.spec.ts --workers=1'
 
-docker run --rm --network host --group-add 111 \
-  -v "$PWD":/workspace -v "$TASK_EVIDENCE":/evidence \
+sg docker -c 'docker run --rm --network host --group-add 111 \
+  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
+  -v /usr/bin/docker:/usr/bin/docker -v /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/vd-final-evidence-network.yml:/tmp/vd-final-evidence-network.yml \
+  -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
+  -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 -e E2E_DETERMINISTIC=1 \
+  -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app \
+  -e E2E_BASE_URL=http://127.0.0.1:8085 \
+  mcr.microsoft.com/playwright:v1.58.2-noble \
+  ./node_modules/.bin/playwright test e2e/compose.spec.ts --grep "seed 6689" --workers=1'
+
+sg docker -c 'docker run --rm --network host --group-add 111 \
+  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
   -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
   -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 \
   -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app-fixtures \
   -e E2E_FIXTURES=1 -e E2E_BASE_URL=http://127.0.0.1:8084 \
   mcr.microsoft.com/playwright:v1.58.2-noble \
-  ./node_modules/.bin/playwright test e2e/stage4.spec.ts e2e/stage5.spec.ts --workers=1
+  ./node_modules/.bin/playwright test e2e/stage4.spec.ts e2e/stage5.spec.ts --workers=1'
 
-docker run --rm -v "$PWD":/workspace -v "$TASK_EVIDENCE":/evidence \
+sg docker -c 'docker run --rm -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
   -w /workspace mcr.microsoft.com/playwright:v1.58.2-noble \
-  node scripts/capture-design-frames.cjs /evidence/design-frames
+  node scripts/capture-design-frames.cjs /evidence/design-frames'
 node scripts/collect-visual-screens.mjs "$TASK_EVIDENCE" "$TASK_EVIDENCE/pairs"
 ```
 
