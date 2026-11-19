@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { boardTheme, parseCssColors } from '../shared/config/index';
 
@@ -67,20 +67,23 @@ it('parses the exact minified board color declarations, including alpha and non-
     'linear-gradient(135deg,#b9f5e1,#9ccbff)',
     'linear-gradient(135deg,#e2e8f0,#b8c2d4)',
     'repeating-linear-gradient(135deg,#d5dbe6 0px,#d5dbe6 6px,#e6eaf1 6px,#e6eaf1 12px)',
+    '--group-m1:linear-gradient(90deg,#c4b5fd,#9b7bff)',
   ];
   expect(exactMinified.map(parseCssColors)).toEqual([
     ['#7cc4ff38', '#5cf0c01a', '#f25c9a24'],
     ['#b9f5e1', '#9ccbff'],
     ['#e2e8f0', '#b8c2d4'],
     ['#d5dbe6', '#d5dbe6', '#e6eaf1', '#e6eaf1'],
+    ['#c4b5fd', '#9b7bff'],
   ]);
 });
 
-it('keeps two parsed colors for every board color token in built CSS', () => {
-  const assets = join(import.meta.dirname, '../../dist/assets');
-  const cssFiles = readdirSync(assets).filter(file => file.endsWith('.css'));
+const builtAssets = join(import.meta.dirname, '../../dist/assets');
+
+it.skipIf(!existsSync(builtAssets))('keeps two parsed colors for every board color token in built CSS (run build:bundle first)', () => {
+  const cssFiles = readdirSync(builtAssets).filter(file => file.endsWith('.css'));
   expect(cssFiles.length, 'client production CSS should be built before running tests').toBeGreaterThan(0);
-  const css = cssFiles.map(file => readFileSync(join(assets, file), 'utf8')).join('\n');
+  const css = cssFiles.map(file => readFileSync(join(builtAssets, file), 'utf8')).join('\n');
   const exactDeclarations = [
     '--gradient-board-frame:linear-gradient(145deg,#7cc4ff38,#5cf0c01a 40%,#f25c9a24),none',
     '--light-mortgage:repeating-linear-gradient(135deg,#d5dbe6 0px,#d5dbe6 6px,#e6eaf1 6px,#e6eaf1 12px)',

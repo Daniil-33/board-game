@@ -6,7 +6,7 @@
 
 ## Approach
 
-- Add a small pure CSS-color parser that recognizes 3/4/6/8 digit hex, comma and space forms of `rgb()`/`rgba()`, and CSS named colors. Convert each accepted color to the representation already consumed by the board renderer without changing token values.
+- Add a small pure CSS-color parser that recognizes 3/4/6/8 digit hex, comma and space forms of `rgb()`/`rgba()`, and CSS named colors. Keep recognized values as strings, which Pixi's color parser accepts directly, preserving alpha without changing token values.
 - Use the parser for group and board-gradient token values; preserve the existing two-color fallback when a token cannot produce the expected colors.
 - Unit-test each supported syntax and the exact minified production token values.
 - Build the client and inspect emitted CSS so each `--group-*` and `--gradient-board-*` token resolves to at least two parsed colors.

@@ -24,7 +24,9 @@ test('production board renders group and special colors at desktop and mobile si
     const style = getComputedStyle(document.documentElement);
     return { inset: parse(style.getPropertyValue('--light-inset').trim()), cell: parse(style.getPropertyValue('--light-cell').trim()) };
   });
-  expect(groupPixels.some(pixel => pixel !== fallback.inset), 'group strip must not be the inset fallback').toBe(true);
+  expect(groupPixels.length, 'both group gradient ends are sampled').toBe(2);
+  expect(groupPixels.every(pixel => pixel !== fallback.inset), 'group strip ends must not be the inset fallback').toBe(true);
+  expect(groupPixels[0]).not.toBe(groupPixels[1]);
   expect(specialPixels.some(pixel => pixel !== fallback.cell), 'special corner must not be the cell fallback').toBe(true);
 
   const evidenceDir = process.env['TASK_BOARD_COLOR_EVIDENCE'];
@@ -45,7 +47,11 @@ async function sample(actor: Actor, canvas: Locator, cell: number, area: 'group'
   const box = (await canvas.boundingBox())!;
   const rect = cellRect(cell, 660), scale = box.width / 660;
   const points: [number, number][] = area === 'group'
-    ? (() => { const strip = cellStrip(cell, rect).bounds; return [[strip.x + strip.width / 2, strip.y + strip.height / 2]]; })()
+    ? (() => {
+      const strip = cellStrip(cell, rect).bounds;
+      const centerY = strip.y + strip.height / 2;
+      return [[strip.x + 6, centerY], [strip.x + strip.width - 7, centerY]];
+    })()
     : [[rect.x + 8, rect.y + 8], [rect.x + rect.width - 8, rect.y + 8], [rect.x + 8, rect.y + rect.height - 8]];
   const png = (await canvas.screenshot()).toString('base64');
   const values = await actor.page.evaluate(async ({ png, points, scale }) => {
