@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 
@@ -169,5 +169,9 @@ const indexReadme = [
   '',
 ].join('\n');
 writeFileSync(resolve(out, 'README.md'), indexReadme);
-writeFileSync(resolve(evidenceRoot, 'README.md'), indexReadme);
+const rootLinkPrefix = relative(evidenceRoot, out);
+const rootIndexReadme = rootLinkPrefix
+  ? indexReadme.replace(/\]\(\.\//g, `](./${rootLinkPrefix}/`)
+  : indexReadme;
+writeFileSync(resolve(evidenceRoot, 'README.md'), rootIndexReadme);
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);
