@@ -31,13 +31,23 @@ async function main() {
         const iframeHandle = await iframe.elementHandle();
         const frameDocument = iframeHandle ? await iframeHandle.contentFrame() : null;
         if (!frameDocument) throw new Error(`Unable to access the design document in ${filename}`);
-        await frameDocument.evaluate(() => document.fonts.ready).catch(() => undefined);
         const deadline = Date.now() + 30_000;
+        const fontsReady = frameDocument.evaluate(() => document.fonts.ready).catch(() => undefined);
+        let fontWaitTimer;
+        await Promise.race([
+          fontsReady,
+          new Promise(resolve => {
+            fontWaitTimer = setTimeout(resolve, Math.max(0, deadline - Date.now()));
+          }),
+        ]);
+        clearTimeout(fontWaitTimer);
         let screenshot;
         let lastGuardError;
         let passed = false;
         while (Date.now() < deadline) {
-          const firstScreenshot = await iframe.screenshot({ animations: 'disabled' });
+          const firstScreenshot = await iframe.screenshot({
+            animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
+          });
           try {
             assertNonBlankImage(firstScreenshot, filename);
           } catch (error) {
@@ -45,8 +55,12 @@ async function main() {
             await new Promise(resolve => setTimeout(resolve, 500));
             continue;
           }
+          if (Date.now() + 500 >= deadline) break;
           await new Promise(resolve => setTimeout(resolve, 500));
-          screenshot = await iframe.screenshot({ animations: 'disabled' });
+          if (Date.now() >= deadline) break;
+          screenshot = await iframe.screenshot({
+            animations: 'disabled', timeout: Math.max(1, deadline - Date.now()),
+          });
           try {
             assertNonBlankImage(screenshot, filename);
             if (Date.now() <= deadline && firstScreenshot.equals(screenshot)) {
