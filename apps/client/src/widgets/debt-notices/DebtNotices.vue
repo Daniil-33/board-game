@@ -27,3 +27,11 @@ defineProps<{ notices: readonly DebtNotice[]; nameOf: (id: string) => string; bo
     </article>
   </section>
 </template>
+
+<style scoped>
+.debt-notices { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--design-radius-xl); background: var(--bg-deep); }
+.debt-notices h3, .debt-notices h4, .debt-notices p { margin: 0; }
+.debt-notices article { display: grid; gap: var(--space-2); padding: var(--space-3); border-radius: var(--design-radius-lg); background: var(--surface-1); }
+.debt-notices ol { display: grid; gap: var(--space-1); margin: 0; padding-inline-start: var(--space-5); }
+.debt-notices li { padding-inline-start: var(--space-1); }
+</style>

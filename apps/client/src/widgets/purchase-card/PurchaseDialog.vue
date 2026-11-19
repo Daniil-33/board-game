@@ -16,6 +16,17 @@ const logoFailed = ref(false);
 watch(() => asset.value?.assetId, () => { logoFailed.value = false; });
 const logo = computed(() => asset.value ? logoUrl(asset.value.assetId, { dark: false }) : null);
 const rentSchedule = computed(() => asset.value ? rentTiers(props.view.board, asset.value.assetId) : []);
+const groupAssets = computed(() => asset.value ? (props.view.board?.cells.flatMap(cell => cell.asset?.groupId === asset.value!.groupId && cell.asset.assetId !== asset.value!.assetId ? [cell.asset] : []) ?? []) : []);
+const groupOwners = computed(() => groupAssets.value.map(item => ({ asset: item, owner: props.view.owners[item.assetId] ?? null })));
+const baseRent = computed(() => rentSchedule.value[0]?.kind === 'regular' || rentSchedule.value[0]?.kind === 'logistics' ? rentSchedule.value[0].amount : null);
+const balanceAfterPurchase = computed(() => {
+  if (props.me === null || asset.value == null) return null;
+  const balance = props.view.balances[props.me];
+  if (balance === undefined || balance < asset.value.price) return null;
+  // purchase-auction.ts:131-134 debits exactly the fixed asset price and rejects insufficient funds.
+  return balance - asset.value.price;
+});
+const currentBalance = computed(() => props.me === null ? null : props.view.balances[props.me] ?? null);
 const rentRows = computed(() => {
   const tiers = rentSchedule.value;
   if (tiers[0]?.kind === 'regular' || tiers[0]?.kind === 'logistics') return tiers.map(tier => ({
@@ -44,19 +55,26 @@ const disabledReason = (type: NullPayloadType): string => {
   <ResponsiveDialog v-if="view.purchase && deciding" v-model:open="surfaceOpen" :title="t('purchase_dialog.purchase_decision')" :dismissible="false" wide>
   <section class="asset-card decision-panel purchase-card" :style="{ '--asset-gradient': `var(--group-${asset?.groupId?.toLowerCase() ?? 'm1'})` }" :aria-label="t('purchase_dialog.purchase_decision')" data-testid="purchase">
     <header class="purchase-header">
-      <img v-if="logo && !logoFailed" :src="logo" :alt="''" data-testid="purchase-logo" @error="logoFailed = true">
-      <span v-else class="monogram" data-testid="purchase-logo-fallback" aria-hidden="true">{{ logoMonogram(asset?.assetId ?? '') || asset?.name?.slice(0, 2) }}</span>
-      <div><h2>{{ asset?.name }}</h2><p>{{ t('purchase_dialog.price', { price: formatMoney(asset?.price) }) }}</p></div>
+      <div class="purchase-band" aria-hidden="true"></div>
+      <img v-if="logo && !logoFailed" class="purchase-logo" :src="logo" :alt="''" data-testid="purchase-logo" @error="logoFailed = true">
+      <span v-else class="purchase-logo monogram" data-testid="purchase-logo-fallback" aria-hidden="true">{{ logoMonogram(asset?.assetId ?? '') || asset?.name?.slice(0, 2) }}</span>
+      <div class="purchase-heading"><p>{{ t('purchase_dialog.category_group', { category: asset?.categoryName ?? '', group: t('purchase_dialog.group_size', { size: groupAssets.length + 1 }) }) }}</p><h2>{{ asset?.name }}</h2></div>
     </header>
-    <table v-if="rentRows.length" class="rent-table" data-testid="purchase-rent-preview">
-      <caption>{{ t('asset_card.rent_table') }}</caption>
-      <thead v-if="energySums.length"><tr><th scope="col">{{ t('asset_card.rent_tier_holdings_header') }}</th><th v-for="sum in energySums" :key="sum">{{ sum }}</th></tr></thead>
-      <tbody><tr v-for="row in rentRows" :key="row.key"><th scope="row">{{ row.label }}</th><template v-if="row.rates"><td v-for="rate in row.rates" :key="rate.diceSum">{{ formatMoney(rate.amount) }}</td></template><td v-else>{{ formatMoney(row.amount ?? 0) }}</td></tr></tbody>
-    </table>
+    <div class="purchase-tiles"><div><small>{{ t('purchase_dialog.price_label') }}</small><strong>{{ formatMoney(asset?.price ?? 0) }}</strong></div><div><small>{{ t('purchase_dialog.base_rent') }}</small><strong>{{ baseRent === null ? t('purchase_dialog.variable') : formatMoney(baseRent) }}</strong></div></div>
+    <section v-if="groupOwners.length" class="purchase-group"><h3>{{ t('purchase_dialog.group_ownership') }}</h3><ul><li v-for="item in groupOwners" :key="item.asset.assetId"><span>{{ item.asset.name }}</span><strong>{{ item.owner ? nameOf(item.owner) : t('purchase_dialog.unowned') }}</strong></li></ul></section>
+    <details v-if="rentRows.length" class="rent-preview" open>
+      <summary>{{ t('asset_card.rent_table') }}</summary>
+      <div class="rent-table-scroll"><table class="rent-table" data-testid="purchase-rent-preview">
+        <thead v-if="energySums.length"><tr><th scope="col">{{ t('asset_card.rent_tier_holdings_header') }}</th><th v-for="sum in energySums" :key="sum">{{ sum }}</th></tr></thead>
+        <tbody><tr v-for="row in rentRows" :key="row.key"><th scope="row">{{ row.label }}</th><template v-if="row.rates"><td v-for="rate in row.rates" :key="rate.diceSum">{{ formatMoney(rate.amount) }}</td></template><td v-else>{{ formatMoney(row.amount ?? 0) }}</td></tr></tbody>
+      </table></div>
+    </details>
     <p v-if="view.turn" data-testid="purchase-timer">{{ t('common.seconds_remaining', { seconds: formatSeconds(remainingSeconds(view.turn.deadline, now)) }) }}</p>
-      <p>{{ t('purchase_dialog.balance', { balance: formatMoney(view.balances[me!]) }) }}</p>
-      <Button data-testid="buy" :disabled="!canIssue(props, 'BuyAsset')" :reason="disabledReason('BuyAsset')" @click="emit('command', 'BuyAsset')">{{ t('purchase_dialog.buy') }}</Button>
-      <Button data-testid="start-auction" :disabled="!canIssue(props, 'StartAuction')" :reason="disabledReason('StartAuction')" @click="emit('command', 'StartAuction')">{{ t('purchase_dialog.start_auction') }}</Button>
+      <p v-if="currentBalance !== null" data-testid="purchase-balance">{{ t('purchase_dialog.balance', { balance: formatMoney(currentBalance) }) }}</p>
+      <p v-if="balanceAfterPurchase !== null" data-testid="purchase-balance-after">{{ t('purchase_dialog.balance_after_purchase', { balance: formatMoney(balanceAfterPurchase) }) }}</p>
+      <p class="timeout-note">{{ t('purchase_dialog.timeout_note') }}</p>
+      <div class="purchase-actions"><Button variant="primary" data-testid="buy" :disabled="!canIssue(props, 'BuyAsset')" :reason="disabledReason('BuyAsset')" @click="emit('command', 'BuyAsset')">{{ t('purchase_dialog.buy_for', { price: formatMoney(asset?.price ?? 0) }) }}</Button>
+      <Button data-testid="start-auction" :disabled="!canIssue(props, 'StartAuction')" :reason="disabledReason('StartAuction')" @click="emit('command', 'StartAuction')">{{ t('purchase_dialog.start_auction') }}</Button></div>
   </section>
   </ResponsiveDialog>
   <section v-else-if="view.purchase" class="asset-card decision-panel purchase-card purchase-status" data-testid="purchase-status">
@@ -69,13 +87,52 @@ const disabledReason = (type: NullPayloadType): string => {
 </template>
 
 <style scoped>
-.purchase-header { display: flex; align-items: center; gap: var(--space-3); border-radius: var(--design-radius-md); padding: var(--space-3); background: var(--asset-gradient); }
-.purchase-header img, .monogram { width: 48px; height: 48px; flex: none; object-fit: contain; }
-.monogram { display: grid; place-items: center; border-radius: 8px; color: var(--text-primary); background: var(--surface-1); font-weight: 700; }
+.purchase-card { display: grid; gap: var(--space-3); background: var(--bg-deep); }
+.purchase-header { position: relative; min-height: 112px; padding-top: 24px; }
+.purchase-band { height: 42px; border-radius: var(--design-radius-md) var(--design-radius-md) 0 0; background: var(--asset-gradient); }
+.purchase-header img, .purchase-header .monogram { position: absolute; z-index: 1; top: 17px; left: var(--space-3); width: 52px; height: 52px; object-fit: contain; border-radius: 8px; background: var(--light-0); }
+.purchase-header .monogram { display: grid; place-items: center; border: 1px solid var(--light-border); color: var(--ink-primary); font-weight: 700; }
+.purchase-heading { min-height: 62px; padding: 22px var(--space-3) var(--space-2) 76px; border-radius: 0 0 var(--design-radius-md) var(--design-radius-md); background: var(--gradient-card-light); color: var(--ink-primary); }
 .purchase-header h2, .purchase-header p { margin: 0; }
+.purchase-header p { color: var(--ink-secondary); font-size: .85rem; }
+.purchase-header h2 { color: var(--ink-primary); }
+.purchase-tiles { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--space-2); }
+.purchase-tiles div { display: grid; gap: var(--space-1); padding: var(--space-2); border-radius: var(--design-radius-md); background: var(--surface-1); }
+.purchase-tiles small, .timeout-note { color: var(--text-muted); }
+.purchase-group ul { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.purchase-group li { display: flex; justify-content: space-between; gap: var(--space-2); border-bottom: 1px solid var(--border-subtle); padding: var(--space-1) 0; }
+.purchase-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.timeout-note { margin: 0; font-size: .85rem; }
 .purchase-status { width: 100%; max-width: 420px; margin-inline: auto; }
+.purchase-status { background: var(--bg-deep); }
 .purchase-status-details { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.rent-table { width: 100%; border-collapse: collapse; margin-block: var(--space-3); }
+.purchase-card > p { margin: 0; }
+.rent-preview { min-width: 0; }
+.rent-preview summary { cursor: pointer; font-weight: 700; }
+.rent-table-scroll { max-width: 100%; overflow-x: auto; }
+.rent-table { width: 100%; border-collapse: collapse; margin-block: var(--space-2); }
 .rent-table th, .rent-table td { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: 1px solid var(--border-subtle); }
 .rent-table th { text-align: left; }
+@media (min-width: 601px) {
+  .purchase-card { gap: var(--space-2); }
+  .purchase-header { min-height: 88px; padding-top: 18px; }
+  .purchase-band { height: 32px; }
+  .purchase-header img, .purchase-header .monogram { top: 12px; width: 48px; height: 48px; }
+  .purchase-heading { min-height: 48px; padding-top: 16px; padding-bottom: var(--space-1); }
+  .purchase-tiles div { gap: 2px; padding: var(--space-1) var(--space-2); }
+  .purchase-group h3 { margin: 0; }
+  .purchase-group ul { gap: 0; }
+  .purchase-group li { padding-block: 2px; }
+  .rent-table { margin-block: 0; }
+  .rent-table th, .rent-table td { padding-block: 2px; }
+}
+@media (max-width: 600px) {
+  .purchase-card { gap: var(--space-2); }
+  .purchase-header { min-height: 100px; }
+  .purchase-heading { min-height: 58px; padding-left: 72px; }
+  .rent-table { font-size: .82rem; }
+  .rent-table th, .rent-table td { padding-inline: var(--space-1); }
+  .rent-table-scroll { max-height: 112px; overflow: auto; }
+  .purchase-actions { position: sticky; bottom: 0; z-index: 2; padding-block: var(--space-2); background: var(--bg-deep); }
+}
 </style>

@@ -25,7 +25,7 @@ watch(responding, value => { if (value) surfaceOpen.value = true; });
 </script>
 
 <template>
-  <ResponsiveDialog v-if="view.auction && mobile && responding" v-model:open="surfaceOpen" :title="dialogTitle" :dismissible="false" wide>
+  <ResponsiveDialog v-if="view.auction && mobile && responding" v-model:open="surfaceOpen" :title="dialogTitle" title-visually-hidden :dismissible="false" wide>
     <AuctionContent :view="view" :me="me" :connected="connected" :pending="pending" :now="now" :name-of="nameOf" @command="emit('command', $event)" />
   </ResponsiveDialog>
   <AuctionContent v-else-if="view.auction" :view="view" :me="me" :connected="connected" :pending="pending" :now="now" :name-of="nameOf" @command="emit('command', $event)" />

@@ -137,6 +137,9 @@ test('purchase observers keep the board in the viewport at desktop sizes', async
       const buyer = players.find(player => player.id === buyerId)!;
       const observer = players.find(player => player.id !== buyerId)!;
       for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+        await buyer.page.setViewportSize({ width, height });
+        await expect(buyer.page.locator(sel('buy'))).toBeInViewport();
+        await expect(buyer.page.locator(sel('start-auction'))).toBeInViewport();
         await observer.page.setViewportSize({ width, height });
         const purchaseStatus = observer.page.locator(sel('purchase-status'));
         await expect(purchaseStatus).toBeVisible();
@@ -156,12 +159,18 @@ test('purchase observers keep the board in the viewport at desktop sizes', async
       await captureScreens(observer.page, 'more');
       await observer.page.locator(sel('game-tab-board')).click();
       await captureScreens(buyer.page, 'purchase');
+      await buyer.page.setViewportSize({ width: 390, height: 844 });
+      await expect(buyer.page.locator(sel('buy'))).toBeInViewport();
+      await expect(buyer.page.locator(sel('start-auction'))).toBeInViewport();
       await action(buyer, 'start-auction');
       await syncToActor(players, buyer);
       const auctionState = host.view!.auction!;
       const responder = players.find(player => player.id === auctionState.responder)!;
       const auctionObserver = players.find(player => player.id !== auctionState.responder)!;
       await captureScreens(responder.page, 'auction');
+      await responder.page.setViewportSize({ width: 390, height: 844 });
+      await expect(responder.page.locator(sel('bid'))).toBeInViewport();
+      await expect(responder.page.locator(sel('pass'))).toBeInViewport();
       await captureScreens(auctionObserver.page, 'auction-observer');
       return;
     }

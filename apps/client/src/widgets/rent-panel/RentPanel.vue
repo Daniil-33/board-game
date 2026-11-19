@@ -34,3 +34,11 @@ const shortfall = computed(() => props.view.rent === null ? 0 : Math.max(0, prop
     </template>
   </section>
 </template>
+
+<style scoped>
+.decision-panel[data-testid="rent"] { display: grid; gap: var(--space-3); border-inline-start: 4px solid var(--danger); background: var(--bg-deep); }
+.decision-panel[data-testid="rent"] h2 { margin: 0; font-family: var(--design-font-display); }
+[data-testid="rent-line"] { padding: var(--space-3); border-radius: var(--design-radius-lg); background: var(--surface-1); }
+[data-testid="rent-amount"] { color: var(--highlight); font-size: 1.25em; }
+.warn-box { margin: 0; }
+</style>

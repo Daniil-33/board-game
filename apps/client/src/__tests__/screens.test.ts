@@ -2,6 +2,7 @@ import { DOMWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-u
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineAsyncComponent } from 'vue';
 import { App, GAME_OVER_SCREEN_OVERRIDE_KEY, GAME_SCREEN_OVERRIDE_KEY } from '../app/index';
+import { updateProductTitle } from '../app/product-title';
 import { createGameScreenAsyncComponent } from '../app/game-screen-async';
 import { BOARD_MOUNT_KEY, CLIENT_KEY } from '../features/client-session/index';
 import { LobbyScreen } from '../pages/lobby/index';
@@ -35,6 +36,17 @@ const pageOptions = (h: Harness) => ({
 });
 const ALICE_ROOM = room([['a', 'Alice']]);
 const BOB_ROOM = room([['b', 'Bob']], 'b', 'r2');
+
+describe('product name', () => {
+  it('shows the Economic Board Game shell heading and document title', () => {
+    const h = harness();
+    const wrapper = mount(App, provide(h));
+    expect(wrapper.get('h1').text()).toBe('Economic Board Game');
+    updateProductTitle(document);
+    expect(document.title).toBe('Economic Board Game');
+    wrapper.unmount();
+  });
+});
 
 afterEach(() => vi.restoreAllMocks());
 

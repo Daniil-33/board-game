@@ -1,4 +1,5 @@
 import { i18n, registerLocales } from '../shared/i18n/index';
+import { updateProductTitle } from './product-title';
 import { createApp, watchEffect } from 'vue';
 import App from './App.vue';
 import { runtimeApi } from '../shared/api/index';
@@ -16,7 +17,7 @@ if (storedLocale && i18n.global.availableLocales.includes(storedLocale)) {
 }
 watchEffect(() => {
   document.documentElement.lang = i18n.global.locale.value;
-  document.title = i18n.global.t('app.board_game');
+  updateProductTitle(document);
 });
 watchEffect(() => {
   if (i18n.global.locale.value !== 'ru' || storedLocale) {

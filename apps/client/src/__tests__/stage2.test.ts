@@ -54,7 +54,7 @@ describe('stage 2 display', () => {
     expect(panel.get('[data-player-id="b"] [data-testid="player-eliminated"]').text()).toBe('Выбыл');
     panel.unmount();
   });
-  it.each(['M1', 'logistics', 'energy'])('shows projected %s details and group peers', group => {
+  it.each(['M1', 'logistics', 'energy'])('shows projected %s details and group peers, including rank when rank !== null', group => {
     const cell = board.cells.find(c => c.asset?.groupId === group)!;
     const card = mount(AssetCard, { props: { cell, board } });
     expect(card.text()).toContain(cell.asset!.name); expect(card.text()).toContain(cell.asset!.categoryName);
@@ -62,7 +62,16 @@ describe('stage 2 display', () => {
     expect(card.text().includes('Ранг')).toBe(cell.asset!.rank !== null);
     const peers = board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === group);
     expect(card.findAll('[data-testid="asset-group-member"]')).toHaveLength(peers.length);
+    expect(card.get('[data-testid="asset-current-group-member"]').classes()).toContain('current');
+    expect(card.get('[data-testid="asset-rent-table"] thead th').text()).toBe(group === 'M1' ? 'Уровень' : 'Активы');
+    if (group !== 'energy') expect(card.get('[data-testid="asset-rent-table"]').text()).toContain('% цены');
     peers.forEach(c => { expect(card.text()).toContain(c.asset!.name); expect(card.text()).toContain(`клетка ${c.index}`); expect(card.text()).toContain(money(c.asset!.price)); });
+    card.unmount();
+  });
+  it('shows Ранг when rank !== null', () => {
+    const cell = board.cells.find(c => c.asset && c.asset.rank !== null)!;
+    const card = mount(AssetCard, { props: { cell, board } });
+    expect(card.text()).toContain(`Цена ${money(cell.asset!.price)} · Ранг ${cell.asset!.rank}`);
     card.unmount();
   });
   it('shows an Update balance while movement animation is still pending', async () => {

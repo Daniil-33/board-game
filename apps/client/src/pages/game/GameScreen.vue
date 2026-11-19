@@ -51,6 +51,11 @@ const selectedOwner = computed(() => {
   const owner = asset ? client.game.view?.owners[asset.assetId] : undefined;
   return owner === undefined ? undefined : client.nameOf(owner);
 });
+// Decision surfaces occupy the board's center; avoid drawing the phase caption underneath them.
+const phaseCaption = computed(() => {
+  const view = client.game.view;
+  return view?.purchase || view?.auction ? '' : boardPhaseCaption(view, client.nameOf);
+});
 watch(() => boardDisplayKey(client.game.view?.board), () => { selectedIndex.value = null; });
 let mountedBoard: Board | null = null;
 let ticker: ReturnType<typeof setInterval> | undefined;
@@ -62,7 +67,7 @@ watch(
   () => client.game.view,
   (view) => {
     now.value = client.now();
-    mountedBoard?.setPhaseCaption?.(boardPhaseCaption(view, client.nameOf));
+    mountedBoard?.setPhaseCaption?.(phaseCaption.value);
   },
 );
 
@@ -117,7 +122,7 @@ onMounted(async () => {
     if (unmounted) return mounted.destroy();
     destroyBoard = mounted.destroy;
     mountedBoard = mounted.board;
-    mounted.board.setPhaseCaption?.(boardPhaseCaption(client.game.view, client.nameOf));
+    mounted.board.setPhaseCaption?.(phaseCaption.value);
     mounted.board.setAssetSelection?.((index) => {
       if (client.game.view?.board?.cells.some(c => c.index === index && c.asset !== null)) {
         const canvas = host.value?.querySelector('canvas') ?? null;
@@ -149,7 +154,7 @@ onBeforeUnmount(() => {
     <ReconnectBanner :reconnecting="!setupOpen && !client.game.connected && !client.game.fatal" />
     <HudStatus v-if="!setupOpen" :messages="connectionMessages" :connected="true"
       :problem="client.game.problem" :fatal="client.game.fatal" @dismiss="client.connection.dismissMessage" />
-    <EliminationNotice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" />
+    <EliminationNotice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" :name-of="client.nameOf" />
     <section class="game" :data-tab="selectedTab">
       <div class="roster-column">
         <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />
@@ -179,7 +184,7 @@ onBeforeUnmount(() => {
           <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
           <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" @manage-assets="selectedTab = 'assets'" />
           <ResponsiveDialog v-if="selectedCell && client.game.view?.board" v-model:open="assetDialogOpen"
-            :title="selectedCell.asset!.name" :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
+            :title="selectedCell.asset!.name" title-visually-hidden :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
             <AssetCard
               :owner="selectedOwner" :cell="selectedCell" :board="client.game.view.board"
               :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf"
@@ -224,6 +229,7 @@ onBeforeUnmount(() => {
 .board-assembly { position: relative; width: 100%; margin-inline: auto; }
 .board { width: 100%; aspect-ratio: 1; }
 .game-dialogs { width: 100%; max-width: 420px; margin-inline: auto; }
+.game-dialogs:has([data-testid="auction"]) { max-width: 516px; }
 .game-dialogs:empty { display: none; }
 .more-column :deep(.resign) { margin-top: var(--space-2); }
 .more-column details { margin-bottom: var(--space-3); }
@@ -257,7 +263,8 @@ onBeforeUnmount(() => {
     position: fixed;
     z-index: 4;
     inset: 50% auto auto 50%;
-    width: min(420px, calc(100vw - 32px));
+    width: min(516px, calc(100vw - 32px));
+    max-width: 516px;
     max-height: calc(100dvh - 32px);
     margin: 0;
     overflow: auto;
