@@ -263,6 +263,11 @@ onBeforeUnmount(() => {
     overflow: auto;
     transform: translate(-50%, -50%);
   }
+  .game-dialogs:has([data-testid="auction"]) :deep(.auction-card) {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-1);
+  }
   .board-column :deep(.turn-header) {
     position: absolute;
     z-index: 2;
