@@ -2,7 +2,7 @@ import { money } from './ru-text';
 import { AUCTION_RESPONSE_MS, AUCTION_RESPONSE_TARGET_KIND, nextBidAmount, type AuctionState } from '../packages/game-core/src/index';
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_SIZE, cellRect, tokenSlot } from '../apps/client/src/widgets/board/layout';
 import { test, expect, sel, createRoom, join, start, setup, active, action, sendRaw, waitGameReady, captureScreens, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
@@ -119,13 +119,17 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     await expect(p.page.locator(sel('purchase'))).toHaveCount(0);
   }
   await respond(players, 'pass');
-  const bidder = byId(players, players[0]!.view!.auction!.responder);
-  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   if (process.env['E2E_SCREEN_EVIDENCE'] === '1') {
-    await bidder.page.setViewportSize({ width: 1440, height: 900 });
-    await captureScreens(bidder.page, 'auction');
+    const captureBidder = byId(players, players[0]!.view!.auction!.responder);
+    await captureBidder.page.setViewportSize({ width: 1440, height: 900 });
+    await captureBidder.page.locator(sel('bid')).waitFor({ state: 'visible' });
+    await captureScreens(captureBidder.page, 'auction');
     const evidenceDir = process.env['E2E_SCREEN_EVIDENCE_DIR']!;
-    writeFileSync(`${evidenceDir}/auction-desktop.png`, await bidder.page.screenshot({ fullPage: true, animations: 'disabled' }));
+    writeFileSync(`${evidenceDir}/auction-desktop.png`, await captureBidder.page.screenshot({ fullPage: true, animations: 'disabled' }));
+    const manifestPath = `${evidenceDir}/capture-manifest-auction.json`;
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.desktopFullPage = true;
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   }
   const auctionObserver = players.find(p => p.id !== players[0]!.view!.auction!.responder)!;
   await auctionObserver.page.setViewportSize({ width: 390, height: 844 });
@@ -141,6 +145,8 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   await expect(auctionObserver.page.locator(sel('journal-entry')).filter({ hasText: 'Chat during auction' })).toBeVisible();
   await auctionObserver.page.locator(sel('game-tab-board')).click();
   await auctionObserver.page.setViewportSize({ width: 1440, height: 900 });
+  const bidder = byId(players, players[0]!.view!.auction!.responder);
+  await expect(bidder.page.locator(sel('bid'))).toHaveText(`Поднять до ${money(won.startBid)}`);
   await respond(players, 'bid');
   await respond(players, 'pass');
   // A chosen auction resumes the same turn. Read at settlement: the resumed

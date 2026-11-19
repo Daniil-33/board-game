@@ -28,7 +28,8 @@ async function main() {
         const iframe = page.locator('iframe').nth(position);
         await iframe.waitFor({ state: 'visible' });
         await iframe.scrollIntoViewIfNeeded();
-        const frameDocument = page.frames().filter(candidate => candidate.parentFrame() === page.mainFrame())[position];
+        const iframeHandle = await iframe.elementHandle();
+        const frameDocument = iframeHandle ? await iframeHandle.contentFrame() : null;
         if (!frameDocument) throw new Error(`Unable to access the design document in ${filename}`);
         await frameDocument.waitForFunction(() => {
           const body = document.body;
