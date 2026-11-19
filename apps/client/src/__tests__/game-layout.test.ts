@@ -305,7 +305,8 @@ describe('journal and feedback', () => {
       await w.vm.$nextTick();
       const toasts = new DOMWrapper(document.body).findAll(hook('message'));
       expect(toasts.map(toast => toast.text())).toHaveLength(3);
-      expect(toasts.map(toast => toast.text().match(/reason \d/)?.[0])).toEqual(['reason 2', 'reason 3', 'reason 4']);
+      expect(toasts.map(toast => toast.text())).toEqual(Array(3).fill('Нельзя бросить кости — Время хода вышло.×'));
+      expect(toasts.every(toast => !toast.text().includes('reason '))).toBe(true);
       expect(toasts[0]!.text()).toContain('Время хода вышло');
       await toasts[0]!.get(hook('message-dismiss')).trigger('click');
       expect(new DOMWrapper(document.body).findAll(hook('message'))).toHaveLength(2);

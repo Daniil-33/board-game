@@ -18,6 +18,12 @@ export async function captureScreens(page: Page, name: string): Promise<void> {
     await page.screenshot({ path: pathJoin(dir, `${name}-${tag}.png`), fullPage: false });
   }
   await page.setViewportSize(original);
+  const producerHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  writeFileSync(pathJoin(dir, `capture-manifest-${name}.json`), JSON.stringify({
+    producerHead,
+    screen: name,
+    viewports: ['desktop', 'mobile'],
+  }, null, 2) + '\n');
 }
 export interface Actor {
   page: Page;

@@ -377,7 +377,8 @@ describe('App screen selection', () => {
 
     h.sockets.last().receive({ t: 'Ack', commandId: 'c1', outcome: 'rejected', revision: 9, error: { code: 'DEADLINE_PASSED', message: 'Too late' } } as never);
     await flushPromises();
-    expect(wrapper.find('[data-testid="message"]').text()).toContain('DEADLINE_PASSED');
+    expect(wrapper.find('[data-testid="message"]').text()).toContain('Нельзя бросить кости — Время хода вышло.');
+    expect(wrapper.find('[data-testid="message"]').text()).not.toContain('DEADLINE_PASSED');
     expect(roll.attributes('disabled')).toBeUndefined();
   });
 

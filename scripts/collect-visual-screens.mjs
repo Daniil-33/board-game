@@ -1,11 +1,27 @@
 #!/usr/bin/env node
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence';
 const out = process.argv[3] ?? resolve(evidenceRoot, 'TASK-vd-e2e/screens');
-const producerHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const checkoutHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const provenance = [
+  ['TASK-vd-e2e/screens/captured-app-fixtures/capture-manifest-build-quota-toast.json', 'build-quota-toast'],
+  ['TASK-vd-e2e/screens/captured-app/capture-manifest-reconnect-banner.json', 'reconnect-banner'],
+].map(([path, screen]) => {
+  const manifest = JSON.parse(readFileSync(resolve(evidenceRoot, path), 'utf8'));
+  if (manifest.screen !== screen || !Array.isArray(manifest.viewports)
+    || !manifest.viewports.includes('desktop') || !manifest.viewports.includes('mobile')) {
+    throw new Error(`Invalid capture provenance for ${screen}`);
+  }
+  if (manifest.producerHead !== checkoutHead) {
+    throw new Error(`Capture ${screen} was produced by ${manifest.producerHead}, but collector checkout is ${checkoutHead}`);
+  }
+  return manifest.producerHead;
+});
+if (new Set(provenance).size !== 1) throw new Error('Screenshot captures have different producer heads');
+const producerHead = provenance[0];
 const pairs = [
   ['login-desktop', 'TASK-vd-e2e/screens/captured-design-frames/desktop-02-лобби.png', 'Guest login; nearest desktop lobby frame'],
   ['login-mobile', 'TASK-vd-e2e/screens/captured-design-frames/mobile-01-mobile-лобби-copy.png', 'Guest login; nearest mobile lobby frame'],
@@ -62,6 +78,13 @@ const rows = pairs.map(([name, appSource, designSource, description]) => {
   const sourceTask = appSource.split('/')[0];
   return `| ${description} | [App](./${name}-app.png) | ${sourceTask} | [Design frame](./${name}-design.png) |`;
 });
+writeFileSync(resolve(out, 'capture-manifest.json'), JSON.stringify({
+  producerHead,
+  captures: [
+    { screen: 'build-quota-toast', manifest: 'captured-app-fixtures/capture-manifest-build-quota-toast.json' },
+    { screen: 'reconnect-banner', manifest: 'captured-app/capture-manifest-reconnect-banner.json' },
+  ],
+}, null, 2) + '\n');
 writeFileSync(resolve(out, 'README.md'), [
   '# Visual design screen pairs',
   '',
@@ -75,7 +98,7 @@ writeFileSync(resolve(out, 'README.md'), [
   '',
   'Staging render (production, 1440×900, version `e2ead69340db160cb37239154aeb8a29e3193198`): [board with group strips and corner gradients](../../TASK-vd-board/staging-render.png).',
   '',
-  'App source captures were produced by committed head `' + producerHead + '` in Playwright 1.58.2; both local web stacks report product version `e01304f`. The exact capture runs, viewports, and log paths are in [capture-manifest.json](./capture-manifest.json).',
+  'Toast and reconnect app captures were produced by committed head `' + producerHead + '` in Playwright 1.58.2; their producer manifests record both review viewports. The remaining app images are retained from the earlier TASK-vd-e2e evidence run. Both local web stacks report product version `e01304f`.',
   '',
   `Capture the design frames in the Playwright 1.58.2 container with \`node scripts/capture-design-frames.cjs /evidence/captured-design-frames\`, then regenerate the pairs with \`node scripts/collect-visual-screens.mjs ${evidenceRoot} ${out}\`. Current-head app source PNGs are retained in \`captured-app/\` and \`captured-app-fixtures/\`.`,
   '',

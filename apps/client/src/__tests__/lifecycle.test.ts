@@ -265,7 +265,9 @@ describe('resignation, spectator and game over', () => {
     expect(sock.sent.filter((f) => f.t === 'Command')).toEqual([{ t: 'Command', commandId: 'c1', type: 'Resign', expected: { kind: 'revision', revision: 12 }, payload: null }]);
     expect(h.client.game.view?.eliminated).toEqual([]);
     sock.receive({ t: 'Ack', commandId: 'c1', outcome: 'rejected', revision: 12, error: { code: 'REVISION_MISMATCH', message: 'Changed' } } as never);
-    await flushPromises(); expect(wrapper.text()).toContain('REVISION_MISMATCH');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Нельзя сдаться — Состояние партии изменилось. Повторите действие.');
+    expect(wrapper.text()).not.toContain('REVISION_MISMATCH');
     sock.receive({ ...update(view), revision: 13 } as never);
     await wrapper.get('[data-testid="Resign"]').trigger('click'); await wrapper.get('[data-testid="confirm-resign"]').trigger('click');
     expect(sock.sent.at(-1)).toMatchObject({ expected: { kind: 'revision', revision: 13 } });

@@ -5,6 +5,8 @@ defineProps<{ reconnecting: boolean }>();
 
 <template>
   <p v-if="reconnecting" class="warn-box" role="status" data-testid="offline">
-    {{ t('hud.connection_lost_reconnecting') }}
+    <span>{{ t('hud.connection_lost_reconnecting') }}</span>
+    <br />
+    <span>{{ t('hud.connection_lost_detail') }}</span>
   </p>
 </template>
