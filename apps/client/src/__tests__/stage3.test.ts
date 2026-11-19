@@ -107,6 +107,12 @@ describe('purchase and auction projection', () => {
     expect(w.get('[data-player-id="b"]').attributes('data-state')).toBe('leader');
     expect(w.get('[data-player-id="c"]').attributes('data-state')).toBe('passed');
     expect(w.get('[data-testid="auction-queue"]').findAll('li')).toHaveLength(3);
+    expect(w.get('.queue-label').text()).toBe('Очередь ответов');
+    expect(w.get('.auction-bid-copy').text()).toContain('Стартовая ставка');
+    expect(w.get('.auction-bid-copy').text()).toContain('Шаг');
+    expect(w.get('.auction-actions').findAll('button')).toHaveLength(2);
+    expect(w.get('[data-testid="pass"]').text()).toBe('Пас');
+    expect(w.get('.pass-note').text()).toBe('Пас в этом аукционе нельзя отменить.');
     expect(w.find('[role="progressbar"]').exists()).toBe(true);
   });
   it('shows the required auction response in a non-dismissible mobile sheet', async () => {

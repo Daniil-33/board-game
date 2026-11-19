@@ -229,6 +229,7 @@ onBeforeUnmount(() => {
 .board-assembly { position: relative; width: 100%; margin-inline: auto; }
 .board { width: 100%; aspect-ratio: 1; }
 .game-dialogs { width: 100%; max-width: 420px; margin-inline: auto; }
+.game-dialogs:has([data-testid="auction"]) { max-width: 516px; }
 .game-dialogs:empty { display: none; }
 .more-column :deep(.resign) { margin-top: var(--space-2); }
 .more-column details { margin-bottom: var(--space-3); }
