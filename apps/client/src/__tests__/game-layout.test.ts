@@ -221,9 +221,12 @@ describe('game presentation', () => {
       passed: [], leader: null, leadingBid: null, bids: [], responder: pid('a'), responseId: 'response-1', responseDeadline: 60_000 as never,
     } }));
     await flushPromises();
-    expect(test.board.captions.at(-1)).toBe('Аукцион');
+    expect(test.board.captions.at(-1)).toBe('');
     expect(w.find(hook('RollDice')).exists()).toBe(false);
     expect(w.find(hook('EndTurn')).exists()).toBe(false);
+    socket.receive(update({ ...view, revision: 12 as Revision }));
+    await flushPromises();
+    expect(test.board.captions.at(-1)).toBe('Alice бросает кости');
     w.unmount();
   });
 

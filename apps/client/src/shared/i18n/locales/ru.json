@@ -1,6 +1,6 @@
 {
   "app": {
-    "board_game": "Настольная игра",
+    "board_game": "Economic Board Game",
     "design_system": "Дизайн-система и токены",
     "language": "Язык",
     "notification": "Уведомление",
@@ -78,7 +78,6 @@
     "elimination_order": "Порядок выбывания",
     "resigned": "сдача",
     "bankrupt": "банкротство",
-    "elimination_entry": "{player}: {reason}, {time}",
     "final_balances": "Финальные балансы",
     "balance_entry": "{player}: {amount}",
     "back_to_lobby": "В лобби"
@@ -180,6 +179,9 @@
     "settlement": "Рента к оплате: {amount}",
     "builds_remaining": "Можно построить в этом ходу: {builds}",
     "build_action": "Построить · {cost}",
+    "house_cost": "Стоимость дома",
+    "mortgage_advance": "Аванс по залогу",
+    "house_marker": "Дома: {count}",
     "sell_action": "Продать дом · +{refund}",
     "mortgage_action": "Заложить · +{advance}",
     "redeem_action": "Выкупить · {amount}",
@@ -190,14 +192,18 @@
     "energy_settlement": "Рента к оплате: {amount} (сумма костей {diceSum})"
   },
   "auction_panel": {
+    "status_leader": "Лидер",
+    "status_passed": "Пас",
+    "status_responding": "Отвечает сейчас",
+    "status_waiting": "Ожидает",
+    "response_progress": "Прошло времени на ответ",
+    "pass_irrevocable": "Пас в этом аукционе нельзя отменить.",
     "auction": "Аукцион",
     "title": "Аукцион: {asset}",
     "start_bid": "Стартовая ставка",
     "step": "Шаг",
     "leading_bid": "Текущая ставка",
     "leader": "Лидер",
-    "passed": "Спасовали",
-    "responder": "Отвечает",
     "bid": "Поднять до {amount}",
     "pass": "Пас",
     "none": "Нет"
@@ -230,9 +236,17 @@
     "out": "Выбыл"
   },
   "purchase_dialog": {
+    "group_size": "В группе: {size}",
+    "category_group": "{category} / {group}",
+    "price_label": "Цена покупки",
+    "base_rent": "Базовая рента",
+    "variable": "Зависит от костей",
+    "group_ownership": "Остальные активы группы",
+    "unowned": "Свободен",
+    "timeout_note": "Если не принять решение вовремя, актив отправится на аукцион.",
+    "balance_after_purchase": "После покупки у вас останется {balance}.",
+    "buy_for": "Купить за {price}",
     "purchase_decision": "Покупка",
-    "price": "Цена: {price}",
-    "balance": "Ваш баланс: {balance}",
     "buy": "Купить",
     "start_auction": "На аукцион",
     "deciding": "{player} решает."
@@ -265,7 +279,7 @@
     "awaiting_roll": "Броска ещё нет",
     "out": "выбыл",
     "rolled": "выпало {roll}",
-    "jail_attempts": "в тюрьме, использовано попыток: {attempts} (временное правило)",
+    "jail_attempts": "В тюрьме · {attempts}/3",
     "tied": "ничья",
     "undecided": "порядок не определён"
   },

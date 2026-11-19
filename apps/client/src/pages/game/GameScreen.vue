@@ -51,6 +51,11 @@ const selectedOwner = computed(() => {
   const owner = asset ? client.game.view?.owners[asset.assetId] : undefined;
   return owner === undefined ? undefined : client.nameOf(owner);
 });
+// Decision surfaces occupy the board's center; avoid drawing the phase caption underneath them.
+const phaseCaption = computed(() => {
+  const view = client.game.view;
+  return view?.purchase || view?.auction ? '' : boardPhaseCaption(view, client.nameOf);
+});
 watch(() => boardDisplayKey(client.game.view?.board), () => { selectedIndex.value = null; });
 let mountedBoard: Board | null = null;
 let ticker: ReturnType<typeof setInterval> | undefined;
@@ -62,7 +67,7 @@ watch(
   () => client.game.view,
   (view) => {
     now.value = client.now();
-    mountedBoard?.setPhaseCaption?.(boardPhaseCaption(view, client.nameOf));
+    mountedBoard?.setPhaseCaption?.(phaseCaption.value);
   },
 );
 
@@ -117,7 +122,7 @@ onMounted(async () => {
     if (unmounted) return mounted.destroy();
     destroyBoard = mounted.destroy;
     mountedBoard = mounted.board;
-    mounted.board.setPhaseCaption?.(boardPhaseCaption(client.game.view, client.nameOf));
+    mounted.board.setPhaseCaption?.(phaseCaption.value);
     mounted.board.setAssetSelection?.((index) => {
       if (client.game.view?.board?.cells.some(c => c.index === index && c.asset !== null)) {
         const canvas = host.value?.querySelector('canvas') ?? null;
@@ -149,7 +154,7 @@ onBeforeUnmount(() => {
     <ReconnectBanner :reconnecting="!setupOpen && !client.game.connected && !client.game.fatal" />
     <HudStatus v-if="!setupOpen" :messages="connectionMessages" :connected="true"
       :problem="client.game.problem" :fatal="client.game.fatal" @dismiss="client.connection.dismissMessage" />
-    <EliminationNotice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" />
+    <EliminationNotice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" :name-of="client.nameOf" />
     <section class="game" :data-tab="selectedTab">
       <div class="roster-column">
         <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />

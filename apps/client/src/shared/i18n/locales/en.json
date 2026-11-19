@@ -1,6 +1,6 @@
 {
   "app": {
-    "board_game": "Board game",
+    "board_game": "Economic Board Game",
     "design_system": "Design system and tokens",
     "language": "Language",
     "notification": "Notification",
@@ -78,7 +78,6 @@
     "elimination_order": "Elimination order",
     "resigned": "resigned",
     "bankrupt": "bankrupt",
-    "elimination_entry": "{player}: {reason} at {time}",
     "final_balances": "Final balances",
     "balance_entry": "{player}: {amount}",
     "back_to_lobby": "Back to lobby"
@@ -180,6 +179,9 @@
     "settlement": "Open rent: {amount}",
     "builds_remaining": "Builds left this turn: {builds}",
     "build_action": "Build a house: {cost}",
+    "house_cost": "House cost",
+    "mortgage_advance": "Mortgage advance",
+    "house_marker": "Houses: {count}",
     "sell_action": "Sell a house: +{refund}",
     "mortgage_action": "Mortgage: +{advance}",
     "redeem_action": "Redeem: {amount}",
@@ -190,14 +192,18 @@
     "energy_settlement": "Open rent: {amount} (dice sum {diceSum})"
   },
   "auction_panel": {
+    "status_leader": "Leading",
+    "status_passed": "Passed",
+    "status_responding": "Responding now",
+    "status_waiting": "Waiting",
+    "response_progress": "Response time elapsed",
+    "pass_irrevocable": "Passing is final for this auction.",
     "auction": "Auction",
     "title": "Auction: {asset}",
     "start_bid": "Start bid",
     "step": "Step",
     "leading_bid": "Leading bid",
     "leader": "Leader",
-    "passed": "Passed",
-    "responder": "Responder",
     "bid": "Bid {amount}",
     "pass": "Pass",
     "none": "None"
@@ -230,9 +236,17 @@
     "out": "Out"
   },
   "purchase_dialog": {
+    "group_size": "{size} in group",
+    "category_group": "{category} / {group}",
+    "price_label": "Purchase price",
+    "base_rent": "Base rent",
+    "variable": "Depends on dice",
+    "group_ownership": "Other group assets",
+    "unowned": "Unowned",
+    "timeout_note": "If you do not decide in time, the asset goes to auction.",
+    "balance_after_purchase": "After purchase, you will have {balance} left.",
+    "buy_for": "Buy for {price}",
     "purchase_decision": "Purchase decision",
-    "price": "Price: {price}",
-    "balance": "Your balance: {balance}",
     "buy": "Buy",
     "start_auction": "Start auction",
     "deciding": "{player} is deciding."
@@ -265,7 +279,7 @@
     "awaiting_roll": "Waiting for roll",
     "out": "out",
     "rolled": "rolled {roll}",
-    "jail_attempts": "in jail, {attempts} attempt used (interim rule) | in jail, {attempts} attempts used (interim rule)",
+    "jail_attempts": "In jail · {attempts}/3",
     "tied": "tied",
     "undecided": "order undecided"
   },

@@ -54,6 +54,12 @@ describe('TurnOrder', () => {
     expect(rows[1]!.text()).toContain('вы');
   });
 
+  it('shows only the projected temporary jail attempt status', () => {
+    const view = playingView(['a', 'b'], { owner: 'a' });
+    const rows = render({ ...view, jail: { [pid('a')]: { attemptsUsed: 1 } } });
+    expect(rows[0]!.get('[data-testid="jail"]').text()).toBe('В тюрьме · 1/3');
+  });
+
   it('setup: lists groups best first and marks ties and rolls', () => {
     const rows = render(setupView(['a', 'b', 'c'], { groups: [['c'], ['a', 'b']], roller: 'b', rolls: { a: 4 } }));
     expect(rows.map((r) => r.find('[data-testid="order-name"]').text())).toEqual(['Cy', 'Alice', 'Bob']);
@@ -68,10 +74,10 @@ describe('TurnOrder', () => {
     expect(rows.map((r) => r.find('[data-testid="tied"]').text())).toEqual(['порядок не определён', 'порядок не определён']);
   });
 
-  it('marks a jailed player, labelled as the interim rule', () => {
+  it('marks a jailed player with their projected attempt count', () => {
     const rows = render(playingView(['a', 'b'], { jail: { b: { attemptsUsed: 2 } } }));
     expect(rows[0]!.find('[data-testid="jail"]').exists()).toBe(false);
-    expect(rows[1]!.find('[data-testid="jail"]').text()).toMatch(/в тюрьме, использовано попыток: 2 \(временное правило\)/);
+    expect(rows[1]!.find('[data-testid="jail"]').text()).toBe('В тюрьме · 2/3');
   });
 });
 

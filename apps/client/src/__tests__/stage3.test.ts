@@ -45,6 +45,11 @@ describe('purchase and auction projection', () => {
     await flushPromises();
     expect(target('[role="dialog"]').getAttribute('aria-modal')).toBe('true');
     expect(target('[data-testid="purchase-rent-preview"]')).toBeTruthy();
+    expect(target('.purchase-tiles').textContent).toContain(String(price));
+    expect(target('[data-testid="purchase-balance"]')).toBeTruthy();
+    expect(target('[data-testid="purchase-balance"]').textContent).toBe('После покупки у вас останется 0.');
+    expect(target('.purchase-group')).toBeTruthy();
+    expect(target('.timeout-note').textContent).toContain('аукцион');
     expect(target('[data-testid="purchase-timer"]')).toBeTruthy();
     expect(target('[data-testid="purchase-logo"], [data-testid="purchase-logo-fallback"]')).toBeTruthy();
     target('[role="dialog"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
@@ -54,6 +59,8 @@ describe('purchase and auction projection', () => {
     state.value = { ...state.value, view: { ...view, balances: { a: Q(price - 10) } } }; await flushPromises();
     expect(target('[data-testid="buy"]').hasAttribute('disabled')).toBe(true);
     expect(target('[data-testid="buy"]').getAttribute('aria-describedby')).toBeTruthy();
+    expect(document.querySelector('[data-testid="purchase-balance"]')).toBeNull();
+    expect(target('[aria-labelledby] .ds-disabled-reason').textContent).toBe('Недостаточно средств.');
     expect(target('[data-testid="start-auction"]').hasAttribute('disabled')).toBe(false);
     for (const extra of [{ connected: false }, { now: 100_000 }, { pending: ['StartAuction'] }] satisfies Partial<ActionContext>[]) {
       const context = { ...props(view), ...extra };
@@ -92,6 +99,15 @@ describe('purchase and auction projection', () => {
       expect(canIssue({ ...props(view), ...extra }, 'PassAuction')).toBe(false);
     }
     expect(canIssue(props(view), 'EndTurn')).toBe(false); expect(canIssue(props(view), 'RollDice')).toBe(false);
+  });
+  it('shows each auction response queue state from the current projection', () => {
+    const view = auction();
+    const w = mount(AuctionPanel, { props: { ...props({ ...view, auction: { ...view.auction!, leader: pid('b'), leadingBid: Q(100), passed: [pid('c')] } }), me: pid('a') } });
+    expect(w.get('[data-player-id="a"]').attributes('data-state')).toBe('responding');
+    expect(w.get('[data-player-id="b"]').attributes('data-state')).toBe('leader');
+    expect(w.get('[data-player-id="c"]').attributes('data-state')).toBe('passed');
+    expect(w.get('[data-testid="auction-queue"]').findAll('li')).toHaveLength(3);
+    expect(w.find('[role="progressbar"]').exists()).toBe(true);
   });
   it('shows the required auction response in a non-dismissible mobile sheet', async () => {
     resize.setInnerWidth(390);

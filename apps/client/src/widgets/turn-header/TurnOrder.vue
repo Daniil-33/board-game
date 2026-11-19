@@ -31,7 +31,7 @@ defineProps<{
       </span>
       <span v-else-if="entry.roll !== null" class="tag" data-testid="order-roll">{{ t('turn_order.rolled', { roll: entry.roll }) }}</span>
       <span v-if="entry.tied && (!setup || entry.tieRolled)" class="tag warn" data-testid="tied">{{ entry.tieRolled ? t('turn_order.tied') : t('turn_order.undecided') }}</span>
-      <span v-if="entry.jail" class="tag warn" data-testid="jail"> {{ t('turn_order.jail_attempts', { attempts: entry.jail.attemptsUsed }, entry.jail.attemptsUsed) }} </span>
+      <span v-if="entry.jail" class="tag jail-status" data-testid="jail">{{ t('turn_order.jail_attempts', { attempts: entry.jail.attemptsUsed }, entry.jail.attemptsUsed) }}</span>
     </li>
   </ol>
 </template>
@@ -41,6 +41,7 @@ defineProps<{
 .setup-order .order-entry { display: grid; justify-items: center; align-content: start; gap: var(--space-2); padding: var(--space-3); background-color: var(--surface-1); border-radius: var(--design-radius-xl); text-align: center; overflow-wrap: anywhere; }
 .setup-order .tag { margin: 0; white-space: normal; }
 .setup-order .name { min-width: 0; }
+.jail-status { display: inline-flex; align-items: center; border: 1px solid var(--warning); border-radius: var(--design-radius-pill); background: var(--surface-1); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .setup-avatar, .setup-die { display: grid; place-items: center; aspect-ratio: 1; }
 .setup-avatar { width: 3rem; border-radius: 50%; color: var(--on-accent); font-weight: 700; }
 .setup-die { width: 3.5rem; border-radius: var(--design-radius-lg); background: var(--gradient-card-light); color: var(--ink-primary); font: 700 1.5rem var(--design-font-display); }

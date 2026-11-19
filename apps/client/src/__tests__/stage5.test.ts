@@ -439,7 +439,7 @@ describe('elimination and game over', () => {
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       expect(document.querySelector('[data-testid="winner"]')?.textContent).toBe('Победитель: Bob');
       expect(document.querySelector('[data-testid="finished-at"]')?.textContent).toBe(`Время завершения: ${formatTime(61_000)}`);
-      expect([...document.querySelectorAll('[data-testid="elimination-row"]')].map(li => li.textContent)).toEqual([`Carol: сдача, ${formatTime(1_000)}`, `Alice: банкротство, ${formatTime(61_000)}`]);
+      expect([...document.querySelectorAll('[data-testid="elimination-row"]')].map(li => li.textContent)).toEqual(['3CCarolсдача0', '2AAliceбанкротство0']);
       expect([...document.querySelectorAll('[data-testid="final-balance-row"]')].map(li => li.textContent)).toEqual(['Alice: 0', 'Bob: 4\u202F200', 'Carol: 0']);
       expect(document.querySelector('[data-testid="spectator"]')?.textContent).toBe('Вы выбыли из-за банкротства.');
       for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-testid="${sel}"]`).exists(), sel).toBe(false);

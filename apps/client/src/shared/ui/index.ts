@@ -9,3 +9,4 @@ export { default as Popover } from './Popover.vue';
 export { default as Tabs } from './Tabs.vue';
 export { default as Toast } from './Toast.vue';
 export { default as UiProvider } from './UiProvider.vue';
+export { default as PlayerAvatar } from './PlayerAvatar.vue';

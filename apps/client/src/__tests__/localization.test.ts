@@ -94,9 +94,9 @@ describe('localization contracts', () => {
       'В залоге: получено 360, остался 21 круг',
     ]);
     expect([1, 2, 5].map(attempts => t('turn_order.jail_attempts', { attempts }, attempts))).toEqual([
-      'в тюрьме, использовано попыток: 1 (временное правило)',
-      'в тюрьме, использовано попыток: 2 (временное правило)',
-      'в тюрьме, использовано попыток: 5 (временное правило)',
+      'В тюрьме · 1/3',
+      'В тюрьме · 2/3',
+      'В тюрьме · 5/3',
     ]);
     expect([1, 2, 5].map(count => t('room.heading', { players: 1, capacity: count, count }, count))).toEqual([
       'Комната ожидания · 1 из 1 места',
