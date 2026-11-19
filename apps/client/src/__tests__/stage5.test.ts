@@ -440,8 +440,16 @@ describe('elimination and game over', () => {
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       expect(document.querySelector('[data-testid="winner"]')?.textContent).toBe('Победитель: Bob');
       expect(document.querySelector('[data-testid="finished-at"]')?.textContent).toBe(`Время завершения: ${formatTime(61_000)}`);
-      expect([...document.querySelectorAll('[data-testid="elimination-row"]')].map(li => li.textContent)).toEqual(['3CCarolсдача0', '2AAliceбанкротство0']);
-      expect([...document.querySelectorAll('[data-testid="final-balance-row"]')].map(li => li.textContent)).toEqual(['Alice: 0', 'Bob: 4\u202F200', 'Carol: 0']);
+      const rows = [...document.querySelectorAll<HTMLElement>('[data-testid="elimination-row"]')];
+      expect(rows).toHaveLength(3);
+      expect(rows.map(row => row.querySelector('.place')?.textContent)).toEqual(['1', '2', '3']);
+      expect(rows[0]?.dataset.playerId).toBe('b');
+      expect(rows[0]?.querySelector('[data-testid="elimination-entry"]')?.textContent).toBe('Победитель');
+      expect(rows[1]?.dataset.playerId).toBe('a');
+      expect(rows[1]?.querySelector('[data-testid="elimination-entry"]')?.textContent).toBe(`банкротство · ${formatTime(61_000)}`);
+      expect(rows[2]?.dataset.playerId).toBe('c');
+      expect(rows[2]?.querySelector('[data-testid="elimination-entry"]')?.textContent).toBe(`сдача · ${formatTime(1_000)}`);
+      expect(document.querySelector('[data-testid="final-balance-row"]')).toBeNull();
       expect(document.querySelector('[data-testid="spectator"]')?.textContent).toBe('Вы выбыли из-за банкротства.');
       for (const sel of ['RollDice', 'EndTurn', 'Resign', 'mortgage', 'redeem', 'build-house', 'pay-rent']) expect(w.find(`[data-testid="${sel}"]`).exists(), sel).toBe(false);
       expect(document.querySelector('[data-testid="return-lobby"]')).toBeTruthy();

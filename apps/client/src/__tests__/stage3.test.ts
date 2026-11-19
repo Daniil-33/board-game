@@ -9,6 +9,7 @@ import { AssetCard } from '../widgets/asset-card/index';
 import { BoardScene } from '../widgets/board/index';
 import { actionAvailability, canIssue, commandExpectation, type ActionContext } from '../entities/game/index';
 import { playingView, pid, harness, storedSession, room, welcome, update, withUi } from './helpers';
+import { formatMoney } from '../shared/lib/index';
 
 enableAutoUnmount(afterEach);
 const originalWidth = window.innerWidth;
@@ -46,8 +47,8 @@ describe('purchase and auction projection', () => {
     expect(target('[role="dialog"]').getAttribute('aria-modal')).toBe('true');
     expect(target('[data-testid="purchase-rent-preview"]')).toBeTruthy();
     expect(target('.purchase-tiles').textContent).toContain(String(price));
-    expect(target('[data-testid="purchase-balance"]')).toBeTruthy();
-    expect(target('[data-testid="purchase-balance"]').textContent).toBe('После покупки у вас останется 0.');
+    expect(target('[data-testid="purchase-balance"]').textContent).toBe(`Ваш баланс ${formatMoney(price)}.`);
+    expect(target('[data-testid="purchase-balance-after"]').textContent).toBe('После покупки у вас останется 0.');
     expect(target('.purchase-group')).toBeTruthy();
     expect(target('.timeout-note').textContent).toContain('аукцион');
     expect(target('[data-testid="purchase-timer"]')).toBeTruthy();
@@ -59,7 +60,8 @@ describe('purchase and auction projection', () => {
     state.value = { ...state.value, view: { ...view, balances: { a: Q(price - 10) } } }; await flushPromises();
     expect(target('[data-testid="buy"]').hasAttribute('disabled')).toBe(true);
     expect(target('[data-testid="buy"]').getAttribute('aria-describedby')).toBeTruthy();
-    expect(document.querySelector('[data-testid="purchase-balance"]')).toBeNull();
+    expect(target('[data-testid="purchase-balance"]').textContent).toBe(`Ваш баланс ${formatMoney(price - 10)}.`);
+    expect(document.querySelector('[data-testid="purchase-balance-after"]')).toBeNull();
     expect(target('[aria-labelledby] .ds-disabled-reason').textContent).toBe('Недостаточно средств.');
     expect(target('[data-testid="start-auction"]').hasAttribute('disabled')).toBe(false);
     for (const extra of [{ connected: false }, { now: 100_000 }, { pending: ['StartAuction'] }] satisfies Partial<ActionContext>[]) {

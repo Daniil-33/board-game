@@ -137,6 +137,9 @@ test('purchase observers keep the board in the viewport at desktop sizes', async
       const buyer = players.find(player => player.id === buyerId)!;
       const observer = players.find(player => player.id !== buyerId)!;
       for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+        await buyer.page.setViewportSize({ width, height });
+        await expect(buyer.page.locator(sel('buy'))).toBeInViewport();
+        await expect(buyer.page.locator(sel('start-auction'))).toBeInViewport();
         await observer.page.setViewportSize({ width, height });
         const purchaseStatus = observer.page.locator(sel('purchase-status'));
         await expect(purchaseStatus).toBeVisible();

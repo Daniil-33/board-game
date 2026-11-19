@@ -4,7 +4,7 @@ import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { BOARD_SIZE, cellRect, tokenSlot } from '../apps/client/src/widgets/board/layout';
-import { test, expect, sel, createRoom, join, start, setup, active, action, sendRaw, waitGameReady, captureScreens, type Actor } from './helpers';
+import { test, expect, sel, createRoom, join, start, setup, active, action, sendRaw, waitGameReady, captureScreens, expectLightInkContrast, type Actor } from './helpers';
 import type { TestInfo } from '@playwright/test';
 
 /**
@@ -29,6 +29,10 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
   const bought = actor.view!.purchase!;
   const price = assetAt(actor, bought.cell).price;
   const beforeBuy = structuredClone(actor.view!.balances);
+  await actor.page.setViewportSize({ width: 390, height: 844 });
+  await expect(actor.page.locator(sel('purchase-rent-preview'))).toBeVisible();
+  await expect(actor.page.locator(sel('purchase-rent-preview')).locator('tbody tr').first()).toBeVisible();
+  await actor.page.setViewportSize({ width: 1440, height: 900 });
   for (const p of players) {
     if (p === actor) await expect(p.page.locator(sel('purchase'))).toBeVisible();
     else {
@@ -37,6 +41,9 @@ test('stage 3: buy, auction won by another player, unsold auction with AFK pass,
     }
     await expect(p.page.locator(sel('buy'))).toHaveCount(p === actor ? 1 : 0);
   }
+  const purchaseHeading = actor.page.locator('.purchase-heading');
+  await expectLightInkContrast(purchaseHeading.locator('p'), purchaseHeading);
+  await expectLightInkContrast(purchaseHeading.locator('h2'), purchaseHeading);
   const observer = players.find(p => p !== actor)!;
   const recipient = players.find(p => p !== observer && p !== actor)!;
   await expect(observer.page.locator('[role="dialog"], [aria-modal]')).toHaveCount(0);

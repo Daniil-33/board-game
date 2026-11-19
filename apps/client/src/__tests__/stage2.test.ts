@@ -59,9 +59,11 @@ describe('stage 2 display', () => {
     const card = mount(AssetCard, { props: { cell, board } });
     expect(card.text()).toContain(cell.asset!.name); expect(card.text()).toContain(cell.asset!.categoryName);
     expect(card.text()).toContain(money(cell.asset!.price));
-    expect(card.text().includes('Ранг')).toBe(cell.asset!.rank !== null);
+    expect(card.text()).not.toContain('Ранг');
     const peers = board.cells.filter(c => c.index !== cell.index && c.asset?.groupId === group);
     expect(card.findAll('[data-testid="asset-group-member"]')).toHaveLength(peers.length);
+    expect(card.get('[data-testid="asset-current-group-member"]').classes()).toContain('current');
+    if (group !== 'energy') expect(card.get('[data-testid="asset-rent-table"]').text()).toContain('% цены');
     peers.forEach(c => { expect(card.text()).toContain(c.asset!.name); expect(card.text()).toContain(`клетка ${c.index}`); expect(card.text()).toContain(money(c.asset!.price)); });
     card.unmount();
   });

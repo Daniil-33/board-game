@@ -1,4 +1,4 @@
-import { test as base, expect, type Page, type BrowserContext, type Request } from '@playwright/test';
+import { test as base, expect, type BrowserContext, type Locator, type Page, type Request } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join as pathJoin } from 'node:path';
@@ -6,6 +6,30 @@ import type { StateView, GameEvent } from '../packages/game-core/src/index';
 
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
+/** Assert dark header text keeps WCAG AA contrast against every solid stop of its light gradient. */
+export async function expectLightInkContrast(text: Locator, background = text): Promise<void> {
+  const foreground = await text.evaluate(element => getComputedStyle(element).color);
+  const backgroundImage = await background.evaluate(element => getComputedStyle(element).backgroundImage);
+  const rgb = (value: string): [number, number, number] | null => {
+    const match = value.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+  };
+  const fg = rgb(foreground);
+  const backgrounds = [...backgroundImage.matchAll(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/g)]
+    .map(match => [Number(match[1]), Number(match[2]), Number(match[3])] as const);
+  expect(fg, `foreground color ${foreground}`).not.toBeNull();
+  expect(backgrounds.length, `light gradient stops in ${backgroundImage}`).toBeGreaterThan(0);
+  const luminance = ([r, g, b]: readonly number[]) => {
+    const channel = (value: number) => { const s = value / 255; return s <= .04045 ? s / 12.92 : ((s + .055) / 1.055) ** 2.4; };
+    return .2126 * channel(r!) + .7152 * channel(g!) + .0722 * channel(b!);
+  };
+  const fgLum = luminance(fg!);
+  const ratios = backgrounds.map(bg => {
+    const bgLum = luminance(bg);
+    return (Math.max(fgLum, bgLum) + .05) / (Math.min(fgLum, bgLum) + .05);
+  });
+  expect(Math.min(...ratios), `contrast ratios: ${ratios.join(', ')}`).toBeGreaterThanOrEqual(4.5);
+}
 /** Capture one unchanged app state at both review viewports on the current test head. */
 export async function captureScreens(page: Page, name: string, viewports: readonly ('desktop' | 'mobile')[] = ['desktop', 'mobile']): Promise<void> {
   if (process.env['E2E_SCREEN_EVIDENCE'] !== '1') return;

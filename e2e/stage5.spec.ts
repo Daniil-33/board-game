@@ -1,7 +1,8 @@
 import { money } from './ru-text';
+import { formatTime } from '../apps/client/src/shared/lib/format';
 import { execFileSync } from 'node:child_process';
 import type { StateView } from '../packages/game-core/src/index';
-import { test, expect, sel, active, resign, waitGameReady, captureScreens, type Actor } from './helpers';
+import { test, expect, sel, active, resign, waitGameReady, captureScreens, expectLightInkContrast, type Actor } from './helpers';
 import { fast, q, click, load, shoot, balances, card, close } from './fixture-helpers';
 
 // Explicit opt-in: earlier stages always run against their original stacks.
@@ -48,6 +49,9 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   async function cards(mortgage: string | null, quote: number) {
     await Promise.all(players.map(async p => {
       const c = p.page.locator(sel('asset-card'));
+      const heading = c.locator('.asset-heading');
+      await expectLightInkContrast(heading.locator('p'), heading);
+      await expectLightInkContrast(heading.locator('h2'), heading);
       expect(p.view!.rentQuotes[assetId]).toEqual({ kind: 'fixed', amount: quote });
       await expect(c.locator(sel('asset-owner'))).toHaveText(name(players, owner.id));
       await expect(c.locator(sel('asset-rent'))).toHaveText(money(quote));
@@ -343,9 +347,8 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
   expect(ended.winner).toBe(creditor.id);
   expect(ended.eliminations.map((e: Payload) => [e.playerId, e.reason])).toEqual([[resigned.id, 'resigned'], [payer.id, 'bankrupt']]);
   const result = { winner: creditor.id, finishedAt: ended.at, eliminations: ended.eliminations, finalBalances: ended.finalBalances };
-  const lines = {
-    balances: players.map((p, i) => `Player ${i + 1}: ${money(ended.finalBalances[p.id])}`),
-  };
+  const resignedEntry = ended.eliminations.find((entry: Payload) => entry.playerId === resigned.id)!;
+  const bankruptEntry = ended.eliminations.find((entry: Payload) => entry.playerId === payer.id)!;
   async function gameOver() {
     for (const p of players) {
       expect(p.view!.phase).toBe('finished');
@@ -353,16 +356,22 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
       await expect(p.page.locator(sel('screen-finished'))).toBeVisible();
       await expect(p.page.locator(sel('winner'))).toHaveText(`Победитель: ${name(players, creditor.id)}`);
       const rows = p.page.locator(sel('elimination-row'));
-      await expect(rows).toHaveCount(2);
-      await expect(rows.nth(0).locator('.place')).toHaveText('3');
-      await expect(rows.nth(0).locator('.player-avatar')).toHaveText(name(players, resigned.id)[0]!);
-      await expect(rows.nth(0).locator('small')).toHaveText('сдача');
-      await expect(rows.nth(0).locator('strong')).toHaveText(money(ended.finalBalances[resigned.id]));
+      await expect(rows).toHaveCount(3);
+      await expect(rows.nth(0).locator('.place')).toHaveText('1');
+      await expect(rows.nth(0)).toHaveAttribute('data-player-id', creditor.id);
+      await expect(rows.nth(0).locator('[data-testid="elimination-entry"]')).toHaveText('Победитель');
+      await expect(rows.nth(0).locator('strong')).toHaveText(money(ended.finalBalances[creditor.id]));
       await expect(rows.nth(1).locator('.place')).toHaveText('2');
-      await expect(rows.nth(1).locator('.player-avatar')).toHaveText(name(players, payer.id)[0]!);
-      await expect(rows.nth(1).locator('small')).toHaveText('банкротство');
+      await expect(rows.nth(1)).toHaveAttribute('data-player-id', payer.id);
+      await expect(rows.nth(1).locator('[data-testid="elimination-entry"]')).toHaveText(`банкротство · ${formatTime(bankruptEntry.at)}`);
       await expect(rows.nth(1).locator('strong')).toHaveText(money(ended.finalBalances[payer.id]));
-      await expect(p.page.locator(sel('final-balance-row'))).toHaveText(lines.balances);
+      await expect(rows.nth(2).locator('.place')).toHaveText('3');
+      await expect(rows.nth(2)).toHaveAttribute('data-player-id', resigned.id);
+      await expect(rows.nth(2).locator('[data-testid="elimination-entry"]')).toHaveText(`сдача · ${formatTime(resignedEntry.at)}`);
+      await expect(rows.nth(2).locator('strong')).toHaveText(money(ended.finalBalances[resigned.id]));
+      await expect(p.page.locator(sel('final-balance-row'))).toHaveCount(0);
+      await p.page.setViewportSize({ width: 1440, height: 900 });
+      await expect(p.page.locator(sel('return-lobby'))).toBeInViewport();
       const spectator = p.page.locator(sel('spectator'));
       if (p === creditor) await expect(spectator).toHaveCount(0);
       else await expect(spectator).toHaveText(p === payer ? 'Вы выбыли из-за банкротства.' : 'Вы выбыли: вы сдались.');
