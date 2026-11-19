@@ -435,6 +435,7 @@ describe('elimination and game over', () => {
       expect(w.attributes('data-screen')).toBe('finished');
       const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.querySelector('[data-testid="game-over-title"]')?.textContent).toBe('Партия окончена');
       dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       expect(document.querySelector('[data-testid="winner"]')?.textContent).toBe('Победитель: Bob');

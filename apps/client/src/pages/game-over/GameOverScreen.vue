@@ -27,7 +27,7 @@ const seatOf = (id: string) => Math.max(0, client.game.view?.players.findIndex(p
 const winnerBalance = computed(() => result.value?.finalBalances[result.value.winner] ?? null);
 </script>
 <template>
-  <ResponsiveDialog v-model:open="open" :title="t('game_over.game_over')" :dismissible="false" wide>
+  <ResponsiveDialog v-model:open="open" :title="t('game_over.game_over')" title-test-id="game-over-title" :dismissible="false" wide>
   <section class="panel game-over" data-testid="game-over-screen">
     <div v-if="result" class="winner-hero">
       <PlayerAvatar :name="client.nameOf(result.winner)" :style="{ '--seat-color': `var(--player-${seatOf(result.winner)})` }" />
