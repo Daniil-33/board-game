@@ -26,13 +26,17 @@ function message(overrides: Partial<HudMessage> = {}): HudMessage {
   return { id: 1, code: 'UNKNOWN_CODE', message: 'server supplied text', commandType: 'BuildHouse', ...overrides };
 }
 
+function serverMessage(code: string, messageText = 'server supplied text'): HudMessage {
+  return { id: 1, code, message: messageText };
+}
+
 describe('rejected command copy', () => {
   it.each(commands)('gives %s its localized action title', (commandType, title) => {
     expect(rejectedCommandCopy(message({ commandType })).title).toBe(title);
   });
 
   it('uses the translated house reason without protocol or server text in the HUD', () => {
-    const rejection = message({ code: 'BUILD_QUOTA_USED' });
+    const rejection = message({ code: 'BUILD_QUOTA_USED', message: 'BUILD_QUOTA_USED' });
     const wrapper = mount(HudStatus, { props: { fatal: null, connected: true, problem: null, messages: [rejection] } });
     const row = wrapper.get('[data-testid="message"]');
 
@@ -40,6 +44,17 @@ describe('rejected command copy', () => {
     expect(row.attributes('data-code')).toBe('BUILD_QUOTA_USED');
     expect(row.text()).not.toContain(rejection.code);
     expect(row.text()).not.toContain(rejection.message);
+  });
+
+  it('uses the required server error title and mapped reason for commandless Error frames', () => {
+    const failure = serverMessage('MALFORMED_FRAME', 'private server detail');
+    expect(rejectedCommandCopy(failure)).toEqual({ title: 'Ошибка сервера', reason: 'Некорректная команда.' });
+
+    const wrapper = mount(HudStatus, { props: { fatal: null, connected: true, problem: null, messages: [failure] } });
+    const row = wrapper.get('[data-testid="message"]');
+    expect(row.text()).toContain('Ошибка сервера — Некорректная команда.');
+    expect(row.text()).not.toContain(failure.code);
+    expect(row.text()).not.toContain(failure.message);
   });
 
   it('uses a retry fallback for unknown codes and never exposes the code or server message', () => {
@@ -53,6 +68,12 @@ describe('rejected command copy', () => {
     expect(row.text()).not.toContain(rejection.message);
   });
 
+  it('uses the retry fallback for a commandless server error with an unmapped code', () => {
+    expect(rejectedCommandCopy(serverMessage('UNMAPPED_PROTOCOL_CODE'))).toEqual({
+      title: 'Ошибка сервера', reason: 'Попробуйте ещё раз.',
+    });
+  });
+
   it('shows both reconnect lines in the HUD', () => {
     const wrapper = mount(HudStatus, { props: { fatal: null, connected: false, problem: null, messages: [] } });
     expect(wrapper.get('[data-testid="offline"]').text()).toBe('Соединение потеряно, переподключаемся…Партия продолжается, таймеры идут');
@@ -64,6 +85,9 @@ describe('rejected command copy', () => {
       expect(rejectedCommandCopy(message({ code: 'BUILD_QUOTA_USED' }))).toEqual({
         title: "Can't build a house",
         reason: 'You have already built a house this turn.',
+      });
+      expect(rejectedCommandCopy(serverMessage('MALFORMED_FRAME'))).toEqual({
+        title: 'Server error', reason: 'Invalid command.',
       });
       const wrapper = mount(HudStatus, { props: { fatal: null, connected: false, problem: null, messages: [] } });
       expect(wrapper.get('[data-testid="offline"]').text()).toBe('Connection lost. Reconnecting…The game continues, and timers keep running');

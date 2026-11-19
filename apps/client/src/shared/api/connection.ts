@@ -108,6 +108,7 @@ export function createConnection(options: ConnectionOptions): Connection {
   }
 
   function showMessage(code: string, message: string, commandType?: ClientCommandType): void {
+    console.warn('[connection] rejected/error frame:', { code, message, commandType });
     state.messages.push({ id: nextMessageId++, code, message, ...(commandType !== undefined && { commandType }) });
     if (state.messages.length > MAX_MESSAGES) state.messages.splice(0, state.messages.length - MAX_MESSAGES);
   }
@@ -234,7 +235,6 @@ export function createConnection(options: ConnectionOptions): Connection {
         stop();
         return;
       default:
-        console.warn('[connection] server error:', frame.code, frame.message);
         showMessage(frame.code, frame.message);
     }
   }

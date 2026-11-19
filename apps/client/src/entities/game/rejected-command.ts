@@ -19,6 +19,7 @@ function commandTitle(commandType: ClientCommandType): string {
     case 'SellHouse': return t('command_title.sell_house');
     case 'Mortgage': return t('command_title.mortgage');
     case 'Redeem': return t('command_title.redeem');
+    default: return t('command_title.generic');
   }
 }
 
@@ -43,7 +44,8 @@ function otherReason(code: string): string | null {
     case 'PERSISTENCE_FAILED': return t('command_reason.persistence_failed');
     case 'INVALID_PAYLOAD':
     case 'COMMAND_ID_CONFLICT':
-    case 'UNKNOWN_COMMAND': return t('command_reason.invalid');
+    case 'UNKNOWN_COMMAND':
+    case 'MALFORMED_FRAME': return t('command_reason.invalid');
     default: return null;
   }
 }
@@ -57,11 +59,12 @@ export interface RejectedCommandCopy {
 export function rejectedCommandCopy(message: HudMessage): RejectedCommandCopy {
   const title = message.commandType
     ? commandTitle(message.commandType)
-    : t('command_title.generic');
+    : t('command_title.server_error');
   const reason = (message.commandType
     ? houseReason(message.code, message.commandType)
       ?? mortgageReason(message.code, message.commandType)
-      : null)
+      : houseReason(message.code, 'BuildHouse')
+        ?? mortgageReason(message.code, 'Mortgage'))
     ?? otherReason(message.code);
   return { title, reason: reason ?? t('command_reason.try_again') };
 }

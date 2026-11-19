@@ -303,12 +303,17 @@ describe('server errors', () => {
     expect(h.sockets.sockets).toHaveLength(1);
   });
 
-  it.each(['NOT_A_PARTICIPANT', 'ROOM_UNAVAILABLE'])('%s forgets the room and returns to the lobby', (code) => {
+  it.each([
+    ['NOT_A_PARTICIPANT', 'Вы вышли из комнаты.'],
+    ['ROOM_UNAVAILABLE', 'Комната больше недоступна. Вы вернулись в лобби.'],
+  ])('%s forgets the room and returns to the lobby without raw protocol text', (code, reason) => {
     const h = joined();
     h.sockets.last().receive(error(code));
     expect(h.client.session.state.room).toBeNull();
     expect(h.client.session.state.guest).toEqual(GUEST);
-    expect(h.client.lobby.notice).toContain(code);
+    expect(h.client.lobby.notice).toBe(reason);
+    expect(h.client.lobby.notice).not.toContain(code);
+    expect(h.client.lobby.notice).not.toContain(`${code} happened`);
     vi.advanceTimersByTime(10_000);
     expect(h.sockets.sockets).toHaveLength(1);
   });

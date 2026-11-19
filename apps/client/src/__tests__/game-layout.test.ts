@@ -277,6 +277,26 @@ describe('journal and feedback', () => {
     w.unmount();
   });
 
+  it('shows a rejected build toast title and reason without code-equals-message leakage', async () => {
+    const test = game();
+    const view = playingView(['a', 'b']);
+    const socket = test.sockets.last();
+    socket.receive(welcome(view));
+    const w = mountGame(test);
+    const assetId = view.board!.cells.find(cell => cell.kind === 'monopoly')!.asset!.assetId;
+    test.client.sendCommand({ type: 'BuildHouse', payload: { assetId } });
+    socket.receive({ t: 'Ack', commandId: 'c1' as never, revision: view.revision, outcome: 'rejected',
+      error: { code: 'BUILD_QUOTA_USED', message: 'BUILD_QUOTA_USED' } });
+    await w.vm.$nextTick();
+
+    const toast = new DOMWrapper(document.body).get('.ds-toast');
+    expect(toast.get('.ds-toast-title').text()).toBe('Нельзя построить дом');
+    expect(toast.get('.ds-toast-description').text()).toBe('Дом уже построен в этом ходу.');
+    expect(toast.text()).not.toContain('BUILD_QUOTA_USED');
+    expect(toast.attributes('data-code')).toBe('BUILD_QUOTA_USED');
+    w.unmount();
+  });
+
   it('announces reconnect until Welcome and caps translated rejections at three', async () => {
     vi.useFakeTimers();
     try {
@@ -305,7 +325,9 @@ describe('journal and feedback', () => {
       await w.vm.$nextTick();
       const toasts = new DOMWrapper(document.body).findAll(hook('message'));
       expect(toasts.map(toast => toast.text())).toHaveLength(3);
-      expect(toasts.map(toast => toast.text())).toEqual(Array(3).fill('Нельзя бросить кости — Время хода вышло.×'));
+      expect(toasts.map(toast => toast.text())).toEqual(Array(3).fill('Нельзя бросить костиВремя хода вышло.×'));
+      expect(toasts[0]!.get('.ds-toast-title').text()).toBe('Нельзя бросить кости');
+      expect(toasts[0]!.get('.ds-toast-description').text()).toBe('Время хода вышло.');
       expect(toasts.every(toast => !toast.text().includes('reason '))).toBe(true);
       expect(toasts[0]!.text()).toContain('Время хода вышло');
       await toasts[0]!.get(hook('message-dismiss')).trigger('click');

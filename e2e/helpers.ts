@@ -19,10 +19,16 @@ export async function captureScreens(page: Page, name: string): Promise<void> {
   }
   await page.setViewportSize(original);
   const producerHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const versionResponse = await page.request.get(new URL('/version.txt', page.url()).toString());
+  if (!versionResponse.ok()) throw new Error(`Unable to read served /version.txt (${versionResponse.status()})`);
+  const servedVersion = (await versionResponse.text()).trim();
+  if (!servedVersion) throw new Error('Served /version.txt is empty');
   writeFileSync(pathJoin(dir, `capture-manifest-${name}.json`), JSON.stringify({
     producerHead,
     screen: name,
     viewports: ['desktop', 'mobile'],
+    servedVersion,
+    capturedAtUtc: new Date().toISOString(),
   }, null, 2) + '\n');
 }
 export interface Actor {

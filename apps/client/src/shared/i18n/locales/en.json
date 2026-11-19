@@ -33,7 +33,6 @@
     "room_left": "You left the room.",
     "room_unavailable": "The room is no longer available. You are back in the lobby.",
     "session_expired": "Your session is no longer valid. Log in again.",
-    "return_reason": "You are back in the lobby: {message} ({code})",
     "error": "{message} ({code})",
     "unexpected_error": "Unexpected error",
     "joining_invite": "Joining the invited room.",
@@ -396,6 +395,7 @@
   },
   "command_title": {
     "generic": "Action rejected",
+    "server_error": "Server error",
     "roll_for_order": "Can't roll to determine turn order",
     "roll_dice": "Can't roll the dice",
     "end_turn": "Can't end the turn",
