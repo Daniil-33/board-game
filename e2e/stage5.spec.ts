@@ -344,7 +344,6 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
   expect(ended.eliminations.map((e: Payload) => [e.playerId, e.reason])).toEqual([[resigned.id, 'resigned'], [payer.id, 'bankrupt']]);
   const result = { winner: creditor.id, finishedAt: ended.at, eliminations: ended.eliminations, finalBalances: ended.finalBalances };
   const lines = {
-    eliminations: [new RegExp(`^${name(players, resigned.id)}: сдача, \\d{2}\\.`), new RegExp(`^${name(players, payer.id)}: банкротство, \\d{2}\\.`)],
     balances: players.map((p, i) => `Player ${i + 1}: ${money(ended.finalBalances[p.id])}`),
   };
   async function gameOver() {
@@ -353,7 +352,16 @@ test('stage 5: the game reaches a winner; the result survives a reload and match
       expect(p.view!.result).toEqual(result);
       await expect(p.page.locator(sel('screen-finished'))).toBeVisible();
       await expect(p.page.locator(sel('winner'))).toHaveText(`Победитель: ${name(players, creditor.id)}`);
-      await expect(p.page.locator(sel('elimination-row'))).toHaveText(lines.eliminations);
+      const rows = p.page.locator(sel('elimination-row'));
+      await expect(rows).toHaveCount(2);
+      await expect(rows.nth(0).locator('.place')).toHaveText('3');
+      await expect(rows.nth(0).locator('.player-avatar')).toHaveText(name(players, resigned.id)[0]!);
+      await expect(rows.nth(0).locator('small')).toHaveText('сдача');
+      await expect(rows.nth(0).locator('strong')).toHaveText(money(ended.finalBalances[resigned.id]));
+      await expect(rows.nth(1).locator('.place')).toHaveText('2');
+      await expect(rows.nth(1).locator('.player-avatar')).toHaveText(name(players, payer.id)[0]!);
+      await expect(rows.nth(1).locator('small')).toHaveText('банкротство');
+      await expect(rows.nth(1).locator('strong')).toHaveText(money(ended.finalBalances[payer.id]));
       await expect(p.page.locator(sel('final-balance-row'))).toHaveText(lines.balances);
       const spectator = p.page.locator(sel('spectator'));
       if (p === creditor) await expect(spectator).toHaveCount(0);
