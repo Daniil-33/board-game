@@ -8,5 +8,5 @@
 ## 2. Verification and evidence
 - [x] 2.1 Run required build, unit tests, client lint, e2e typecheck, strict OpenSpec validation, and diff check; run heavy suites sequentially with one Playwright worker.
 - [x] 2.2 Record per-chunk gzip baseline/delta and ensure total bundle is at most 343,863 B gzip and task delta at most +4 KB.
-- [ ] 2.3 Capture every in-scope surface at applicable desktop and 390x844 mobile viewports with the committed producer; record head and served version and index each capture beside its frame.
+- [x] 2.3 Capture every in-scope surface at applicable desktop and 390x844 mobile viewports with the committed producer; record head and served version and index each capture beside its frame.
 - [ ] 2.4 Open PR, record CI evidence, request independent review, resolve supported findings, and archive after merge per project policy.
