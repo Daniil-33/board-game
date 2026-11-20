@@ -28,7 +28,7 @@
 
 ## 7. Integration verification
 
-- [ ] 7.1 Run `pnpm build`, `pnpm test`, `pnpm test:integration`, client lint, `openspec validate --all --strict`, and the stage 4-5 browser suites; record each result and confirm existing stage 4-5 core tests pass unchanged. Verify CI is green 4/4 on the exact PR head. (Specs: all capabilities in this change.)
+- [x] 7.1 Run `pnpm build`, `pnpm test`, `pnpm test:integration`, client lint, `openspec validate --all --strict`, and the stage 4-5 browser suites; record each result and confirm existing stage 4-5 core tests pass unchanged. Verify CI is green 4/4 on the exact PR head. (Specs: all capabilities in this change.)
 
 ## Workflow follow-up
 
