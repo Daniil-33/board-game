@@ -58,7 +58,7 @@ export interface TurnState {
   readonly quotas: TurnQuotas;
 }
 
-/** One prisoner's progress under the interim jail rule. */
+/** One prisoner's progress under the final jail rule. */
 export interface JailEntry {
   readonly attemptsUsed: number;
 }
@@ -103,6 +103,12 @@ export interface BankCharge {
   readonly cause: 'chance';
 }
 
+export interface CasinoDecision {
+  readonly playerId: PlayerId;
+  readonly turnId: string;
+  readonly cap: Money;
+}
+
 export interface Mortgage {
   readonly advance: Money;
   readonly lapsCompleted: number;
@@ -126,6 +132,7 @@ export interface GameState {
   readonly rent: RentSettlement | null;
   /** Optional only for source compatibility with pre-core-8 view fixtures; genesis and upgradeState always materialize null. */
   readonly charge?: BankCharge | null | undefined;
+  readonly casino?: CasinoDecision | null | undefined;
   readonly owners: Readonly<Record<string, PlayerId>>;
   readonly purchase: PurchaseDecision | null;
   readonly auction: AuctionState | null;
@@ -152,7 +159,7 @@ export interface GameState {
   readonly turn: TurnState | null;
   /** Ring cell of each active player; the winner’s final cell is retained. */
   readonly positions: Readonly<Record<string, number>>;
-  /** Players in jail, by player id (interim jail rule). */
+  /** Players in jail, by player id. */
   readonly jail: Readonly<Record<string, JailEntry>>;
 }
 
@@ -163,7 +170,7 @@ export const MAX_PLAYERS = 6;
 export function genesis(): GameState {
   return {
     mortgages: {}, eliminations: [], finishedAt: null,
-    owners: {}, purchase: null, auction: null, houses: {}, rent: null, charge: null,
+    owners: {}, purchase: null, auction: null, houses: {}, rent: null, charge: null, casino: null,
     revision: 0 as Revision,
     board: null, economy: null, balances: {},
     rulesVersion: null,

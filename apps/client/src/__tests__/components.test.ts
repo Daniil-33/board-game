@@ -54,7 +54,7 @@ describe('TurnOrder', () => {
     expect(rows[1]!.text()).toContain('вы');
   });
 
-  it('shows only the projected temporary jail attempt status', () => {
+  it('shows the projected jail attempt status', () => {
     const view = playingView(['a', 'b'], { owner: 'a' });
     const rows = render({ ...view, jail: { [pid('a')]: { attemptsUsed: 1 } } });
     expect(rows[0]!.get('[data-testid="jail"]').text()).toBe('В тюрьме · 1/3');

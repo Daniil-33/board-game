@@ -22,7 +22,7 @@ import { CHAT_LIMITS, CHAT_REJECT_REASONS, MAX_CHAT_FRAME_TEXT } from './chat.js
  * System commands (`CreateGame`, `AddPlayer`, `LeaveLobby`, `StartGame`,
  * `Timeout`) are never accepted from a client.
  */
-export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'PayCharge', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem'] as const;
+export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'PayCharge', 'PayJailFee', 'PlaceCasinoBet', 'DeclineCasino', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem'] as const;
 export type ClientCommandType = (typeof CLIENT_COMMAND_TYPES)[number];
 
 // ---- Shared parts ----------------------------------------------------------
@@ -34,8 +34,7 @@ export const StateViewSchema = Type.Unsafe<StateView>(
       additionalProperties: true,
       description:
         'Public projection of the game state (game-core StateView), checked only as a JSON object. ' +
-        'Includes the public generated board, economy, balances, asset owners, purchase decision, auction state, houses, rent and rent quotes. ' +
-        'Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6).',
+        'Includes the public generated board, economy, balances, asset owners, purchase decision, auction state, houses, rent, casino and rent quotes.',
     },
   ),
 );
@@ -97,7 +96,7 @@ const commandFrame = <T extends ClientCommandType>(type: T) =>
       type: Type.Literal(type),
       expected: ExpectationSchema,
       payload: type === 'BuildHouse' || type === 'SellHouse' || type === 'Mortgage' || type === 'Redeem'
-        ? Type.Object({ assetId: AssetIdSchema }, closed) : Type.Null(),
+        ? Type.Object({ assetId: AssetIdSchema }, closed) : type === 'PlaceCasinoBet' ? Type.Object({amount:Type.Integer({minimum:0,maximum:Number.MAX_SAFE_INTEGER})},closed) : Type.Null(),
     },
     closed,
   );

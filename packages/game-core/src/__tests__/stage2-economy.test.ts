@@ -111,7 +111,7 @@ describe('forward crossing and inert landing', () => {
     expect(types(events)).not.toContain('BalanceChanged');
     expect(g.state.balances).toEqual(before);
   });
-  it('interim releases from 10 never cross start', () => {
+  it('a jail double release from 10 lands on chance without crossing start', () => {
     const g = playingGame(['a', 'b']);
     for (let i = 0; i < 3; i++) {
       g.roll(6, 6);
@@ -122,10 +122,11 @@ describe('forward crossing and inert landing', () => {
     g.endTurn();
     const before = g.state.balances;
     const events = g.roll(6, 6);
-    expect(types(events)).toContain('InterimJailReleased');
+    expect(types(events)).toEqual(['DiceRolled','JailReleased','PlayerMoved','ChanceDrawn','BalanceChanged']);
+    expect(events[3]!.payload).toEqual({playerId:'a',card:'gain-10',amount:2990});
+    expect(events[4]!.payload).toEqual({playerId:'a',delta:2990,balance:29350,reason:'chance'});
     expect(g.state.positions.a).toBe(22);
-    expect(types(events)).not.toContain('BalanceChanged');
-    expect(g.state.balances).toEqual(before);
+    expect(g.state.balances.a).toBe(before.a! + 2990);
   });
 });
 describe('money and board invariants', () => {

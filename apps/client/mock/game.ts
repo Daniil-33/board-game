@@ -38,7 +38,7 @@ export class MockGame {
     rulesVersion: CURRENT_RULES_VERSION,
     phase: 'lobby',
     mortgages: {}, eliminations: [], finishedAt: null, result: null,
-    houses: {}, rent: null, charge: null, rentQuotes: {}, owners: {}, purchase: null, auction: null,
+    houses: {}, rent: null, charge: null, casino: null, rentQuotes: {}, owners: {}, purchase: null, auction: null,
     board: generateBoard(seedRng(42)).board,
     economy: null,
     balances: {},
@@ -375,11 +375,11 @@ export class MockGame {
       const attemptsUsed = this.state.jail[playerId]!.attemptsUsed + 1;
       if (!double && attemptsUsed < 3) {
         this.state.jail = { ...this.state.jail, [playerId]: { attemptsUsed } };
-        events.push({ type: 'InterimJailAttemptFailed', payload: { playerId, attemptsUsed } });
+        events.push({ type: 'JailAttemptFailed', payload: { playerId, attemptsUsed } });
       } else {
         const { [playerId]: _released, ...jail } = this.state.jail;
         this.state.jail = jail;
-        events.push({ type: 'InterimJailReleased', payload: { playerId, reason: double ? 'double' : 'attempts-exhausted' } });
+        events.push({ type: 'JailReleased', payload: { playerId, reason: double ? 'double' : 'fee-forced' } });
         events.push(...this.move(playerId, dice[0] + dice[1]));
       }
       this.state.turn = rolled;

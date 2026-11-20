@@ -41,8 +41,12 @@ export function describeEvent(event: GameEvent, nameOf: (id: string) => string, 
     case 'TurnContinued': return { icon: '▶', text: t('journal.continue') };
     case 'TurnEnded': return { icon: '■', text: t('journal.turn_end', { player }) };
     case 'SentToJail': return { icon: '▣', text: t('journal.jail', { player }) };
-    case 'InterimJailAttemptFailed': return { icon: '▣', text: t('journal.jail_failed', { player }) };
-    case 'InterimJailReleased': return { icon: '→', text: t('journal.jail_release', { player }) };
+    case 'JailAttemptFailed': return { icon: '▣', text: t('journal.jail_failed', { player, attempts: payload.attemptsUsed }) };
+    case 'JailReleased': return { icon: '→', text: t('journal.jail_release', { player, reason: payload.reason }) };
+    case 'CasinoOffered': return { icon: '◇', text: t('journal.casino_offered', { player, cap: money('cap') }) };
+    case 'CasinoResolved': return { icon: '◇', text: t('journal.casino_resolved', { player, amount: money('amount'), outcome: payload.won ? t('journal.won') : t('journal.lost') }) };
+    case 'CasinoDeclined': return { icon: '◇', text: t('journal.casino_declined', { player }) };
+    case 'ChanceDrawn': return { icon: '◇', text: t('journal.chance_drawn', { player, card: String(payload.card ?? ''), amount: money('amount') }) };
     case 'AuctionPassed': return { icon: '◇', text: t('journal.auction_pass', { player }) };
     case 'AuctionEndedUnsold': return { icon: '◇', text: t('journal.auction_unsold', { asset }) };
     case 'MortgageExpired': return { icon: '▣', text: t('journal.mortgage_expired', { asset }) };

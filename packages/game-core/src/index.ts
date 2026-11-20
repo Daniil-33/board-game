@@ -31,7 +31,7 @@ export { Q } from './money.js';
 export type { RngState } from './rng.js';
 export { RNG_ALGORITHM, absorbEntropy, seedRng, isValidSeed, isWellFormedRng, nextUint32, nextIntInclusive } from './rng.js';
 
-export type { PurchaseDecision, AuctionState, GameState, Phase, PlayerState, SetupState, TurnState, TurnQuotas, JailEntry, BankCharge } from './state.js';
+export type { PurchaseDecision, AuctionState, GameState, Phase, PlayerState, SetupState, TurnState, TurnQuotas, JailEntry, BankCharge, CasinoDecision } from './state.js';
 export { genesis, MIN_PLAYERS, MAX_PLAYERS } from './state.js';
 
 export type { InvariantName } from './invariants.js';
@@ -98,8 +98,8 @@ export type {
 } from './turns.js';
 export { TURN_QUOTAS, turnCommands } from './turns.js';
 
-export type { InterimJailAttemptFailedEvent, InterimJailReleasedEvent, InterimJailEvent } from './interim-jail.js';
-export { INTERIM_JAIL_RULE } from './interim-jail.js';
+export { casinoCap, jailFee, landOn } from './special-cells.js';
+export type { CasinoOffered, CasinoResolved, CasinoDeclined, ChanceDrawn, JailAttemptFailed, JailReleased } from './special-cells.js';
 
 export { gameCommands, gameEngine } from './rules.js';
 

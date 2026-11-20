@@ -46,16 +46,19 @@ E2E_DETERMINISTIC=1 E2E_BASE_URL=http://127.0.0.1:8081 pnpm test:e2e
 WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml down -v
 ```
 
-The override explicitly opts into `NODE_ENV=test` and `E2E_TEST_SEED=1036`.
+The override explicitly opts into `NODE_ENV=test` and `E2E_TEST_SEED=129`.
 Any explicit seed outside test mode, including an empty value, refuses startup.
 No seed setting uses CSPRNG, even in test mode. Deterministic streams repeat
 Timeout command IDs after a process restart: never use this override against
-existing data or for recovery evidence. The seed was found by
-`pnpm --filter @game/server exec tsx scripts/find-compose-fixture.ts` using the
-complete core command flow: CreateGame, two AddPlayer commands, StartGame,
-four order rolls (one tied round), then RollDice/EndTurn bonus turns. Its dice
-are `[1,1]`, `[5,5]`, `[6,6]`; the third roll sends the player to jail before
-movement. No dice or game-state manipulation endpoint exists.
+existing data or for recovery evidence. The seed was found with
+`pnpm dlx tsx scripts/find-stage6-seed.ts 0 200000`. The deterministic search
+criteria are two players, a four-roll setup tie, three consecutive doubles
+sending the player to jail before movement, a failed first final-rule jail
+attempt, and a forward start crossing that pays the lap reward within the
+existing action budgets. The selected seed is 129. Its asserted game rolls
+begin `[2,1]`, `[6,6]`, `[5,5]`, `[5,5]`; after the opponent's `[4,2]`, the
+prisoner's first jail attempt `[4,5]` fails. No dice or game-state manipulation
+endpoint exists.
 
 Every context saves a trace and each scenario saves an event/revision/time log.
 Trace screenshots are disabled because the UI can display room credentials;

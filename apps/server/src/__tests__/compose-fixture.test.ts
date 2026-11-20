@@ -12,7 +12,9 @@ function fixture(seed: number) {
     const state = session.state;
     const expected = type === 'RollForOrder'
       ? { kind: 'target', target: { kind: 'setupRoll', id: state.setup!.setupRollId } }
-      : type === 'RollDice' || type === 'EndTurn'
+      : state.auction
+        ? { kind: 'target', target: { kind: 'auctionResponse', id: state.auction.responseId } }
+        : type === 'RollDice' || type === 'EndTurn' || type === 'StartAuction'
         ? { kind: 'target', target: { kind: 'turn', id: state.turn!.turnId } }
         : { kind: 'revision', revision: state.revision };
     const result = session.submit({
@@ -33,21 +35,45 @@ function fixture(seed: number) {
     run('RollForOrder', null, session.state.setup!.playerId);
     rolls++;
   }
-  const dice = [];
-  for (let i = 0; i < 3; i++) {
-    const result = run('RollDice', null, session.state.turn!.playerId);
-    dice.push(result.events.find(event => event.type === 'DiceRolled')!.payload);
-    if (Object.keys(session.state.jail).length > 0) break;
-    if (!session.state.turn!.pendingBonus) break;
-    run('EndTurn', null, session.state.turn!.playerId);
-  }
-  return { rolls, dice, state: session.state, log: session.log };
+  const setupValues = session.log.flatMap(entry => entry.events)
+    .filter(event => event.type === 'OrderDieRolled')
+    .map(event => (event.payload as { value: number }).value);
+  const dice: Array<{ dice: number[]; events: string[]; player: string }> = [];
+  const roll = () => {
+    const player = session.state.turn!.playerId;
+    const result = run('RollDice', null, player);
+    dice.push({
+      dice: [...(result.events.find(event => event.type === 'DiceRolled')!.payload as { dice: number[] }).dice],
+      events: result.events.map(event => event.type), player,
+    });
+    return result;
+  };
+  const closeTurn = () => {
+    if (session.state.purchase) run('StartAuction', null, session.state.turn!.playerId);
+    while (session.state.auction) run('PassAuction', null, session.state.auction.responder);
+    if (session.state.turn?.rolled) run('EndTurn', null, session.state.turn.playerId);
+  };
+  roll(); closeTurn();
+  roll(); closeTurn();
+  roll(); closeTurn();
+  roll();
+  roll(); closeTurn();
+  roll();
+  return { rolls, setupValues, dice, state: session.state, log: session.log };
 }
 
-it('seed 6689 repeats setup ties and three doubles through the complete command flow', () => {
-  const first = fixture(6689);
-  expect(first).toEqual(fixture(6689));
+it('seed 129 repeats setup tie, three doubles, and the first final jail failure through the complete command flow', () => {
+  const first = fixture(129);
+  expect(first).toEqual(fixture(129));
   expect(first.rolls).toBe(4);
-  expect(first.dice.map(value => (value as { dice: number[] }).dice)).toEqual([[1, 1], [4, 4], [6, 6]]);
-  expect(first.state.jail).toEqual({ a: { attemptsUsed: 0 } });
+  expect(first.setupValues).toEqual([3, 3, 1, 5]);
+  expect(first.dice).toEqual([
+    { player: 'b', dice: [2, 1], events: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+    { player: 'a', dice: [6, 6], events: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+    { player: 'a', dice: [5, 5], events: ['DiceRolled', 'PlayerMoved', 'ChanceDrawn', 'BalanceChanged'] },
+    { player: 'a', dice: [5, 5], events: ['DiceRolled', 'SentToJail', 'TurnEnded', 'TurnStarted'] },
+    { player: 'b', dice: [4, 2], events: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+    { player: 'a', dice: [4, 5], events: ['DiceRolled', 'JailAttemptFailed'] },
+  ]);
+  expect(first.state.jail).toEqual({ a: { attemptsUsed: 1 } });
 });

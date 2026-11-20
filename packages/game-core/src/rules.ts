@@ -8,6 +8,7 @@ import { resignationCommands } from './resignation.js';
 import { lifecycleCommands } from './lifecycle.js';
 import { setupCommands, setupTimeout } from './setup.js';
 import { turnCommands, turnTimeout, finishAuction } from './turns.js';
+import { specialCellCommands } from './special-cells.js';
 import { AUCTION_RESPONSE_TARGET_KIND, pendingDeadlines, SETUP_ROLL_TARGET_KIND, TURN_TARGET_KIND } from './deadlines.js';
 
 /**
@@ -35,6 +36,7 @@ export const gameCommands: CommandRegistry = Object.freeze({
   ...resignationCommands,
   ...setupCommands,
   ...turnCommands,
+  ...specialCellCommands,
   ...purchaseAuctionCommands(finishAuction),
   ...timeoutCommands,
 });

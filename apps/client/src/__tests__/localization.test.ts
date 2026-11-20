@@ -10,7 +10,6 @@ import vueParser from 'vue-eslint-parser';
 import ts from 'typescript-eslint';
 import { i18n, messages, t } from '../shared/i18n/index';
 import { formatMoney, formatSeconds, formatTime } from '../shared/lib/index';
-import { INTERIM_JAIL_RULE } from '@game/game-core';
 import russian from '../shared/i18n/locales/ru.json';
 import english from '../shared/i18n/locales/en.json';
 
@@ -94,8 +93,9 @@ describe('localization contracts', () => {
       'В залоге: получено 360, осталось 11 кругов',
       'В залоге: получено 360, остался 21 круг',
     ]);
-    const validAttempts = [1, 2, INTERIM_JAIL_RULE.maxAttempts];
-    expect(validAttempts.map(attempts => t('turn_order.jail_attempts', { attempts, maxAttempts: INTERIM_JAIL_RULE.maxAttempts }, attempts))).toEqual([
+    const maxAttempts = 3;
+    const validAttempts = [1, 2, maxAttempts];
+    expect(validAttempts.map(attempts => t('turn_order.jail_attempts', { attempts, maxAttempts }, attempts))).toEqual([
       'В тюрьме · 1/3',
       'В тюрьме · 2/3',
       'В тюрьме · 3/3',
@@ -112,7 +112,7 @@ describe('localization contracts', () => {
       expect(t('asset_card.rent_tier_houses', { houses: 2 }, 2)).toBe('2 houses');
       expect(t('game_top_bar.players', { count: 1 }, 1)).toBe('1 player');
       expect(t('game_top_bar.players', { count: 4 }, 4)).toBe('4 players');
-      expect(t('turn_order.jail_attempts', { attempts: INTERIM_JAIL_RULE.maxAttempts, maxAttempts: INTERIM_JAIL_RULE.maxAttempts }, INTERIM_JAIL_RULE.maxAttempts)).toBe('In jail · 3/3');
+      expect(t('turn_order.jail_attempts', { attempts: maxAttempts, maxAttempts }, maxAttempts)).toBe('In jail · 3/3');
       expect(t('room.heading', { players: 1, capacity: 6, count: 6 }, 6)).toBe('Waiting room · 1 of 6 seats');
     } finally { i18n.global.locale.value = 'ru'; }
   });

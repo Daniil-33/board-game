@@ -73,6 +73,8 @@ describe('roll the dice once per turn', () => {
     expect(events).toEqual([
       { type: 'DiceRolled', payload: { turnId, playerId: 'a', dice: [2, 5], double: false, auto: false } },
       { type: 'PlayerMoved', payload: { playerId: 'a', from: 0, to: 7, steps: 7 } },
+      { type: 'ChanceDrawn', payload: { playerId:'a',card:'loss-10',amount:2990 } },
+      { type: 'ChargeDue', payload: { payerId:'a',amount:2990,cause:'chance' } },
     ]);
     expect(g.state.turn!.rolled).toBe(true);
     expect(g.state.positions).toEqual({ a: 7, b: 0 });
@@ -121,9 +123,11 @@ describe('ending a turn', () => {
     g.roll(1, 3);
     g.now += 5_000;
     const events = g.endTurn();
-    expect(types(events)).toEqual(['TurnEnded', 'TurnStarted']);
-    expect(events[0]!.payload).toEqual({ turnId, playerId: 'a', reason: 'end-turn' });
-    expect(events[1]!.payload).toMatchObject({ playerId: 'b', bonus: false, deadline: g.now + TURN_DURATION_MS });
+    expect(types(events)).toEqual(['BalanceChanged','ChargePaid','TurnEnded','TurnStarted']);
+    expect(events[0]!.payload).toEqual({playerId:'a',delta:-1490,balance:28420,reason:'chance'});
+    expect(events[1]!.payload).toEqual({payerId:'a',amount:1490,auto:true});
+    expect(events[2]!.payload).toEqual({ turnId, playerId: 'a', reason: 'end-turn' });
+    expect(events[3]!.payload).toMatchObject({ playerId: 'b', bonus: false, deadline: g.now + TURN_DURATION_MS });
   });
 
   it('order wraps around after the last player', () => {

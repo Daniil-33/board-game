@@ -160,7 +160,7 @@ describe('property: any command sequence replays and restores to the identical s
     bonusTurns: 0,
     jailSends: 0,
     releasedByDouble: 0,
-    releasedExhausted: 0,
+    releasedByForcedFee: 0,
   };
 
   for (let run = 0; run < 400; run++) {
@@ -212,9 +212,9 @@ describe('property: any command sequence replays and restores to the identical s
           if (ev.type === 'TurnContinued') stats.continuations += 1;
           if (ev.type === 'TurnStarted' && p['bonus'] === true) stats.bonusTurns += 1;
           if (ev.type === 'SentToJail') stats.jailSends += 1;
-          if (ev.type === 'InterimJailReleased') {
+          if (ev.type === 'JailReleased') {
             if (p['reason'] === 'double') stats.releasedByDouble += 1;
-            else stats.releasedExhausted += 1;
+            if (p['reason'] === 'fee-forced') stats.releasedByForcedFee += 1;
           }
         }
       } else {
@@ -277,6 +277,6 @@ describe('property: any command sequence replays and restores to the identical s
     expect(stats.bonusTurns).toBeGreaterThan(50);
     expect(stats.jailSends).toBeGreaterThan(3);
     expect(stats.releasedByDouble).toBeGreaterThan(0);
-    expect(stats.releasedExhausted).toBeGreaterThan(0);
+    expect(stats.releasedByForcedFee).toBeGreaterThan(0);
   });
 });

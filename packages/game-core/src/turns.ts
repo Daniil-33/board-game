@@ -1,5 +1,5 @@
 import { processMortgageBoundary } from './mortgage.js';
-import { offerRent, settleRent, settleCharge } from './rent.js';
+import { settleRent, settleCharge } from './rent.js';
 import { offerPurchase, openAuction, type PurchaseAuctionEvent, type FinishAuction } from './purchase-auction.js';
 import type { BalanceChanged } from './money.js';
 import type { PlayerId, Timestamp } from './types.js';
@@ -10,7 +10,7 @@ import { fail, ok, targetGuard, type CommandRegistry, type HandlerResult } from 
 import { isNullPayload, rollTwoDice } from './dice.js';
 import { movePlayer, CLASSIC_40, type PlayerMovedEvent } from './board.js';
 import { after, CONTINUATION_MS, TURN_DURATION_MS, TURN_TARGET_KIND } from './deadlines.js';
-import { resolveJailAttempt, type InterimJailEvent } from './interim-jail.js';
+import { attemptJailRoll, closeCasino, landOn } from './special-cells.js';
 
 /** Quotas every new turn starts with (one build, two trade offers). */
 export const TURN_QUOTAS: TurnQuotas = Object.freeze({ builds: 1, offers: 2 });
@@ -67,7 +67,7 @@ export type TurnEvent = PurchaseAuctionEvent | BalanceChanged
   | TurnContinuedEvent
   | TurnEndedEvent
   | SentToJailEvent
-  | InterimJailEvent;
+  | GameEvent;
 
 type Step = { state: GameState; events: GameEvent[] };
 
@@ -112,9 +112,10 @@ function settleMandatory(state: GameState, now: Timestamp) {
 export function closeTurn(state: GameState, reason: TurnEndReason, now: Timestamp,
   resignation?: { readonly nextPlayer: PlayerId | null }): Step {
   const turn = state.turn!, order = state.order!;
-  const settled = settleMandatory({...state, purchase: null}, now);
+  const casino = closeCasino(state);
+  const settled = settleMandatory({...casino.state, purchase: null}, now);
   const closed = scheduleAfterSettlement(settled.state, settled.bankrupt ? 'bankrupt' : reason, now, turn, order, resignation);
-  return {state: closed.state, events: [...settled.events, ...closed.events]};
+  return {state: closed.state, events: [...casino.events, ...settled.events, ...closed.events]};
 }
 
 /** Schedule exactly once after settlement, retaining the pre-elimination order. */
@@ -154,14 +155,16 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
   let next: GameState = { ...state, rng };
 
   if (Object.hasOwn(next.jail, playerId)) {
-    // INTERIM_JAIL_RULE: a release attempt; never counts toward the streak, never grants a bonus.
-    const attempt = resolveJailAttempt(next, playerId, dice);
-    events.push(...attempt.events);
-    next = { ...attempt.state, turn: { ...turn, rolled: true, doublesStreak: 0, pendingBonus: false } };
-    const purchase = offerPurchase(next);
-    const rent = Object.hasOwn(purchase.state.jail, playerId) ? { state: purchase.state, events: [] } : offerRent(purchase.state, dice[0] + dice[1]);
-    const offered = { state: rent.state, events: [...purchase.events, ...rent.events] };
-    return { state: offered.state, events: [...events, ...offered.events], closed: false };
+    const attempt = attemptJailRoll(next, dice, now);
+    if (attempt.bankrupt) {
+      const closed = scheduleAfterSettlement(attempt.state, 'bankrupt', now, turn, state.order!);
+      return {state:closed.state,events:[...events,...attempt.events,...closed.events],closed:true};
+    }
+    if (attempt.closed) {
+      const closed = closeTurn(attempt.state, 'sent-to-jail', now);
+      return {state:closed.state,events:[...events,...attempt.events,...closed.events],closed:true};
+    }
+    return { state: attempt.state, events: [...events, ...attempt.events], closed: attempt.closed };
   }
 
   if (double && turn.doublesStreak + 1 === DOUBLES_TO_JAIL) {
@@ -184,10 +187,12 @@ function applyRoll(state: GameState, now: Timestamp, auto: boolean): Step & { cl
     ...moved.state,
     turn: { ...turn, rolled: true, doublesStreak: double ? turn.doublesStreak + 1 : 0, pendingBonus: double },
   };
-  const purchase = offerPurchase(next);
-  const rent = offerRent(purchase.state, dice[0] + dice[1]);
-  const offered = { state: rent.state, events: [...purchase.events, ...rent.events] };
-  return { state: offered.state, events: [...events, ...offered.events], closed: false };
+  const landed = landOn(next, playerId, dice[0] + dice[1]);
+  if (landed.closed) {
+    const closed = closeTurn(landed.state, 'sent-to-jail', now);
+    return {state:closed.state,events:[...events,...landed.events,...closed.events],closed:true};
+  }
+  return { state: landed.state, events: [...events, ...landed.events], closed: false };
 }
 
 /** Checks shared by the owner's turn commands, in the documented order after the payload. */

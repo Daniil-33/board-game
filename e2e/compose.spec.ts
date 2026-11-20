@@ -135,7 +135,7 @@ test('AFK uses actual 45 second auto-roll and 20 second continuation', async ({ 
   expect(ended.event.payload).toMatchObject({ reason: 'timeout' });
 });
 
-test('seed 6689: setup tie, three doubles jail before movement and interim jail attempt', async ({ actors }) => {
+test('seed 129: setup tie, three doubles jail before movement and first final-rule jail attempt', async ({ actors }) => {
   test.skip(process.env['E2E_DETERMINISTIC'] !== '1', 'Requires fresh test-only seeded stack');
   test.setTimeout(240_000 + 60 * 2 * AUCTION_RESPONSE_MS);
   const players = await actors(2), host = players[0]!;
@@ -143,89 +143,83 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
   await start(players);
   await stage2(players, 29910);
   expect(await setup(players)).toBe(4);
+  expect(host.events.filter(e => e.event.type === 'OrderDieRolled').map(e => (e.event.payload as {value:number}).value)).toEqual([3, 3, 1, 5]);
+  const roll = async (actor: import('./helpers').Actor, dice: number[], types: string[]) => {
+    const offset = actor.events.length;
+    await action(actor, 'RollDice');
+    const events = actor.events.slice(offset).map(e => e.event);
+    expect(events.map(e => e.type)).toEqual(types);
+    expect(events[0]!.payload).toMatchObject({ dice, double: dice[0] === dice[1] });
+    return events;
+  };
+  const firstRoller = await active(players);
+  await roll(firstRoller, [2, 1], ['DiceRolled', 'PlayerMoved', 'PurchaseOffered']);
+  await endTurn(firstRoller, players);
   const prisoner = await active(players);
-  for (const dice of [[1, 1], [4, 4]]) {
-    await action(prisoner, 'RollDice');
-    expect(prisoner.events.filter(e => e.event.type === 'DiceRolled').at(-1)!.event.payload).toMatchObject({ dice, double: true });
-    await endTurn(prisoner, players);
-  }
+  await roll(prisoner, [6, 6], ['DiceRolled', 'PlayerMoved', 'PurchaseOffered']);
+  await endTurn(prisoner, players);
+  expect((await active(players)).id).toBe(prisoner.id);
+  await roll(prisoner, [5, 5], ['DiceRolled', 'PlayerMoved', 'ChanceDrawn', 'BalanceChanged']);
+  await endTurn(prisoner, players);
   const balancesBeforeJail = structuredClone(prisoner.view!.balances);
-  const count = prisoner.events.length;
-  await action(prisoner, 'RollDice');
-  const events = prisoner.events.slice(count).map(e => e.event);
-  expect(events.map(e => e.type)).toEqual(['DiceRolled', 'SentToJail', 'TurnEnded', 'TurnStarted']);
+  const events = await roll(prisoner, [5, 5], ['DiceRolled', 'SentToJail', 'TurnEnded', 'TurnStarted']);
   expect(prisoner.view!.balances).toEqual(balancesBeforeJail);
   for (const p of players) {
     await expect.poll(() => p.view?.balances).toEqual(balancesBeforeJail);
   }
   await panels(players);
-  expect(events[0]!.payload).toMatchObject({ dice: [6, 6], double: true });
+  expect(events[0]!.payload).toMatchObject({ dice: [5, 5], double: true });
   expect(prisoner.view!.positions[prisoner.id]).toBe((events[1]!.payload as { to: number }).to);
   expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 0 });
   expect(prisoner.view!.turn!.doublesStreak).toBe(0);
   await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 0/3');
   await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
-  for (let i = 0; host.view!.turn!.playerId !== prisoner.id; i++) {
-    expect(i).toBeLessThan(10);
-    const other = await active(players); await action(other, 'RollDice');
-    if (other.view!.turn!.rolled) await endTurn(other, players);
-    await expect.poll(() => host.view?.revision).toBe(other.view!.revision);
-  }
-  const attemptStart = prisoner.events.length;
+  const afterJail = await active(players);
+  await roll(afterJail, [4, 2], ['DiceRolled', 'PlayerMoved', 'PurchaseOffered']);
+  await endTurn(afterJail, players);
   const jailPosition = prisoner.view!.positions[prisoner.id];
-  await action(prisoner, 'RollDice');
-  const attempt = prisoner.events.slice(attemptStart).map(e => e.event);
-  expect(attempt[0]!.type).toBe('DiceRolled');
-  if (prisoner.view!.jail[prisoner.id]) {
-    expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 1 });
-    expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailAttemptFailed']);
-    expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
-    await prisoner.page.setViewportSize({ width: 1440, height: 900 });
-    await assertBoardBannerGeometry(prisoner.page);
-    await captureScreens(prisoner.page, 'jail-attempt-status');
-    await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
-    await expect(prisoner.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
-    const observer = players.find(player => player !== prisoner)!;
-    await expect(observer.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
-    for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
-      await prisoner.page.setViewportSize({ width, height });
-      await assertJournalEntryBelowHeading(prisoner.page);
-    }
-  } else {
-    expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
-    expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });
+  const attempt = await roll(prisoner, [4, 5], ['DiceRolled', 'JailAttemptFailed']);
+  expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 1 });
+  expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'JailAttemptFailed']);
+  expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
+  await prisoner.page.setViewportSize({ width: 1440, height: 900 });
+  await assertBoardBannerGeometry(prisoner.page);
+  await captureScreens(prisoner.page, 'jail-attempt-status');
+  await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
+  await expect(prisoner.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
+  const observer = players.find(player => player !== prisoner)!;
+  await expect(observer.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
+  for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+    await prisoner.page.setViewportSize({ width, height });
+    await assertJournalEntryBelowHeading(prisoner.page);
   }
   expect(prisoner.view!.turn!.pendingBonus).toBe(false);
   expect(prisoner.events.at(-1)!.revision).toBe(prisoner.view!.revision);
-  // Continue the fresh seed-6689/core-5 stream, after the setup tie and jail
-  // attempt above, resolving any acquisitions through auction commands.
-  // A forward crossing still credits exactly 3980 without a new seed or restart.
-  let crossed = false;
-  for (let i = 0; i < 60 && !crossed; i++) {
-    await expect.poll(() => host.view?.revision).toBe(prisoner.view!.revision);
-    const actor = await active(players);
-    if (actor.view!.turn!.rolled) { await endTurn(actor, players); }
-    else {
-      const before = structuredClone(actor.view!);
-      const eventCount = actor.events.length;
-      await action(actor, 'RollDice');
-      const events = actor.events.slice(eventCount).map(e => e.event);
-      if (events.some(e => e.type === 'BalanceChanged')) {
-        expect(events).toContainEqual({ type: 'BalanceChanged', payload: {
-          playerId: actor.id, delta: 3980, balance: before.balances[actor.id]! + 3980, reason: 'lap-reward',
-        } });
-        expect(before.positions[actor.id]!).toBeGreaterThan(actor.view!.positions[actor.id]!);
-        expect(actor.view!.balances[actor.id]).toBe(before.balances[actor.id]! + 3980);
-        for (const p of players) await expect.poll(() => p.view?.balances).toEqual(actor.view!.balances);
-        await panels(players);
-        crossed = true;
-      }
-    }
-    // Synchronize all views before choosing the next active actor.
-    const revision = actor.view!.revision;
-    for (const p of players) await expect.poll(() => p.view?.revision).toBe(revision);
-  }
-  expect(crossed, 'seed 6689 must reach a rewarded forward start crossing in 60 actions').toBe(true);
+  await endTurn(prisoner, players);
+  const second = await active(players);
+  await roll(second, [2, 4], ['DiceRolled', 'PlayerMoved', 'PurchaseOffered']);
+  await endTurn(second, players);
+  await roll(prisoner, [5, 6], ['DiceRolled', 'JailAttemptFailed']);
+  await endTurn(prisoner, players);
+  const third = await active(players);
+  await roll(third, [3, 5], ['DiceRolled', 'PlayerMoved', 'PurchaseOffered']);
+  await endTurn(third, players);
+  const beforeRelease = structuredClone(prisoner.view!);
+  await roll(prisoner, [6, 2], ['DiceRolled', 'BalanceChanged', 'JailReleased', 'PlayerMoved', 'PurchaseOffered']);
+  expect(prisoner.view!.balances[prisoner.id]).toBe(beforeRelease.balances[prisoner.id]! - 990);
+  await endTurn(prisoner, players);
+  const last = await active(players);
+  await roll(last, [4, 4], ['DiceRolled', 'PlayerMoved', 'PurchaseOffered']);
+  await endTurn(last, players);
+  const rewardActor = await active(players);
+  const beforeReward = structuredClone(rewardActor.view!);
+  const rewardEvents = await roll(rewardActor, [6, 6], ['DiceRolled', 'PlayerMoved', 'BalanceChanged', 'PurchaseOffered']);
+  expect(rewardEvents).toContainEqual({ type: 'BalanceChanged', payload: {
+    playerId: rewardActor.id, delta: 3980, balance: beforeReward.balances[rewardActor.id]! + 3980, reason: 'lap-reward',
+  } });
+  expect(beforeReward.positions[rewardActor.id]!).toBeGreaterThan(rewardActor.view!.positions[rewardActor.id]!);
+  for (const p of players) await expect.poll(() => p.view?.balances).toEqual(rewardActor.view!.balances);
+  await panels(players);
 });
 
 /** Verify auctions that time out naturally in these server-deadline scenarios. */

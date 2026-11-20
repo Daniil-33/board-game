@@ -11,7 +11,7 @@ export interface Debt {
   readonly payerId: PlayerId;
   readonly creditor: { readonly kind: 'player'; readonly id: PlayerId } | { readonly kind: 'bank' };
   readonly amount: Money;
-  readonly cause: { readonly kind: 'rent'; readonly assetId: AssetId; readonly auto: boolean } | { readonly kind: 'chance'; readonly auto: boolean };
+  readonly cause: { readonly kind: 'rent'; readonly assetId: AssetId; readonly auto: boolean } | { readonly kind: 'chance'; readonly auto: boolean } | { readonly kind: 'jail-fee' };
 }
 export interface LiquidationStep {
   readonly tier: 1 | 2 | 3;
@@ -31,7 +31,7 @@ export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): Debt
   const creditor = debt.creditor;
   if (cause.kind === 'rent' && creditor.kind !== 'player') throw new Error('Rent must have a player creditor');
   const creditorId = creditor.kind === 'player' ? creditor.id : null;
-  const reason = cause.kind === 'rent' ? 'rent' : 'chance';
+  const reason = cause.kind === 'rent' ? 'rent' : cause.kind === 'chance' ? 'chance' : 'jail-fee';
   let state = initial;
   const events: GameEvent[] = [];
   const assets = initial.board!.cells.flatMap(c => c.asset && initial.owners[c.asset.assetId] === payerId ? [c.asset] : []);
@@ -112,6 +112,6 @@ export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): Debt
     if (cause.kind === 'rent') {
       events.push({type:'RentPaid',payload:{payerId,ownerId:creditorId!,assetId:cause.assetId,amount,auto:cause.auto}} satisfies RentPaid);
     }
-    else events.push({type:'ChargePaid',payload:{payerId,amount,auto:cause.auto}});
+    else if (cause.kind === 'chance') events.push({type:'ChargePaid',payload:{payerId,amount,auto:cause.auto}});
   return {state:{...state,rent:null,charge:null},events,bankrupt:false};
 }

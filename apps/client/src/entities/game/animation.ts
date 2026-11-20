@@ -74,16 +74,14 @@ export function stepsForEvent(event: GameEvent, ringSize: number): AnimationStep
     }
     case 'SentToJail':
       return isCell(p.to, ringSize) ? [{ kind: 'jump', playerId, cell: p.to }] : [];
-    case 'InterimJailAttemptFailed': {
+    case 'JailAttemptFailed': {
       if (typeof p.attemptsUsed !== 'number') return [];
       const attempts = p.attemptsUsed;
       const caption = (player: string) => t('animation.jail_attempt_failed', { player, attempts });
       return [{ kind: 'banner', playerId, text: caption(playerId), caption }];
     }
-    case 'InterimJailReleased': {
-      const caption = p.reason === 'double'
-        ? (player: string) => t('animation.jail_released_double', { player })
-        : (player: string) => t('animation.jail_released', { player });
+    case 'JailReleased': {
+      const caption = (player: string) => t('animation.jail_released', { player });
       return [{ kind: 'banner', playerId, text: caption(playerId), caption }];
     }
     default:

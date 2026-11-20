@@ -27,7 +27,7 @@ export type Visibility = 'public' | 'secret';
  */
 export const STATE_VISIBILITY = {
   mortgages: 'public', eliminations: 'public', finishedAt: 'public',
-  houses: 'public', rent: 'public', charge: 'public', owners: 'public', purchase: 'public', auction: 'public',
+  houses: 'public', rent: 'public', charge: 'public', casino: 'public', owners: 'public', purchase: 'public', auction: 'public',
   board: 'public', economy: 'public', balances: 'public',
   revision: 'public',
   rulesVersion: 'public',
@@ -118,12 +118,11 @@ export const EVENT_VISIBILITY = {
   TurnContinued: 'public',
   TurnEnded: 'public',
   SentToJail: 'public',
-  InterimJailAttemptFailed: 'public',
-  InterimJailReleased: 'public',
+  CasinoOffered:'public', CasinoResolved:'public', CasinoDeclined:'public', ChanceDrawn:'public', JailAttemptFailed:'public', JailReleased:'public',
 } as const satisfies Record<CoreEvent['type'], Visibility>;
 
 /** Every event type this rules version emits. */
-export type CoreEvent = DebtEvent | LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | import('./rent.js').ChargeEvent | HouseEvent | MortgageEvent;
+export type CoreEvent = DebtEvent | LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | import('./rent.js').ChargeEvent | HouseEvent | MortgageEvent | import('./special-cells.js').CasinoOffered | import('./special-cells.js').CasinoResolved | import('./special-cells.js').CasinoDeclined | import('./special-cells.js').ChanceDrawn | import('./special-cells.js').JailAttemptFailed | import('./special-cells.js').JailReleased;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { t } from '../../shared/i18n/index';
-import { INTERIM_JAIL_RULE } from '@game/game-core';
 import type { OrderEntry } from '../../entities/game/index';
 
 defineProps<{
@@ -32,7 +31,7 @@ defineProps<{
       </span>
       <span v-else-if="entry.roll !== null" class="tag" data-testid="order-roll">{{ t('turn_order.rolled', { roll: entry.roll }) }}</span>
       <span v-if="entry.tied && (!setup || entry.tieRolled)" class="tag warn" data-testid="tied">{{ entry.tieRolled ? t('turn_order.tied') : t('turn_order.undecided') }}</span>
-      <span v-if="entry.jail" class="tag jail-status" data-testid="jail">{{ t('turn_order.jail_attempts', { attempts: entry.jail.attemptsUsed, maxAttempts: INTERIM_JAIL_RULE.maxAttempts }, entry.jail.attemptsUsed) }}</span>
+      <span v-if="entry.jail" class="tag jail-status" data-testid="jail">{{ t('turn_order.jail_attempts', { attempts: entry.jail.attemptsUsed, maxAttempts: 3 }, entry.jail.attemptsUsed) }}</span>
     </li>
   </ol>
 </template>
