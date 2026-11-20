@@ -1,6 +1,6 @@
 import { money } from './ru-text';
 import { execFileSync } from 'node:child_process';
-import { test, expect, sel, active, captureScreens, type Actor } from './helpers';
+import { test, expect, sel, active, captureScreens, assertJournalEntryBelowHeading, type Actor } from './helpers';
 import { fast, q, click, load, shoot, balances, card, close } from './fixture-helpers';
 
 // Explicit opt-in: earlier stages always run against their original stacks.
@@ -64,7 +64,10 @@ for (const fixture of ['regular-rent', 'full-group-rent', 'logistics-rent', 'ene
       : fixture === 'logistics-rent' ? q(asset.price * 10, 100)
       : q(asset.price * 5, 100) * (fixture === 'full-group-rent' ? 2 : 1);
     expect(rent.amount).toBe(expected);
-    if (fixture === 'shortfall') await captureScreens(mover.page, 'rent-shortfall');
+    if (fixture === 'shortfall') {
+      await assertJournalEntryBelowHeading(mover.page);
+      await captureScreens(mover.page, 'rent-shortfall');
+    }
     if (fixture === 'logistics-rent') expect(h).toBe(2);
     if (fixture === 'full-group-rent') expect(h).toBe(group.length);
     if (fixture === 'regular-rent') expect(h).toBeLessThan(group.length);

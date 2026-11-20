@@ -123,7 +123,6 @@ test('desktop rent and debt overlays preserve the board and top bar', async ({ a
   const players = await actors(2);
   await load(players, 'shortfall');
   const payer = players.find(player => player.id === player.view?.rent?.payerId)!;
-  await assertJournalEntryBelowHeading(payer.page);
   for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
     await payer.page.setViewportSize({ width, height });
     await expect(payer.page.locator(sel('rent'))).toBeVisible();

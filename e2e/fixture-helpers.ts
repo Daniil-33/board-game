@@ -2,7 +2,7 @@ import { money } from './ru-text';
 /** Shared helpers of the isolated fixture-stack specs (stage 4 and later). */
 import type { TestInfo } from '@playwright/test';
 import { cellRect } from '../apps/client/src/widgets/board/layout';
-import { expect, sel, waitGameReady, captureScreens, type Actor } from './helpers';
+import { expect, sel, captureScreens, type Actor } from './helpers';
 
 export const fast = { intervals: [20] };
 export const q = (numerator: number, denominator: number) => 10 * Math.floor(numerator / (10 * denominator));
@@ -36,7 +36,10 @@ export async function load(players: Actor[], fixture: string): Promise<string> {
     const welcomes = p.welcomes.length;
     await p.page.reload();
     await expect.poll(() => p.welcomes.length, fast).toBeGreaterThan(welcomes);
-    await waitGameReady(p);
+    // Fixture turns use the real 45-second deadline. Wait for the game chunk,
+    // but let each scenario wait for the canvas only if it needs pointer input.
+    await expect(p.page.locator(sel('screen-game'))).toBeVisible();
+    await expect(p.page.locator(sel('game-loading'))).toHaveCount(0);
   }));
   await sync(players, players[0]!.view!.revision);
   return roomId;
