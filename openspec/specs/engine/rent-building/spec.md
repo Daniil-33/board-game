@@ -149,6 +149,10 @@ Every turn closure SHALL settle an open charge through shared debt settlement, i
 - **WHEN** the turn deadline closes a turn with an open charge and sufficient cash
 - **THEN** the charge SHALL be paid with ChargePaid auto true before the turn closes
 
+#### Scenario: Resigning charge payer
+- **WHEN** the payer resigns while a bank charge is open
+- **THEN** the charge SHALL be voided before turn closure with no debit, bankruptcy or ChargePaid event; a two-player game SHALL end as an ordinary resignation and a three-player game SHALL start the next player's turn
+
 ### Requirement: Charge payment guards
 While a charge is open, building and redemption SHALL fail with PAYMENT_PENDING. Mortgage and house sale SHALL remain allowed. Existing rent guards and their RENT_PENDING code SHALL remain unchanged.
 

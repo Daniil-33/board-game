@@ -11,13 +11,39 @@ const base = () => rolled(playingGame(['a', 'b', 'c']).state);
 const charge = (state: GameState, amount: number): GameState => openCharge(state, money(amount)).state;
 
 function accepted(state: GameState, type: string, payload: unknown = null, at = ctx().now) {
-  const result = gameEngine.execute(state, command(state, type, payload), ctx(at));
+  const input = type === 'Resign' ? cmd(type, payload, { actor: player(state.turn!.playerId), rev: state.revision }) : command(state, type, payload);
+  const result = gameEngine.execute(state, input, ctx(at));
   if (result.kind !== 'accepted') throw new Error(result.error.code);
   checkInvariants(result.state);
   return result;
 }
 
 describe('bank charge settlement', () => {
+  it.each([
+    { players: ['a', 'b'], balance: 100 },
+    { players: ['a', 'b'], balance: 10 },
+    { players: ['a', 'b', 'c'], balance: 100 },
+    { players: ['a', 'b', 'c'], balance: 10 },
+  ])('voids the resigning payer charge in $players.length players with balance $balance', ({ players, balance }) => {
+    const source = playingGame(players).state;
+    const s = charge({ ...source, balances: { ...source.balances, a: money(balance) } }, 60);
+    const result = accepted(s, 'Resign');
+    expect(result.state.charge).toBeNull();
+    expect(result.state.balances).toEqual(s.balances);
+    expect(result.events.some(event => event.type === 'ChargePaid')).toBe(false);
+    expect(result.events.some(event => event.type === 'BalanceChanged')).toBe(false);
+    if (players.length === 2) {
+      const withoutCharge = accepted({ ...source, balances: { ...source.balances, a: money(balance) } }, 'Resign');
+      expect(result.state).toEqual(withoutCharge.state);
+      expect(result.events).toEqual(withoutCharge.events);
+      expect(result.state.phase).toBe('finished');
+    } else {
+      expect(result.state.phase).toBe('playing');
+      expect(result.state.turn!.playerId).toBe('b');
+      checkInvariants(result.state);
+    }
+  });
+
   it('debits a cash charge without crediting a player', () => {
     const s = charge({ ...base(), balances: { ...base().balances, a: money(100) } }, 60);
     expect(openCharge(base(), money(60)).events).toEqual([{ type: 'ChargeDue', payload: { payerId: 'a', amount: 60, cause: 'chance' } }]);
@@ -84,5 +110,14 @@ describe('bank charge settlement', () => {
     expect(settled.state.balances.b).toBe(s.balances.b);
     expect(settled.events.at(-1)).toEqual({ type: 'ChargePaid', payload: { payerId: 'a', amount: 60, auto: false } });
     expect(asset.assetId).toBeTruthy();
+  });
+
+  it('rejects a bank creditor for rent before applying any debit', () => {
+    const s = { ...base(), balances: { ...base().balances, a: money(100) } };
+    expect(() => settleDebt(s, {
+      payerId: pid('a'), creditor: { kind: 'bank' }, amount: money(60),
+      cause: { kind: 'rent', assetId: s.board!.cells[1]!.asset!.assetId, auto: false },
+    }, ctx().now)).toThrow('Rent must have a player creditor');
+    expect(s.balances.a).toBe(100);
   });
 });

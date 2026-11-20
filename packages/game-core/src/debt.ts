@@ -9,9 +9,7 @@ import { cancelOffersOf, releaseAssets } from './resignation.js';
 
 export interface Debt {
   readonly payerId: PlayerId;
-  readonly creditor?: { readonly kind: 'player'; readonly id: PlayerId } | { readonly kind: 'bank' };
-  /** Legacy call shape retained for stage 5 callers; new callers use `creditor`. */
-  readonly creditorId?: PlayerId;
+  readonly creditor: { readonly kind: 'player'; readonly id: PlayerId } | { readonly kind: 'bank' };
   readonly amount: Money;
   readonly cause: { readonly kind: 'rent'; readonly assetId: AssetId; readonly auto: boolean } | { readonly kind: 'chance'; readonly auto: boolean };
 }
@@ -30,7 +28,8 @@ const lexical = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 /** Atomic raising and payment. Turn scheduling remains the caller's responsibility. */
 export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): DebtResult {
   const {payerId, amount, cause} = debt;
-  const creditor = debt.creditor ?? (debt.creditorId ? {kind: 'player' as const, id: debt.creditorId} : {kind: 'bank' as const});
+  const creditor = debt.creditor;
+  if (cause.kind === 'rent' && creditor.kind !== 'player') throw new Error('Rent must have a player creditor');
   const creditorId = creditor.kind === 'player' ? creditor.id : null;
   const reason = cause.kind === 'rent' ? 'rent' : 'chance';
   let state = initial;
@@ -111,8 +110,7 @@ export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): Debt
   }
   transfer(amount);
     if (cause.kind === 'rent') {
-      if (creditor.kind !== 'player') throw new Error('Rent must have a player creditor');
-      events.push({type:'RentPaid',payload:{payerId,ownerId:creditor.id,assetId:cause.assetId,amount,auto:cause.auto}} satisfies RentPaid);
+      events.push({type:'RentPaid',payload:{payerId,ownerId:creditorId!,assetId:cause.assetId,amount,auto:cause.auto}} satisfies RentPaid);
     }
     else events.push({type:'ChargePaid',payload:{payerId,amount,auto:cause.auto}});
   return {state:{...state,rent:null,charge:null},events,bankrupt:false};

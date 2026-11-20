@@ -135,6 +135,10 @@ export const chargeCommands: CommandRegistry = {
 export function resignDuringRent(state: GameState, playerId: PlayerId, terminal: boolean): GameState {
   return state.rent && (terminal || state.rent.payerId === playerId || state.rent.ownerId === playerId) ? { ...state, rent: null } : state;
 }
+/** A bank charge owed by a resigning player is voided before turn closure. */
+export function resignDuringCharge(state: GameState, playerId: PlayerId, terminal: boolean): GameState {
+  return state.charge && (terminal || state.charge.payerId === playerId) ? { ...state, charge: null } : state;
+}
 export const rentCommands: CommandRegistry = {
   PayRent: {
     guard: targetGuard('turn', s => s.turn?.turnId ?? null), allowedActors: ['player'], allowedPhases: ['playing'],

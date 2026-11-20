@@ -65,6 +65,31 @@ describe('mortgage redeem lock', () => {
     checkInvariants(result.state);
   });
 
+  it('redeems an EndTurn liquidation mortgage on the owner’s next turn', () => {
+    const initial = base();
+    const asset = initial.board!.cells[1]!.asset!;
+    const debt = mortgageAdvance(asset.price) + 10;
+    const owned: GameState = { ...initial, owners: { [asset.assetId]: pid('a') },
+      balances: { ...initial.balances, a: 10 as Money }, turn: { ...initial.turn!, rolled: true } };
+    const due = openCharge(owned, debt as Money).state;
+    const closed = run(due, 'EndTurn');
+    expect(closed.kind).toBe('accepted');
+    if (closed.kind !== 'accepted') return;
+    expect(closed.state.turn!.playerId).toBe('b');
+    expect(closed.state.mortgages[asset.assetId]!.lockedTurnId).toBe(initial.turn!.turnId);
+
+    let next = closed.state;
+    for (let i = 0; i < 2; i++) {
+      const end = run({ ...next, turn: { ...next.turn!, rolled: true } }, 'EndTurn');
+      if (end.kind !== 'accepted') throw new Error(end.error.code);
+      next = end.state;
+    }
+    expect(next.turn!.playerId).toBe('a');
+    expect(next.turn!.turnId).not.toBe(initial.turn!.turnId);
+    next = { ...next, balances: { ...next.balances, a: mortgageAdvance(asset.price) } };
+    expect(run(next, 'Redeem', { assetId: asset.assetId }).kind).toBe('accepted');
+  });
+
   it('blocks build and redeem during charge while sale and mortgage remain available', () => {
     const s = base();
     const group = s.board!.cells.filter(c => c.asset?.groupId === 'M2');

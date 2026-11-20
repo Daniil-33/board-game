@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { CURRENT_RULES_VERSION, createSession, entropy, gameEngine, timestamp, type GameState } from '@game/game-core';
+import { CURRENT_RULES_VERSION, createSession, entropy, gameEngine, timestamp, upgradeState, type GameCommand, type GameState } from '@game/game-core';
 import { sql } from 'kysely';
 import { buildFixture } from '../test-fixtures.js';
 import { useHarness } from './helpers/harness.js';
@@ -69,6 +69,54 @@ it('fails and logs a core-7 log-only game from genesis without changing any rows
   const oldEntry = { ...core8Entry, command: { ...core8Entry.command, payload: { seed: 42, rulesVersion: 'core-7' } } };
   await h.db.insertInto('game_log').values({ game_id: id, revision: oldEntry.revision, command_id: oldEntry.command.commandId,
     entry: sql`${JSON.stringify(oldEntry)}::jsonb` }).execute();
+  const before = await storedRows(id);
+
+  const { manager, logger } = h.manager();
+  expect(await manager.restoreAll()).toEqual({ restored: [], failed: [id] });
+  expect(manager.get(id)?.status).toBe('failed');
+  expect(logger.lines).toContainEqual(expect.objectContaining({
+    level: 'error', message: 'room could not be restored',
+    fields: expect.objectContaining({ gameId: id, errorName: 'ReplayDivergenceError' }),
+  }));
+  await manager.shutdown();
+  expect(await storedRows(id)).toEqual(before);
+});
+
+it('fails a core-7 snapshot with a diverging same-turn mortgage and redeem tail without changing rows', async () => {
+  const id = await seedRoom(h.db);
+  const { legacy: withMortgage } = await insertOldSnapshot(id);
+  const assetId = Object.keys(withMortgage.mortgages)[0]!;
+  const legacy: GameState = { ...withMortgage, mortgages: {} };
+  await h.db.updateTable('game_snapshots').set({ state: sql`${JSON.stringify(legacy)}::jsonb` })
+    .where('game_id', '=', id).where('revision', '=', legacy.revision).execute();
+
+  const turn = legacy.turn!;
+  const target = { kind: 'turn' as const, id: turn.turnId };
+  const mortgageCommand: GameCommand = { type: 'Mortgage', commandId: 'old-mortgage' as never,
+    actor: { kind: 'player', id: turn.playerId }, expected: { kind: 'target', target }, payload: { assetId } };
+  const mortgageNow = timestamp(T0 + 1_000);
+  const mortgageEntropy = entropy([1, 2, 3, 4]);
+  const mortgage = gameEngine.execute(upgradeState(legacy), mortgageCommand, { now: mortgageNow, entropy: mortgageEntropy });
+  if (mortgage.kind !== 'accepted') throw new Error(`Mortgage rejected: ${mortgage.error.code}`);
+
+  // This is the event/state shape an old core-7 server accepted before the same-turn lock existed.
+  const oldMortgageState: GameState = { ...mortgage.state, mortgages: {
+    ...mortgage.state.mortgages,
+    [assetId]: { ...mortgage.state.mortgages[assetId]!, lockedTurnId: null },
+  } };
+  const redeemCommand: GameCommand = { type: 'Redeem', commandId: 'old-redeem' as never,
+    actor: { kind: 'player', id: turn.playerId }, expected: { kind: 'target', target }, payload: { assetId } };
+  const redeemNow = timestamp(T0 + 2_000);
+  const redeemEntropy = entropy([5, 6, 7, 8]);
+  const redeem = gameEngine.execute(oldMortgageState, redeemCommand, { now: redeemNow, entropy: redeemEntropy });
+  if (redeem.kind !== 'accepted') throw new Error(`Legacy Redeem rejected: ${redeem.error.code}`);
+
+  const tail = [
+    { command: mortgageCommand, now: mortgageNow, entropy: mortgageEntropy, revision: mortgage.revision, events: mortgage.events },
+    { command: redeemCommand, now: redeemNow, entropy: redeemEntropy, revision: redeem.revision, events: redeem.events },
+  ];
+  await h.db.insertInto('game_log').values(tail.map(entry => ({ game_id: id, revision: entry.revision,
+    command_id: entry.command.commandId, entry: sql`${JSON.stringify(entry)}::jsonb` }))).execute();
   const before = await storedRows(id);
 
   const { manager, logger } = h.manager();

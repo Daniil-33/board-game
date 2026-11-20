@@ -15,7 +15,11 @@ A room SHALL be rebuilt from the snapshot with the highest revision for its game
 
 #### Scenario: No snapshot
 - **WHEN** a game in the lobby has log entries and no snapshot
-- **THEN** the restored state SHALL be deep-equal to the original
+- **THEN** the restored state SHALL be deep-equal to the original when its log uses the current rules version; if the log was written under an unsupported older rules version, the room SHALL fail with the replay error logged and all stored rows unchanged
+
+#### Scenario: Older-version log without a snapshot
+- **WHEN** a game has no snapshot and its genesis log was written under an unsupported older rules version
+- **THEN** the room SHALL be marked failed, the `UNSUPPORTED_RULES_VERSION` replay failure SHALL be logged, and stored game rows SHALL remain unchanged
 
 #### Scenario: New room
 - **WHEN** a room row exists with no log entries and the room is opened

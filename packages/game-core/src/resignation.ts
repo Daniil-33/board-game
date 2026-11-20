@@ -5,7 +5,7 @@ import type { GameCommand, GameEvent } from './engine.js';
 import { fail, ok, revisionGuard, type CommandRegistry } from './registry.js';
 import { removeSetupPlayer } from './setup.js';
 import { resignDuringPurchase } from './purchase-auction.js';
-import { resignDuringRent } from './rent.js';
+import { resignDuringRent, resignDuringCharge } from './rent.js';
 import { closeTurn, finishAuction } from './turns.js';
 
 /** Any active player may resign, independent of target ownership or deadline. */
@@ -51,6 +51,7 @@ export const resignationCommands: CommandRegistry = {
         eliminations: [...state.eliminations, {playerId, reason: 'resigned', at: context.now, creditorId: null}],
       }, playerId), playerId);
       next = resignDuringRent(next, playerId, winner !== null);
+      next = resignDuringCharge(next, playerId, winner !== null);
       const events: GameEvent[] = [{ type: 'PlayerResigned', payload: { playerId } } satisfies PlayerResignedEvent];
       events.push(...released.events);
       if (state.phase === 'playing') {

@@ -24,7 +24,7 @@
 
 ## 6. Server snapshot upgrade and recovery
 
-- [x] 6.1 Apply upgradeState to an older loaded snapshot before restoreSession. Add integration coverage for a core-7 prisoner plus mortgage that continues under core-8, a current-rule tail replayed after restart without a shutdown snapshot, and a diverging core-7 tail producing a logged failed room without row changes. Verify with server integration tests. (Spec: `server/recovery`.)
+- [x] 6.1 Apply upgradeState to every loaded snapshot before restoreSession. Add integration coverage for a core-7 prisoner plus mortgage that continues under core-8, a current-rule tail replayed after restart without a shutdown snapshot, a diverging core-7 tail after a core-7 snapshot producing a logged failed room without row changes, and a core-7 log-only room failing at genesis with rows unchanged. Verify with server integration tests. (Spec: `server/recovery`.)
 
 ## 7. Integration verification
 

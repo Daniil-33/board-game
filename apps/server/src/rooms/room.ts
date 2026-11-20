@@ -95,7 +95,7 @@ function changedMembers(previous: GameState, next: GameState): string[] | null {
 async function loadSession(gameId: string, deps: RoomDeps): Promise<Session> {
   const loaded = await deps.store.loadGame(gameId);
   try {
-    const snapshot = loaded.snapshot?.rulesVersion === 'core-7' ? upgradeState(loaded.snapshot) : loaded.snapshot;
+    const snapshot = loaded.snapshot ? upgradeState(loaded.snapshot) : undefined;
     return restoreSession(deps.engine, snapshot ?? genesis(), loaded.tail);
   } catch (error) {
     if (error instanceof ReplayDivergenceError || error instanceof InvariantViolationError) throw error;
