@@ -84,6 +84,7 @@
   },
   "elimination": {
     "title": "Eliminated",
+    "balance": "Balance: {balance}",
     "watching": "You can keep watching the game and use chat.",
     "continue": "Continue watching"
   },
@@ -224,6 +225,7 @@
   "debt_notices": {
     "debt_notices": "Debt notices",
     "debt_settlements": "Debt settlements",
+    "dismiss": "Got it",
     "liquidation": "Liquidation: {player}",
     "debt": "Owes {creditor} {debt}.",
     "payment_summary": "Raised {raised}. Paid {payment}.",
@@ -274,6 +276,7 @@
     "setup_player": "Rolling for turn order: {player}",
     "your_bonus_turn": "Your turn (bonus turn after a double)",
     "player_bonus_turn": "Turn: {player} (bonus turn after a double)",
+    "jail_attempt": "In jail · attempt {attempt} of {maxAttempts}",
     "connection_lost_detail": "The game continues, and timers keep running"
   },
   "turn_order": {
@@ -323,7 +326,8 @@
     }
   },
   "common": {
-    "room": "Room {roomId}",
+    "room_creator": "{creator}'s room",
+    "room_generic": "Room",
     "dismiss": "Dismiss",
     "dismiss_icon": "×",
     "players": "Players",

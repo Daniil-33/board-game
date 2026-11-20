@@ -6,6 +6,89 @@ import type { StateView, GameEvent } from '../packages/game-core/src/index';
 
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
+export async function assertJournalEntryBelowHeading(page: Page): Promise<void> {
+  const list = page.locator(sel('journal-list'));
+  const measure = async () => {
+    const heading = await page.locator('.journal-column h2').boundingBox();
+    const newest = await list.locator(sel('journal-entry')).last().boundingBox();
+    const visible = await list.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left + element.clientLeft,
+        top: rect.top + element.clientTop,
+        right: rect.left + element.clientLeft + element.clientWidth,
+        bottom: rect.top + element.clientTop + element.clientHeight,
+        scrollTop: element.scrollTop,
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      };
+    });
+    return { heading, newest, visible };
+  };
+  // Let resize and ResizeObserver work settle after viewport changes before
+  // checking the final row's unclipped box.
+  await expect.poll(async () => {
+    const { heading, newest, visible } = await measure();
+    return Boolean(heading && newest
+      && newest.y >= heading.y + heading.height - 1
+      && newest.y >= visible.top - 1
+      && newest.y + newest.height <= visible.bottom + 1
+      && newest.x >= visible.left - 1
+      && newest.x + newest.width <= visible.right + 1);
+  }, { timeout: 10_000 }).toBe(true);
+  const { heading, newest, visible } = await measure();
+  expect(heading, 'journal heading').not.toBeNull();
+  expect(newest, 'newest journal entry').not.toBeNull();
+  // Playwright boxes retain fractions while clientWidth/clientHeight are integer CSS pixels.
+  const rounding = 1;
+  expect(newest!.y, 'newest journal entry starts below the heading').toBeGreaterThanOrEqual(heading!.y + heading!.height - rounding);
+  expect(newest!.y, 'newest journal entry is inside visible list top edge').toBeGreaterThanOrEqual(visible.top - rounding);
+  expect(newest!.y + newest!.height, `newest journal entry is fully inside visible list bottom edge: entry=${JSON.stringify(newest)} list=${JSON.stringify(visible)}`).toBeLessThanOrEqual(visible.bottom + rounding);
+  expect(newest!.x, 'newest journal entry is inside visible list left edge').toBeGreaterThanOrEqual(visible.left - rounding);
+  expect(newest!.x + newest!.width, 'newest journal entry is inside visible list right edge').toBeLessThanOrEqual(visible.right + rounding);
+}
+
+export async function assertBoardBannerGeometry(page: Page): Promise<void> {
+  const canvas = page.locator(sel('board-canvas'));
+  let measuredSnapshot: { size: number; bounds: { x: number; y: number; width: number; height: number } } | null = null;
+  await expect.poll(async () => {
+    measuredSnapshot = await canvas.evaluate(element => {
+      const canvas = element as HTMLCanvasElement;
+      const raw = canvas.dataset.bannerBounds;
+      const size = Number(canvas.dataset.boardSize);
+      if (!raw || !Number.isFinite(size)) return null;
+      try { return { size, bounds: JSON.parse(raw) as { x: number; y: number; width: number; height: number } }; }
+      catch { return null; }
+    });
+    return measuredSnapshot;
+  }, { timeout: 10_000 }).not.toBeNull();
+  const canvasBox = await canvas.boundingBox();
+  const measured = measuredSnapshot!;
+  expect(canvasBox).not.toBeNull();
+  const scale = canvasBox!.width / measured.size;
+  const banner = {
+    x: canvasBox!.x + measured.bounds.x * scale,
+    y: canvasBox!.y + measured.bounds.y * scale,
+    width: measured.bounds.width * scale,
+    height: measured.bounds.height * scale,
+  };
+  const cell = measured.size / 11;
+  const interior = {
+    x: canvasBox!.x + cell * scale,
+    y: canvasBox!.y + cell * scale,
+    right: canvasBox!.x + (measured.size - cell) * scale,
+    bottom: canvasBox!.y + (measured.size - cell) * scale,
+  };
+  expect(banner.x, 'measured banner left edge is inside the board interior').toBeGreaterThanOrEqual(interior.x);
+  expect(banner.x + banner.width, 'measured banner right edge is inside the board interior').toBeLessThanOrEqual(interior.right);
+  expect(banner.y, 'measured banner top edge is inside the board interior').toBeGreaterThanOrEqual(interior.y);
+  expect(banner.y + banner.height, 'measured banner bottom edge is inside the board interior').toBeLessThanOrEqual(interior.bottom);
+  const journal = await page.locator('.journal-column').boundingBox();
+  expect(journal).not.toBeNull();
+  const overlapsJournal = banner.x < journal!.x + journal!.width && banner.x + banner.width > journal!.x
+    && banner.y < journal!.y + journal!.height && banner.y + banner.height > journal!.y;
+  expect(overlapsJournal, `measured banner ${JSON.stringify(banner)} intersects journal ${JSON.stringify(journal)}`).toBe(false);
+}
 /** Assert dark header text keeps WCAG AA contrast against every solid stop of its light gradient. */
 export async function expectLightInkContrast(text: Locator, background = text): Promise<void> {
   const foreground = await text.evaluate(element => getComputedStyle(element).color);
@@ -175,9 +258,10 @@ export async function createRoom(host: Actor, code?: string): Promise<string> {
   await expect(host.page.locator(sel('screen-room'))).toBeVisible();
   await expect.poll(() => host.view?.phase).toBe('lobby');
   await expect(host.page.locator(sel('room-title'))).toHaveRole('heading');
-  await expect(host.page.locator(sel('room-title'))).toHaveText(/^Комната r_/);
+  const nickname = await host.page.evaluate(() => JSON.parse(localStorage.getItem('game.guest')!).nickname as string);
+  await expect(host.page.locator(sel('room-title'))).toHaveText(`Комната ${nickname}`);
   await captureScreens(host.page, 'room');
-  return (await host.page.locator(sel('room-title')).innerText()).replace('Комната ', '');
+  return await host.page.evaluate(() => JSON.parse(localStorage.getItem('game.room')!).roomId as string);
 }
 export async function join(actor: Actor, roomId: string, code?: string): Promise<void> {
   await actor.page.locator(sel('refresh')).click();

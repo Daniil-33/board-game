@@ -61,6 +61,17 @@ describe('game presentation', () => {
     header.unmount();
   });
 
+  it('shows the active jailed player’s next release attempt to them and observers', () => {
+    const view = playingView(['a', 'b']);
+    const jailed = { ...view, jail: { [pid('a')]: { attemptsUsed: 1 } } };
+    const props = { view: jailed, now, connected: true, pending: [], nameOf, colorOf: () => '', messages: [], problem: null, fatal: null };
+    const prisoner = mount(Hud, { props: { ...props, me: pid('a') } });
+    const observer = mount(Hud, { props: { ...props, me: pid('b') } });
+    expect(prisoner.get(hook('jail-attempt-status')).text()).toBe('В тюрьме · попытка 2 из 3');
+    expect(observer.get(hook('jail-attempt-status')).text()).toBe('В тюрьме · попытка 2 из 3');
+    prisoner.unmount(); observer.unmount();
+  });
+
   it('makes the available roll or end turn primary and preserves disabled reasons', async () => {
     const view = playingView(['a', 'b']);
     const context = ref<ActionContext>({ view, me: pid('a'), now, connected: true, pending: [] });

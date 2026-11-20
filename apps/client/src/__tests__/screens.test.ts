@@ -114,6 +114,24 @@ describe('LobbyScreen', () => {
     expect(wrapper.text()).not.toMatch(/leave/i);
   });
 
+  it('keeps locked room options distinguishable when the creator nickname is the same', async () => {
+    const rooms = [
+      { ...room([['a', 'Alice'], ['b', 'Bob']], 'a', 'r1'), locked: true },
+      { ...room([['a', 'Alice'], ['c', 'Charlie']], 'a', 'r2'), locked: true },
+    ];
+    const h = harness({ stored: storedSession(), route: call => (call.method === 'GET' ? { body: { rooms } } : undefined) });
+    const wrapper = mount(LobbyScreen, pageOptions(h));
+    await flushPromises();
+    expect(h.client.lobby.rooms).toHaveLength(2);
+    await wrapper.get('[data-testid="join-by-code"]').trigger('click');
+    await flushPromises();
+    expect(body.find('[data-testid="join-form"]').exists()).toBe(true);
+    const options = body.findAll('[data-testid="locked-room"] option').map(option => option.text());
+    expect(options).toContain('Комната Alice · Alice, Bob');
+    expect(options).toContain('Комната Alice · Alice, Charlie');
+    wrapper.unmount();
+  });
+
   it('create: requests a room, shows the room view and connects to it', async () => {
     const h = harness({ stored: storedSession(), route: lobby });
     const wrapper = mount(App, provide(h));
@@ -208,6 +226,7 @@ describe('RoomScreen', () => {
     h.sockets.last().receive(welcome(lobbyView(['a'])));
     await flushPromises();
     expect(names(wrapper)).toEqual(['Alice']);
+    expect(wrapper.get('[data-testid="room-title"]').text()).toBe('Комната Alice');
     expect(wrapper.findAll('[data-testid="empty-seat"]')).toHaveLength(5);
     expect(wrapper.text()).toContain('Ждём второго игрока.');
     expect(start(wrapper).exists()).toBe(true);

@@ -19,7 +19,7 @@ watch(eliminated, value => { if (value) open.value = true; }, { immediate: true 
 <template>
   <ResponsiveDialog v-if="eliminated" v-model:open="open" :title="t('elimination.title')" :dismissible="true" wide>
     <section class="elimination-screen" data-testid="elimination-screen">
-      <div class="elimination-hero" :style="{ '--seat-color': `var(--player-${seat})` }"><PlayerAvatar :name="playerName" /><div><strong>{{ playerName }}</strong><p class="warn-box" data-testid="elimination-message">{{ message }}</p><small v-if="me && view.balances[me] !== undefined">{{ formatMoney(view.balances[me]!) }}</small></div></div>
+      <div class="elimination-hero" :style="{ '--seat-color': `var(--player-${seat})` }"><PlayerAvatar :name="playerName" /><div><strong>{{ playerName }}</strong><p class="warn-box" data-testid="elimination-message">{{ message }}</p><small v-if="me && view.balances[me] !== undefined" data-testid="elimination-balance">{{ t('elimination.balance', { balance: formatMoney(view.balances[me]!) }) }}</small></div></div>
       <p>{{ t('elimination.watching') }}</p>
       <Button data-testid="continue-watching" variant="primary" @click="open = false">{{ t('elimination.continue') }}</Button>
     </section>

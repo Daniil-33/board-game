@@ -1,15 +1,31 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { Button } from '../../shared/ui/index';
 import { formatMoney } from '../../shared/lib/index';
 
 import { t } from '../../shared/i18n/index';
 import type { GeneratedBoard } from '@game/game-core';
 import { assetName, liquidationStepText, type DebtNotice } from '../../entities/game/index';
-defineProps<{ notices: readonly DebtNotice[]; nameOf: (id: string) => string; board?: GeneratedBoard | null }>();
+const props = withDefaults(defineProps<{
+  notices: readonly DebtNotice[];
+  activeNoticeIndex?: number | null;
+  variant?: 'overlay' | 'history';
+  nameOf: (id: string) => string;
+  board?: GeneratedBoard | null;
+}>(), { variant: 'history' });
+const emit = defineEmits<{ dismiss: [] }>();
+const displayedNotices = computed(() => {
+  if (props.variant === 'history') return props.notices;
+  const index = props.activeNoticeIndex;
+  return index === null || index === undefined || props.notices[index] === undefined ? [] : [props.notices[index]!];
+});
 </script>
 <template>
-  <section v-if="notices.length" class="debt-notices" :aria-label="t('debt_notices.debt_notices')" data-testid="debt-notices">
+  <section v-if="displayedNotices.length" :class="['debt-notices', `debt-notices--${variant}`]"
+    :aria-label="t('debt_notices.debt_notices')"
+    :data-testid="variant === 'overlay' ? 'current-debt-notice' : 'debt-notices'">
     <h3>{{ t('debt_notices.debt_settlements') }}</h3>
-    <article v-for="(notice, index) in notices" :key="index" :data-testid="notice.kind">
+    <article v-for="(notice, index) in displayedNotices" :key="index" :data-testid="notice.kind">
       <template v-if="notice.kind === 'liquidation'">
         <h4 data-testid="debt-notice-title">{{ t('debt_notices.liquidation', { player: nameOf(notice.payerId) }) }}</h4>
         <p data-testid="liquidation-debt">{{ t('debt_notices.debt', { creditor: nameOf(notice.creditorId), debt: formatMoney(notice.debt) }) }}</p>
@@ -25,6 +41,9 @@ defineProps<{ notices: readonly DebtNotice[]; nameOf: (id: string) => string; bo
         <p data-testid="bankruptcy-assets">{{ notice.assetIds.length ? t('debt_notices.freed_assets', { assets: notice.assetIds.map(id => assetName(board, id)).join(', ') }) : t('debt_notices.freed_assets_empty') }}</p>
       </template>
     </article>
+    <Button v-if="variant === 'overlay'" data-testid="debt-notice-dismiss" @click="emit('dismiss')">
+      {{ t('debt_notices.dismiss') }}
+    </Button>
   </section>
 </template>
 
@@ -34,4 +53,5 @@ defineProps<{ notices: readonly DebtNotice[]; nameOf: (id: string) => string; bo
 .debt-notices article { display: grid; gap: var(--space-2); padding: var(--space-3); border-radius: var(--design-radius-lg); background: var(--surface-1); }
 .debt-notices ol { display: grid; gap: var(--space-1); margin: 0; padding-inline-start: var(--space-5); }
 .debt-notices li { padding-inline-start: var(--space-1); }
+.debt-notices--history { max-height: 220px; overflow: auto; scrollbar-color: var(--border-strong) var(--bg-deep); scrollbar-width: thin; }
 </style>

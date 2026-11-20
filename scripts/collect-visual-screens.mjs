@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -11,14 +11,21 @@ const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence/TASK-vd-final-evid
 const out = process.argv[3] ?? resolve(evidenceRoot, 'pairs');
 const captureRoot = resolve(evidenceRoot, 'screens');
 const checkoutHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'elimination', 'game-over']);
+const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'liquidation-next-turn', 'elimination', 'game-over']);
+const singleViewportScreens = new Map([
+  ['chat-rejection', ['desktop']],
+  ['chat-rejection-two', ['desktop']],
+  ['chat-rejection-two-scrolled', ['desktop']],
+  ['chat-rejection-two-mobile', ['mobile']],
+]);
 const provenance = new Map();
 function readManifest(screen) {
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
   const manifestPath = resolve(captureRoot, captureSet, `capture-manifest-${screen}.json`);
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const requiredViewports = singleViewportScreens.get(screen) ?? ['desktop', 'mobile'];
   if (manifest.screen !== screen || !Array.isArray(manifest.viewports)
-    || !manifest.viewports.includes('desktop') || !manifest.viewports.includes('mobile')) {
+    || !requiredViewports.every(viewport => manifest.viewports.includes(viewport))) {
     throw new Error(`Invalid capture provenance for ${screen}`);
   }
   if (manifest.producerHead !== checkoutHead) {
@@ -66,10 +73,16 @@ const pairs = [
   ['reconnect-banner-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 frame for mobile'],
   ['liquidation-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Automatic liquidation summary'],
   ['liquidation-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary; nearest My Assets frame'],
+  ['liquidation-next-turn-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Debt history after the next turn starts; overlay auto-hidden'],
+  ['liquidation-next-turn-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Debt history after the next turn starts; nearest My Assets frame'],
   ['elimination-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer; nearest game frame'],
   ['elimination-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer; nearest mobile board frame'],
   ['game-over-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-10-итоги-партии.png', 'Game over'],
   ['game-over-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Game over; nearest mobile game frame'],
+  ['chat-rejection-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Single long RATE_LIMITED rejection in the bounded desktop journal row'],
+  ['chat-rejection-two-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'First of two real RATE_LIMITED rejections in the bounded journal scroll region'],
+  ['chat-rejection-two-scrolled-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Second rejection reason and message after scrolling the bounded journal region'],
+  ['chat-rejection-two-mobile-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-05-mobile-журнал-и-чат-copy.png', 'Two stacked RATE_LIMITED rejections; mobile flow has no desktop containment rules'],
 ].map(([name, designSource, description]) => {
   const viewport = name.endsWith('-mobile') ? 'mobile' : 'desktop';
   const screen = name.replace(/-(desktop|mobile)$/, '');
@@ -152,14 +165,13 @@ const indexReadme = [
   '',
   'The populated lobby capture shows an open room and a game in progress, both created by other actors before the viewer refreshed the list. The purchase pair is captured from its decider with a separate observer pair; the auction pair is captured from the current responding bidder.',
   '',
-  '## Known defects',
+  '## Fixed in this task',
   '',
-  'The Team Lead assigned these known visual defects to TASK-vd-layout-polish. They are not fixed in this evidence set:',
+  'TASK-vd-layout-polish fixes the assigned presentation defects: rent and debt surfaces stay visible on desktop, jail attempt progress appears in the turn header, the board caption clears the journal, room names use a creator nickname or neutral label, and elimination balance is labeled.',
   '',
-  '- At 1440×900, rent/debt notices render below the board.',
-  '- Jail status is not visible; its caption is hidden behind the journal.',
-  '- Room names display raw room IDs.',
-  '- The elimination balance has no label.',
+  '- **TL-approved addition:** desktop side columns stay within the viewport below the top bar. My Assets scrolls internally with keyboard focus and a visible token-colored scrollbar; Players uses the same containment when its roster overflows. Mobile layout is unchanged.',
+  '- The liquidation fixture asserts that the page does not scroll while My Assets does. A second-turn-after-liquidation capture confirms the overlay auto-hides while debt history remains readable.',
+  '- **TL-approved addition (RVW-010, S1):** multiple chat rejections share one bounded desktop journal scroll region. The exact-head evidence captures each of two real RATE_LIMITED messages at its scroll position and both stacked messages in the unchanged mobile journal flow.',
   '',
   '## Reproduction',
   '',
@@ -174,4 +186,14 @@ const rootIndexReadme = rootLinkPrefix
   ? indexReadme.replace(/\]\(\.\//g, `](./${rootLinkPrefix}/`)
   : indexReadme;
 writeFileSync(resolve(evidenceRoot, 'README.md'), rootIndexReadme);
+
+for (const indexPath of [resolve(out, 'README.md'), resolve(evidenceRoot, 'README.md')]) {
+  const markdown = readFileSync(indexPath, 'utf8');
+  const missing = [...markdown.matchAll(/\]\(([^)]+)\)/g)]
+    .map(([, target]) => target)
+    .filter(target => !/^(?:https?:|#)/.test(target))
+    .map(target => resolve(dirname(indexPath), decodeURIComponent(target.split('#')[0])))
+    .filter(target => !existsSync(target));
+  if (missing.length) throw new Error(`Broken local links in ${indexPath}:\n${[...new Set(missing)].join('\n')}`);
+}
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);

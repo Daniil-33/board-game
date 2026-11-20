@@ -7,7 +7,7 @@ the task branch. Build disposable task-local stacks from the committed task
 head; do not reuse staging or another task's stack. The primary stack captures
 the lobby, room, game, purchase, auction and reconnect states. The fixture
 stack captures the asset card, rent shortfall, build-quota toast, liquidation,
-elimination and game-over states.
+the second turn after liquidation, elimination and game-over states.
 
 ```sh
 TASK_SOURCE=$PWD
@@ -41,10 +41,11 @@ E2E_RECONNECT_STOP_COMMAND="TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD
 E2E_RESTART_COMMAND="TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence start server"
 E2E_WEB_LOGS_COMMAND="TASK_NETWORK=vd-final-evidence-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence logs --no-color web"
 E2E_FIXTURE_SQL_COMMAND="TASK_NETWORK=vd-final-evidence-fixtures-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f docker-compose.fixtures.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence-fixtures exec -T -e PGOPTIONS=-cdefault_transaction_read_only=on db psql -U game -d game -At"
-export TASK_SOURCE TASK_RUNNER TASK_EVIDENCE TASK_HEAD E2E_RECONNECT_STOP_COMMAND E2E_RESTART_COMMAND E2E_WEB_LOGS_COMMAND E2E_FIXTURE_SQL_COMMAND
+E2E_FIXTURE_RESTART_COMMAND="TASK_NETWORK=vd-final-evidence-fixtures-net POSTGRES_PASSWORD=local-final-evidence docker compose -f docker-compose.yml -f docker-compose.fixtures.yml -f /tmp/vd-final-evidence-network.yml -p vd-final-evidence-fixtures restart server"
+export TASK_SOURCE TASK_RUNNER TASK_EVIDENCE TASK_HEAD E2E_RECONNECT_STOP_COMMAND E2E_RESTART_COMMAND E2E_WEB_LOGS_COMMAND E2E_FIXTURE_SQL_COMMAND E2E_FIXTURE_RESTART_COMMAND
 
 sg docker -c 'docker run --rm --network host --group-add 111 \
-  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
+  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_SOURCE/apps/client/node_modules":/workspace/apps/client/node_modules -v "$TASK_EVIDENCE":/evidence \
   -v /usr/bin/docker:/usr/bin/docker -v /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/vd-final-evidence-network.yml:/tmp/vd-final-evidence-network.yml \
   -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
   -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 \
@@ -55,7 +56,7 @@ sg docker -c 'docker run --rm --network host --group-add 111 \
   ./node_modules/.bin/playwright test e2e/game-layout.spec.ts e2e/compose.spec.ts --workers=1'
 
 sg docker -c 'docker run --rm --network host --group-add 111 \
-  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
+  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_SOURCE/apps/client/node_modules":/workspace/apps/client/node_modules -v "$TASK_EVIDENCE":/evidence \
   -v /usr/bin/docker:/usr/bin/docker -v /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/vd-final-evidence-network.yml:/tmp/vd-final-evidence-network.yml \
   -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
   -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 -e E2E_DETERMINISTIC=1 \
@@ -65,12 +66,12 @@ sg docker -c 'docker run --rm --network host --group-add 111 \
   ./node_modules/.bin/playwright test e2e/compose.spec.ts --grep "seed 6689" --workers=1'
 
 sg docker -c 'docker run --rm --network host --group-add 111 \
-  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_EVIDENCE":/evidence \
+  -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_SOURCE/apps/client/node_modules":/workspace/apps/client/node_modules -v "$TASK_EVIDENCE":/evidence \
   -v /usr/bin/docker:/usr/bin/docker -v /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/vd-final-evidence-network.yml:/tmp/vd-final-evidence-network.yml \
   -w /workspace -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
   -e GIT_CONFIG_VALUE_0=/workspace -e E2E_SCREEN_EVIDENCE=1 \
   -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app-fixtures \
-  -e E2E_FIXTURES=1 -e E2E_BASE_URL=http://127.0.0.1:8084 -e E2E_FIXTURE_SQL_COMMAND \
+  -e E2E_FIXTURES=1 -e E2E_BASE_URL=http://127.0.0.1:8084 -e E2E_FIXTURE_SQL_COMMAND -e E2E_FIXTURE_RESTART_COMMAND \
   mcr.microsoft.com/playwright:v1.58.2-noble \
   ./node_modules/.bin/playwright test e2e/stage4.spec.ts e2e/stage5.spec.ts --workers=1'
 

@@ -3,7 +3,7 @@ import { AUCTION_RESPONSE_MS, CONTINUATION_MS } from '../packages/game-core/src/
 import playwrightConfig from '../playwright.config';
 import { execFileSync } from 'node:child_process';
 import { cellRect } from '../apps/client/src/widgets/board/layout';
-import { test, expect, sel, createRoom, join, start, setup, active, action, resign, waitGameReady, captureScreens } from './helpers';
+import { test, expect, sel, createRoom, join, start, setup, active, action, resign, waitGameReady, captureScreens, assertBoardBannerGeometry, assertJournalEntryBelowHeading } from './helpers';
 
 test('three guests: setup, movement, reload, server restart and resignation to winner', async ({ actors }, info) => {
   test.skip(process.env['E2E_DETERMINISTIC'] === '1', 'Recovery uses production CSPRNG');
@@ -180,8 +180,17 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
     expect(prisoner.view!.jail[prisoner.id]).toEqual({ attemptsUsed: 1 });
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailAttemptFailed']);
     expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
-    await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
+    await prisoner.page.setViewportSize({ width: 1440, height: 900 });
+    await assertBoardBannerGeometry(prisoner.page);
     await captureScreens(prisoner.page, 'jail-attempt-status');
+    await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
+    await expect(prisoner.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
+    const observer = players.find(player => player !== prisoner)!;
+    await expect(observer.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
+    for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+      await prisoner.page.setViewportSize({ width, height });
+      await assertJournalEntryBelowHeading(prisoner.page);
+    }
   } else {
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
     expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });
@@ -285,6 +294,14 @@ async function syncToActor(players: import('./helpers').Actor[], actor: import('
 
 async function panels(players: import('./helpers').Actor[]): Promise<void> {
   for (const p of players) {
+    for (const [selector, heading] of [['#game-panel-assets', 'game-panel-assets-heading'], ['.roster-column', 'game-panel-players-heading']] as const) {
+      const region = p.page.locator(selector);
+      await expect(region).toHaveAttribute('role', 'region');
+      await expect(region).toHaveAttribute('aria-labelledby', heading);
+      const overflows = await region.evaluate(element => element.scrollHeight > element.clientHeight + 1);
+      if (overflows) await expect(region).toHaveAttribute('tabindex', '0');
+      else await expect(region).not.toHaveAttribute('tabindex', '0');
+    }
     for (const player of p.view!.players) {
       const name = `Player ${players.findIndex(a => a.id === player.id) + 1}`;
       const row = p.page.locator(`${sel('player-balance')}[data-player-id="${player.id}"]`);

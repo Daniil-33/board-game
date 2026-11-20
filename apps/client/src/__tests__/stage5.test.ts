@@ -328,6 +328,15 @@ describe('debt notices', () => {
     expect(empty.get('[data-testid="bankruptcy-assets"]').text()).toBe('Освобождённых активов нет');
     expect(mount(DebtNotices, { props: { notices: [], nameOf } }).find('[data-testid="debt-notices"]').exists()).toBe(false);
   });
+
+  it('renders only the active notice in the overlay and emits acknowledgment', async () => {
+    const notices = debtNotices([liquidation(), rentPaid()]);
+    const w = mount(DebtNotices, { props: { notices, activeNoticeIndex: 0, variant: 'overlay', nameOf } });
+    expect(w.findAll('[data-testid="liquidation"]')).toHaveLength(1);
+    expect(w.find('[data-testid="debt-notices"]').exists()).toBe(false);
+    await w.get('[data-testid="debt-notice-dismiss"]').trigger('click');
+    expect(w.emitted('dismiss')).toHaveLength(1);
+  });
 });
 
 describe('debt notices in the room session', () => {
@@ -338,7 +347,9 @@ describe('debt notices in the room session', () => {
     h.sockets.last().receive(welcome(v));
     const next = (n: number): StateView => ({ ...v, revision: (v.revision + n) as StateView['revision'] });
     h.sockets.last().receive(update(next(1), [liquidation(), rentPaid()]));
+    expect(h.client.game.activeNoticeIndex).toBe(0);
     h.sockets.last().receive(update(next(2), [{ type: 'TurnStarted', payload: { playerId: 'b' } }]));
+    expect(h.client.game.activeNoticeIndex).toBeNull();
     expect(h.client.game.notices.map(n => n.kind)).toEqual(['liquidation']);
     h.sockets.last().receive(update(next(2), [bankrupt()])); // stale revision: dropped
     expect(h.client.game.notices).toHaveLength(1);
@@ -347,9 +358,25 @@ describe('debt notices in the room session', () => {
     for (let i = 0; i < NOTICE_LIMIT + 5; i++) h.sockets.last().receive(update(next(4 + i), [bankrupt({ debt: (10 * i) as Money })]));
     expect(h.client.game.notices).toHaveLength(NOTICE_LIMIT);
     expect((h.client.game.notices.at(-1) as Extract<DebtNotice, { kind: 'bankruptcy' }>).debt).toBe(10 * (NOTICE_LIMIT + 4));
+    expect(h.client.game.activeNoticeIndex).toBe(NOTICE_LIMIT - 1);
+    h.client.dismissDebtNotice();
+    expect(h.client.game.activeNoticeIndex).toBeNull();
     await flushPromises();
     h.client.returnToLobby();
     expect(h.client.game.notices).toEqual([]);
+    expect(h.client.game.activeNoticeIndex).toBeNull();
+  });
+
+  it('keeps a newly created notice visible when its update also starts the following turn', () => {
+    const h = harness({ stored: storedSession(THREE) });
+    h.client.start(); h.sockets.last().open();
+    const s = owning(); const v = project(s);
+    h.sockets.last().receive(welcome(v));
+    const next = (n: number): StateView => ({ ...v, revision: (v.revision + n) as StateView['revision'] });
+    h.sockets.last().receive(update(next(1), [liquidation(), { type: 'TurnStarted', payload: { playerId: 'b' } }]));
+    expect(h.client.game.activeNoticeIndex).toBe(0);
+    h.sockets.last().receive(update(next(2), [{ type: 'TurnStarted', payload: { playerId: 'c' } }]));
+    expect(h.client.game.activeNoticeIndex).toBeNull();
   });
 
   it('shows a terminal bankruptcy on the game-over screen even though the update cancels animations', async () => {
@@ -392,10 +419,11 @@ describe('elimination and game over', () => {
 
   it('keeps the eliminated viewer on the live game with chat after dismissing the elimination sheet', async () => {
     const s = owning();
-    const view = project({ ...s, order: [pid('b'), pid('c')], eliminated: [pid('a')], purchase: { playerId: pid('b'), cell: 13, assetId: at(s, 13) }, eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
+    const view = project({ ...s, balances: { ...s.balances, [pid('a')]: 0 as Money }, order: [pid('b'), pid('c')], eliminated: [pid('a')], purchase: { playerId: pid('b'), cell: 13, assetId: at(s, 13) }, eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
     const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
     const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
     expect(document.querySelector('[data-testid="elimination-screen"]')?.textContent).toContain('Вы выбыли: вы сдались');
+    expect(document.querySelector('[data-testid="elimination-balance"]')?.textContent).toBe('Баланс: 0');
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-modal')).toBe('true');
     document.querySelector<HTMLElement>('[data-testid="continue-watching"]')!.click(); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');
