@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkInvariants } from '@game/game-core';
+import { checkInvariants, CURRENT_RULES_VERSION } from '@game/game-core';
 import { buildFixture, FIXTURE_NAMES } from '../test-fixtures.js';
 import { fixturesEnabled, readConfig } from '../main-config.js';
 import { readFile } from 'node:fs/promises';
@@ -10,7 +10,7 @@ it.each(FIXTURE_NAMES)('%s is deterministic and invariant checked for 2–6 gues
     const state = buildFixture(name, ids, 1767225600000);
     checkInvariants(state);
     expect(state).toEqual(buildFixture(name, ids, 1767225600000));
-    expect(state.rulesVersion).toBe('core-7');
+    expect(state.rulesVersion).toBe(CURRENT_RULES_VERSION);
     expect(() => checkInvariants({ ...state, houses: { unknown: 5 } })).toThrow();
   }
 });

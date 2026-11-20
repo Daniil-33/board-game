@@ -5,6 +5,7 @@ import type { GameState } from '../../state.js';
 import { pendingDeadlines } from '../../deadlines.js';
 import { DEFAULT_ENTROPY, cmd, ctx, player } from './fixtures.js';
 import { forceEntropy } from './dice.js';
+import { CURRENT_RULES_VERSION } from '../../lifecycle.js';
 
 export const T0 = 1_767_225_600_000;
 
@@ -81,7 +82,7 @@ export class Game {
 /** CreateGame, AddPlayer for each id, StartGame: a game in phase `setup`. */
 export function setupGame(ids: readonly string[], seed = 42): Game {
   const g = new Game();
-  g.ok(cmd('CreateGame', { seed, rulesVersion: 'core-7' }, { rev: 0 }));
+  g.ok(cmd('CreateGame', { seed, rulesVersion: CURRENT_RULES_VERSION }, { rev: 0 }));
   for (const id of ids) g.ok(cmd('AddPlayer', { playerId: id }, { rev: g.state.revision }));
   g.ok(cmd('StartGame', null, { rev: g.state.revision }));
   return g;

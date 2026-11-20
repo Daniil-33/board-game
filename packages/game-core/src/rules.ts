@@ -1,5 +1,5 @@
 import { mortgageCommands } from './mortgage.js';
-import { rentCommands } from './rent.js';
+import { rentCommands, chargeCommands } from './rent.js';
 import { houseCommands } from './houses.js';
 import { purchaseAuctionCommands, auctionTimeout } from './purchase-auction.js';
 import type { CommandRegistry } from './registry.js';
@@ -29,6 +29,7 @@ const timeoutCommands: CommandRegistry = {
 export const gameCommands: CommandRegistry = Object.freeze({
   ...lifecycleCommands,
   ...rentCommands,
+  ...chargeCommands,
   ...houseCommands,
   ...mortgageCommands,
   ...resignationCommands,

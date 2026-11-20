@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-20
+goal: Implement the accepted TASK-s6-core-payments handoff and prove
+  deterministic replay and stored-room recovery.

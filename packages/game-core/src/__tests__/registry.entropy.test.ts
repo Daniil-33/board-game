@@ -5,6 +5,7 @@ import { gameEngine } from '../rules.js';
 import { genesis } from '../state.js';
 import { entropy } from '../types.js';
 import { cmd, ctx, lobbyState, deepFreeze } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 const E1 = entropy([1, 2, 3, 4]);
 const E2 = entropy([1, 2, 3, 5]);
@@ -45,7 +46,7 @@ describe('entropy absorption in the engine', () => {
   });
 
   it('CreateGame absorbs entropy before generating the board', () => {
-    const c = cmd('CreateGame', { seed: 7, rulesVersion: 'core-7' }, { rev: 0 });
+    const c = cmd('CreateGame', { seed: 7, rulesVersion: CURRENT_RULES_VERSION }, { rev: 0 });
     const r1 = gameEngine.execute(genesis(), c, ctx(undefined, E1));
     const r2 = gameEngine.execute(genesis(), c, ctx(undefined, E2));
     expect(r1.kind).toBe('accepted');

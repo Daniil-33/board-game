@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { gameEngine, nextBidAmount, checkInvariants, projectState, projectEvents, replay, restoreSession, pendingDeadlines, timestamp, type GameState, type Money, type GameCommand } from '../index.js';
 import { playingGame, types, type Game } from './helpers/game.js';
 import { cmd, ctx, player, pid, deepFreeze } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 function turnCmd(g: Game, type: string, payload: unknown = null, by = g.state.turn!.playerId): GameCommand {
   return cmd(type, payload, { actor: player(by), target: { kind: 'turn', id: g.state.turn!.turnId } });
@@ -32,9 +33,9 @@ function reject(g: Game, c: GameCommand, code: string, at = g.now) {
 }
 
 describe('purchase commands and landing', () => {
-  it('initializes acquisition fields and supports core-7 only', () => {
+  it('initializes acquisition fields and supports the current rules version only', () => {
     const g = playingGame(['a','b']);
-    expect(g.state).toMatchObject({ owners: {}, purchase: null, auction: null, rulesVersion: 'core-7', turn: { pausedRemainingMs: null } });
+    expect(g.state).toMatchObject({ owners: {}, purchase: null, auction: null, rulesVersion: CURRENT_RULES_VERSION, turn: { pausedRemainingMs: null } });
   });
   it.each([[1,2,'monopoly'], [2,3,'logistics'], [6,6,'energy']] as const)('offers %s + %s landing on %s', (d1,d2,kind) => {
     const g = playingGame(['a','b']); const events = g.roll(d1,d2);

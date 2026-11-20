@@ -20,13 +20,13 @@ it.each(['Mortgage', 'Redeem'])('%s accepts exactly one bounded storable assetId
   expect(decodeClientFrame(JSON.stringify(base))).toMatchObject({ ok: false, error: { code: 'MALFORMED_FRAME' } });
 });
 
-it('round-trips core-7 mortgages, debts, bankruptcy and the final result unchanged', () => {
+it('round-trips current mortgages, debts, bankruptcy and the final result unchanged', () => {
   const eliminations = [
     { playerId: 'c', reason: 'resigned', at: 1767225600000, creditorId: null },
     { playerId: 'a', reason: 'bankrupt', at: 1767225700000, creditorId: 'b' },
   ];
   const finished = { ...view, phase: 'finished', winner: 'b', finishedAt: 1767225700000, eliminated: ['c', 'a'], eliminations,
-    mortgages: { a1: { advance: 30, lapsCompleted: 3, pending: ['b'], remainingLaps: 5 } },
+    mortgages: { a1: { advance: 30, lapsCompleted: 3, pending: ['b'], lockedTurnId: null, remainingLaps: 5 } },
     result: { winner: 'b', finishedAt: 1767225700000, eliminations, finalBalances: { a: 0, b: 1510, c: 0 } } };
   const events = [
     { type: 'AssetMortgaged', payload: { playerId: 'a', assetId: 'a2', advance: 30, auto: true } },

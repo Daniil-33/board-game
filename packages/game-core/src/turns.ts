@@ -1,5 +1,5 @@
 import { processMortgageBoundary } from './mortgage.js';
-import { offerRent, settleRent } from './rent.js';
+import { offerRent, settleRent, settleCharge } from './rent.js';
 import { offerPurchase, openAuction, type PurchaseAuctionEvent, type FinishAuction } from './purchase-auction.js';
 import type { BalanceChanged } from './money.js';
 import type { PlayerId, Timestamp } from './types.js';
@@ -102,7 +102,12 @@ export function startPlay(state: GameState, order: readonly PlayerId[], now: Tim
 }
 
 /** Mandatory settlement before every turn closure. */
-function settleMandatory(state: GameState, now: Timestamp) { return settleRent(state, true, now); }
+function settleMandatory(state: GameState, now: Timestamp) {
+  const rent = settleRent(state, true, now);
+  if (rent.bankrupt) return rent;
+  const charge = settleCharge(rent.state, true, now);
+  return {state: charge.state, events: [...rent.events, ...charge.events], bankrupt: charge.bankrupt};
+}
 
 export function closeTurn(state: GameState, reason: TurnEndReason, now: Timestamp,
   resignation?: { readonly nextPlayer: PlayerId | null }): Step {
@@ -119,7 +124,7 @@ export function scheduleAfterSettlement(state: GameState, reason: TurnEndReason,
   if (reason === 'bankrupt' && state.order!.length === 1) {
     const winner = state.order![0]!;
     events.push({type:'GameEnded',payload:{winner,at:now,eliminations:state.eliminations,finalBalances:{...state.balances}}} satisfies import('./resignation.js').GameEndedEvent);
-    return {state:{...state,phase:'finished',winner,finishedAt:now,setup:null,order:null,turn:null,purchase:null,auction:null,rent:null},events};
+    return {state:{...state,phase:'finished',winner,finishedAt:now,setup:null,order:null,turn:null,purchase:null,auction:null,rent:null,charge:null},events};
   }
   if (resignation?.nextPlayer === null) return {state:{...state,turn:null},events};
   const boundary = processMortgageBoundary(state,turn.playerId);

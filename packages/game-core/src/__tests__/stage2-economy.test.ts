@@ -9,6 +9,7 @@ import { startingCapital, lapReward } from '../money.js';
 import { cmd, ctx, pid, player, deepFreeze } from './helpers/fixtures.js';
 import { playingGame, setupGame, types, Game } from './helpers/game.js';
 import type { Money } from '../types.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 function violation(state: GameState, name: string) {
   try {
     checkInvariants(state);
@@ -31,7 +32,7 @@ describe('starting economy', () => {
   });
   it('uses membership after a lobby departure and leaves rejected starts untouched', () => {
     const g = new Game();
-    g.ok(cmd('CreateGame', { seed: 1, rulesVersion: 'core-7' }));
+    g.ok(cmd('CreateGame', { seed: 1, rulesVersion: CURRENT_RULES_VERSION }));
     for (const id of ['a', 'b', 'c'])
       g.ok(cmd('AddPlayer', { playerId: id }, { rev: g.state.revision }));
     g.ok(cmd('LeaveLobby', { playerId: 'c' }, { rev: g.state.revision }));

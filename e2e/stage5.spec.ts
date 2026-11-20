@@ -35,7 +35,7 @@ async function sqlRow(sql: string): Promise<unknown[]> {
   return out.split('\n').filter(line => line.trim()).map(line => JSON.parse(line) as unknown);
 }
 
-test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ actors }, info) => {
+test('stage 5: mortgage, then redeem; second redeem is locked in the same turn', async ({ actors }, info) => {
   const players = await actors(3);
   await load(players, 'mortgage-expiry');
   const owner = await active(players);
@@ -43,7 +43,7 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   const [assetId] = Object.keys(start.mortgages) as [string];
   const cell = cellOf(start, assetId), adv = advance(cell.asset!.price), rent = q(cell.asset!.price * 5, 100);
   expect(start.owners[assetId]).toBe(owner.id);
-  expect(start.mortgages[assetId]).toEqual({ advance: adv, lapsCompleted: 7, pending: [owner.id], remainingLaps: 1 });
+  expect(start.mortgages[assetId]).toEqual({ advance: adv, lapsCompleted: 7, pending: [owner.id], remainingLaps: 1, lockedTurnId: null });
   await card(owner, cell.index);
   await Promise.all(players.filter(p => p !== owner).map(p => card(p, cell.index)));
   // The clients are checked in parallel to stay well inside the one turn window.
@@ -84,18 +84,18 @@ test('stage 5: mortgage, then redeem; rent drops to 0 and comes back', async ({ 
   await click(players, owner, 'mortgage');
   expect(same(players, 'AssetMortgaged')).toEqual({ playerId: owner.id, assetId, advance: adv, auto: false });
   await Promise.all(players.map(async p => {
-    expect(p.view!.mortgages).toEqual({ [assetId]: { advance: adv, lapsCompleted: 0, pending: start.order, remainingLaps: 8 } });
+    expect(p.view!.mortgages).toEqual({ [assetId]: { advance: adv, lapsCompleted: 0, pending: start.order, remainingLaps: 8, lockedTurnId: p.view!.turn!.turnId } });
     await expect(p.page.locator(sel('asset-mortgage-pending'))).toHaveText(start.order!.map(id => name(players, id)).join(', '));
   }));
   projected(start.balances);
   await cards(`В залоге: получено ${money(adv)}, осталось 8 кругов`, 0);
   await expect(mortgageButton).toBeDisabled();
 
-  inWindow(owner.view!, 'second redeem');
-  await click(players, owner, 'redeem');
-  for (const p of players) expect(p.view!.mortgages).toEqual({});
-  await balances(players, { ...start.balances, [owner.id]: start.balances[owner.id]! - adv });
-  await cards(null, rent);
+  await expect(redeemButton).toBeDisabled();
+  await expect(owner.page.locator(sel('redeem-reason'))).toHaveText('Этот залог можно выкупить в следующем ходу.');
+  for (const p of players) expect(p.view!.mortgages).toEqual({ [assetId]: { advance: adv, lapsCompleted: 0, pending: start.order, remainingLaps: 8, lockedTurnId: p.view!.turn!.turnId } });
+  projected(start.balances);
+  await cards(`В залоге: получено ${money(adv)}, осталось 8 кругов`, 0);
   await shoot(players, info, 'mortgage-redeem');
 });
 
@@ -187,7 +187,7 @@ for (const [fixture, expectedSteps] of Object.entries(LIQUIDATION)) {
       expect(p.view!.eliminated).toEqual(before.eliminated);
       expect(p.view!.houses).toEqual(houses);
       for (const s of steps.filter(s => s.kind === 'mortgage')) {
-        expect(p.view!.mortgages[s.assetId]).toEqual({ advance: s.amount, lapsCompleted: 0, pending: before.order, remainingLaps: 8 });
+        expect(p.view!.mortgages[s.assetId]).toEqual({ advance: s.amount, lapsCompleted: 0, pending: before.order, remainingLaps: 8, lockedTurnId: before.turn!.turnId });
         expect(p.events.find(e => e.event.type === 'AssetMortgaged' && (e.event.payload as Payload).assetId === s.assetId)!.event.payload)
           .toEqual({ playerId: payer.id, assetId: s.assetId, advance: s.amount, auto: true });
       }

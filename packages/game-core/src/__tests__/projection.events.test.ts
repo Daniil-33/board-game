@@ -5,13 +5,14 @@ import { gameEngine } from '../rules.js';
 import type { GameEvent } from '../engine.js';
 import { cmd, ctx, deepFreeze, pid } from './helpers/fixtures.js';
 import { setupGame } from './helpers/game.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 const SPECTATOR: Viewer = { kind: 'spectator' };
 
 function lifecycleEvents(): GameEvent[] {
   const s = createSession(gameEngine);
   const results = [
-    s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-7' }, { rev: 0 }), ctx()),
+    s.submit(cmd('CreateGame', { seed: 42, rulesVersion: CURRENT_RULES_VERSION }, { rev: 0 }), ctx()),
     s.submit(cmd('AddPlayer', { playerId: 'a' }, { rev: 1 }), ctx()),
     s.submit(cmd('AddPlayer', { playerId: 'b' }, { rev: 2 }), ctx()),
     s.submit(cmd('StartGame', null, { rev: 3 }), ctx()),

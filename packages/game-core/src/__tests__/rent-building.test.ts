@@ -4,6 +4,7 @@ import { offerRent } from '../rent.js';
 import { playingGame } from './helpers/game.js';
 import { cmd, ctx, pid, player, deepFreeze } from './helpers/fixtures.js';
 import { forceEntropy } from './helpers/dice.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 const q = (n: number, d = 1) => 10 * Math.floor(n / (10*d));
 function base() { return playingGame(['a','b','c']).state; }
 function command(s: GameState, type: string, payload: unknown = null, by = s.turn!.playerId) {
@@ -232,7 +233,7 @@ it('retains the shared seed-6689 Compose setup tie and three-double jail stream'
     const r=session.submit(c,ctx(undefined,entropy([word(),word(),word(),word()])));
     if(r.kind!=='accepted')throw new Error(r.error.code);return r.events;
   };
-  submit('CreateGame',{seed:6689,rulesVersion:'core-7'});submit('AddPlayer',{playerId:'a'});submit('AddPlayer',{playerId:'b'});submit('StartGame');
+  submit('CreateGame',{seed:6689,rulesVersion:CURRENT_RULES_VERSION});submit('AddPlayer',{playerId:'a'});submit('AddPlayer',{playerId:'b'});submit('StartGame');
   let rolls=0;while(session.state.setup){submit('RollForOrder');rolls++;}expect(rolls).toBe(4);
   for(const dice of [[1,1],[4,4],[6,6]]){
     const events=submit('RollDice');expect(events[0]!.payload).toMatchObject({dice});

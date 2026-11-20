@@ -31,7 +31,7 @@ export { Q } from './money.js';
 export type { RngState } from './rng.js';
 export { RNG_ALGORITHM, absorbEntropy, seedRng, isValidSeed, isWellFormedRng, nextUint32, nextIntInclusive } from './rng.js';
 
-export type { PurchaseDecision, AuctionState, GameState, Phase, PlayerState, SetupState, TurnState, TurnQuotas, JailEntry } from './state.js';
+export type { PurchaseDecision, AuctionState, GameState, Phase, PlayerState, SetupState, TurnState, TurnQuotas, JailEntry, BankCharge } from './state.js';
 export { genesis, MIN_PLAYERS, MAX_PLAYERS } from './state.js';
 
 export type { InvariantName } from './invariants.js';
@@ -56,7 +56,7 @@ export type {
   GameStartedEvent,
   LifecycleEvent,
 } from './lifecycle.js';
-export { CURRENT_RULES_VERSION, SUPPORTED_RULES_VERSIONS, lifecycleCommands } from './lifecycle.js';
+export { CURRENT_RULES_VERSION, SUPPORTED_RULES_VERSIONS, lifecycleCommands, upgradeState } from './lifecycle.js';
 
 export type { GeneratedBoard, BoardCell, BoardAsset, BoardGenerated, BoardGeneratedEvent, CellKind, LayoutCell, PlayerMovedEvent } from './board.js';
 export { CLASSIC_40 } from './board.js';
@@ -133,7 +133,8 @@ export { debitBalance } from './money.js';
 export type { RentSettlement } from './state.js';
 export { rentFor, rentQuotes, energyRentFor, rentTiers, isMortgaged } from './rent.js';
 export type { RentTier } from './rent.js';
-export type { RentQuote, RentEvent, RentDue, RentPaid, PayRentCommand } from './rent.js';
+export type { RentQuote, RentEvent, RentDue, RentPaid, PayRentCommand, ChargeEvent, ChargeDue, ChargePaid, PayChargeCommand } from './rent.js';
+export { openCharge } from './rent.js';
 export { buildLegality, saleLegality, houseCost, houseRefund } from './houses.js';
 export type { HouseErrorCode, HouseEvent, HouseBuilt, HouseSold, BuildHouseCommand, SellHouseCommand } from './houses.js';
 

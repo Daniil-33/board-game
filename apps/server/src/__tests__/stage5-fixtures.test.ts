@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { checkInvariants, entropy, gameEngine, timestamp, type GameCommand, type GameEvent, type GameState } from '@game/game-core';
+import { checkInvariants, CURRENT_RULES_VERSION, entropy, gameEngine, timestamp, type GameCommand, type GameEvent, type GameState } from '@game/game-core';
 import { buildFixture, STAGE5_FIXTURE_NAMES } from '../test-fixtures.js';
 
 const NOW = 1767225600000;
@@ -17,10 +17,10 @@ function run(state: GameState, type: string): { state: GameState; events: readon
 const steps = (events: readonly GameEvent[]) =>
   (events.find(e => e.type === 'LiquidationApplied')?.payload as { steps: { tier: number; kind: string; assetId: string }[] } | undefined)?.steps;
 
-it.each(STAGE5_FIXTURE_NAMES)('%s is a core-7 state for three guests', name => {
+it.each(STAGE5_FIXTURE_NAMES)('%s is a current-rules state for three guests', name => {
   const state = buildFixture(name, ids, NOW);
   checkInvariants(state);
-  expect(state.rulesVersion).toBe('core-7');
+  expect(state.rulesVersion).toBe(CURRENT_RULES_VERSION);
   expect(state.players.map(p => p.id)).toEqual(ids);
 });
 

@@ -6,6 +6,7 @@ import {
   isPlainData,
   pendingDeadlines,
   restoreSession,
+  upgradeState,
   type CommandId,
   type GameCommand,
   type GameState,
@@ -94,7 +95,8 @@ function changedMembers(previous: GameState, next: GameState): string[] | null {
 async function loadSession(gameId: string, deps: RoomDeps): Promise<Session> {
   const loaded = await deps.store.loadGame(gameId);
   try {
-    return restoreSession(deps.engine, loaded.snapshot ?? genesis(), loaded.tail);
+    const snapshot = loaded.snapshot?.rulesVersion === 'core-7' ? upgradeState(loaded.snapshot) : loaded.snapshot;
+    return restoreSession(deps.engine, snapshot ?? genesis(), loaded.tail);
   } catch (error) {
     if (error instanceof ReplayDivergenceError || error instanceof InvariantViolationError) throw error;
     throw new CorruptGameDataError(gameId, `it cannot be rebuilt: ${error instanceof Error ? error.message : String(error)}`, {

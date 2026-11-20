@@ -27,7 +27,7 @@ export type Visibility = 'public' | 'secret';
  */
 export const STATE_VISIBILITY = {
   mortgages: 'public', eliminations: 'public', finishedAt: 'public',
-  houses: 'public', rent: 'public', owners: 'public', purchase: 'public', auction: 'public',
+  houses: 'public', rent: 'public', charge: 'public', owners: 'public', purchase: 'public', auction: 'public',
   board: 'public', economy: 'public', balances: 'public',
   revision: 'public',
   rulesVersion: 'public',
@@ -44,11 +44,11 @@ export const STATE_VISIBILITY = {
 } as const satisfies Record<keyof GameState, Visibility>;
 
 type PublicStateKey = {
-  [K in keyof GameState]: (typeof STATE_VISIBILITY)[K] extends 'public' ? K : never;
+  [K in keyof GameState]-?: (typeof STATE_VISIBILITY)[K] extends 'public' ? K : never;
 }[keyof GameState];
 
 /** What a client may see of the game state. */
-export type StateView = { readonly [K in Exclude<PublicStateKey, 'mortgages'>]: GameState[K] } & { readonly rentQuotes: Readonly<Record<string, RentQuote>>;
+export type StateView = { readonly [K in Exclude<PublicStateKey, 'mortgages' | 'charge'>]: GameState[K] } & { readonly charge?: GameState['charge'] | undefined; readonly rentQuotes: Readonly<Record<string, RentQuote>>;
   readonly mortgages: Readonly<Record<string, import('./state.js').Mortgage & {readonly remainingLaps: number}>>;
   readonly result: {readonly winner: PlayerId; readonly finishedAt: import('./types.js').Timestamp; readonly eliminations: GameState['eliminations']; readonly finalBalances: GameState['balances']} | null;
 };
@@ -97,7 +97,7 @@ export function projectState(state: GameState, viewer: Viewer): StateView {
 export const EVENT_VISIBILITY = {
   LiquidationApplied: 'public', PlayerBankrupt: 'public',
   AssetMortgaged: 'public', AssetRedeemed: 'public', MortgageExpired: 'public', AssetsReleased: 'public',
-  RentDue: 'public', RentPaid: 'public', HouseBuilt: 'public', HouseSold: 'public',
+  RentDue: 'public', RentPaid: 'public', ChargeDue: 'public', ChargePaid: 'public', HouseBuilt: 'public', HouseSold: 'public',
   PurchaseOffered: 'public', AssetPurchased: 'public', AuctionStarted: 'public',
   AuctionBid: 'public', AuctionPassed: 'public', AuctionWon: 'public', AuctionEndedUnsold: 'public',
   TurnPaused: 'public', TurnResumed: 'public',
@@ -123,7 +123,7 @@ export const EVENT_VISIBILITY = {
 } as const satisfies Record<CoreEvent['type'], Visibility>;
 
 /** Every event type this rules version emits. */
-export type CoreEvent = DebtEvent | LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | HouseEvent | MortgageEvent;
+export type CoreEvent = DebtEvent | LifecycleEvent | SetupEvent | TurnEvent | ResignationEvent | RentEvent | import('./rent.js').ChargeEvent | HouseEvent | MortgageEvent;
 
 /** An event reached projection without a visibility classification: an engine defect. */
 export class UnclassifiedEventError extends Error {

@@ -81,7 +81,7 @@ export type PayRentCommand = GameCommand<null, 'PayRent'>;
 export function offerRent(state: GameState, diceSum: number): { state: GameState; events: GameEvent[] } {
   const payerId = state.turn!.playerId;
   const cell = state.board!.cells[state.positions[payerId]!]!;
-  if (!cell.asset || state.purchase || state.auction || state.rent) return { state, events: [] };
+  if (!cell.asset || state.purchase || state.auction || state.rent || state.charge) return { state, events: [] };
   const ownerId = state.owners[cell.asset.assetId];
   const amount = rentFor(state, cell.asset.assetId, diceSum);
   if (!ownerId || ownerId === payerId || amount === 0) return { state, events: [] };
@@ -92,8 +92,45 @@ export function offerRent(state: GameState, diceSum: number): { state: GameState
 export function settleRent(state: GameState, auto: boolean, now: Timestamp): DebtResult {
   if (!state.rent) return { state, events: [], bankrupt: false };
   const { payerId, ownerId, assetId, amount } = state.rent;
-  return settleDebt(state, {payerId, creditorId: ownerId, amount, cause: {kind: 'rent', assetId, auto}}, now);
+  return settleDebt(state, {payerId, creditor: {kind: 'player', id: ownerId}, amount, cause: {kind: 'rent', assetId, auto}}, now);
 }
+
+export type ChargeDue = GameEvent<{readonly payerId: PlayerId; readonly amount: Money; readonly cause: 'chance'}, 'ChargeDue'>;
+export type ChargePaid = GameEvent<{readonly payerId: PlayerId; readonly amount: Money; readonly auto: boolean}, 'ChargePaid'>;
+export type ChargeEvent = ChargeDue | ChargePaid;
+export type PayChargeCommand = GameCommand<null, 'PayCharge'>;
+
+/** Open a deterministic mandatory payment owed to the bank. */
+export function openCharge(state: GameState, amount: Money, cause: 'chance' = 'chance') {
+  if (state.phase !== 'playing' || !state.turn || state.rent || state.charge || !Number.isSafeInteger(amount) || amount <= 0 || amount % 10 !== 0) return { state, events: [] as GameEvent[] };
+  const charge = { payerId: state.turn.playerId, amount, cause } as const;
+  return { state: { ...state, charge }, events: [{type:'ChargeDue',payload:charge} satisfies ChargeDue] };
+}
+
+export function settleCharge(state: GameState, auto: boolean, now: Timestamp): DebtResult {
+  if (!state.charge) return {state, events: [], bankrupt: false};
+  const {payerId, amount, cause} = state.charge;
+  return settleDebt(state, {payerId, creditor: {kind: 'bank'}, amount, cause: {kind: cause, auto}}, now);
+}
+
+export const chargeCommands: CommandRegistry = {
+  PayCharge: {
+    guard: targetGuard('turn', s => s.turn?.turnId ?? null), allowedActors: ['player'], allowedPhases: ['playing'],
+    handle(state, command, context) {
+      if (command.payload !== null) return fail('INVALID_PAYLOAD', 'PayCharge requires null');
+      if (state.auction) return fail('AUCTION_IN_PROGRESS', 'Turn paused');
+      if (command.actor.kind !== 'player' || command.actor.id !== state.turn!.playerId) return fail('NOT_ACTIVE_PLAYER', 'Not your turn');
+      if (context.now >= state.turn!.deadline) return fail('DEADLINE_PASSED', 'Turn expired');
+      if (!state.charge) return fail('NO_CHARGE', 'No pending charge');
+      const result = settleCharge(state, false, context.now);
+      if (result.bankrupt) {
+        const closed = scheduleAfterSettlement(result.state, 'bankrupt', context.now, state.turn!, state.order!);
+        return ok(closed.state, [...result.events, ...closed.events]);
+      }
+      return ok(result.state, result.events);
+    },
+  },
+};
 /** Provisional R1/R2; ROADMAP decision is a merge gate. */
 export function resignDuringRent(state: GameState, playerId: PlayerId, terminal: boolean): GameState {
   return state.rent && (terminal || state.rent.payerId === playerId || state.rent.ownerId === playerId) ? { ...state, rent: null } : state;

@@ -6,7 +6,7 @@ import { isMortgaged, quantumRatio } from './rent.js';
 import { fail, ok, targetGuard, type CommandRegistry, type CommandSpec } from './registry.js';
 
 export type MortgageErrorCode = 'PHASE_NOT_ALLOWED' | 'AUCTION_IN_PROGRESS' | 'NOT_ACTIVE_PLAYER' |
-  'DECISION_PENDING' | 'RENT_PENDING' | 'NOT_AN_ASSET' | 'NOT_OWNER' |
+  'DECISION_PENDING' | 'RENT_PENDING' | 'PAYMENT_PENDING' | 'REDEEM_LOCKED' | 'NOT_AN_ASSET' | 'NOT_OWNER' |
   'ALREADY_MORTGAGED' | 'HAS_HOUSES' | 'NOT_MORTGAGED' | 'INSUFFICIENT_FUNDS';
 
 /** Q(50% price), shared with display and liquidation callers. */
@@ -18,6 +18,7 @@ function common(state: GameState, playerId: PlayerId, assetId: AssetId, redeem: 
   if (state.turn!.playerId !== playerId || state.eliminated.includes(playerId)) return 'NOT_ACTIVE_PLAYER';
   if (state.purchase) return 'DECISION_PENDING';
   if (redeem && state.rent) return 'RENT_PENDING';
+  if (redeem && state.charge) return 'PAYMENT_PENDING';
   if (!state.board!.cells.some(c => c.asset?.assetId === assetId)) return 'NOT_AN_ASSET';
   if (!Object.hasOwn(state.owners, assetId) || state.owners[assetId] !== playerId) return 'NOT_OWNER';
   return null;
@@ -31,6 +32,7 @@ export function mortgageLegality(state: GameState, playerId: PlayerId, assetId: 
 export function redeemLegality(state: GameState, playerId: PlayerId, assetId: AssetId): MortgageErrorCode | null {
   const error = common(state, playerId, assetId, true); if (error) return error;
   if (!isMortgaged(state, assetId)) return 'NOT_MORTGAGED';
+  if (state.mortgages[assetId]!.lockedTurnId === state.turn!.turnId) return 'REDEEM_LOCKED';
   if (state.balances[playerId]! < state.mortgages[assetId]!.advance) return 'INSUFFICIENT_FUNDS';
   return null;
 }
@@ -48,7 +50,7 @@ export function applyMortgage(state: GameState, playerId: PlayerId, assetId: Ass
   const balance = creditBalance(state.balances, playerId, advance, 'mortgage');
   const event: AssetMortgaged = {type: 'AssetMortgaged', payload: {playerId, assetId, advance, auto}};
   return {state: {...state, balances: balance.balances, mortgages: {...state.mortgages,
-    [assetId]: {advance, lapsCompleted: 0, pending: [...state.order!]}}}, events: [balance.event, event]};
+    [assetId]: {advance, lapsCompleted: 0, pending: [...state.order!], lockedTurnId: state.turn?.turnId ?? null}}}, events: [balance.event, event]};
 }
 
 export const mortgageCommands: CommandRegistry = Object.fromEntries(['Mortgage', 'Redeem'].map(type => [type, {

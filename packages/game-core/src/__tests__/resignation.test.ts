@@ -59,8 +59,8 @@ describe('LeaveLobby', () => {
     g.ok(cmd('StartGame', null, { rev: g.state.revision }));
     expect(g.state.phase).toBe('setup');
   });
-  it('supports core-7 only', () => {
-    expect(SUPPORTED_RULES_VERSIONS).toEqual(['core-7']);
+  it('supports the current rules version only', () => {
+    expect(SUPPORTED_RULES_VERSIONS).toEqual([CURRENT_RULES_VERSION]);
     for (const rulesVersion of ['core-1', 'core-2', 'unknown']) {
       const r = gameEngine.execute(genesis(), cmd('CreateGame', { seed: 1, rulesVersion }), ctx());
       expect(r.kind === 'rejected' && r.error.code).toBe('UNSUPPORTED_RULES_VERSION');

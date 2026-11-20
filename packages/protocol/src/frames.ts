@@ -22,7 +22,7 @@ import { CHAT_LIMITS, CHAT_REJECT_REASONS, MAX_CHAT_FRAME_TEXT } from './chat.js
  * System commands (`CreateGame`, `AddPlayer`, `LeaveLobby`, `StartGame`,
  * `Timeout`) are never accepted from a client.
  */
-export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem'] as const;
+export const CLIENT_COMMAND_TYPES = ['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'PayCharge', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem'] as const;
 export type ClientCommandType = (typeof CLIENT_COMMAND_TYPES)[number];
 
 // ---- Shared parts ----------------------------------------------------------

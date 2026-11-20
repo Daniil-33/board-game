@@ -5,6 +5,7 @@ import type { CommandId, Entropy, PlayerId, Revision } from '../../types.js';
 import { entropy, timestamp } from '../../types.js';
 import { genesis, type GameState } from '../../state.js';
 import { seedRng } from '../../rng.js';
+import { CURRENT_RULES_VERSION } from '../../lifecycle.js';
 
 export const SYSTEM: Actor = { kind: 'system' };
 export const player = (id: string): Actor => ({ kind: 'player', id: id as PlayerId });
@@ -44,7 +45,7 @@ export function lobbyState(rev = 3): GameState {
   return {
     ...genesis(),
     revision: rev as Revision,
-    rulesVersion: 'core-7',
+    rulesVersion: CURRENT_RULES_VERSION,
     phase: 'lobby',
     players: [{ id: pid('a') }, { id: pid('b') }],
     ...generateBoard(seedRng(99)),

@@ -92,7 +92,7 @@ function checkPhaseShape(state: GameState): void {
   if (!Array.isArray(state.eliminations) || state.eliminations.length !== state.eliminated.length) shape('eliminations must match eliminated');
   for (const [i, e] of state.eliminations.entries()) {
     if (!e || e.playerId !== state.eliminated[i] || !['resigned', 'bankrupt'].includes(e.reason) || !validTime(e.at) ||
-      (e.reason === 'resigned' ? e.creditorId !== null : e.creditorId === null || e.creditorId === e.playerId || !members.includes(e.creditorId))) shape('invalid elimination record');
+      (e.reason === 'resigned' ? e.creditorId !== null : e.creditorId !== null && (e.creditorId === e.playerId || !members.includes(e.creditorId)))) shape('invalid elimination record');
   }
   if (finished) {
     if (ids.length !== 1 || state.winner !== ids[0]) shape('finished must have exactly one active player equal to winner');
@@ -222,12 +222,18 @@ function checkRentBuilding(state: GameState): void {
   }
   if (state.turn && (!Number.isInteger(state.turn.quotas.builds) || state.turn.quotas.builds < 0 || state.turn.quotas.builds > 1)) bad('Invalid build quota');
   const r = state.rent;
+  const charge = state.charge;
+  if (r != null && charge != null) bad('Rent and charge cannot be open together');
   if (r !== null) {
     if (state.phase !== 'playing' || !state.turn || r.payerId !== state.turn.playerId || !state.turn.rolled || state.purchase !== null || state.auction !== null) bad('Invalid rent phase or exclusivity');
     const cell = state.board?.cells[r.cell];
     if (!cell?.asset || cell.asset.assetId !== r.assetId || state.positions[r.payerId] !== r.cell || state.owners[r.assetId] !== r.ownerId || r.ownerId === r.payerId || state.eliminated.includes(r.ownerId) || state.eliminated.includes(r.payerId)) bad('Invalid rent participants or asset');
     if (!Number.isSafeInteger(r.amount) || r.amount <= 0 || r.amount % 10 !== 0) bad('Invalid rent amount');
     if (r.kind !== (cell!.kind === 'monopoly' ? 'regular' : cell!.kind) || (r.kind === 'energy' ? !Number.isInteger(r.diceSum) || r.diceSum! < 2 || r.diceSum! > 12 : r.diceSum !== null)) bad('Invalid rent kind or dice');
+  }
+  if (charge != null) {
+    if (state.phase !== 'playing' || !state.turn || charge.payerId !== state.turn.playerId || !state.turn.rolled || state.purchase !== null || state.auction !== null) bad('Invalid charge phase or exclusivity');
+    if (!Number.isSafeInteger(charge.amount) || charge.amount <= 0 || charge.amount % 10 !== 0 || charge.cause !== 'chance') bad('Invalid bank charge');
   }
 }
 
@@ -238,6 +244,6 @@ function checkMortgages(state: GameState): void {
   for (const [id, term] of Object.entries(state.mortgages)) {
     const asset = state.board?.cells.find(c => c.asset?.assetId === id)?.asset;
     if (!asset || !['playing', 'finished'].includes(state.phase) || !Object.hasOwn(state.owners, id) || !active.includes(state.owners[id]!) || (state.houses[id] ?? 0) !== 0) bad('Invalid mortgage ownership or houses');
-    if (!term || term.advance !== 10 * Math.floor(asset!.price / 20) || !Number.isInteger(term.lapsCompleted) || term.lapsCompleted < 0 || term.lapsCompleted >= 8 || !Array.isArray(term.pending) || new Set(term.pending).size !== term.pending.length || term.pending.some(p => !active.includes(p))) bad('Invalid mortgage term');
+    if (!term || term.advance !== 10 * Math.floor(asset!.price / 20) || !Number.isInteger(term.lapsCompleted) || term.lapsCompleted < 0 || term.lapsCompleted >= 8 || !Array.isArray(term.pending) || new Set(term.pending).size !== term.pending.length || term.pending.some(p => !active.includes(p)) || !(term.lockedTurnId === undefined || term.lockedTurnId === null || typeof term.lockedTurnId === 'string')) bad('Invalid mortgage term');
   }
 }

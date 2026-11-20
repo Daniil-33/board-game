@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { gameEngine } from '../rules.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 import { genesis, type GameState } from '../state.js';
 import type { GameCommand, TransitionResult, GameEvent } from '../engine.js';
 import { cmd, ctx, player, deepFreeze } from './helpers/fixtures.js';
@@ -25,7 +26,7 @@ function expectCode(state: GameState, c: GameCommand, code: string) {
   }
 }
 
-const create = (seed: unknown = 42, rulesVersion: unknown = 'core-7', rev = 0) =>
+const create = (seed: unknown = 42, rulesVersion: unknown = CURRENT_RULES_VERSION, rev = 0) =>
   cmd('CreateGame', { seed, rulesVersion }, { rev });
 const add = (id: string, rev: number) => cmd('AddPlayer', { playerId: id }, { rev });
 const start = (rev: number) => cmd('StartGame', null, { rev });
@@ -42,8 +43,8 @@ describe('CreateGame', () => {
     expect(r.kind).toBe('accepted');
     expect(r.revision).toBe(1);
     expect(r.state.phase).toBe('lobby');
-    expect(r.state.rulesVersion).toBe('core-7');
-    expect(r.events).toEqual([{ type: 'GameCreated', payload: { rulesVersion: 'core-7', createdAt: NOW } }, {type: 'BoardGenerated', payload: {layout: 'CLASSIC_40', catalogVersion: 'ua-1', priceTableVersion: 'prices-1', generatorVersion: 'gen-1'}}]);
+    expect(r.state.rulesVersion).toBe(CURRENT_RULES_VERSION);
+    expect(r.events).toEqual([{ type: 'GameCreated', payload: { rulesVersion: CURRENT_RULES_VERSION, createdAt: NOW } }, {type: 'BoardGenerated', payload: {layout: 'CLASSIC_40', catalogVersion: 'ua-1', priceTableVersion: 'prices-1', generatorVersion: 'gen-1'}}]);
   });
 
   it('same seed gives deep-equal rng; different seed differs', () => {
@@ -64,26 +65,27 @@ describe('CreateGame', () => {
     expectCode(genesis(), create(42, 'core-999'), 'UNSUPPORTED_RULES_VERSION');
   });
 
-  it('core-0 and core-1 are no longer supported: transitions and the RNG stream changed in core-7', () => {
+  it('previous rules versions are rejected for new games', () => {
     expectCode(genesis(), create(42, 'core-0'), 'UNSUPPORTED_RULES_VERSION');
     expectCode(genesis(), create(42, 'core-1'), 'UNSUPPORTED_RULES_VERSION');
     expectCode(genesis(), create(42, 'core-2'), 'UNSUPPORTED_RULES_VERSION');
     expectCode(genesis(), create(42, 'core-3'), 'UNSUPPORTED_RULES_VERSION');
+    expectCode(genesis(), create(42, 'core-7'), 'UNSUPPORTED_RULES_VERSION');
   });
 
   it('malformed payload', () => {
     expectCode(genesis(), cmd('CreateGame', null), 'INVALID_PAYLOAD');
-    expectCode(genesis(), cmd('CreateGame', { rulesVersion: 'core-7' }), 'INVALID_PAYLOAD');
+    expectCode(genesis(), cmd('CreateGame', { rulesVersion: CURRENT_RULES_VERSION }), 'INVALID_PAYLOAD');
     expectCode(genesis(), cmd('CreateGame', { seed: 1 }), 'INVALID_PAYLOAD');
   });
 
   it('second CreateGame in lobby -> PHASE_NOT_ALLOWED', () => {
     const s = lobbyWith(0);
-    expectCode(s, create(42, 'core-7', s.revision), 'PHASE_NOT_ALLOWED');
+    expectCode(s, create(42, CURRENT_RULES_VERSION, s.revision), 'PHASE_NOT_ALLOWED');
   });
 
   it('player actor cannot create', () => {
-    expectCode(genesis(), cmd('CreateGame', { seed: 1, rulesVersion: 'core-7' }, { actor: player('a') }), 'ACTOR_NOT_ALLOWED');
+    expectCode(genesis(), cmd('CreateGame', { seed: 1, rulesVersion: CURRENT_RULES_VERSION }, { actor: player('a') }), 'ACTOR_NOT_ALLOWED');
   });
 });
 
@@ -151,7 +153,7 @@ describe('setup phase accepts no lifecycle command', () => {
   })();
 
   it.each([
-    ['CreateGame', () => create(1, 'core-7', s.revision)],
+    ['CreateGame', () => create(1, CURRENT_RULES_VERSION, s.revision)],
     ['AddPlayer', () => add('late', s.revision)],
     ['StartGame', () => start(s.revision)],
   ])('%s -> PHASE_NOT_ALLOWED', (_name, make) => {
