@@ -1,0 +1,55 @@
+{
+  "chance": {
+    "gain-5": "+5% капитала",
+    "loss-5": "−5% капитала",
+    "gain-10": "+10% капитала",
+    "loss-10": "−10% капитала"
+  },
+  "event_reveal": {
+    "casino_win": "Выигрыш в казино",
+    "casino_loss": "Проигрыш в казино"
+  },
+  "jail_choice": {
+    "title": "Вы в тюрьме",
+    "attempt": "Попытка {attempt} из 3",
+    "attempt_progress": "Использовано попыток: {attempts} из {max}",
+    "third_attempt": "После третьей неудачи вы заплатите и пойдёте.",
+    "roll": "Бросить на дубль",
+    "pay": "Заплатить {amount} и выйти",
+    "insufficient_funds": "Недостаточно денег: требуется {amount}."
+  },
+  "casino": {
+    "title": "Казино · Шанс 50/50 · ставка по желанию",
+    "limit": "Ставка · до {amount}",
+    "amount": "Сумма ставки",
+    "decrease": "−",
+    "increase": "+",
+    "win": "Выигрыш: +{amount}",
+    "loss": "Проигрыш: −{amount}",
+    "place_bet": "Сделать ставку",
+    "decline": "Не играть",
+    "other_player": "Игрок {player} в казино…",
+    "payment_pending": "Сначала оплатите открытый платёж.",
+    "insufficient_funds": "Недостаточно денег для ставки."
+  },
+  "charge": {
+    "title": "Платёж банку",
+    "due": "К оплате {amount}",
+    "shortfall": "Не хватает {amount}.",
+    "automatic": "При завершении хода долг будет погашен автоматически.",
+    "pay": "Оплатить {amount}",
+    "manage_assets": "Управлять своими активами",
+    "other_player": "Игрок {player} должен банку."
+  },
+  "reasons": {
+    "mortgage": {
+      "REDEEM_LOCKED": "Выкуп доступен со следующего хода"
+    }
+  },
+  "journal": {
+    "chance_drawn": "{player} получает карту: {card}, {signedAmount}.",
+    "charge_due": "Игрок {payer} должен банку {amount}.",
+    "charge_paid": "Игрок {payer} платит банку {amount}.",
+    "charge_auto_paid": "Банк автоматически получает {amount} от игрока {payer}."
+  }
+}

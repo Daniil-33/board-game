@@ -20,6 +20,10 @@ import type { Board } from '../../features/client-session/index';
 import { PurchaseDialog } from '../../widgets/purchase-card/index';
 import { AuctionPanel } from '../../widgets/auction-panel/index';
 import { RentPanel } from '../../widgets/rent-panel/index';
+import { CasinoPanel, ChargePanel, EventReveal, JailChoice } from '../../widgets/special-cells/index';
+import { registerSpecialCellLocales } from '../../widgets/special-cells/index';
+registerSpecialCellLocales();
+import type { GameEvent } from '@game/game-core';
 import { DebtNotices } from '../../widgets/debt-notices/index';
 import { EliminationNotice } from '../../widgets/elimination/index';
 import { Hud, HudStatus } from '../../widgets/turn-header/index';
@@ -116,6 +120,16 @@ const context = computed(() => ({
   pending: pendingTypes.value, now: now.value,
 }));
 const connectionMessages = computed(() => client.game.messages.filter(message => !message.commandType));
+const specialReveal = ref<GameEvent | null>(null);
+let revealTimer: ReturnType<typeof setTimeout> | undefined;
+watch(() => client.events.state.entries.length, () => {
+  const events = client.events.state.entries.at(-1)?.events ?? [];
+  const found = [...events].reverse().find(event => event.type === 'ChanceDrawn' || event.type === 'CasinoResolved');
+  if (!found) return;
+  specialReveal.value = found;
+  clearTimeout(revealTimer);
+  revealTimer = setTimeout(() => { specialReveal.value = null; }, 12_000);
+});
 const canResign = computed(() => actionAvailability(context.value).Resign);
 const canLeaveGame = computed(() => {
   const { view, me } = context.value;
@@ -170,6 +184,7 @@ onBeforeUnmount(() => {
   media?.removeEventListener('change', updateViewport);
   columnResizeObserver?.disconnect();
   clearInterval(ticker);
+  clearTimeout(revealTimer);
   mountedBoard?.setAssetSelection?.(null);
   client.attachBoard(null);
   destroyBoard?.();
@@ -214,7 +229,11 @@ onBeforeUnmount(() => {
           <DebtNotices :notices="client.game.notices" :active-notice-index="client.game.activeNoticeIndex"
             variant="overlay" :name-of="client.nameOf" :board="client.game.view?.board ?? null"
             @dismiss="client.dismissDebtNotice" />
+          <EventReveal :event="specialReveal" :name-of="client.nameOf" />
           <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" @manage-assets="selectedTab = 'assets'" />
+          <JailChoice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" @command="client.sendCommand" />
+          <CasinoPanel v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" />
+          <ChargePanel v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" @manage-assets="selectedTab = 'assets'" />
           <ResponsiveDialog v-if="selectedCell && client.game.view?.board" v-model:open="assetDialogOpen"
             :title="selectedCell.asset!.name" title-visually-hidden :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
             <AssetCard
@@ -267,12 +286,31 @@ onBeforeUnmount(() => {
 .board { width: 100%; aspect-ratio: 1; }
 .game-dialogs { width: 100%; max-width: 420px; margin-inline: auto; }
 .game-dialogs:has([data-testid="auction"]) { max-width: 516px; }
+.game-dialogs:has([data-testid="casino-panel"]) { max-width: 460px; }
+.game-dialogs:has([data-testid="casino-status"]),
+.game-dialogs:has([data-testid="charge-status"]),
+.game-dialogs:has([data-testid="special-event-reveal"]) { position: fixed; z-index: 4; inset: 50% auto auto 50%; width: min(420px, calc(100vw - 32px)); margin: 0; transform: translate(-50%, -50%); }
 .game-dialogs:empty { display: none; }
 .more-column :deep(.resign) { margin-top: var(--space-2); }
 .more-column details { margin-bottom: var(--space-3); }
 @media (max-width: 1023px) {
   .desktop-top-bar { display: none; }
   .game { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .game-dialogs:has([data-testid="jail-choice"]),
+  .game-dialogs:has([data-testid="bank-charge"]) {
+    position: fixed;
+    z-index: 20;
+    inset: auto 0 calc(68px + env(safe-area-inset-bottom));
+    width: 100%;
+    max-width: none;
+    max-height: min(70dvh, 520px);
+    overflow: auto;
+    padding: var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--design-radius-xl) var(--design-radius-xl) 0 0;
+    background: var(--bg-deep);
+    box-shadow: var(--shadow-1);
+  }
   .game:not([data-tab="board"]) :is(.turn-header, .board, .turn-column, .roster-column),
   .game:not([data-tab="journal"]) .journal-column,
   .game:not([data-tab="assets"]) .assets-column,
@@ -324,6 +362,23 @@ onBeforeUnmount(() => {
     inset: 50% auto auto 50%;
     width: min(560px, calc(100vw - 32px));
     max-width: 560px;
+    max-height: calc(100dvh - 32px);
+    margin: 0;
+    overflow: auto;
+    padding: var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--design-radius-xl);
+    background: var(--bg-deep);
+    box-shadow: var(--shadow-1);
+    transform: translate(-50%, -50%);
+  }
+  .game-dialogs:has([data-testid="casino-panel"]),
+  .game-dialogs:has([data-testid="jail-choice"]),
+  .game-dialogs:has([data-testid="bank-charge"]) {
+    position: fixed;
+    z-index: 4;
+    inset: 50% auto auto 50%;
+    width: min(560px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
     margin: 0;
     overflow: auto;
@@ -398,6 +453,9 @@ onBeforeUnmount(() => {
   .game-dialogs:has([data-testid="auction"]),
   .game-dialogs:has([data-testid="rent"]),
   .game-dialogs:has([data-testid="current-debt-notice"]) { grid-column: 2; }
+  .game-dialogs:has([data-testid="jail-choice"]),
+  .game-dialogs:has([data-testid="bank-charge"]),
+  .game-dialogs:has([data-testid="casino-panel"]) { grid-column: 2; }
   .mobile-only { display: none; }
   .more-column { padding: 0 var(--space-3) var(--space-3); border-top: 0; border-radius: 0 0 12px 12px; margin-top: calc(-1 * var(--space-3)); }
   .turn-column :deep(.game-surface) { border-bottom: 0; border-radius: 12px 12px 0 0; }

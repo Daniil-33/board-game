@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
-    VueI18nPlugin({ include: fileURLToPath(new URL('./src/shared/i18n/locales/**', import.meta.url)), compositionOnly: true, fullInstall: false, dropMessageCompiler: true }),
+    VueI18nPlugin({ include: [fileURLToPath(new URL('./src/shared/i18n/locales/**', import.meta.url)), fileURLToPath(new URL('./src/widgets/special-cells/locales/**', import.meta.url))], compositionOnly: true, fullInstall: false, dropMessageCompiler: true }),
     {
       name: 'exclude-development-design-system',
       apply: 'build',

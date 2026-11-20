@@ -92,7 +92,7 @@ test('stage 5: mortgage, then redeem; second redeem is locked in the same turn',
   await expect(mortgageButton).toBeDisabled();
 
   await expect(redeemButton).toBeDisabled();
-  await expect(owner.page.locator(sel('redeem-reason'))).toHaveText('Этот залог можно выкупить в следующем ходу.');
+  await expect(owner.page.locator(sel('redeem-reason'))).toHaveText('Выкуп доступен со следующего хода');
   for (const p of players) expect(p.view!.mortgages).toEqual({ [assetId]: { advance: adv, lapsCompleted: 0, pending: start.order, remainingLaps: 8, lockedTurnId: p.view!.turn!.turnId } });
   projected(start.balances);
   await cards(`В залоге: получено ${money(adv)}, осталось 8 кругов`, 0);
