@@ -123,8 +123,12 @@ test('desktop rent and debt overlays preserve the board and top bar', async ({ a
   const players = await actors(2);
   await load(players, 'shortfall');
   const payer = players.find(player => player.id === player.view?.rent?.payerId)!;
+  await payer.page.locator(sel('chat-input')).fill('Rent fixture journal check');
+  await payer.page.locator(sel('chat-composer')).evaluate(form => (form as HTMLFormElement).requestSubmit());
+  await expect(payer.page.locator(sel('journal-entry')).filter({ hasText: 'Rent fixture journal check' })).toBeVisible();
   for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
     await payer.page.setViewportSize({ width, height });
+    await assertJournalEntryBelowHeading(payer.page);
     await expect(payer.page.locator(sel('rent'))).toBeVisible();
     await expect(payer.page.locator(sel('rent-line'))).toContainText(`Player ${players.indexOf(payer) + 1}`);
     await expect(payer.page.locator(sel('rent-line'))).toContainText(`Player ${players.indexOf(players.find(p => p.id === payer.view!.rent!.ownerId)!) + 1}`);
@@ -141,9 +145,9 @@ test('desktop rent and debt overlays preserve the board and top bar', async ({ a
   await expect(debtor.page.locator(sel('debt-notices'))).toBeVisible();
   const currentNotice = debtor.page.locator(sel('current-debt-notice'));
   await expect(currentNotice).toBeVisible();
-  await assertJournalEntryBelowHeading(debtor.page);
   for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
     await debtor.page.setViewportSize({ width, height });
+    await assertJournalEntryBelowHeading(debtor.page);
     await expect(currentNotice.locator(sel('liquidation'))).toBeInViewport();
     await expect(debtor.page.locator(sel('game-top-bar'))).toBeInViewport();
     await expect.poll(() => debtor.page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);

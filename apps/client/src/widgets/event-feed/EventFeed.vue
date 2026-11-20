@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { describeEvent, type JournalItem } from '../../entities/event/index';
 import { formatTime } from '../../shared/lib/index';
 import { t } from '../../shared/i18n/index';
@@ -13,6 +13,7 @@ const props = defineProps<{
 }>();
 const list = ref<HTMLElement | null>(null);
 const atBottom = ref(true);
+let rowResizeObserver: ResizeObserver | undefined;
 const rows = computed(() => props.items.flatMap<{ key: string; at: number; icon: string; author: string | null; text: string; kind: JournalItem['kind'] }>(item => {
   if (item.kind === 'chat') {
     return [{ key: item.key, at: item.at, icon: '◌', author: props.nameOf(item.message.authorId), text: item.message.text, kind: 'chat' }];
@@ -30,11 +31,22 @@ function scrollToBottom(): void {
   if (list.value && props.visible && atBottom.value) list.value.scrollTop = list.value.scrollHeight;
 }
 
-onMounted(scrollToBottom);
-watch(() => [rows.value.length, props.generation, props.visible], async () => {
+async function settleAndScrollToBottom(): Promise<void> {
   await nextTick();
+  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  rowResizeObserver?.disconnect();
+  for (const row of list.value?.children ?? []) rowResizeObserver?.observe(row);
   scrollToBottom();
+}
+
+onMounted(() => {
+  rowResizeObserver = new ResizeObserver(scrollToBottom);
+  void settleAndScrollToBottom();
 });
+watch(() => [rows.value.length, props.generation, props.visible], async () => {
+  await settleAndScrollToBottom();
+});
+onBeforeUnmount(() => rowResizeObserver?.disconnect());
 </script>
 
 <template>

@@ -34,11 +34,11 @@ When the active turn owner is in temporary jail, every viewer's turn header SHAL
 - **THEN** the turn header shows the next attempt and maximum attempt count to the jailed player and observers
 
 ### Requirement: Board caption does not overlap journal
-At 1440×900, the board-center phase caption SHALL fit within the board interior and SHALL not intersect the journal panel. The journal list's scroll region SHALL start below its heading.
+At 1440×900 and 1920×1080, the board-center phase caption SHALL fit within the board interior and SHALL not intersect the journal panel. The board-interior journal SHALL keep its newest entry, including all text and its timestamp, fully visible inside the list's visible client area below the “Журнал” heading, without covering the dice/status area or board ring.
 
-#### Scenario: Desktop caption and journal geometry
-- **WHEN** the board is rendered with a phase caption at 1440×900
-- **THEN** the measured caption bounds fit within the board interior, the caption and journal bounds do not intersect, and the first journal entry does not intersect the heading
+#### Scenario: Desktop caption and newest journal entry geometry
+- **WHEN** the board is rendered at 1440×900 or 1920×1080 with a phase caption and a journal entry
+- **THEN** the measured caption bounds fit within the board interior and do not intersect the journal, and the last journal entry's full box is inside the list's visible client rect with its top at or below the heading's bottom
 
 ### Requirement: Room display names contain no internal identifiers
 Lobby room rows and waiting-room headings SHALL use “Room <creator nickname>” when the existing room payload includes the creator's nickname; otherwise they SHALL use a neutral “Room” label. They SHALL never display the internal room id or access code as a name.

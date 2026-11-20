@@ -8,12 +8,29 @@ const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
 export async function assertJournalEntryBelowHeading(page: Page): Promise<void> {
   const heading = await page.locator('.journal-column h2').boundingBox();
-  const firstEntry = await page.locator(sel('journal-entry')).first().boundingBox();
+  const list = page.locator(sel('journal-list'));
+  const newest = await list.locator(sel('journal-entry')).last().boundingBox();
+  const visible = await list.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left + element.clientLeft,
+      top: rect.top + element.clientTop,
+      right: rect.left + element.clientLeft + element.clientWidth,
+      bottom: rect.top + element.clientTop + element.clientHeight,
+      scrollTop: element.scrollTop,
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    };
+  });
   expect(heading, 'journal heading').not.toBeNull();
-  expect(firstEntry, 'first journal entry').not.toBeNull();
-  const overlap = firstEntry!.x < heading!.x + heading!.width && firstEntry!.x + firstEntry!.width > heading!.x
-    && firstEntry!.y < heading!.y + heading!.height && firstEntry!.y + firstEntry!.height > heading!.y;
-  expect(overlap, `journal entry ${JSON.stringify(firstEntry)} intersects heading ${JSON.stringify(heading)}`).toBe(false);
+  expect(newest, 'newest journal entry').not.toBeNull();
+  // Playwright boxes retain fractions while clientWidth/clientHeight are integer CSS pixels.
+  const rounding = 1;
+  expect(newest!.y, 'newest journal entry starts below the heading').toBeGreaterThanOrEqual(heading!.y + heading!.height - rounding);
+  expect(newest!.y, 'newest journal entry is inside visible list top edge').toBeGreaterThanOrEqual(visible.top - rounding);
+  expect(newest!.y + newest!.height, `newest journal entry is fully inside visible list bottom edge: entry=${JSON.stringify(newest)} list=${JSON.stringify(visible)}`).toBeLessThanOrEqual(visible.bottom + rounding);
+  expect(newest!.x, 'newest journal entry is inside visible list left edge').toBeGreaterThanOrEqual(visible.left - rounding);
+  expect(newest!.x + newest!.width, 'newest journal entry is inside visible list right edge').toBeLessThanOrEqual(visible.right + rounding);
 }
 
 export async function assertBoardBannerGeometry(page: Page): Promise<void> {

@@ -187,7 +187,10 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
     await expect(prisoner.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
     const observer = players.find(player => player !== prisoner)!;
     await expect(observer.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
-    await assertJournalEntryBelowHeading(prisoner.page);
+    for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+      await prisoner.page.setViewportSize({ width, height });
+      await assertJournalEntryBelowHeading(prisoner.page);
+    }
   } else {
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
     expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });

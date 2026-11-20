@@ -361,19 +361,28 @@ onBeforeUnmount(() => {
   /* Leave the ring and the renderer’s dice and status area unobstructed. */
   .board-column:has(canvas) .journal-column {
     position: absolute;
-    inset: 70% 13% 12%;
+    inset: 66% 13% 9.5%;
   }
   .board-column:has(canvas) .journal-column :deep(.event-feed) {
     height: 100%;
     display: grid;
-    grid-template-rows: auto minmax(2rem, 1fr) auto;
-    overflow: auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    overflow: hidden;
     background: var(--bg-deep);
     padding: var(--space-2);
   }
+  .board-column:has(canvas) .journal-column :deep(.event-feed > div) { display: contents; }
+  .board-column:has(canvas) .journal-column :deep(.chat-composer) { grid-row: 1; grid-column: 2; margin: 0 0 0 var(--space-2); }
+  .board-column:has(canvas) .journal-column :deep(.chat-composer textarea) {
+    height: 2rem;
+    min-height: 2rem;
+    padding: var(--space-1) var(--space-2);
+    resize: none;
+  }
+  .board-column:has(canvas) .journal-column :deep(.journal-list) { grid-row: 2; grid-column: 1 / -1; }
   .board-column:has(canvas) .journal-column :deep(h2) { margin-bottom: var(--space-1); }
   .board-column:has(canvas) .journal-column :deep(.journal-list) { min-height: 0; }
-  .board-column:has(canvas) .journal-column :deep(.chat-composer) { margin-top: var(--space-2); }
   .game-dialogs:has([data-testid="auction"]),
   .game-dialogs:has([data-testid="rent"]),
   .game-dialogs:has([data-testid="current-debt-notice"]) { grid-column: 2; }
