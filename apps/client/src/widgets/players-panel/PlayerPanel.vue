@@ -12,7 +12,7 @@ function housesOf(id: string): number {
 }
 </script>
 <template>
-  <section class="player-panel" :aria-label="t('common.players')">
+  <section class="player-panel">
     <h2 id="game-panel-players-heading" data-testid="players-heading">{{ t('common.players') }}</h2>
     <ul>
       <li v-for="(player, seat) in view.players" :key="player.id" data-testid="player-balance" :data-player-id="player.id" :style="{ '--seat-color': `var(--player-${seat + 1})` }">

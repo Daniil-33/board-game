@@ -120,7 +120,7 @@ test('game layout stays within all supported widths and preserves mobile selecti
 
 test('desktop rent and debt overlays preserve the board and top bar', async ({ actors }) => {
   test.skip(process.env.E2E_FIXTURES !== '1', 'Uses isolated server fixtures');
-  const players = await actors(3);
+  const players = await actors(2);
   await load(players, 'shortfall');
   const payer = players.find(player => player.id === player.view?.rent?.payerId)!;
   await assertJournalEntryBelowHeading(payer.page);
