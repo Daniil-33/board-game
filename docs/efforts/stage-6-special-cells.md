@@ -30,7 +30,8 @@ The owner agreed these rules. Sources:
 - `docs/design/ui-brief.md` § 6.6.
 
 Money is integer quanta, `Q(x) = 10 × floor(x/10)`. `initialCash` and the lap
-`reward` are the values the game already computes.
+`reward` are the values the game already computes. Percentages use integer arithmetic,
+`Q(initialCash × p / 100)`, never floating point.
 
 Criteria marked **[CTO]** are CTO interpretations of rules the owner left
 implicit. They are listed in the PR for the owner. If the owner changes one,
@@ -96,9 +97,19 @@ it becomes a new revision.
      rules.
    - **After the third failed roll** the player must pay the fee and move by
      that roll's sum.
-   - **[CTO]** Whenever the fee is due, it is a mandatory payment to the bank,
-     handled as in criterion 6. If paying it ends in bankruptcy, the player
-     does not move.
+   - **[CTO] The fee is settled when it falls due, before any move**
+     (TL J1, option A). Unlike criterion 6, it never waits for the end of
+     the turn.
+     - **Voluntary exit** is offered only when cash covers the fee.
+       Otherwise the reason is shown. The player may first mortgage or sell
+       on their own turn (criterion 13), then pay.
+     - **Forced fee after the third failed roll.** If cash covers the fee, it
+       is debited at once. Otherwise the stage 5 automatic liquidation runs
+       at once, in the owner's priority order, then the fee is paid and the
+       player moves. There is no manual window for this fee.
+     - **Bankruptcy.** If even full liquidation cannot cover the fee, the
+       player goes bankrupt to the bank, as in criterion 6, and does not
+       move.
 10. **Deadline.** If the turn deadline arrives before the prisoner acts, the
     existing forced roll counts as the roll-for-a-double choice. A voluntary
     exit is never automatic.
@@ -110,6 +121,9 @@ it becomes a new revision.
     stored with the interim jail state get a handling stated in the design.
     For example, a prisoner keeps their attempts used and the final rules
     apply from the next turn.
+    Logs already stored with `Interim*` events keep recovering and replaying,
+    through a legacy read path or a one-time snapshot migration. New
+    transitions never use the interim rule.
 
 ### Asset actions only on the player's own turn (owner 2026-11-19)
 
@@ -119,6 +133,8 @@ it becomes a new revision.
     - Selling houses, mortgaging and redeeming have no per-turn limit.
     - The Team Lead verifies the current guards (`houses.ts`,
       `mortgage.ts`) and adds any that are missing.
+    - Existing tests that perform an off-turn sale or mortgage are updated
+      to this rule; their scenarios otherwise stay unchanged.
 14. **Redeem lock.** An asset mortgaged in a turn cannot be redeemed in that
     same turn. Redeeming is allowed from the owner's next turn.
     - A bonus turn after a double counts as the next turn, so redeeming is
@@ -275,7 +291,7 @@ The owner decides any change to a **[CTO]** item, through the CTO.
 
 ## Revision history
 
-- 1: initial handoff.
+- 1: initial handoff. Amended before merge (TL pre-read 20261120T065958Z): jail fee timing J1 = option A in criterion 9; TL assumptions on stored interim-jail logs, own-turn test updates and integer percentages accepted.
 
 ## Acceptance
 
