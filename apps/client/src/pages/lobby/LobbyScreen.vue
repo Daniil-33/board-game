@@ -27,6 +27,11 @@ function roomLabel(room: RoomSummary): string {
   return creator ? t('common.room_creator', { creator }) : t('common.room_generic');
 }
 
+function roomOptionLabel(room: RoomSummary): string {
+  const members = room.members.map(member => member.nickname).join(', ');
+  return members ? `${roomLabel(room)} · ${members}` : roomLabel(room);
+}
+
 const lockedRooms = computed(() => client.lobby.rooms.filter(canEnterCode));
 const eligibleRoom = computed(() => lockedRooms.value.some(room => room.roomId === selectedRoom.value));
 
@@ -102,7 +107,7 @@ onBeforeUnmount(() => clearInterval(timer));
         <label for="locked-room">{{ t('lobby.choose_room') }}</label>
         <select id="locked-room" v-model="selectedRoom" data-testid="locked-room" required>
           <option value="" disabled>{{ t('lobby.choose_room') }}</option>
-          <option v-for="room in lockedRooms" :key="room.roomId" :value="room.roomId">{{ roomLabel(room) }}</option>
+          <option v-for="room in lockedRooms" :key="room.roomId" :value="room.roomId">{{ roomOptionLabel(room) }}</option>
         </select>
         <label for="join-code">{{ t('lobby.access_code') }}</label>
         <input id="join-code" v-model="joinCode" data-testid="join-code" autocomplete="off" required />

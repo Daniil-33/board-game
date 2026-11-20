@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Desktop decision and debt surfaces remain visible
-At 1440×900 and 1920×1080, active rent, liquidation, and bankruptcy surfaces SHALL be fully visible without page scrolling, together with the top bar and the board's bottom row. Rent SHALL visibly identify its payer. Debt notices SHALL remain visible during the notice lifetime.
+At 1440×900 and 1920×1080, active rent, liquidation, and bankruptcy surfaces SHALL be fully visible without page scrolling, together with the top bar and the board's bottom row. Rent SHALL visibly identify its payer. Only the latest debt notice not acknowledged by the viewer SHALL appear as an overlay. The viewer SHALL be able to dismiss it, and the next turn SHALL hide it automatically. Earlier debt notices SHALL remain readable in a non-overlay history list.
 
 #### Scenario: Rent shortfall on desktop
 - **WHEN** a rent shortfall is active at either supported desktop viewport
@@ -18,6 +18,14 @@ At desktop widths, the controls column SHALL be constrained below the top bar. T
 - **WHEN** a liquidation fixture has more assets than fit in the desktop side column
 - **THEN** the page SHALL not scroll, the My Assets region SHALL scroll internally and be keyboard-focusable, and the complete debt notice, top bar, and board bottom row SHALL remain visible
 
+#### Scenario: Notice dismissal and next turn
+- **WHEN** a viewer dismisses the latest debt notice or the next turn starts
+- **THEN** its overlay SHALL disappear while the debt history remains readable without blocking the board
+
+#### Scenario: Overflow-only keyboard stops
+- **WHEN** a desktop side column's content fits its available height
+- **THEN** its named region SHALL not add a keyboard tab stop; when it overflows, the region SHALL receive `tabindex="0"`
+
 ### Requirement: Temporary jail progress is visible
 When the active turn owner is in temporary jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of `INTERIM_JAIL_RULE.maxAttempts`.
 
@@ -26,11 +34,11 @@ When the active turn owner is in temporary jail, every viewer's turn header SHAL
 - **THEN** the turn header shows the next attempt and maximum attempt count to the jailed player and observers
 
 ### Requirement: Board caption does not overlap journal
-At 1440×900, the board-center phase caption SHALL not intersect the journal panel.
+At 1440×900, the board-center phase caption SHALL fit within the board interior and SHALL not intersect the journal panel. The journal list's scroll region SHALL start below its heading.
 
 #### Scenario: Desktop caption and journal geometry
 - **WHEN** the board is rendered with a phase caption at 1440×900
-- **THEN** the caption bounds and journal bounds do not intersect
+- **THEN** the measured caption bounds fit within the board interior, the caption and journal bounds do not intersect, and the first journal entry does not intersect the heading
 
 ### Requirement: Room display names contain no internal identifiers
 Lobby room rows and waiting-room headings SHALL use “Room <creator nickname>” when the existing room payload includes the creator's nickname; otherwise they SHALL use a neutral “Room” label. They SHALL never display the internal room id or access code as a name.
@@ -38,6 +46,10 @@ Lobby room rows and waiting-room headings SHALL use “Room <creator nickname>�
 #### Scenario: Creator nickname is available
 - **WHEN** a listed or joined room contains its creator in the member list
 - **THEN** the room name uses that creator's nickname
+
+#### Scenario: Same creator in locked room options
+- **WHEN** two locked rooms have the same creator nickname
+- **THEN** each option includes its member names so the rooms remain distinguishable
 
 #### Scenario: Creator nickname is unavailable
 - **WHEN** a room does not contain its creator in the member list

@@ -328,6 +328,15 @@ describe('debt notices', () => {
     expect(empty.get('[data-testid="bankruptcy-assets"]').text()).toBe('Освобождённых активов нет');
     expect(mount(DebtNotices, { props: { notices: [], nameOf } }).find('[data-testid="debt-notices"]').exists()).toBe(false);
   });
+
+  it('renders only the active notice in the overlay and emits acknowledgment', async () => {
+    const notices = debtNotices([liquidation(), rentPaid()]);
+    const w = mount(DebtNotices, { props: { notices, activeNoticeIndex: 0, variant: 'overlay', nameOf } });
+    expect(w.findAll('[data-testid="liquidation"]')).toHaveLength(1);
+    expect(w.find('[data-testid="debt-notices"]').exists()).toBe(false);
+    await w.get('[data-testid="debt-notice-dismiss"]').trigger('click');
+    expect(w.emitted('dismiss')).toHaveLength(1);
+  });
 });
 
 describe('debt notices in the room session', () => {
@@ -338,7 +347,9 @@ describe('debt notices in the room session', () => {
     h.sockets.last().receive(welcome(v));
     const next = (n: number): StateView => ({ ...v, revision: (v.revision + n) as StateView['revision'] });
     h.sockets.last().receive(update(next(1), [liquidation(), rentPaid()]));
+    expect(h.client.game.activeNoticeIndex).toBe(0);
     h.sockets.last().receive(update(next(2), [{ type: 'TurnStarted', payload: { playerId: 'b' } }]));
+    expect(h.client.game.activeNoticeIndex).toBeNull();
     expect(h.client.game.notices.map(n => n.kind)).toEqual(['liquidation']);
     h.sockets.last().receive(update(next(2), [bankrupt()])); // stale revision: dropped
     expect(h.client.game.notices).toHaveLength(1);
@@ -347,9 +358,13 @@ describe('debt notices in the room session', () => {
     for (let i = 0; i < NOTICE_LIMIT + 5; i++) h.sockets.last().receive(update(next(4 + i), [bankrupt({ debt: (10 * i) as Money })]));
     expect(h.client.game.notices).toHaveLength(NOTICE_LIMIT);
     expect((h.client.game.notices.at(-1) as Extract<DebtNotice, { kind: 'bankruptcy' }>).debt).toBe(10 * (NOTICE_LIMIT + 4));
+    expect(h.client.game.activeNoticeIndex).toBe(NOTICE_LIMIT - 1);
+    h.client.dismissDebtNotice();
+    expect(h.client.game.activeNoticeIndex).toBeNull();
     await flushPromises();
     h.client.returnToLobby();
     expect(h.client.game.notices).toEqual([]);
+    expect(h.client.game.activeNoticeIndex).toBeNull();
   });
 
   it('shows a terminal bankruptcy on the game-over screen even though the update cancels animations', async () => {

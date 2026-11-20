@@ -43,7 +43,7 @@ const groups = computed(() => {
 
 <template>
   <section class="game-surface" data-testid="my-assets">
-    <h2>{{ t('game_layout.my_assets') }}</h2>
+    <h2 id="game-panel-assets-heading" data-testid="assets-heading">{{ t('game_layout.my_assets') }}</h2>
     <p v-if="groups.length === 0">{{ t('game_layout.no_assets') }}</p>
     <section v-for="group in groups" :key="group.id" class="asset-group"
       :style="{ '--asset-gradient': `var(--group-${group.id.toLowerCase()})` }" data-testid="owned-group">

@@ -11,7 +11,7 @@ import { ReconnectBanner } from '../../widgets/reconnect-banner/index';
 import { Button, ResponsiveDialog } from '../../shared/ui/index';
 
 import { t } from '../../shared/i18n/index';
-import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { boardDisplayKey } from '../../widgets/board/index';
 import { BOARD_MOUNT_KEY, useClient } from '../../features/client-session/index';
 import { PlayerPanel } from '../../widgets/players-panel/index';
@@ -34,6 +34,31 @@ const injectedBoardMount = inject(BOARD_MOUNT_KEY, undefined);
 const host = ref<HTMLElement | null>(null);
 const boardError = ref<string | null>(null);
 const now = ref(client.now());
+const rosterColumn = ref<HTMLElement | null>(null);
+const assetsColumn = ref<HTMLElement | null>(null);
+const rosterOverflows = ref(false);
+const assetsOverflows = ref(false);
+let columnResizeObserver: ResizeObserver | null = null;
+
+function measureColumns(): void {
+  rosterOverflows.value = (rosterColumn.value?.scrollHeight ?? 0) > (rosterColumn.value?.clientHeight ?? 0) + 1;
+  assetsOverflows.value = (assetsColumn.value?.scrollHeight ?? 0) > (assetsColumn.value?.clientHeight ?? 0) + 1;
+}
+
+function observeColumns(): void {
+  columnResizeObserver?.disconnect();
+  for (const column of [rosterColumn.value, assetsColumn.value]) {
+    if (column === null) continue;
+    columnResizeObserver?.observe(column);
+    if (column.firstElementChild) columnResizeObserver?.observe(column.firstElementChild);
+  }
+  measureColumns();
+}
+
+watch(() => client.game.view, async () => {
+  await nextTick();
+  observeColumns();
+});
 
 const selectedIndex = ref<number | null>(null);
 const selectedOpener = ref<HTMLElement | null>(null);
@@ -81,7 +106,7 @@ const unread = computed(() => readChat.value !== client.journal.state.liveChat);
 watch([journalVisible, () => client.journal.state.liveChat], ([visible, count]) => {
   if (visible) readChat.value = count;
 });
-function updateViewport(event: MediaQueryListEvent): void { desktop.value = event.matches; }
+function updateViewport(event: MediaQueryListEvent): void { desktop.value = event.matches; measureColumns(); }
 function assetOf(id: string): string {
   return client.game.view?.board?.cells.find(cell => cell.asset?.assetId === id)?.asset?.name ?? id;
 }
@@ -108,6 +133,8 @@ function colorOf(playerId: string): string {
 
 onMounted(async () => {
   client.attachSound(playSound);
+  if (typeof ResizeObserver !== 'undefined') columnResizeObserver = new ResizeObserver(measureColumns);
+  observeColumns();
   media?.addEventListener('change', updateViewport);
   ticker = setInterval(() => (now.value = client.now()), TICK_MS);
   if (host.value === null) return;
@@ -141,6 +168,7 @@ onBeforeUnmount(() => {
   client.attachSound(null);
   unmounted = true;
   media?.removeEventListener('change', updateViewport);
+  columnResizeObserver?.disconnect();
   clearInterval(ticker);
   mountedBoard?.setAssetSelection?.(null);
   client.attachBoard(null);
@@ -156,7 +184,9 @@ onBeforeUnmount(() => {
       :problem="client.game.problem" :fatal="client.game.fatal" @dismiss="client.connection.dismissMessage" />
     <EliminationNotice v-if="client.game.view" :view="client.game.view" :me="client.game.playerId" :name-of="client.nameOf" />
     <section class="game" :data-tab="selectedTab">
-      <div class="roster-column" :tabindex="desktop ? 0 : undefined">
+      <div ref="rosterColumn" class="roster-column" :role="desktop ? 'region' : undefined"
+        :aria-labelledby="desktop ? 'game-panel-players-heading' : undefined"
+        :tabindex="desktop && rosterOverflows ? 0 : undefined">
         <PlayerPanel v-if="client.game.view" :view="client.game.view" :name-of="client.nameOf" />
       </div>
       <div class="center-column">
@@ -181,7 +211,9 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="game-dialogs">
-          <DebtNotices :notices="client.game.notices" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
+          <DebtNotices :notices="client.game.notices" :active-notice-index="client.game.activeNoticeIndex"
+            variant="overlay" :name-of="client.nameOf" :board="client.game.view?.board ?? null"
+            @dismiss="client.dismissDebtNotice" />
           <RentPanel v-if="client.game.view?.rent" :view="client.game.view" :me="client.game.playerId" :connected="client.game.connected" :pending="pendingTypes" :now="now" :name-of="client.nameOf" @command="client.sendCommand" @manage-assets="selectedTab = 'assets'" />
           <ResponsiveDialog v-if="selectedCell && client.game.view?.board" v-model:open="assetDialogOpen"
             :title="selectedCell.asset!.name" title-visually-hidden :dismissible="true" wide @close-auto-focus="restoreAssetFocus">
@@ -212,8 +244,13 @@ onBeforeUnmount(() => {
             </Button>
           </div>
           <ResignControl v-if="!setupOpen" :available="canResign" @confirm="client.sendCommand('Resign')" />
+          <DebtNotices :notices="client.game.notices" variant="history" :name-of="client.nameOf" :board="client.game.view?.board ?? null" />
         </section>
-        <div class="assets-column" id="game-panel-assets" :role="desktop ? undefined : 'tabpanel'" :aria-label="t('game_layout.assets_tab')" :tabindex="desktop ? 0 : undefined">
+        <div ref="assetsColumn" class="assets-column" id="game-panel-assets"
+          :role="desktop ? 'region' : 'tabpanel'"
+          :aria-labelledby="desktop ? 'game-panel-assets-heading' : undefined"
+          :aria-label="desktop ? undefined : t('game_layout.assets_tab')"
+          :tabindex="desktop && assetsOverflows ? 0 : undefined">
           <MyAssets :context="context" @command="client.sendCommand" @inspect="openAsset" />
         </div>
       </div>
@@ -281,7 +318,7 @@ onBeforeUnmount(() => {
   .assets-column:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
   .game-dialogs:has([data-testid="auction"]),
   .game-dialogs:has([data-testid="rent"]),
-  .game-dialogs:has([data-testid="debt-notices"]) {
+  .game-dialogs:has([data-testid="current-debt-notice"]) {
     position: fixed;
     z-index: 4;
     inset: 50% auto auto 50%;
@@ -339,7 +376,7 @@ onBeforeUnmount(() => {
   .board-column:has(canvas) .journal-column :deep(.chat-composer) { margin-top: var(--space-2); }
   .game-dialogs:has([data-testid="auction"]),
   .game-dialogs:has([data-testid="rent"]),
-  .game-dialogs:has([data-testid="debt-notices"]) { grid-column: 2; }
+  .game-dialogs:has([data-testid="current-debt-notice"]) { grid-column: 2; }
   .mobile-only { display: none; }
   .more-column { padding: 0 var(--space-3) var(--space-3); border-top: 0; border-radius: 0 0 12px 12px; margin-top: calc(-1 * var(--space-3)); }
   .turn-column :deep(.game-surface) { border-bottom: 0; border-radius: 12px 12px 0 0; }

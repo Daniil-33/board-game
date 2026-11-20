@@ -68,6 +68,8 @@ export interface Client {
   joinRoom(roomId: string, accessCode?: string): Promise<void>;
   retryInvite(): Promise<void>;
   dismissInvite(): void;
+  /** Acknowledge the current viewer's active debt notice without clearing session history. */
+  dismissDebtNotice(): void;
   leaveRoom(): Promise<void>;
   returnToLobby(): void;
   startGame(): Promise<void>;
@@ -139,6 +141,7 @@ export function createClient(deps: ClientDeps): Client {
     queue.clear();
     session.clearRoom();
     game.notices.splice(0);
+    game.activeNoticeIndex = null;
     chat.clear();
     events.clear();
     journal.clear();
@@ -236,7 +239,18 @@ export function createClient(deps: ClientDeps): Client {
       if (sound) emitSound(sound.id, { own: sound.own });
     }
     // Before animation handling: a terminal update cancels the queue, and its bankruptcy must still show.
-    appendNotices(game.notices, debtNotices(events));
+    const notices = debtNotices(events);
+    let noticeIndex = 0;
+    for (const event of events) {
+      if (event.type === 'TurnStarted') game.activeNoticeIndex = null;
+      if (event.type !== 'LiquidationApplied' && event.type !== 'PlayerBankrupt') continue;
+      const expectedKind = event.type === 'LiquidationApplied' ? 'liquidation' : 'bankruptcy';
+      const notice = notices[noticeIndex];
+      if (notice?.kind !== expectedKind) continue;
+      appendNotices(game.notices, [notice]);
+      game.activeNoticeIndex = game.notices.length - 1;
+      noticeIndex++;
+    }
     board?.refreshOwnership?.(view);
     const nextEliminated = JSON.stringify(view.eliminated);
     if (nextEliminated !== eliminatedKey || view.phase === 'finished' || events.some((e) => e.type === 'PlayerResigned' || e.type === 'GameEnded')) {
@@ -283,6 +297,7 @@ export function createClient(deps: ClientDeps): Client {
 
   function enterRoom(room: RoomSummary): void {
     game.notices.splice(0);
+    game.activeNoticeIndex = null;
     entry++;
     namesFlight = null;
     lobby.creatorAccess = null;
@@ -374,6 +389,7 @@ export function createClient(deps: ClientDeps): Client {
     },
     retryInvite: joinInvite,
     dismissInvite() { invite = null; lobby.inviteRoomId = null; lobby.error = null; },
+    dismissDebtNotice() { game.activeNoticeIndex = null; },
     async leaveRoom() {
       const room = session.state.room;
       if (lobby.busy || room === null || (game.view !== null && game.view.phase !== 'lobby') || room.status !== 'lobby') return;

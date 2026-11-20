@@ -225,6 +225,7 @@
   "debt_notices": {
     "debt_notices": "Debt notices",
     "debt_settlements": "Debt settlements",
+    "dismiss": "Got it",
     "liquidation": "Liquidation: {player}",
     "debt": "Owes {creditor} {debt}.",
     "payment_summary": "Raised {raised}. Paid {payment}.",

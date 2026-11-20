@@ -225,6 +225,7 @@
   "debt_notices": {
     "debt_notices": "Уведомления о долгах",
     "debt_settlements": "Расчёты по долгам",
+    "dismiss": "Понятно",
     "liquidation": "Продажа и залог активов: {player}",
     "debt": "Долг игроку {creditor}: {debt}.",
     "payment_summary": "Собрано {raised}. Оплачено {payment}.",

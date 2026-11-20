@@ -11,7 +11,7 @@ const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence/TASK-vd-final-evid
 const out = process.argv[3] ?? resolve(evidenceRoot, 'pairs');
 const captureRoot = resolve(evidenceRoot, 'screens');
 const checkoutHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'elimination', 'game-over']);
+const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'liquidation-next-turn', 'elimination', 'game-over']);
 const provenance = new Map();
 function readManifest(screen) {
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
@@ -66,6 +66,8 @@ const pairs = [
   ['reconnect-banner-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Reconnect banner; nearest desktop-09 frame for mobile'],
   ['liquidation-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Automatic liquidation summary'],
   ['liquidation-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Automatic liquidation summary; nearest My Assets frame'],
+  ['liquidation-next-turn-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Debt history after the next turn starts; overlay auto-hidden'],
+  ['liquidation-next-turn-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-04-mobile-мои-активы-copy.png', 'Debt history after the next turn starts; nearest My Assets frame'],
   ['elimination-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-01-игровой-экран.png', 'Eliminated viewer; nearest game frame'],
   ['elimination-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer; nearest mobile board frame'],
   ['game-over-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-10-итоги-партии.png', 'Game over'],
@@ -157,7 +159,7 @@ const indexReadme = [
   'TASK-vd-layout-polish fixes the assigned presentation defects: rent and debt surfaces stay visible on desktop, jail attempt progress appears in the turn header, the board caption clears the journal, room names use a creator nickname or neutral label, and elimination balance is labeled.',
   '',
   '- **TL-approved addition:** desktop side columns stay within the viewport below the top bar. My Assets scrolls internally with keyboard focus and a visible token-colored scrollbar; Players uses the same containment when its roster overflows. Mobile layout is unchanged.',
-  '- The liquidation fixture asserts that the page does not scroll while My Assets does.',
+  '- The liquidation fixture asserts that the page does not scroll while My Assets does. A second-turn-after-liquidation capture confirms the overlay auto-hides while debt history remains readable.',
   '',
   '## Reproduction',
   '',

@@ -7,7 +7,7 @@ the task branch. Build disposable task-local stacks from the committed task
 head; do not reuse staging or another task's stack. The primary stack captures
 the lobby, room, game, purchase, auction and reconnect states. The fixture
 stack captures the asset card, rent shortfall, build-quota toast, liquidation,
-elimination and game-over states.
+the second turn after liquidation, elimination and game-over states.
 
 ```sh
 TASK_SOURCE=$PWD

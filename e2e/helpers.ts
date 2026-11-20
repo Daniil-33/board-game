@@ -6,6 +6,49 @@ import type { StateView, GameEvent } from '../packages/game-core/src/index';
 
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
+export async function assertJournalEntryBelowHeading(page: Page): Promise<void> {
+  const heading = await page.locator('.journal-column h2').boundingBox();
+  const firstEntry = await page.locator(sel('journal-entry')).first().boundingBox();
+  expect(heading, 'journal heading').not.toBeNull();
+  expect(firstEntry, 'first journal entry').not.toBeNull();
+  const overlap = firstEntry!.x < heading!.x + heading!.width && firstEntry!.x + firstEntry!.width > heading!.x
+    && firstEntry!.y < heading!.y + heading!.height && firstEntry!.y + firstEntry!.height > heading!.y;
+  expect(overlap, `journal entry ${JSON.stringify(firstEntry)} intersects heading ${JSON.stringify(heading)}`).toBe(false);
+}
+
+export async function assertBoardBannerGeometry(page: Page): Promise<void> {
+  const canvas = page.locator(sel('board-canvas'));
+  await expect.poll(() => canvas.getAttribute('data-banner-bounds'), { timeout: 1_000 }).not.toBeNull();
+  const canvasBox = await canvas.boundingBox();
+  const measured = await canvas.evaluate(element => ({
+    size: Number((element as HTMLCanvasElement).dataset.boardSize),
+    bounds: JSON.parse((element as HTMLCanvasElement).dataset.bannerBounds!) as { x: number; y: number; width: number; height: number },
+  }));
+  expect(canvasBox).not.toBeNull();
+  const scale = canvasBox!.width / measured.size;
+  const banner = {
+    x: canvasBox!.x + measured.bounds.x * scale,
+    y: canvasBox!.y + measured.bounds.y * scale,
+    width: measured.bounds.width * scale,
+    height: measured.bounds.height * scale,
+  };
+  const cell = measured.size / 11;
+  const interior = {
+    x: canvasBox!.x + cell * scale,
+    y: canvasBox!.y + cell * scale,
+    right: canvasBox!.x + (measured.size - cell) * scale,
+    bottom: canvasBox!.y + (measured.size - cell) * scale,
+  };
+  expect(banner.x, 'measured banner left edge is inside the board interior').toBeGreaterThanOrEqual(interior.x);
+  expect(banner.x + banner.width, 'measured banner right edge is inside the board interior').toBeLessThanOrEqual(interior.right);
+  expect(banner.y, 'measured banner top edge is inside the board interior').toBeGreaterThanOrEqual(interior.y);
+  expect(banner.y + banner.height, 'measured banner bottom edge is inside the board interior').toBeLessThanOrEqual(interior.bottom);
+  const journal = await page.locator('.journal-column').boundingBox();
+  expect(journal).not.toBeNull();
+  const overlapsJournal = banner.x < journal!.x + journal!.width && banner.x + banner.width > journal!.x
+    && banner.y < journal!.y + journal!.height && banner.y + banner.height > journal!.y;
+  expect(overlapsJournal, `measured banner ${JSON.stringify(banner)} intersects journal ${JSON.stringify(journal)}`).toBe(false);
+}
 /** Assert dark header text keeps WCAG AA contrast against every solid stop of its light gradient. */
 export async function expectLightInkContrast(text: Locator, background = text): Promise<void> {
   const foreground = await text.evaluate(element => getComputedStyle(element).color);

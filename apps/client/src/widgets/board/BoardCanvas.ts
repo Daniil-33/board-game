@@ -376,6 +376,12 @@ export class BoardScene {
     this.diceLabel.visible = caption.length > 0;
     this.requestRender?.();
   }
+  /** Measured Pixi bounds in the board's logical coordinate space for browser geometry checks. */
+  getBannerBounds(): Rect | null {
+    if (!this.banner.visible) return null;
+    const bounds = this.banner.getBounds();
+    return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+  }
   setViewer(playerId: string | null): void { this.viewerId = playerId; }
 
   /**
@@ -471,6 +477,7 @@ export class BoardScene {
       }
       case 'banner':
         this.banner.text = step.caption?.(this.nameOf(step.playerId)) ?? t('board_canvas.custom_banner', { player: this.nameOf(step.playerId), text: step.text });
+        fitLabel(this.banner, this.size - (2 * this.size / 11) - 24);
         this.banner.visible = true;
         if (await wait(BANNER_MS)) this.banner.visible = false;
         return;
@@ -556,6 +563,7 @@ export async function mountBoard(host: HTMLElement, scene: BoardScene): Promise<
   });
   app.canvas.classList.add('board-canvas');
   app.canvas.dataset.testid = 'board-canvas';
+  app.canvas.dataset.boardSize = String(scene.size);
   // autoDensity pins the canvas to a pixel size; let the page scale it instead.
   app.canvas.style.width = '100%';
   app.canvas.style.height = 'auto';
@@ -570,6 +578,9 @@ export async function mountBoard(host: HTMLElement, scene: BoardScene): Promise<
     if (renderFrame !== null) return;
     renderFrame = requestAnimationFrame(() => {
       renderFrame = null;
+      const bannerBounds = scene.getBannerBounds();
+      if (bannerBounds === null) delete app.canvas.dataset.bannerBounds;
+      else app.canvas.dataset.bannerBounds = JSON.stringify(bannerBounds);
       app.render();
     });
   };
