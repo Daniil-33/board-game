@@ -4,7 +4,7 @@ import type { GameCommand, GameEvent } from './engine.js';
 import { creditBalance, debitBalance } from './money.js';
 import { isMortgaged, quantumRatio } from './rent.js';
 import { fail, ok, targetGuard, type CommandRegistry } from './registry.js';
-export type HouseErrorCode = 'PHASE_NOT_ALLOWED' | 'NOT_ACTIVE_PLAYER' | 'DECISION_PENDING' | 'AUCTION_IN_PROGRESS' | 'RENT_PENDING' | 'NOT_A_BUILDABLE_ASSET' | 'NOT_OWNER' | 'GROUP_INCOMPLETE' | 'GROUP_MORTGAGED' | 'MAX_HOUSES' | 'UNEVEN_BUILD' | 'BUILD_QUOTA_USED' | 'INSUFFICIENT_FUNDS' | 'NO_HOUSES' | 'UNEVEN_SALE';
+export type HouseErrorCode = 'PHASE_NOT_ALLOWED' | 'NOT_ACTIVE_PLAYER' | 'DECISION_PENDING' | 'AUCTION_IN_PROGRESS' | 'RENT_PENDING' | 'PAYMENT_PENDING' | 'NOT_A_BUILDABLE_ASSET' | 'NOT_OWNER' | 'GROUP_INCOMPLETE' | 'GROUP_MORTGAGED' | 'MAX_HOUSES' | 'UNEVEN_BUILD' | 'BUILD_QUOTA_USED' | 'INSUFFICIENT_FUNDS' | 'NO_HOUSES' | 'UNEVEN_SALE';
 /** House build cost Q(50% × price); a pure display helper shared with the client. */
 export function houseCost(price: Money): Money { return quantumRatio(price, 2); }
 /** House sale refund Q(50% × cost); a pure display helper shared with the client. */
@@ -16,6 +16,7 @@ function common(state: GameState, playerId: PlayerId, assetId: AssetId, allowRen
   if (state.turn!.playerId !== playerId || state.eliminated.includes(playerId)) return 'NOT_ACTIVE_PLAYER';
   if (state.purchase) return 'DECISION_PENDING';
   if (state.rent && !allowRent) return 'RENT_PENDING';
+  if (state.charge && !allowRent) return 'PAYMENT_PENDING';
   if (!state.board!.cells.some(c => c.kind === 'monopoly' && c.asset?.assetId === assetId)) return 'NOT_A_BUILDABLE_ASSET';
   if (state.owners[assetId] !== playerId) return 'NOT_OWNER';
   return null;

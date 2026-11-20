@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { gameEngine } from '../rules.js';
 import { createSession } from '../session.js';
 import { cmd, ctx, lobbyState, deepFreeze } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 const REV = 3;
 const add = (opts: Parameters<typeof cmd>[2]) => cmd('AddPlayer', { playerId: 'c' }, opts);
@@ -41,10 +42,10 @@ describe('revision guard', () => {
 describe('fingerprint uses expected', () => {
   it('the same commandId with a different expected is COMMAND_ID_CONFLICT', () => {
     const s = createSession(gameEngine);
-    const first = s.submit(cmd('CreateGame', { seed: 1, rulesVersion: 'core-7' }, { id: 'k', rev: 0 }), ctx());
+    const first = s.submit(cmd('CreateGame', { seed: 1, rulesVersion: CURRENT_RULES_VERSION }, { id: 'k', rev: 0 }), ctx());
     expect(first.kind).toBe('accepted');
     const again = s.submit(
-      cmd('CreateGame', { seed: 1, rulesVersion: 'core-7' }, { id: 'k', target: { kind: 'turn', id: 't' } }),
+      cmd('CreateGame', { seed: 1, rulesVersion: CURRENT_RULES_VERSION }, { id: 'k', target: { kind: 'turn', id: 't' } }),
       ctx(),
     );
     expect(again.kind).toBe('rejected');

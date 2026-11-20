@@ -94,7 +94,7 @@ commands: `sg docker -c 'docker compose -f docker-compose.dev.yml up -d --wait'`
 
 ## Stage 5 compatibility
 
-The server runs core-7 games. Welcome and Update expose
+The server runs games using the current rules version (`CURRENT_RULES_VERSION`); loaded snapshots are upgraded in memory through the core's version mapping before replay. Welcome and Update expose
 board, economy, balances, owners, purchase decisions, auction state, houses, rent,
 rent quotes, mortgages (with remainingLaps), eliminations and, once finished, the
 result; public core events (including AssetMortgaged, AssetRedeemed,

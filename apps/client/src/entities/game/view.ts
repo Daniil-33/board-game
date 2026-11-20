@@ -50,7 +50,7 @@ export interface ActionContext {
 
 /** Commands presented by the turn-action buttons; resignation has its own confirmation. */
 export type TurnCommandType = 'RollForOrder' | 'RollDice' | 'EndTurn';
-export type ActionAvailability = Readonly<Record<Exclude<ClientCommandType, AssetCommandType>, boolean>>;
+export type ActionAvailability = Readonly<Record<Exclude<ClientCommandType, AssetCommandType | 'PayCharge'>, boolean>>;
 
 function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): boolean {
   if (type === 'Resign') return view.phase === 'setup' || view.phase === 'playing';
@@ -58,6 +58,7 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
   if (type === 'Bid' || type === 'PassAuction') return view.auction?.responder === me && (type !== 'Bid' || nextBidAmount(view.auction) <= (view.balances[me] ?? 0));
   if (view.auction !== null || view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
   if (type === 'PayRent') return view.rent?.payerId === me;
+  if (type === 'PayCharge') return false; // No charge UI in this task.
   // Per-asset: legality comes from game-core's helpers (game/houses.ts, game/mortgages.ts).
   if (type === 'BuildHouse' || type === 'SellHouse' || type === 'Mortgage' || type === 'Redeem') return false;
   if (type === 'BuyAsset' || type === 'StartAuction') {

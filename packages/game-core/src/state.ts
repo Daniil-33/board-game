@@ -97,10 +97,18 @@ export interface RentSettlement {
   readonly diceSum: number | null;
 }
 
+export interface BankCharge {
+  readonly payerId: PlayerId;
+  readonly amount: Money;
+  readonly cause: 'chance';
+}
+
 export interface Mortgage {
   readonly advance: Money;
   readonly lapsCompleted: number;
   readonly pending: readonly PlayerId[];
+  /** Optional only for source compatibility with pre-core-8 test/client fixtures; persisted core-7 states pass through upgradeState. */
+  readonly lockedTurnId?: string | null;
 }
 
 export interface Elimination {
@@ -116,6 +124,8 @@ export interface GameState {
   readonly finishedAt: Timestamp | null;
   readonly houses: Readonly<Record<string, number>>;
   readonly rent: RentSettlement | null;
+  /** Optional only for source compatibility with pre-core-8 view fixtures; genesis and upgradeState always materialize null. */
+  readonly charge?: BankCharge | null | undefined;
   readonly owners: Readonly<Record<string, PlayerId>>;
   readonly purchase: PurchaseDecision | null;
   readonly auction: AuctionState | null;
@@ -153,7 +163,7 @@ export const MAX_PLAYERS = 6;
 export function genesis(): GameState {
   return {
     mortgages: {}, eliminations: [], finishedAt: null,
-    owners: {}, purchase: null, auction: null, houses: {}, rent: null,
+    owners: {}, purchase: null, auction: null, houses: {}, rent: null, charge: null,
     revision: 0 as Revision,
     board: null, economy: null, balances: {},
     rulesVersion: null,

@@ -50,6 +50,7 @@ describe('house legality adapter', () => {
       [{ ...s, turn: { ...s.turn!, playerId: pid('b') } }, 9, 'NOT_ACTIVE_PLAYER'],
       [{ ...s, purchase: { playerId: pid('a'), cell: 13, assetId: at(s, 13) } }, 9, 'DECISION_PENDING'],
       [withRent(s), 9, 'RENT_PENDING'],
+      [{ ...s, charge: { payerId: pid('a'), amount: 60 as Money, cause: 'chance' } }, 9, 'PAYMENT_PENDING'],
       [s, 5, 'NOT_A_BUILDABLE_ASSET'],
       [s, 11, 'NOT_OWNER'],
       [{ ...s, owners: { ...s.owners, [at(s, 9)]: pid('b') }, houses: {} }, 6, 'GROUP_INCOMPLETE'],

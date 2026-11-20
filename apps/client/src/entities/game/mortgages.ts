@@ -18,6 +18,8 @@ export const MORTGAGE_REASONS: Readonly<Record<MortgageErrorCode, string>> = {
   get NOT_ACTIVE_PLAYER() { return t('reasons.mortgage.NOT_ACTIVE_PLAYER'); },
   get DECISION_PENDING() { return t('reasons.mortgage.DECISION_PENDING'); },
   get RENT_PENDING() { return t('reasons.mortgage.RENT_PENDING'); },
+  get PAYMENT_PENDING() { return t('reasons.mortgage.PAYMENT_PENDING'); },
+  get REDEEM_LOCKED() { return t('reasons.mortgage.REDEEM_LOCKED'); },
   get NOT_AN_ASSET() { return t('reasons.mortgage.NOT_AN_ASSET'); },
   get NOT_OWNER() { return t('reasons.mortgage.NOT_OWNER'); },
   get ALREADY_MORTGAGED() { return t('reasons.mortgage.ALREADY_MORTGAGED'); },

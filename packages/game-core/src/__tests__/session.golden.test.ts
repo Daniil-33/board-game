@@ -5,6 +5,7 @@ import { pendingDeadlines } from '../deadlines.js';
 import { canonicalJson } from '../canonical.js';
 import { entropy } from '../types.js';
 import { cmd, ctx, player } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 /**
  * A fixed 300-command game: lifecycle, then the owner of every pending deadline acts
@@ -23,7 +24,7 @@ function play(): Session {
     if (r.kind !== 'accepted') throw new Error(`command ${i} (${c.type}) rejected: ${r.error.code}`);
     t = Math.max(t, at);
   };
-  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: 'core-7' }, { id: 'g0', rev: 0 }), t);
+  submit(cmd('CreateGame', { seed: 20261114, rulesVersion: CURRENT_RULES_VERSION }, { id: 'g0', rev: 0 }), t);
   for (const p of ['a', 'b', 'c', 'd']) submit(cmd('AddPlayer', { playerId: p }, { id: `add-${p}`, rev: s.state.revision }), t);
   submit(cmd('StartGame', null, { id: 'start', rev: s.state.revision }), t);
 

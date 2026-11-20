@@ -68,9 +68,11 @@ describe('mortgage controls', () => {
       ['mortgage', { ...s, turn: { ...s.turn!, playerId: pid('b') } }, 9, 'NOT_ACTIVE_PLAYER'],
       ['mortgage', { ...s, purchase: { playerId: pid('a'), cell: 13, assetId: at(s, 13) } }, 9, 'DECISION_PENDING'],
       ['redeem', withRent(m9), 9, 'RENT_PENDING'],
+      ['redeem', { ...m9, charge: { payerId: pid('a'), amount: 60 as Money, cause: 'chance' } }, 9, 'PAYMENT_PENDING'],
       ['mortgage', m9, 9, 'ALREADY_MORTGAGED'],
       ['mortgage', s, 6, 'HAS_HOUSES'],
       ['redeem', s, 9, 'NOT_MORTGAGED'],
+      ['redeem', { ...m9, mortgages: { ...m9.mortgages, [at(s, 9)]: { ...m9.mortgages[at(s, 9)]!, lockedTurnId: s.turn!.turnId } } }, 9, 'REDEEM_LOCKED'],
       ['redeem', { ...m9, balances: { ...m9.balances, a: 0 as Money } }, 9, 'INSUFFICIENT_FUNDS'],
     ];
     const seen = new Set<MortgageErrorCode>();

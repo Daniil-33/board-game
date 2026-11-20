@@ -8,6 +8,7 @@ import { genesis, type GameState } from '../state.js';
 import { projectState } from '../projection.js';
 import { pendingDeadlines } from '../deadlines.js';
 import { cmd, ctx, player } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 // Deterministic generator for the test itself (fixed test seed, no Math.random).
 class Gen {
@@ -73,7 +74,7 @@ function lifecycleCommand(g: Gen, state: GameState, history: GameCommand[], seq:
     phase === 'uninitialized' ? g.pick([0, 0, 0, 1, 4]) : phase === 'lobby' ? g.pick([1, 1, 1, 2, 2, 3, 4, 0]) : g.int(0, 4);
   switch (choice) {
     case 0:
-      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : 'core-7' }, opts);
+      return cmd('CreateGame', { seed: g.int(0, 2 ** 32 - 1), rulesVersion: g.int(0, 9) === 0 ? 'core-1' : CURRENT_RULES_VERSION }, opts);
     case 1:
       return cmd('AddPlayer', { playerId: g.pick(PLAYER_IDS) }, opts);
     case 2:

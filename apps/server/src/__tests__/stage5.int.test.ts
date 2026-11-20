@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { projectState, type GameEndedEvent, type GameState, type PlayerId } from '@game/game-core';
+import { CURRENT_RULES_VERSION, projectState, type GameEndedEvent, type GameState, type PlayerId } from '@game/game-core';
 import { PROTOCOL_VERSION } from '@game/protocol';
 import { sql } from 'kysely';
 import { useHarness } from './helpers/harness.js';
@@ -90,7 +90,7 @@ it('mortgages and redeems over sockets with exact rejection codes on every guest
 
   const mortgaged = await g.command('Mortgage', { assetId });
   expect(payload(mortgaged.events, 'AssetMortgaged')).toEqual({ playerId: payer, assetId, advance: term.advance, auto: false });
-  expect(g.room.state.mortgages[assetId]).toEqual({ advance: term.advance, lapsCompleted: 0, pending: g.room.state.order });
+  expect(g.room.state.mortgages[assetId]).toEqual({ advance: term.advance, lapsCompleted: 0, pending: g.room.state.order, lockedTurnId: g.room.state.turn!.turnId });
   expect(g.room.state.balances[payer]).toBe(cash);
   for (const client of g.clients) expect(client.socket.frames.filter(f => f.t === 'Update').at(-1)).toMatchObject({
     view: { mortgages: { [assetId]: { advance: term.advance, lapsCompleted: 0, remainingLaps: 8 } } } });
@@ -111,9 +111,8 @@ it('rejects a malformed mortgage payload and a protocol 4 Hello', async () => {
   expect(await socket.nextOf('Error')).toMatchObject({ code: 'MALFORMED_FRAME' });
   const old = await TestSocket.open(g.server.wsUrl);
   old.send({ t: 'Hello', protocolVersion: 4, token: g.guests[0]!.token, gameId: g.id, lastRevision: null });
-  expect(await old.nextOf('Error')).toMatchObject({ code: 'PROTOCOL_VERSION_UNSUPPORTED' });
+  expect(await old.nextOf('Error')).toMatchObject({ code: 'PROTOCOL_VERSION_UNSUPPORTED', message: `The server speaks protocol version ${PROTOCOL_VERSION}` });
   await old.whenClosed();
-  expect(PROTOCOL_VERSION).toBe(6);
 });
 
 it('expires a mortgage at the turn boundary and frees the asset on every guest', async () => {
@@ -180,7 +179,7 @@ it('terminal bankruptcy commits the result row with the log, status and final sn
   expect(stored.snapshots.at(-1)!.revision).toBe(g.room.state.revision);
   expect(stored.snapshots.at(-1)!.state).toEqual(g.room.state);
   expect(stored.results).toEqual([{
-    room_id: g.id, rules_version: 'core-7', winner_id: rent.ownerId, finished_at: new Date(ended.at),
+    room_id: g.id, rules_version: CURRENT_RULES_VERSION, winner_id: rent.ownerId, finished_at: new Date(ended.at),
     final_revision: g.room.state.revision, eliminations: ended.eliminations, final_balances: ended.finalBalances,
     created_at: expect.any(Date),
   }]);

@@ -116,7 +116,7 @@ function stage5Fixture(name: Stage5FixtureName, session: FixtureSession, now: nu
   const payerGroup = groupCells(groups[0]!);
   const creditorGroup = groupCells(groups.at(-1)!);
   const term = (cell: BoardCell, lapsCompleted: number, pending: readonly PlayerId[]): Mortgage =>
-    ({ advance: mortgageAdvance(cell.asset!.price), lapsCompleted, pending });
+    ({ advance: mortgageAdvance(cell.asset!.price), lapsCompleted, pending, lockedTurnId: null });
   const own = (holdings: readonly BoardCell[], owner: PlayerId) =>
     Object.fromEntries(holdings.map(c => [c.asset!.assetId, owner]));
 

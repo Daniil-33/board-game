@@ -27,7 +27,7 @@ function close(s: GameState, bonus = false) {
 }
 function mortgage(s = portfolio()) { const id=group(s)[2]!.assetId; return {id, r:accept(s,command(s,'Mortgage',id))}; }
 
-describe('core-7 mortgage commands',()=>{
+describe('core-8 mortgage commands',()=>{
   it('initializes state and rejects every earlier rules version',()=>{
     expect(genesis()).toMatchObject({mortgages:{},eliminations:[],finishedAt:null});
     for(let i=0;i<=6;i++) reject(genesis(),cmd('CreateGame',{seed:42,rulesVersion:`core-${i}`}),'UNSUPPORTED_RULES_VERSION');
@@ -35,11 +35,13 @@ describe('core-7 mortgage commands',()=>{
   it('credits quantized advance, preserves sibling houses, and redeems the stored advance',()=>{
     let s=portfolio(); const [a,b,c]=group(s);s={...s,houses:{[a!.assetId]:1,[b!.assetId]:1}};
     const r=accept(s,command(s,'Mortgage',c!.assetId)),amount=mortgageAdvance(c!.price);
-    expect(r.state.mortgages[c!.assetId]).toEqual({advance:amount,lapsCompleted:0,pending:s.order});
+    expect(r.state.mortgages[c!.assetId]).toEqual({advance:amount,lapsCompleted:0,pending:s.order,lockedTurnId:s.turn!.turnId});
     expect(r.state.houses).toEqual(s.houses);expect(r.state.balances.a).toBe(s.balances.a!+amount);
     expect(r.events).toEqual([{type:'BalanceChanged',payload:{playerId:'a',delta:amount,balance:s.balances.a!+amount,reason:'mortgage'}},{type:'AssetMortgaged',payload:{playerId:'a',assetId:c!.assetId,advance:amount,auto:false}}]);
     expect(buildLegality(r.state,pid('a'),c!.assetId)).toBe('GROUP_MORTGAGED');
-    const redeemed=accept(r.state,command(r.state,'Redeem',c!.assetId));expect(redeemed.state.mortgages).toEqual({});expect(redeemed.state.balances).toEqual(s.balances);
+    reject(r.state,command(r.state,'Redeem',c!.assetId),'REDEEM_LOCKED');
+    const laterTurn={...r.state,mortgages:{...r.state.mortgages,[c!.assetId]:{...r.state.mortgages[c!.assetId]!,lockedTurnId:null}}};
+    const redeemed=accept(laterTurn,command(laterTurn,'Redeem',c!.assetId));expect(redeemed.state.mortgages).toEqual({});expect(redeemed.state.balances).toEqual(s.balances);
     expect(redeemed.events[0]!.payload).toMatchObject({delta:-amount,reason:'redeem'});
     expect(redeemed.events[1]).toEqual({type:'AssetRedeemed',payload:{playerId:'a',assetId:c!.assetId,amount}});
     for(const cell of s.board!.cells) if(cell.asset) expect(mortgageAdvance(cell.asset.price)).toBe(q(cell.asset.price,2));
@@ -57,7 +59,7 @@ describe('core-7 mortgage commands',()=>{
       [{...s,purchase:{} as never,rent:{} as never},'Redeem',id,'DECISION_PENDING'],
       [{...s,rent:{} as never},'Redeem',id,'RENT_PENDING'],[s,'Redeem','unknown' as AssetId,'NOT_AN_ASSET'],
       [{...s,owners:{}},'Redeem',id,'NOT_OWNER'],[s,'Redeem',id,'NOT_MORTGAGED'],
-      [{...mortgaged,balances:{...s.balances,a:0 as Money}},'Redeem',id,'INSUFFICIENT_FUNDS'],
+      [{...mortgaged,mortgages:{...mortgaged.mortgages,[id]:{...mortgaged.mortgages[id]!,lockedTurnId:null}},balances:{...s.balances,a:0 as Money}},'Redeem',id,'INSUFFICIENT_FUNDS'],
     ];
     for(const [state,type,assetId,code] of cases){ expect((type==='Mortgage'?mortgageLegality:redeemLegality)(state,pid('a'),assetId)).toBe(code);reject(state,command(state,type,assetId,pid('a')),code); }
   });
@@ -70,11 +72,13 @@ describe('core-7 mortgage commands',()=>{
       [{...mortgaged,rent:{} as never},id,'RENT_PENDING'],
       [mortgaged,'unknown' as AssetId,'NOT_AN_ASSET'],
       [{...mortgaged,owners:{[id]:pid('b')}},id,'NOT_OWNER'],
-      [{...mortgaged,balances:{...mortgaged.balances,a:0 as Money}},id,'INSUFFICIENT_FUNDS'],
+      [{...mortgaged,mortgages:{...mortgaged.mortgages,[id]:{...mortgaged.mortgages[id]!,lockedTurnId:null}},balances:{...mortgaged.balances,a:0 as Money}},id,'INSUFFICIENT_FUNDS'],
     ];
     for(const [state,assetId,code] of cases){expect(redeemLegality(state,pid('a'),assetId)).toBe(code);reject(state,command(state,'Redeem',assetId),code);}
     expect(rentFor(mortgaged,id,null)).toBe(0);
-    const redeemed=accept(mortgaged,command(mortgaged,'Redeem',id)).state;
+    reject(mortgaged,command(mortgaged,'Redeem',id),'REDEEM_LOCKED');
+    const laterTurn={...mortgaged,mortgages:{...mortgaged.mortgages,[id]:{...mortgaged.mortgages[id]!,lockedTurnId:null}}};
+    const redeemed=accept(laterTurn,command(laterTurn,'Redeem',id)).state;
     expect(rentFor(redeemed,id,null)).toBe(rentFor(s,id,null));expect(rentFor(redeemed,id,null)).toBeGreaterThan(0);
   });
   it.each(['Mortgage','Redeem'])('%s respects payload, envelope, auction, actor and deadline precedence',type=>{
@@ -220,7 +224,11 @@ describe('resignation, projection and restoration',()=>{
       const r=session.submit(c,ctx(T0,dice?forceEntropy(s.rng!,dice):undefined));
       if(r.kind!=='accepted')throw new Error(`${type}: ${r.error.code}`);return r.events;
     };
-    submit('Mortgage',id);submit('Redeem',id);submit('Mortgage',id);
+    submit('Mortgage',id);
+    const beforeRejectedRedeem=session.state, loggedBeforeRejectedRedeem=session.log.length;
+    const rejectedRedeem=session.submit(command(session.state,'Redeem',id),ctx(T0));
+    expect(rejectedRedeem.kind==='rejected'&&rejectedRedeem.error.code).toBe('REDEEM_LOCKED');
+    expect(session.state).toBe(beforeRejectedRedeem);expect(session.log).toHaveLength(loggedBeforeRejectedRedeem);
     const snapshot=session.state,prefix=session.log.length;
     expect(projectState(snapshot,{kind:'spectator'}).result).toBeNull();
     const deadline=pendingDeadlines(snapshot);

@@ -3,12 +3,13 @@ import { createSession, replay, type LogEntry } from '../session.js';
 import { gameEngine } from '../rules.js';
 import { entropy, type Entropy } from '../types.js';
 import { cmd, ctx } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 const ent = (n: number): Entropy => entropy([n, n + 1, n + 2, n + 3]);
 
 function playedSession() {
   const s = createSession(gameEngine);
-  s.submit(cmd('CreateGame', { seed: 42, rulesVersion: 'core-7' }, { id: 'c1', rev: 0 }), ctx(1000, ent(10)));
+  s.submit(cmd('CreateGame', { seed: 42, rulesVersion: CURRENT_RULES_VERSION }, { id: 'c1', rev: 0 }), ctx(1000, ent(10)));
   s.submit(cmd('AddPlayer', { playerId: 'a' }, { id: 'c2', rev: 1 }), ctx(2000, ent(20)));
   s.submit(cmd('AddPlayer', { playerId: 'b' }, { id: 'c3', rev: 2 }), ctx(3000, ent(30)));
   s.submit(cmd('StartGame', null, { id: 'c4', rev: 3 }), ctx(4000, ent(40)));
@@ -24,7 +25,7 @@ describe('entropy in the session log', () => {
   it('keeps a detached copy: mutating the caller’s entropy array does not change the log', () => {
     const s = createSession(gameEngine);
     const words = [5, 6, 7, 8] as unknown as Entropy; // a mutable, caller-owned array
-    s.submit(cmd('CreateGame', { seed: 1, rulesVersion: 'core-7' }, { id: 'x', rev: 0 }), ctx(1, words));
+    s.submit(cmd('CreateGame', { seed: 1, rulesVersion: CURRENT_RULES_VERSION }, { id: 'x', rev: 0 }), ctx(1, words));
     (words as unknown as number[])[0] = 999;
     expect(s.log[0]!.entropy).toEqual([5, 6, 7, 8]);
   });

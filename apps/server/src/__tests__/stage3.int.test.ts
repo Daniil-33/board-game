@@ -135,8 +135,7 @@ describe('stage 3 auction sockets', () => {
     const server = await startServer(h);
     const socket = await TestSocket.open(server.wsUrl);
     socket.send({ t: 'Hello', protocolVersion: 2, token: 'invalid', gameId: 'unknown', lastRevision: null });
-    expect(PROTOCOL_VERSION).toBe(6);
-    expect(await socket.nextOf('Error')).toMatchObject({ code: 'PROTOCOL_VERSION_UNSUPPORTED' });
+    expect(await socket.nextOf('Error')).toMatchObject({ code: 'PROTOCOL_VERSION_UNSUPPORTED', message: `The server speaks protocol version ${PROTOCOL_VERSION}` });
     await socket.whenClosed();
   });
 

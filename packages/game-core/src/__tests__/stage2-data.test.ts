@@ -9,6 +9,7 @@ import { checkInvariants } from '../invariants.js';
 import { genesis } from '../state.js';
 import { entropy, type Money } from '../types.js';
 import { pid, deepFreeze } from './helpers/fixtures.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 const names = [
   ['ПриватБанк', 'Ощадбанк', 'monobank', 'ПУМБ', 'Укргазбанк', 'Райффайзен Банк', 'Sense Bank', 'А-Банк'],
   ['ARX', 'ТАС', 'Оранта', 'Universalna', 'ІНГО', 'USG'],
@@ -80,7 +81,7 @@ describe('gen-1 deterministic proof', () => {
     const categories = new Set<string>();
     for (let seed = 0; seed < 500; seed++) {
       const generated = generateBoard(seedRng(seed));
-      checkInvariants({ ...genesis(), phase: 'lobby', rulesVersion: 'core-7', ...generated });
+      checkInvariants({ ...genesis(), phase: 'lobby', rulesVersion: CURRENT_RULES_VERSION, ...generated });
       for (const c of generated.board.cells)
         if (c.asset) {
           seen.add(c.asset.assetId);

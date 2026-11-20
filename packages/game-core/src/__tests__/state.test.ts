@@ -5,6 +5,7 @@ import { checkInvariants, InvariantViolationError, type InvariantName } from '..
 import { seedRng } from '../rng.js';
 import type { PlayerId, Revision } from '../types.js';
 import { setupGame, playingGame } from './helpers/game.js';
+import { CURRENT_RULES_VERSION } from '../lifecycle.js';
 
 const pid = (s: string) => s as PlayerId;
 
@@ -26,7 +27,7 @@ describe('genesis', () => {
 const lobby: GameState = {
   ...genesis(),
   revision: 3 as Revision,
-  rulesVersion: 'core-7',
+  rulesVersion: CURRENT_RULES_VERSION,
   phase: 'lobby',
   players: [{ id: pid('a') }, { id: pid('b') }],
   ...generateBoard(seedRng(1)),

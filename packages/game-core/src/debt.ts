@@ -9,9 +9,9 @@ import { cancelOffersOf, releaseAssets } from './resignation.js';
 
 export interface Debt {
   readonly payerId: PlayerId;
-  readonly creditorId: PlayerId;
+  readonly creditor: { readonly kind: 'player'; readonly id: PlayerId } | { readonly kind: 'bank' };
   readonly amount: Money;
-  readonly cause: { readonly kind: 'rent'; readonly assetId: AssetId; readonly auto: boolean };
+  readonly cause: { readonly kind: 'rent'; readonly assetId: AssetId; readonly auto: boolean } | { readonly kind: 'chance'; readonly auto: boolean };
 }
 export interface LiquidationStep {
   readonly tier: 1 | 2 | 3;
@@ -19,15 +19,19 @@ export interface LiquidationStep {
   readonly assetId: AssetId;
   readonly amount: Money;
 }
-export type LiquidationApplied = GameEvent<{readonly payerId: PlayerId; readonly creditorId: PlayerId; readonly debt: Money; readonly cashBefore: Money; readonly raised: Money; readonly steps: readonly LiquidationStep[]}, 'LiquidationApplied'>;
-export type PlayerBankrupt = GameEvent<{readonly playerId: PlayerId; readonly creditorId: PlayerId; readonly debt: Money; readonly paid: Money; readonly writtenOff: Money}, 'PlayerBankrupt'>;
+export type LiquidationApplied = GameEvent<{readonly payerId: PlayerId; readonly creditorId: PlayerId | null; readonly debt: Money; readonly cashBefore: Money; readonly raised: Money; readonly steps: readonly LiquidationStep[]}, 'LiquidationApplied'>;
+export type PlayerBankrupt = GameEvent<{readonly playerId: PlayerId; readonly creditorId: PlayerId | null; readonly debt: Money; readonly paid: Money; readonly writtenOff: Money}, 'PlayerBankrupt'>;
 export type DebtEvent = LiquidationApplied | PlayerBankrupt;
 export type DebtResult = {state: GameState; events: GameEvent[]; bankrupt: boolean};
 const lexical = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 
 /** Atomic raising and payment. Turn scheduling remains the caller's responsibility. */
 export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): DebtResult {
-  const {payerId, creditorId, amount, cause} = debt;
+  const {payerId, amount, cause} = debt;
+  const creditor = debt.creditor;
+  if (cause.kind === 'rent' && creditor.kind !== 'player') throw new Error('Rent must have a player creditor');
+  const creditorId = creditor.kind === 'player' ? creditor.id : null;
+  const reason = cause.kind === 'rent' ? 'rent' : 'chance';
   let state = initial;
   const events: GameEvent[] = [];
   const assets = initial.board!.cells.flatMap(c => c.asset && initial.owners[c.asset.assetId] === payerId ? [c.asset] : []);
@@ -52,9 +56,12 @@ export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): Debt
   };
   const transfer = (paid: Money) => {
     if (paid === 0) return;
-    const debit = debitBalance(state.balances,payerId,paid,'rent');
-    const credit = creditBalance(debit.balances,creditorId,paid,'rent');
-    state = {...state, balances: credit.balances}; events.push(debit.event,credit.event);
+    const debit = debitBalance(state.balances,payerId,paid,reason);
+    state = {...state, balances: debit.balances}; events.push(debit.event);
+    if (creditor.kind === 'player') {
+      const credit = creditBalance(state.balances,creditor.id,paid,'rent');
+      state = {...state, balances: credit.balances}; events.push(credit.event);
+    }
   };
   const fullValue = cash() + assets.reduce((n,a) => n + built(a) * houseRefund(houseCost(a.price)) + (isMortgaged(state,a.assetId) ? 0 : mortgageAdvance(a.price)),0);
   if (cash() < amount && fullValue < amount) {
@@ -73,7 +80,7 @@ export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): Debt
       order:state.order!.filter(p => p !== payerId),
       positions:Object.fromEntries(Object.entries(state.positions).filter(([p]) => p !== payerId)),
       jail:Object.fromEntries(Object.entries(state.jail).filter(([p]) => p !== payerId)),
-      rent:null, turn:{...state.turn!,pendingBonus:false}},payerId);
+      rent:null, charge:null, turn:{...state.turn!,pendingBonus:false}},payerId);
     return {state,events,bankrupt:true};
   }
   if (cash() < amount) {
@@ -102,6 +109,9 @@ export function settleDebt(initial: GameState, debt: Debt, now: Timestamp): Debt
     events.push({type:'LiquidationApplied',payload:{payerId,creditorId,debt:amount,cashBefore,raised:cash()-cashBefore as Money,steps}} satisfies LiquidationApplied);
   }
   transfer(amount);
-  events.push({type:'RentPaid',payload:{payerId,ownerId:creditorId,assetId:cause.assetId,amount,auto:cause.auto}} satisfies RentPaid);
-  return {state:{...state,rent:null},events,bankrupt:false};
+    if (cause.kind === 'rent') {
+      events.push({type:'RentPaid',payload:{payerId,ownerId:creditorId!,assetId:cause.assetId,amount,auto:cause.auto}} satisfies RentPaid);
+    }
+    else events.push({type:'ChargePaid',payload:{payerId,amount,auto:cause.auto}});
+  return {state:{...state,rent:null,charge:null},events,bankrupt:false};
 }

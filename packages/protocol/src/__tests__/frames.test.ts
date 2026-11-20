@@ -19,8 +19,8 @@ const enc = (v: unknown) => JSON.stringify(v);
 const isMalformed = (r: { ok: boolean; error?: { code: string } }) => !r.ok && r.error?.code === 'MALFORMED_FRAME';
 
 describe('protocol version and codes', () => {
-  it('PROTOCOL_VERSION is 6', () => {
-    expect(PROTOCOL_VERSION).toBe(6);
+  it('PROTOCOL_VERSION is 7', () => {
+    expect(PROTOCOL_VERSION).toBe(7);
   });
 
   it('lists the seven protocol error codes', () => {
@@ -35,10 +35,17 @@ describe('protocol version and codes', () => {
     ]);
   });
 
-  it('client command types match the stage 5 allowlist', () => {
-    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem']);
+  it('client command types include the bank charge command', () => {
+    expect(CLIENT_COMMAND_TYPES).toEqual(['RollForOrder', 'RollDice', 'EndTurn', 'Resign', 'BuyAsset', 'StartAuction', 'Bid', 'PassAuction', 'PayRent', 'PayCharge', 'BuildHouse', 'SellHouse', 'Mortgage', 'Redeem']);
     expectTypeOf<CommandFrame['type']>().toEqualTypeOf<ClientCommandType>();
   });
+});
+
+it('round-trips PayCharge with the required null payload', () => {
+  const frame = { t: 'Command', commandId: 'charge-1', type: 'PayCharge',
+    expected: { kind: 'target', target: { kind: 'turn', id: 'turn-3' } }, payload: null };
+  expect(decodeClientFrame(enc(frame))).toEqual({ ok: true, frame });
+  expect(decodeClientFrame(enc({ ...frame, payload: {} }))).toMatchObject({ ok: false, error: { code: 'MALFORMED_FRAME' } });
 });
 
 describe('static types come from game-core', () => {

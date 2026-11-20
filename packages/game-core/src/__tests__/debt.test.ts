@@ -13,7 +13,7 @@ function fixture(indices: number[], houses: Record<number, number> = {}, players
 }
 const asset = (s: GameState,i: number) => s.board!.cells[i]!.asset!;
 function debt(s: GameState, amount: number) {
-  return settleDebt(deepFreeze(s),{payerId:pid('a'),creditorId:pid('b'),amount:money(amount),cause:{kind:'rent',assetId:asset(s,39).assetId,auto:false}},now);
+  return settleDebt(deepFreeze(s),{payerId:pid('a'),creditor:{kind:'player',id:pid('b')},amount:money(amount),cause:{kind:'rent',assetId:asset(s,39).assetId,auto:false}},now);
 }
 const steps = (r: ReturnType<typeof debt>) => (r.events.find(e => e.type === 'LiquidationApplied') as LiquidationApplied).payload.steps;
 function due(s: GameState, amount: number): GameState {
