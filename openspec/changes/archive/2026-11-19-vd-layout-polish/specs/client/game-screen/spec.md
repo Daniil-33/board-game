@@ -27,7 +27,7 @@ At desktop widths, the controls column SHALL be constrained below the top bar. T
 - **THEN** its named region SHALL not add a keyboard tab stop; when it overflows, the region SHALL receive `tabindex="0"`
 
 ### Requirement: Temporary jail progress is visible
-When the active turn owner is in temporary jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of `INTERIM_JAIL_RULE.maxAttempts`.
+When the active turn owner is in temporary jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of `three-attempt jail limit`.
 
 #### Scenario: Observer sees next jail attempt
 - **WHEN** the active turn owner has a temporary jail entry

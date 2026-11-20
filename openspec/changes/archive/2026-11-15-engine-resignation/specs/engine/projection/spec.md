@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: State projection hides secrets
-Projecting a game state for any viewer SHALL return a view that contains no RNG state, in any phase. Every other field of the current state (revision, rules version, phase, players, order-roll state, turn order, current turn, positions, interim jail entries, eliminated ids and winner) SHALL be present in the view with the same value as in the state.
+Projecting a game state for any viewer SHALL return a view that contains no RNG state, in any phase. Every other field of the current state (revision, rules version, phase, players, order-roll state, turn order, current turn, positions, prior jail entries, eliminated ids and winner) SHALL be present in the view with the same value as in the state.
 
 #### Scenario: RNG never projected
 - **WHEN** a state in phase `lobby`, `setup`, `playing` or `finished` is projected for a player viewer and for a spectator viewer
@@ -14,7 +14,7 @@ Projecting a game state for any viewer SHALL return a view that contains no RNG 
 - **THEN** the view SHALL carry the state's revision, rules version, phase, players, order-roll state, turn order, current turn, positions, jail entries, eliminated ids and winner unchanged
 
 ### Requirement: Event projection fails closed
-Projecting events for a viewer SHALL keep their order and return each event the viewer may see. Every lifecycle event (`GameCreated`, `PlayerAdded`, `GameStarted`) and every order-roll, turn, interim-jail, leave, resignation and game-end event SHALL be visible to every viewer unchanged. An event whose type has no visibility classification SHALL raise an engine-defect error rather than be passed through.
+Projecting events for a viewer SHALL keep their order and return each event the viewer may see. Every lifecycle event (`GameCreated`, `PlayerAdded`, `GameStarted`) and every order-roll, turn, prior jail, leave, resignation and game-end event SHALL be visible to every viewer unchanged. An event whose type has no visibility classification SHALL raise an engine-defect error rather than be passed through.
 
 #### Scenario: Lifecycle events are public
 - **WHEN** the events of `CreateGame`, `AddPlayer` and `StartGame` are projected for a spectator viewer

@@ -100,7 +100,7 @@ return `{ ok: false, error: { code: 'MALFORMED_FRAME', message } }`.
 `@game/game-core`. The decoder SHALL check that the view is a JSON object and
 each event has a type and payload; missing payloads SHALL be rejected, and
 data-less events SHALL use `payload: null`. The view schema description SHALL
-document the public core-9 view without game-core symbols or interim-jail text.
+document the public core-9 view without game-core symbols or prior jail text.
 
 #### Scenario: View must be an object
 - **WHEN** an `Update` has `view: null` or `view: []`
@@ -209,7 +209,7 @@ Welcome and Update SHALL preserve core-8 mortgage lock state, open bank charges,
 - **THEN** encoding and decoding SHALL preserve those events and their payloads unchanged
 
 ### Requirement: Special-cell protocol contracts
-The protocol SHALL validate `PlaceCasinoBet {amount}`, null-payload `DeclineCasino` and null-payload `PayJailFee`; expose casino in `StateView`; define the casino, chance and final jail event payloads; classify those events as public; and increment `PROTOCOL_VERSION` once for this contract change. Core exports SHALL include pure `jailFee(economy)` and `casinoCap(economy)` helpers. Interim jail commands, events and temporary text SHALL be absent.
+The protocol SHALL validate `PlaceCasinoBet {amount}`, null-payload `DeclineCasino` and null-payload `PayJailFee`; expose casino in `StateView`; define the casino, chance and final jail event payloads; classify those events as public; and increment `PROTOCOL_VERSION` once for this contract change. Core exports SHALL include pure `jailFee(economy)` and `casinoCap(economy)` helpers. Prior jail commands, events and temporary text SHALL be absent.
 
 #### Scenario: Special-cell command round trip
 - **WHEN** a valid stage 6 command is encoded and decoded

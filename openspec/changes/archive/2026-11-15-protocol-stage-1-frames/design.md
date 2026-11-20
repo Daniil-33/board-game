@@ -54,10 +54,10 @@ does not re-declare the state shape: the server is authoritative and
 game-core owns `StateView`, which `TASK-s1-core-turns` is changing in
 parallel. The client gets a compile-time type from game-core and a runtime
 guarantee only that the frame envelope is well-formed. The `view` schema
-`description` states that the interim-jail part of the view
+`description` states that the prior jail part of the view
 (stage 1 interim rule, replaced in stage 6) is temporary; no protocol field
 carries jail data of its own. The description does not name game-core
-symbols: "Interim jail state in this view is temporary (stage 1 interim rule,
+symbols: "Prior jail state in this view is temporary (stage 1 interim rule,
 replaced in stage 6)." An event's `payload` is required; an event without
 data carries `payload: null`.
 

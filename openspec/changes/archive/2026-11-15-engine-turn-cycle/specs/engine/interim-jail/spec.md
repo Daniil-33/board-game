@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the temporary stage 1 jail rule without money: how a prisoner tries to leave on their own turns. It is named `INTERIM_JAIL_RULE` in code and protocol and is replaced by the final jail rules in stage 6.
+Defines the temporary stage 1 jail rule without money: how a prisoner tries to leave on their own turns. It is named the three-attempt jail rule in code and protocol and is replaced by the final jail rules in stage 6.
 
 ## ADDED Requirements
 

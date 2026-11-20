@@ -27,9 +27,9 @@ All paths are under `packages/game-core/src`. After each group: `pnpm -r exec ts
 - [x] 4.3 Deadline boundaries. Verify: `deadlines.test.ts` runs each of `RollForOrder`, `RollDice`, `EndTurn` at `deadline - 1` (accepted), `deadline`, `deadline + 1` (`DEADLINE_PASSED`), and `Timeout` for `setupRoll` and `turn` at `deadline - 1` (`DEADLINE_NOT_REACHED`), `deadline`, `deadline + 1` (accepted), plus a stale-turn `Timeout` (`TARGET_MISMATCH`) and continuation deadline = T + 20 000.
 - [x] 4.4 Classify the turn events in `EVENT_VISIBILITY`. Verify: `tsc --noEmit`; projection test over a seeded game's events.
 
-## 5. Interim jail (spec: engine/interim-jail)
+## 5. Prior jail (spec: engine/special-cells)
 
-- [x] 5.1 Add `interim-jail.ts` with `INTERIM_JAIL_RULE` (marked temporary) and `resolveJailAttempt`, wired into `applyRoll` (design D1, D6). Verify: `interim-jail.test.ts` covers prisoner not skipped, release by double without bonus, two failed attempts without movement, third failed attempt moves by its sum, automatic attempt with continuation, jail roll does not count toward the streak.
+- [x] 5.1 Add `jail-attempt module` with the three-attempt jail rule (marked temporary) and `resolveJailAttempt`, wired into `applyRoll` (design D1, D6). Verify: `jail-attempt tests` covers prisoner not skipped, release by double without bonus, two failed attempts without movement, third failed attempt moves by its sum, automatic attempt with continuation, jail roll does not count toward the streak.
 
 ## 6. Session restore (spec: engine/session "Restore from snapshot and tail", "Restore divergence is reported")
 

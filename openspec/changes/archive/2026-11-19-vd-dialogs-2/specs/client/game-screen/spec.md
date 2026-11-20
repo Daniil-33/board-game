@@ -154,7 +154,7 @@ Purchase and auction dialogs, sheets and status surfaces SHALL use a defined opa
 - **THEN** its background SHALL be opaque and the page SHALL not scroll to reach its controls
 
 ### Requirement: Temporary jail-attempt status
-The order panel SHALL show the projected temporary-jail attempts used out of INTERIM_JAIL_RULE.maxAttempts. It SHALL use only attemptsUsed and SHALL NOT add jail actions or the out-of-scope final jail state.
+The order panel SHALL show the projected temporary-jail attempts used out of three-attempt jail limit. It SHALL use only attemptsUsed and SHALL NOT add jail actions or the out-of-scope final jail state.
 
 #### Scenario: Temporary jail status
 - **WHEN** the current projection marks a player in temporary jail

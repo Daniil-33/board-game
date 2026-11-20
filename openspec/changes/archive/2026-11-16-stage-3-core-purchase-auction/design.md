@@ -4,7 +4,7 @@
 
 See proposal.md for motivation and sources. The worktree starts at `5bf02e9`; TL design/task revision 2 are supplied from TL-stage-3-design at PR #33 head `3605b2a`. The Team Lead response additionally approves deferred-resignation representation. These sources, not discarded revision 1 defaults, govern Apply.
 
-Current `turns.ts` owns rolls and closeTurn; interim-jail release already moves via normal board movement. `rules.ts` dispatches Timeout through a targets guard derived from pendingDeadlines. `money.ts` only credits nonnegative deltas. State and event projection have exhaustive visibility maps. Session already supports deterministic replay, entropy and snapshot tails. The property generator only knows old turn commands and must learn decisions/auctions so it continues exercising turns.
+Current `turns.ts` owns rolls and closeTurn; prior jail release already moves via normal board movement. `rules.ts` dispatches Timeout through a targets guard derived from pendingDeadlines. `money.ts` only credits nonnegative deltas. State and event projection have exhaustive visibility maps. Session already supports deterministic replay, entropy and snapshot tails. The property generator only knows old turn commands and must learn decisions/auctions so it continues exercising turns.
 
 ## Goals / Non-Goals
 
@@ -22,7 +22,7 @@ Retain closeTurn as the single normal/bonus/resigned closure path. Prefer having
 
 ### Landing and money
 
-Offer purchase after a move and any lap reward in both normal roll and interim-jail release branches, never on a failed jailed attempt or third-double jail transfer. Preserve automatic-roll continuation: it opens a purchase decision and sets the continuation deadline, rather than auctioning immediately.
+Offer purchase after a move and any lap reward in both normal roll and prior jail release branches, never on a failed jailed attempt or third-double jail transfer. Preserve automatic-roll continuation: it opens a purchase decision and sets the continuation deadline, rather than auctioning immediately.
 
 Add a checked debit operation for purchase and auction rather than weakening creditBalance's positive-credit contract. Compute bid amounts using integer numerator arithmetic: 10 * floor(60 * price / 1000) and 10 * floor(5 * price / 1000). No independently stored reservation: derive it from leader and leadingBid. Validate before constructing replacement state; envelope/handler rejections leave state and RNG untouched. Existing accepted-command entropy absorption remains in the registry, not the new module.
 

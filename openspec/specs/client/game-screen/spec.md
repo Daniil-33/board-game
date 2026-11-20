@@ -719,7 +719,7 @@ Purchase and auction dialogs, sheets and status surfaces SHALL use a defined opa
 - **THEN** its background SHALL be opaque and the page SHALL not scroll to reach its controls
 
 ### Requirement: Temporary jail-attempt status
-The order panel SHALL show the projected temporary-jail attempts used out of INTERIM_JAIL_RULE.maxAttempts. It SHALL use only attemptsUsed and SHALL NOT add jail actions or the out-of-scope final jail state.
+The order panel SHALL show the projected temporary-jail attempts used out of three attempts. It SHALL use only attemptsUsed and SHALL NOT add jail actions or the out-of-scope final jail state.
 
 #### Scenario: Temporary jail status
 - **WHEN** the current projection marks a player in temporary jail
@@ -815,7 +815,7 @@ At desktop widths, the controls column SHALL be constrained below the top bar. T
 - **THEN** its named region SHALL not add a keyboard tab stop; when it overflows, the region SHALL receive `tabindex="0"`
 
 ### Requirement: Temporary jail progress is visible
-When the active turn owner is in temporary jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of `INTERIM_JAIL_RULE.maxAttempts`.
+When the active turn owner is in temporary jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of three attempts.
 
 #### Scenario: Observer sees next jail attempt
 - **WHEN** the active turn owner has a temporary jail entry

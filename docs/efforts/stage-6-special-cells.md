@@ -16,7 +16,7 @@ status: proposed
 ROADMAP.md stage 6 "Особые клетки": casino, chance and the final jail rule,
 plus the owner rule of 2026-11-19 that limits asset actions to the player's own
 turn. Today the casino, chance and "В тюрьму" cells do nothing, and jail uses
-the interim stage 1 rule with no fees (`packages/game-core/src/interim-jail.ts`).
+the interim stage 1 rule with no fees (the stage 1 jail-attempt implementation).
 After this effort, every cell on `CLASSIC_40` has its final MVP effect. The
 change runs through core, protocol, server and client. The client is built
 directly in the accepted visual design (EFF-visual-design, accepted 2026-11-20
@@ -116,12 +116,12 @@ it becomes a new revision.
 11. **Rights in jail.** A prisoner still owns their assets, receives rent and
     may trade (stage 7). Asset actions follow criteria 12-13 on their own
     turns.
-12. **Replace the interim rule.** `interim-jail.ts`, the `Interim*` events and
+12. **Replace the interim rule.** jail-attempt code and the old jail events and
     their "temporary" markers in the code and protocol are removed. Games
-    stored with the interim jail state get a handling stated in the design.
+    stored with the prior jail state get a handling stated in the design.
     For example, a prisoner keeps their attempts used and the final rules
     apply from the next turn.
-    Logs already stored with `Interim*` events keep recovering and replaying,
+    Logs already stored with the former jail events keep recovering and replaying,
     through a legacy read path or a one-time snapshot migration. New
     transitions never use the interim rule.
 
@@ -185,7 +185,7 @@ it becomes a new revision.
 
 In scope:
 - `packages/game-core`: casino, chance, final jail, own-turn guards, redeem
-  lock, removing the interim jail rule;
+  lock, removing the prior jail rule;
 - `packages/protocol`;
 - `apps/server`: persistence, recovery and the stored-game handling;
 - `apps/client`: dialogs, animations and states;
@@ -291,7 +291,7 @@ The owner decides any change to a **[CTO]** item, through the CTO.
 
 ## Revision history
 
-- 1: initial handoff. Amended before merge (TL pre-read 20261120T065958Z): jail fee timing J1 = option A in criterion 9; TL assumptions on stored interim-jail logs, own-turn test updates and integer percentages accepted.
+- 1: initial handoff. Amended before merge (TL pre-read 20261120T065958Z): jail fee timing J1 = option A in criterion 9; TL assumptions on stored prior jail logs, own-turn test updates and integer percentages accepted.
 
 ## Acceptance
 

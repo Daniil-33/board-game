@@ -18,7 +18,7 @@ Every special cell on `CLASSIC_40` has its final MVP effect in `packages/game-co
 - **"В тюрьму":** sends the player to jail;
 - **final jail:** roll for a double, a voluntary fee exit, or a forced fee on the third failure, settled **before** the move.
 
-The interim jail rule is removed and the rules version becomes `core-9`. Stored `core-8` games keep running through the `upgradeState` chain. The client UI is TASK-s6-client; this task only keeps the client compiling and describing the new events in text.
+The prior jail rule is removed and the rules version becomes `core-9`. Stored `core-8` games keep running through the `upgradeState` chain. The client UI is TASK-s6-client; this task only keeps the client compiling and describing the new events in text.
 
 ## Acceptance criteria
 
@@ -63,7 +63,7 @@ Product (handoff C1-C12, C16, C18, C19; design § "Landing effects", "Jail", "Pr
      - a deadline after paying gives a normal forced roll.
    - **Timeout before the roll** = roll for a double, via the same branch, including the third-fail fee. The turn then continues for `CONTINUATION_MS`. A voluntary exit is never automatic.
 6. **Interim removal (C12).**
-   - Delete `interim-jail.ts`, `INTERIM_JAIL_RULE`, the `Interim*` events and types, and every "temporary" or interim text in core, protocol (`frames.ts`) and client.
+   - Delete `jail-attempt module`, the three-attempt jail rule, the the earlier jail events and types, and every "temporary" or interim text in core, protocol (`frames.ts`) and client.
    - `JailEntry` keeps `{attemptsUsed}`.
 7. **Projection and protocol (C16).**
    - `casino` is public in `StateView`.
@@ -78,7 +78,7 @@ Product (handoff C1-C12, C16, C18, C19; design § "Landing effects", "Jail", "Pr
 9. **Carried from PR #115 review (must fix in this task):**
    - **RVW-007:** `upgradeState` returns a **genesis** state (`rulesVersion: null`) unchanged. Add an integration case: a genesis room, then shutdown, then restore equal to genesis.
    - **RVW-008:** the divergence test in `stage6-recovery.int.test.ts` also asserts `tailIndex: 1` and `errorCode: 'REDEEM_LOCKED'`.
-10. **Seeded jail browser scenario** (`e2e/compose.spec.ts`, seed 6689, "interim jail attempt"):
+10. **Seeded jail browser scenario** (`e2e/compose.spec.ts`, seed 6689, "prior jail attempt"):
     - Update it to the final rules: the same seed, with the first attempt asserted as `JailAttemptFailed`.
     - **Investigate the known flake.** `assertJournalEntryBelowHeading` (`helpers.ts:30`) timed out once on PR #115 `2d82a60` (job 136294817053) and passed on rerun.
       - Repeat the seeded job locally at least 10 times.
@@ -103,7 +103,7 @@ Technical proof:
 ## Scope and non-goals
 
 In scope:
-- `packages/game-core`: `turns.ts`, a new cell module or modules, `state.ts`, `invariants.ts`, `projection.ts`, `lifecycle.ts`, `money.ts`, the index, and removal of `interim-jail.ts`;
+- `packages/game-core`: `turns.ts`, a new cell module or modules, `state.ts`, `invariants.ts`, `projection.ts`, `lifecycle.ts`, `money.ts`, the index, and removal of `jail-attempt module`;
 - `packages/protocol`;
 - `apps/server`: tests and any fixture names for the new states;
 - `apps/client`: only what is needed to compile, plus text descriptions of the new events in the journal (`entities/event/describe.ts`), with ru and en locale.

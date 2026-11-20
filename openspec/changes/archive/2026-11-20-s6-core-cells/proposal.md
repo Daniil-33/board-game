@@ -8,8 +8,8 @@ The accepted stage 6 rules replace the temporary jail rule and add the final eff
 
 - Add one `landOn` dispatcher for every player move, preserving asset purchase/rent behavior and applying casino, chance, go-to-jail, start and jail effects as specified by the stage 6 handoff.
 - Add casino offer, bet, decline and automatic-decline transitions; add deterministic chance draws and route losses through the existing bank charge.
-- Replace interim jail attempts with final jail release, attempt, voluntary fee and forced third-failure fee transitions, including mandatory settlement before movement.
-- Remove interim jail runtime types, events, exports, protocol text and client text. Preserve each prisoner's `attemptsUsed`.
+- Replace prior jail attempts with final jail release, attempt, voluntary fee and forced third-failure fee transitions, including mandatory settlement before movement.
+- Remove prior jail runtime types, events, exports, protocol text and client text. Preserve each prisoner's `attemptsUsed`.
 - Bump rules to `core-9`, extend the `core-7 → core-8 → core-9` pure state upgrade chain, add the public casino projection and protocol commands/events, and bump the protocol version once.
 - Cover recovery for active casino and charge decisions, prisoners, mortgage redeem locks, `core-8` snapshots, genesis snapshots and the carried recovery assertions.
 - Update the seeded jail browser scenario to assert the final `JailAttemptFailed` event and investigate the known journal layout flake with ten local seeded runs.
@@ -25,7 +25,7 @@ Out of scope: casino/chance/jail UI dialogs or animations, new stage 6 browser s
 ### Modified Capabilities
 
 - `engine/turn-cycle`: all moves dispatch landing effects and jail-specific turn behavior.
-- `engine/interim-jail`: remove the temporary rule and describe the final jail state machine.
+- `engine/special-cells`: add the final jail state machine and special-cell effects; the prior jail capability is retired.
 - `engine/game-lifecycle`: make `core-9` current and chain state upgrades through `core-8`.
 - `engine/projection`: project casino state and classify all new events as public.
 - `protocol/frames`: add commands, event payloads and `core-9` state fields; bump `PROTOCOL_VERSION` once.

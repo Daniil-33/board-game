@@ -13,7 +13,7 @@
 - [x] 2.1 `src/common.ts`: branded id schemas, `Expectation`, error codes
   (design D4, D7). Verify with vitest table cases.
 - [x] 2.2 `src/frames.ts`: client and server frame schemas, closed objects,
-  `view`/`events` typed from game-core with interim-jail description, command
+  `view`/`events` typed from game-core with prior jail description, command
   stub union (design D2, D5, D6). Verify: round trip of every frame; extra
   field and client `actor` rejection.
 - [x] 2.3 `src/decode.ts`: total `decodeClientFrame` / `decodeServerFrame`

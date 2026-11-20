@@ -2,7 +2,7 @@
 
 Effort: `EFF-stage-1-skeleton`, handoff `docs/efforts/stage-1-skeleton.md`.
 Revision 1 accepted by the Team Lead on 2026-11-14 at main `5a05807`.
-Revision 2 (interim-jail release double grants no bonus turn, PR #2) acknowledged
+Revision 2 (prior jail release double grants no bonus turn, PR #2) acknowledged
 on 2026-11-14 at main `a68ed55`.
 
 This document holds the technical decisions delegated to the Team Lead. It does
@@ -44,7 +44,7 @@ State gains, with visibility classified in `STATE_VISIBILITY`:
 - `positions`: player -> cell index on a placeholder ring of 40 cells,
   exported as `PLACEHOLDER_RING` with an explicit `PLACEHOLDER` marker and a
   placeholder jail cell.
-- `jail`: per player `{ attemptsUsed }` under `INTERIM_JAIL_RULE` (named and
+- `jail`: per player `{ attemptsUsed }` under the three-attempt jail rule (named and
   marked temporary, replaced in stage 6).
 
 Commands (actor, guard):
