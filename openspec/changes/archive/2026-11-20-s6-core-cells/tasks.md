@@ -24,7 +24,7 @@
 ## 5. Seeded browser regression and verification
 
 - [x] 5.1 Update the shared seed 6689 stream to seed 129, assert the first final-rule jail failure as `JailAttemptFailed`, and run the full seeded job locally 10 times through the UI. All 10 passed with no reproduced flake; poll lengths unchanged. (Specs: `engine/special-cells`, `engine/turn-cycle`.)
-- [ ] 5.2 Run the required build, unit and integration tests, client lint, strict OpenSpec validation, stage 3–5 browser suites, and verify CI 4/4 on the exact PR head. Include every existing test adjustment and its reason in the PR body. (All specs in this change.)
+- [x] 5.2 Run the required build, unit and integration tests, client lint, strict OpenSpec validation, stage 3–5 browser suites, and verify CI 4/4 on the exact PR head. Include every existing test adjustment and its reason in the PR body. (All specs in this change.)
 
 ## Delivery
 
