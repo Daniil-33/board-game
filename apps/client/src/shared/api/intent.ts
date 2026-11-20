@@ -15,7 +15,9 @@ export type MortgageCommandType = Extract<ClientCommandType, 'Mortgage' | 'Redee
  * house and mortgage commands, `null` otherwise. `createConnection` builds the frame as a
  * `CommandFrame`, so the compiler checks this against the protocol schema.
  */
-export type CommandPayload<T extends ClientCommandType> = T extends AssetCommandType ? { readonly assetId: AssetId } : null;
+export type CommandPayload<T extends ClientCommandType> = T extends AssetCommandType
+  ? { readonly assetId: AssetId }
+  : T extends 'PlaceCasinoBet' ? { readonly amount: number } : null;
 /** A command type whose payload is `null`. */
 export type NullPayloadType = { [T in ClientCommandType]: CommandPayload<T> extends null ? T : never }[ClientCommandType];
 /** One intent: a command type with the payload the protocol defines for it. */

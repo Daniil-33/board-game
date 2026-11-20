@@ -2,6 +2,16 @@ import type { GameEvent } from '@game/game-core';
 import { t } from '../../shared/i18n/index';
 import { formatMoney } from '../../shared/lib/index';
 
+function chanceLabel(card: string): string {
+  switch (card) {
+    case 'gain-5': return t('chance.gain-5');
+    case 'loss-5': return t('chance.loss-5');
+    case 'gain-10': return t('chance.gain-10');
+    case 'loss-10': return t('chance.loss-10');
+    default: return '';
+  }
+}
+
 export function describeEvent(event: GameEvent, nameOf: (id: string) => string, assetOf: (id: string) => string) {
   const payload = event.payload && typeof event.payload === 'object' ? event.payload as Record<string, unknown> : {};
   const name = (field: string) => typeof payload[field] === 'string' ? nameOf(payload[field]) : '';
@@ -21,6 +31,10 @@ export function describeEvent(event: GameEvent, nameOf: (id: string) => string, 
     case 'AuctionWon': return { icon: '◇', text: t('journal.auction_won', { player, asset, amount: money('amount') }) };
     case 'RentDue': return { icon: '◈', text: t('journal.rent_due', { payer: name('payerId'), owner: name('ownerId'), amount: money('amount') }) };
     case 'RentPaid': return { icon: '◈', text: t('journal.rent_paid', { payer: name('payerId'), owner: name('ownerId'), amount: money('amount') }) };
+    case 'ChargeDue': return { icon: '◈', text: t('journal.charge_due', { payer: name('payerId'), amount: money('amount') }) };
+    case 'ChargePaid': return { icon: '◈', text: payload.auto
+      ? t('journal.charge_auto_paid', { payer: name('payerId'), amount: money('amount') })
+      : t('journal.charge_paid', { payer: name('payerId'), amount: money('amount') }) };
     case 'HouseBuilt': return { icon: '⌂', text: t('journal.build', { player, asset, amount: money('cost') }) };
     case 'HouseSold': return { icon: '⌂', text: t('journal.sell', { player, asset, amount: money('refund') }) };
     case 'AssetMortgaged': return { icon: '▣', text: t('journal.mortgage', { player, asset, amount: money('advance') }) };
@@ -46,7 +60,11 @@ export function describeEvent(event: GameEvent, nameOf: (id: string) => string, 
     case 'CasinoOffered': return { icon: '◇', text: t('journal.casino_offered', { player, cap: money('cap') }) };
     case 'CasinoResolved': return { icon: '◇', text: t('journal.casino_resolved', { player, amount: money('amount'), outcome: payload.won ? t('journal.won') : t('journal.lost') }) };
     case 'CasinoDeclined': return { icon: '◇', text: t('journal.casino_declined', { player }) };
-    case 'ChanceDrawn': return { icon: '◇', text: t('journal.chance_drawn', { player, card: String(payload.card ?? ''), amount: money('amount') }) };
+    case 'ChanceDrawn': {
+      const card = typeof payload.card === 'string' ? payload.card : '';
+      const signed = card.startsWith('gain-') ? '+' : '−';
+      return { icon: '◇', text: t('journal.chance_drawn', { player, card: chanceLabel(card), signedAmount: `${signed}${money('amount')}` }) };
+    }
     case 'AuctionPassed': return { icon: '◇', text: t('journal.auction_pass', { player }) };
     case 'AuctionEndedUnsold': return { icon: '◇', text: t('journal.auction_unsold', { asset }) };
     case 'MortgageExpired': return { icon: '▣', text: t('journal.mortgage_expired', { asset }) };

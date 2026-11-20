@@ -7,7 +7,7 @@ Defines deterministic asset acquisition through landing decisions and cyclic fix
 ## Requirements
 
 ### Requirement: Free asset landing decision
-Landing on a free monopoly, logistics or energy asset SHALL offer purchase to the landing player after movement and any lap reward, including interim jail release. Purchase and auction SHALL be mutually exclusive. An owned asset SHALL have no landing effect.
+Landing on a free monopoly, logistics or energy asset SHALL offer purchase to the landing player after movement and any lap reward, including jail release. Purchase and auction SHALL be mutually exclusive. An owned asset SHALL have no landing effect.
 
 #### Scenario: Lap reward before offer
 - **WHEN** forward movement crosses start and lands on a free asset

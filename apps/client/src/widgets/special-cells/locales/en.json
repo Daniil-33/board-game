@@ -1,0 +1,55 @@
+{
+  "chance": {
+    "gain-5": "+5% of capital",
+    "loss-5": "−5% of capital",
+    "gain-10": "+10% of capital",
+    "loss-10": "−10% of capital"
+  },
+  "event_reveal": {
+    "casino_win": "Casino win",
+    "casino_loss": "Casino loss"
+  },
+  "jail_choice": {
+    "title": "You are in jail",
+    "attempt": "Attempt {attempt} of 3",
+    "attempt_progress": "Attempts used: {attempts} of {max}",
+    "third_attempt": "After the third failure, you will pay and move.",
+    "roll": "Roll for a double",
+    "pay": "Pay {amount} and leave",
+    "insufficient_funds": "Not enough cash: {amount} required."
+  },
+  "casino": {
+    "title": "Casino · 50/50 chance · optional bet",
+    "limit": "Bet · up to {amount}",
+    "amount": "Bet amount",
+    "decrease": "−",
+    "increase": "+",
+    "win": "Win: +{amount}",
+    "loss": "Loss: −{amount}",
+    "place_bet": "Place bet",
+    "decline": "Decline",
+    "other_player": "Player {player} is at the casino…",
+    "payment_pending": "Resolve the open payment first.",
+    "insufficient_funds": "Not enough cash to bet."
+  },
+  "charge": {
+    "title": "Bank charge",
+    "due": "Due: {amount}",
+    "shortfall": "Short by {amount}.",
+    "automatic": "The debt will be settled automatically when the turn ends.",
+    "pay": "Pay {amount}",
+    "manage_assets": "Manage your assets",
+    "other_player": "Player {player} owes the bank."
+  },
+  "reasons": {
+    "mortgage": {
+      "REDEEM_LOCKED": "Redemption is available next turn."
+    }
+  },
+  "journal": {
+    "chance_drawn": "{player} draws a card: {card}, {signedAmount}.",
+    "charge_due": "Player {payer} owes the bank {amount}.",
+    "charge_paid": "Player {payer} pays the bank {amount}.",
+    "charge_auto_paid": "The bank automatically receives {amount} from player {payer}."
+  }
+}

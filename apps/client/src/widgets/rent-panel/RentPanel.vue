@@ -5,6 +5,7 @@ import { formatMoney } from '../../shared/lib/index';
 import { Translation as I18nT } from 'vue-i18n';
 import { i18n, t } from '../../shared/i18n/index';
 import { computed } from 'vue';
+import { PaymentCard } from '../../shared/ui/index';
 import type { PlayerId, StateView } from '@game/game-core';
 import type { ClientCommandType } from '@game/protocol';
 import { canIssue, type NullPayloadType } from '../../entities/game/index';
@@ -17,7 +18,7 @@ const paying = computed(() => props.me !== null && props.view.rent?.payerId === 
 const shortfall = computed(() => props.view.rent === null ? 0 : Math.max(0, props.view.rent.amount - (props.view.balances[props.view.rent.payerId] ?? 0)));
 </script>
 <template>
-  <section v-if="view.rent" class="asset-card decision-panel" :aria-label="t('common.rent')" data-testid="rent">
+  <PaymentCard v-if="view.rent" testid="rent" :label="t('common.rent')">
     <h2>{{ t('rent_panel.rent_due') }}</h2>
     <i18n-t tag="p" data-testid="rent-line" :i18n="i18n.global" :keypath="view.rent.kind === 'energy' ? 'rent_panel.energy_sentence' : 'rent_panel.sentence'">
       <template #payer>{{ nameOf(view.rent.payerId) }}</template>
@@ -32,12 +33,10 @@ const shortfall = computed(() => props.view.rent === null ? 0 : Math.max(0, prop
       </Button>
       <Button data-testid="rent-liquidation-entry" @click="emit('manageAssets')">{{ t('rent_panel.manage_assets') }}</Button>
     </template>
-  </section>
+  </PaymentCard>
 </template>
 
 <style scoped>
-.decision-panel[data-testid="rent"] { display: grid; gap: var(--space-3); border-inline-start: 4px solid var(--danger); background: var(--bg-deep); }
-.decision-panel[data-testid="rent"] h2 { margin: 0; font-family: var(--design-font-display); }
 [data-testid="rent-line"] { padding: var(--space-3); border-radius: var(--design-radius-lg); background: var(--surface-1); }
 [data-testid="rent-amount"] { color: var(--highlight); font-size: 1.25em; }
 .warn-box { margin: 0; }

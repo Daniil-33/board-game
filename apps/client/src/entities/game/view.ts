@@ -58,7 +58,7 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
   if (type === 'Bid' || type === 'PassAuction') return view.auction?.responder === me && (type !== 'Bid' || nextBidAmount(view.auction) <= (view.balances[me] ?? 0));
   if (view.auction !== null || view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
   if (type === 'PayRent') return view.rent?.payerId === me;
-  if (type === 'PayCharge' || type === 'PlaceCasinoBet' || type === 'DeclineCasino' || type === 'PayJailFee') return false; // Stage 6 controls are implemented by TASK-s6-client.
+  if (type === 'PayCharge' || type === 'PlaceCasinoBet' || type === 'DeclineCasino' || type === 'PayJailFee') return false; // Special-cell controls use lazy route selectors.
   // Per-asset: legality comes from game-core's helpers (game/houses.ts, game/mortgages.ts).
   if (type === 'BuildHouse' || type === 'SellHouse' || type === 'Mortgage' || type === 'Redeem') return false;
   if (type === 'BuyAsset' || type === 'StartAuction') {

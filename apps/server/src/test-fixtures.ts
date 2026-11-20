@@ -1,5 +1,5 @@
 import {
-  checkInvariants, createSession, CURRENT_RULES_VERSION, entropy, gameEngine, houseCost, houseRefund, mortgageAdvance,
+  casinoCap, checkInvariants, CLASSIC_40, createSession, CURRENT_RULES_VERSION, entropy, gameEngine, houseCost, houseRefund, mortgageAdvance,
   rentFor, timestamp, type BoardCell, type GameState, type Mortgage, type PlayerId, type Money,
 } from '@game/game-core';
 
@@ -8,12 +8,14 @@ export const STAGE5_FIXTURE_NAMES = ['mortgage-expiry', 'liquidation-tier-1', 'l
   'liquidation-tier-3', 'bankruptcy', 'final-bankruptcy', 'mortgage-restart',
   'liquidation-multi-tier', 'bankruptcy-houses'] as const;
 type Stage5FixtureName = typeof STAGE5_FIXTURE_NAMES[number];
+export const STAGE6_FIXTURE_NAMES = ['jail-choice', 'casino-decision', 'open-charge', 'redeem-locked', 'pre-roll-chance'] as const;
+type Stage6FixtureName = typeof STAGE6_FIXTURE_NAMES[number];
 
 export const FIXTURE_NAMES = ['regular-rent', 'full-group-rent', 'logistics-rent', 'energy-rent',
   'own-asset', 'shortfall', 'building', 'open-rent', 'bonus-building',
   'pre-roll-regular-rent', 'pre-roll-full-group-rent', 'pre-roll-logistics-rent',
   'pre-roll-energy-rent', 'pre-roll-own-asset', 'pre-roll-shortfall',
-  ...STAGE5_FIXTURE_NAMES] as const;
+  ...STAGE5_FIXTURE_NAMES, ...STAGE6_FIXTURE_NAMES] as const;
 export type FixtureName = typeof FIXTURE_NAMES[number];
 
 /** Deterministic scenario genesis; seats are existing guest ids, deadlines use the host clock. */
@@ -38,6 +40,9 @@ export function buildFixture(name: FixtureName, ids: readonly string[], now: num
   submit('StartGame');
   for (let i = 0; session.state.setup && i < 100; i++) submit('RollForOrder');
   if (!session.state.turn) throw new Error('Fixture setup did not finish');
+  if ((STAGE6_FIXTURE_NAMES as readonly string[]).includes(name)) {
+    return stage6Fixture(name as Stage6FixtureName, session);
+  }
   if ((STAGE5_FIXTURE_NAMES as readonly string[]).includes(name)) {
     return stage5Fixture(name as Stage5FixtureName, session, now);
   }
@@ -86,6 +91,41 @@ export function buildFixture(name: FixtureName, ids: readonly string[], now: num
   }
   checkInvariants(state);
   return state;
+}
+
+function stage6Fixture(name: Stage6FixtureName, session: FixtureSession): GameState {
+  const state = session.state;
+  const playerId = state.turn!.playerId;
+  const nextAsset = state.board!.cells.find(cell => cell.asset)!;
+  if (name === 'jail-choice') {
+    const next = { ...state, jail: { ...state.jail, [playerId]: { attemptsUsed: 1 } }, positions: { ...state.positions, [playerId]: CLASSIC_40.jailCell }, turn: { ...state.turn!, rolled: false } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'casino-decision') {
+    const cap = casinoCap(state.economy);
+    const casino = CLASSIC_40.cells.find(cell => cell.kind === 'casino')!;
+    const next = { ...state, positions: { ...state.positions, [playerId]: casino.index },
+      turn: { ...state.turn!, rolled: true }, casino: { playerId, turnId: state.turn!.turnId, cap } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'open-charge') {
+    const next = { ...state, turn: { ...state.turn!, rolled: true }, charge: { payerId: playerId, amount: 100 as Money, cause: 'chance' as const } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'pre-roll-chance') {
+    const target = CLASSIC_40.cells.find(cell => cell.kind === 'chance')!;
+    const next = { ...state, positions: { ...state.positions, [playerId]: (target.index + 40 - 7) % 40 }, turn: { ...state.turn!, rolled: false } };
+    checkInvariants(next);
+    return next;
+  }
+  const mortgage = { advance: mortgageAdvance(nextAsset.asset!.price), lapsCompleted: 0, pending: [...state.order!], lockedTurnId: state.turn!.turnId };
+  const next = { ...state, turn: { ...state.turn!, rolled: true }, owners: { ...state.owners, [nextAsset.asset!.assetId]: playerId },
+    mortgages: { ...state.mortgages, [nextAsset.asset!.assetId]: mortgage } };
+  checkInvariants(next);
+  return next;
 }
 
 type FixtureSession = ReturnType<typeof createSession>;

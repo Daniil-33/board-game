@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { CanvasTextMetrics } from 'pixi.js';
 import { vi } from 'vitest';
 import { registerLocales } from '../shared/i18n/index';
+import { registerSpecialCellLocales } from '../widgets/special-cells/locales';
 
 registerLocales();
+registerSpecialCellLocales();
 
 if (typeof document !== 'undefined') {
   // happy-dom has no application entry point. Install the real root tokens for scene tests.
