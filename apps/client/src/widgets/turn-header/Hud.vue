@@ -2,7 +2,7 @@
 import { t } from '../../shared/i18n/index';
 import { Button, ResponsiveDialog } from '../../shared/ui/index';
 import { computed, ref, watch } from 'vue';
-import type { PlayerId, StateView } from '@game/game-core';
+import { INTERIM_JAIL_RULE, type PlayerId, type StateView } from '@game/game-core';
 import type { ClientCommandType, HistoryEntry } from '@game/protocol';
 import { actionAvailability, activeDeadline, activePlayerId, turnOrder, type NullPayloadType } from '../../entities/game/index';
 import type { HudMessage } from '../../entities/game/index';
@@ -99,6 +99,11 @@ const headline = computed(() => {
   if (props.view.turn?.bonus) return own ? t('hud.your_bonus_turn') : t('hud.player_bonus_turn', { player });
   return own ? t('hud.your_turn') : t('hud.turn', { player });
 });
+const jailStatus = computed(() => {
+  const turnPlayer = props.view?.turn?.playerId;
+  const jail = turnPlayer ? props.view?.jail[turnPlayer] : undefined;
+  return jail ? t('hud.jail_attempt', { attempt: jail.attemptsUsed + 1, maxAttempts: INTERIM_JAIL_RULE.maxAttempts }) : null;
+});
 const phase = computed(() => {
   if (setup.value) return t('game_layout.setup_phase');
   if (props.view?.auction) return t('game_layout.auction_phase');
@@ -115,6 +120,7 @@ const phase = computed(() => {
       <div>
         <h2 ref="turnHeading" tabindex="-1" :data-testid="setup && setupOpen ? undefined : 'headline'">{{ headline }}</h2>
         <p class="phase" data-testid="turn-phase">{{ phase }}</p>
+        <p v-if="jailStatus" class="jail-status" data-testid="jail-attempt-status">{{ jailStatus }}</p>
       </div>
       <div v-if="dice" class="dice" data-testid="turn-dice">
         <span v-for="(die, index) in dice" :key="index">{{ die }}</span>
@@ -161,6 +167,7 @@ const phase = computed(() => {
 .current-order { font-size: .85rem; color: var(--text-secondary); }
 .current-order summary { margin-top: var(--space-2); cursor: pointer; }
 .phase { color: var(--text-muted); margin: var(--space-1) 0 0; font-size: .85rem; }
+.jail-status { color: var(--warning); margin: var(--space-1) 0 0; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .dice { display: flex; gap: var(--space-2); }
 .dice span { background: var(--gradient-card-light); color: var(--ink-primary); border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 10px; }
 

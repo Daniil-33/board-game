@@ -84,6 +84,7 @@
   },
   "elimination": {
     "title": "Выбывание из партии",
+    "balance": "Баланс: {balance}",
     "watching": "Вы можете продолжить наблюдать за партией и пользоваться чатом.",
     "continue": "Продолжить просмотр"
   },
@@ -274,6 +275,7 @@
     "setup_player": "Розыгрыш порядка ходов: {player}",
     "your_bonus_turn": "Ваш ход (дополнительный ход после дубля)",
     "player_bonus_turn": "Ход: {player} (дополнительный ход после дубля)",
+    "jail_attempt": "В тюрьме · попытка {attempt} из {maxAttempts}",
     "connection_lost_detail": "Партия продолжается, таймеры идут"
   },
   "turn_order": {
@@ -323,7 +325,8 @@
     }
   },
   "common": {
-    "room": "Комната {roomId}",
+    "room_creator": "Комната {creator}",
+    "room_generic": "Комната",
     "dismiss": "Закрыть",
     "dismiss_icon": "×",
     "players": "Игроки",

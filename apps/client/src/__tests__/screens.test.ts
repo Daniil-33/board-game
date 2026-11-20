@@ -208,6 +208,7 @@ describe('RoomScreen', () => {
     h.sockets.last().receive(welcome(lobbyView(['a'])));
     await flushPromises();
     expect(names(wrapper)).toEqual(['Alice']);
+    expect(wrapper.get('[data-testid="room-title"]').text()).toBe('Комната Alice');
     expect(wrapper.findAll('[data-testid="empty-seat"]')).toHaveLength(5);
     expect(wrapper.text()).toContain('Ждём второго игрока.');
     expect(start(wrapper).exists()).toBe(true);

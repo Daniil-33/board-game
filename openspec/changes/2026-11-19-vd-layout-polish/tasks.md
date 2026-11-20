@@ -1,0 +1,5 @@
+- [x] Update the client game-screen and lobby/room presentation per the accepted task; implement no protocol, server, game-core, or token changes.
+- [x] Extend browser assertions for rent payer, debt notice visibility, board-caption/journal non-intersection, and internally scrollable assets beside long liquidation notices; add focused unit assertions for jail status, room labels, and elimination balance.
+- [x] Verify build, unit tests, client lint, e2e typecheck, OpenSpec validation, diff cleanliness, bundle gzip budget, and desktop browser scenarios.
+- [ ] Regenerate and visually inspect the full evidence pairs, design frames, blank guard, manifests, and README index; validate local links.
+- [ ] Open PR, obtain exact-head independent review and CI, resolve findings, and archive the OpenSpec change.

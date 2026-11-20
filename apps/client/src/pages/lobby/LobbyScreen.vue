@@ -22,6 +22,11 @@ function canEnterCode(room: RoomSummary): boolean {
   return room.locked && room.status === 'lobby' && room.members.length < MAX_PLAYERS;
 }
 
+function roomLabel(room: RoomSummary): string {
+  const creator = room.members.find(member => member.guestId === room.creatorId)?.nickname;
+  return creator ? t('common.room_creator', { creator }) : t('common.room_generic');
+}
+
 const lockedRooms = computed(() => client.lobby.rooms.filter(canEnterCode));
 const eligibleRoom = computed(() => lockedRooms.value.some(room => room.roomId === selectedRoom.value));
 
@@ -97,7 +102,7 @@ onBeforeUnmount(() => clearInterval(timer));
         <label for="locked-room">{{ t('lobby.choose_room') }}</label>
         <select id="locked-room" v-model="selectedRoom" data-testid="locked-room" required>
           <option value="" disabled>{{ t('lobby.choose_room') }}</option>
-          <option v-for="room in lockedRooms" :key="room.roomId" :value="room.roomId">{{ t('common.room', { roomId: room.roomId }) }}</option>
+          <option v-for="room in lockedRooms" :key="room.roomId" :value="room.roomId">{{ roomLabel(room) }}</option>
         </select>
         <label for="join-code">{{ t('lobby.access_code') }}</label>
         <input id="join-code" v-model="joinCode" data-testid="join-code" autocomplete="off" required />
@@ -122,7 +127,7 @@ onBeforeUnmount(() => clearInterval(timer));
       <ul v-else class="rooms">
         <li v-for="room in client.lobby.rooms" :key="room.roomId" class="room" data-testid="room" :data-room-id="room.roomId">
           <div>
-            <strong>{{ t('common.room', { roomId: room.roomId }) }}</strong>
+            <strong>{{ roomLabel(room) }}</strong>
             <div class="muted" data-testid="room-members">{{ room.members.map(member => member.nickname).join(', ') || t('lobby.empty') }}</div>
           </div>
           <div class="room-status">

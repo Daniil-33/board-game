@@ -1,4 +1,5 @@
 import { test, expect, captureScreens, createRoom, join, sel, setup, start, action } from './helpers';
+import { load, click } from './fixture-helpers';
 
 test('final evidence lobby lists rooms created by other actors', async ({ actors }) => {
   test.skip(process.env.E2E_SCREEN_EVIDENCE !== '1', 'Evidence-only populated lobby capture');
@@ -14,8 +15,11 @@ test('final evidence lobby lists rooms created by other actors', async ({ actors
   const playingRow = viewer!.page.locator(`${sel('room')}[data-room-id="${playingRoom}"]`);
   await expect(openRow).toBeVisible();
   await expect(openRow.locator(sel('room-status'))).toHaveText('Открытая');
+  await expect(openRow.locator('strong')).toHaveText('Комната Player 1');
   await expect(playingRow).toBeVisible();
   await expect(playingRow.locator(sel('room-status'))).toHaveText('Идёт партия');
+  await expect(playingRow.locator('strong')).toHaveText('Комната Player 2');
+  for (const row of [openRow, playingRow]) await expect(row.locator('strong')).not.toContainText(/r_[A-Za-z0-9_-]+/);
   await captureScreens(viewer!.page, 'lobby');
 });
 
@@ -87,6 +91,15 @@ test('game layout stays within all supported widths and preserves mobile selecti
       const boardBox = await page.locator(sel('board')).boundingBox();
       expect(boardBox).not.toBeNull();
       expect(boardBox!.y + boardBox!.height).toBeLessThanOrEqual(height);
+      if (width === 1440) {
+        const journal = await page.locator('.journal-column').boundingBox();
+        expect(journal).not.toBeNull();
+        // BoardCanvas places the centered phase label at y=379/660 with a 16px font.
+        const caption = { x: boardBox!.x + boardBox!.width * .25, y: boardBox!.y + boardBox!.height * (379 / 660) - 12, width: boardBox!.width * .5, height: 24 };
+        const intersects = caption.x < journal!.x + journal!.width && caption.x + caption.width > journal!.x
+          && caption.y < journal!.y + journal!.height && caption.y + caption.height > journal!.y;
+        expect(intersects, `caption ${JSON.stringify(caption)} intersects journal ${JSON.stringify(journal)}`).toBe(false);
+      }
     }
   }
 
@@ -112,6 +125,58 @@ test('game layout stays within all supported widths and preserves mobile selecti
   await expect(page.locator('[role="dialog"]')).toHaveCount(0);
   await leave.click();
   await expect(page.locator(sel('screen-lobby'))).toBeVisible();
+});
+
+test('desktop rent and debt overlays preserve the board and top bar', async ({ actors }) => {
+  test.skip(process.env.E2E_FIXTURES !== '1', 'Uses isolated server fixtures');
+  const players = await actors(3);
+  await load(players, 'shortfall');
+  const payer = players.find(player => player.id === player.view?.rent?.payerId)!;
+  for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+    await payer.page.setViewportSize({ width, height });
+    await expect(payer.page.locator(sel('rent'))).toBeVisible();
+    await expect(payer.page.locator(sel('rent-line'))).toContainText(`Player ${players.indexOf(payer) + 1}`);
+    await expect(payer.page.locator(sel('rent-line'))).toContainText(`Player ${players.indexOf(players.find(p => p.id === payer.view!.rent!.ownerId)!) + 1}`);
+    await expect(payer.page.locator(sel('rent'))).toBeInViewport();
+    await expect(payer.page.locator(sel('game-top-bar'))).toBeInViewport();
+    await expect.poll(() => payer.page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+    const board = await payer.page.locator(sel('board')).boundingBox();
+    expect(board).not.toBeNull();
+    expect(board!.y + board!.height).toBeLessThanOrEqual(height);
+  }
+  await load(players, 'liquidation-multi-tier');
+  const debtor = players.find(player => player.id === player.view?.rent?.payerId)!;
+  await click(players, debtor, 'pay-rent');
+  await expect(debtor.page.locator(sel('debt-notices'))).toBeVisible();
+  for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+    await debtor.page.setViewportSize({ width, height });
+    await expect(debtor.page.locator(sel('liquidation'))).toBeInViewport();
+    await expect(debtor.page.locator(sel('game-top-bar'))).toBeInViewport();
+    await expect.poll(() => debtor.page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+    const assets = debtor.page.locator('#game-panel-assets');
+    await expect(assets).toHaveAttribute('tabindex', '0');
+    await assets.focus();
+    await expect(assets).toBeFocused();
+    await expect.poll(() => assets.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    await expect.poll(() => assets.evaluate(element => getComputedStyle(element).scrollbarWidth)).toBe('thin');
+    const board = await debtor.page.locator(sel('board')).boundingBox();
+    expect(board).not.toBeNull();
+    expect(board!.y + board!.height).toBeLessThanOrEqual(height);
+  }
+  await load(players, 'bankruptcy-houses');
+  const bankruptcyPayer = players.find(player => player.id === player.view?.rent?.payerId)!;
+  await click(players, bankruptcyPayer, 'pay-rent');
+  const bankruptcyViewer = players.find(player => player.id !== bankruptcyPayer.id)!;
+  await expect(bankruptcyViewer.page.locator(sel('bankruptcy'))).toBeVisible();
+  for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+    await bankruptcyViewer.page.setViewportSize({ width, height });
+    await expect(bankruptcyViewer.page.locator(sel('bankruptcy'))).toBeInViewport();
+    await expect(bankruptcyViewer.page.locator(sel('game-top-bar'))).toBeInViewport();
+    await expect.poll(() => bankruptcyViewer.page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+    const board = await bankruptcyViewer.page.locator(sel('board')).boundingBox();
+    expect(board).not.toBeNull();
+    expect(board!.y + board!.height).toBeLessThanOrEqual(height);
+  }
 });
 
 test('purchase observers keep the board in the viewport at desktop sizes', async ({ actors }) => {

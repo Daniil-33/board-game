@@ -181,6 +181,9 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailAttemptFailed']);
     expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
     await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
+    await expect(prisoner.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
+    const observer = players.find(player => player !== prisoner)!;
+    await expect(observer.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
     await captureScreens(prisoner.page, 'jail-attempt-status');
   } else {
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);

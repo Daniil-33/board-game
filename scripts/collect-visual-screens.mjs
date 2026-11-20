@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -152,14 +152,12 @@ const indexReadme = [
   '',
   'The populated lobby capture shows an open room and a game in progress, both created by other actors before the viewer refreshed the list. The purchase pair is captured from its decider with a separate observer pair; the auction pair is captured from the current responding bidder.',
   '',
-  '## Known defects',
+  '## Fixed in this task',
   '',
-  'The Team Lead assigned these known visual defects to TASK-vd-layout-polish. They are not fixed in this evidence set:',
+  'TASK-vd-layout-polish fixes the assigned presentation defects: rent and debt surfaces stay visible on desktop, jail attempt progress appears in the turn header, the board caption clears the journal, room names use a creator nickname or neutral label, and elimination balance is labeled.',
   '',
-  '- At 1440×900, rent/debt notices render below the board.',
-  '- Jail status is not visible; its caption is hidden behind the journal.',
-  '- Room names display raw room IDs.',
-  '- The elimination balance has no label.',
+  '- **TL-approved addition:** desktop side columns stay within the viewport below the top bar. My Assets scrolls internally with keyboard focus and a visible token-colored scrollbar; Players uses the same containment when its roster overflows. Mobile layout is unchanged.',
+  '- The liquidation fixture asserts that the page does not scroll while My Assets does.',
   '',
   '## Reproduction',
   '',
@@ -174,4 +172,14 @@ const rootIndexReadme = rootLinkPrefix
   ? indexReadme.replace(/\]\(\.\//g, `](./${rootLinkPrefix}/`)
   : indexReadme;
 writeFileSync(resolve(evidenceRoot, 'README.md'), rootIndexReadme);
+
+for (const indexPath of [resolve(out, 'README.md'), resolve(evidenceRoot, 'README.md')]) {
+  const markdown = readFileSync(indexPath, 'utf8');
+  const missing = [...markdown.matchAll(/\]\(([^)]+)\)/g)]
+    .map(([, target]) => target)
+    .filter(target => !/^(?:https?:|#)/.test(target))
+    .map(target => resolve(dirname(indexPath), decodeURIComponent(target.split('#')[0])))
+    .filter(target => !existsSync(target));
+  if (missing.length) throw new Error(`Broken local links in ${indexPath}:\n${[...new Set(missing)].join('\n')}`);
+}
 console.log(`Collected ${pairs.length} app/design pairs in ${out}`);

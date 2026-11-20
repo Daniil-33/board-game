@@ -392,10 +392,11 @@ describe('elimination and game over', () => {
 
   it('keeps the eliminated viewer on the live game with chat after dismissing the elimination sheet', async () => {
     const s = owning();
-    const view = project({ ...s, order: [pid('b'), pid('c')], eliminated: [pid('a')], purchase: { playerId: pid('b'), cell: 13, assetId: at(s, 13) }, eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
+    const view = project({ ...s, balances: { ...s.balances, [pid('a')]: 0 as Money }, order: [pid('b'), pid('c')], eliminated: [pid('a')], purchase: { playerId: pid('b'), cell: 13, assetId: at(s, 13) }, eliminations: [{ playerId: pid('a'), reason: 'resigned', at: 5 as Timestamp, creditorId: null }] });
     const h = harness({ stored: storedSession(THREE) }); h.client.start(); h.sockets.last().open(); h.sockets.last().receive(welcome(view));
     const wrapper = mount(App, { ...provide(h), attachTo: document.body }); await flushPromises(); await new Promise((resolve) => setTimeout(resolve, 0)); await flushPromises();
     expect(document.querySelector('[data-testid="elimination-screen"]')?.textContent).toContain('Вы выбыли: вы сдались');
+    expect(document.querySelector('[data-testid="elimination-balance"]')?.textContent).toBe('Баланс: 0');
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-modal')).toBe('true');
     document.querySelector<HTMLElement>('[data-testid="continue-watching"]')!.click(); await flushPromises();
     expect(wrapper.attributes('data-screen')).toBe('game');

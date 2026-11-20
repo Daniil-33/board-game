@@ -31,6 +31,11 @@ const members = computed(() => {
   return ids.map((id) => ({ id, name: client.nameOf(id) }));
 });
 const isCreator = computed(() => room.value !== null && room.value.creatorId === client.session.state.guest?.guestId);
+const roomTitle = computed(() => {
+  if (!room.value) return t('common.room_generic');
+  const creator = room.value.members.find(member => member.guestId === room.value!.creatorId)?.nickname;
+  return creator ? t('common.room_creator', { creator }) : t('common.room_generic');
+});
 const startReason = computed(() => {
   if (!client.game.connected) return t('room.connecting');
   if (members.value.length < MIN_PLAYERS) return t('room.waiting_for_player');
@@ -43,7 +48,7 @@ const startReason = computed(() => {
   <section v-if="room" class="room-view">
     <header class="room-heading">
       <p class="muted">{{ t('room.heading', { players: members.length, capacity: MAX_PLAYERS, count: MAX_PLAYERS }, MAX_PLAYERS) }}</p>
-      <h2 class="shell-heading" data-testid="room-title">{{ t('common.room', { roomId: room.roomId }) }}</h2>
+      <h2 class="shell-heading" data-testid="room-title">{{ roomTitle }}</h2>
     </header>
     <p v-if="client.game.fatal" class="error" data-testid="fatal">{{ client.game.fatal }}</p>
     <p v-else-if="!client.game.connected" class="muted" data-testid="connecting">{{ t('room.connecting') }}</p>
