@@ -49,7 +49,7 @@ this task's final head for the effort-complete resubmission (CTO gaps G1-G4).
 2. **Jail status and caption (B).**
    - The temporary-jail attempt status is visible to the jailed player and to
      observers, for example in the turn header ("В тюрьме · попытка 1 из 3").
-     The denominator comes from three-attempt jail rule.
+     The denominator comes from INTERIM_JAIL_RULE.
    - The board-centre caption never overlaps the journal: add a browser
      assertion that their bounding boxes do not intersect at 1440x900.
 3. **Room label (C).**

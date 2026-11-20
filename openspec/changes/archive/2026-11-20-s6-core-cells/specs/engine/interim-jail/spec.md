@@ -1,27 +1,26 @@
-# Retired jail capability
+# Retired interim jail capability
 
 ## Purpose
-Removes the stage 1 temporary jail behavior, which is replaced by final stage 6 jail rules.
+Retires the stage 1 jail capability formerly implemented by `INTERIM_JAIL_RULE` in `interim-jail.ts`. Its release and failed-attempt requirements are superseded by `engine/special-cells`, including the requirement “Prisoner turns and jail attempts”.
 
 ## REMOVED Requirements
 
 ### Requirement: Release by a double
-The interim event names and release rule are removed; the final jail release behavior is defined by `engine/special-cells`.
+The former `InterimJailReleased` event and double-release behavior are removed. The final jail release behavior is defined by `engine/special-cells`.
 
 #### Scenario: Double release uses final event
 - **WHEN** a jailed player rolls a double
 - **THEN** the core SHALL emit `JailReleased`, with no interim event
 
 ### Requirement: Failed attempts
-The interim automatic release after the third failed roll is removed. The final fee behavior is defined by `engine/special-cells`.
+The former `InterimJailAttemptFailed` event and automatic release after the third failed roll are removed. The final fee behavior is defined by `engine/special-cells`.
 
 #### Scenario: Third failure uses final fee rule
 - **WHEN** a jailed player fails the third attempt
 - **THEN** the final bank-fee rule SHALL apply instead of `attempts-exhausted`
 
 ### Requirement: Prisoner takes their turn
-**Reason**: Superseded by `engine/special-cells`, requirement “Prisoner turns and jail attempts”.
-**Migration**: Use the final prisoner-turn and jail-attempt rules in `engine/special-cells`; this interim requirement is retired.
+This interim requirement is removed. Its final turn-order and jail-attempt behavior is specified by `engine/special-cells`, requirement “Prisoner turns and jail attempts”.
 
 #### Scenario: Prisoner turns use final jail rules
 - **WHEN** play advances to a jailed player

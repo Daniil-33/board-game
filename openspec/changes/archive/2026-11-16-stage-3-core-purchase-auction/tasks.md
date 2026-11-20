@@ -4,7 +4,7 @@
 
 - [x] 1.1 Add TL-approved acquisition interfaces, genesis fields and turn pause field; set core-5 as sole supported version (engine/game-lifecycle: Genesis state, Game phases, Rules version gate). Verify state/lifecycle/version tests and typecheck; document exports in index.ts.
 - [x] 1.2 Implement checked debit and purchase commands in the purchase-auction module (engine/economy: Every balance change emits an event; engine/purchase-auction: Purchase commands). Verify affordable/exact-balance/unaffordable purchase, null payload, missing decision, actor, phase, deadline and target rejections with unchanged RNG/state on rejection.
-- [x] 1.3 Wire landing offers into normal and prior jail release rolls (engine/purchase-auction: Free asset landing decision; engine/turn-cycle: Movement on CLASSIC_40). Verify all asset classes, owned assets, lap reward ordering, failed jail attempt, third double, release and automatic continuation; update relevant turn test helpers without weakening assertions.
+- [x] 1.3 Wire landing offers into normal and interim-jail release rolls (engine/purchase-auction: Free asset landing decision; engine/turn-cycle: Movement on CLASSIC_40). Verify all asset classes, owned assets, lap reward ordering, failed jail attempt, third double, release and automatic continuation; update relevant turn test helpers without weakening assertions.
 
 ## 2. Auction progression and clocks
 

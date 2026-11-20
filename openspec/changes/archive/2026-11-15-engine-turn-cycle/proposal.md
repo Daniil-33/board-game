@@ -11,7 +11,7 @@ This change implements the stage 1 core rules from `GAME-BREAKDOWN.md` § "По�
 - **Setup order rolls.** `StartGame` opens the order-roll phase. Participants roll one die each, one at a time, each roll with a 45 s deadline. Order is descending; only tied participants reroll, starting from the first unresolved group. A `Timeout` at or after the deadline rolls for the participant. When every group is resolved the game enters the new phase `playing` and the first turn starts.
 - **Turns.** A turn has a never-reused `turnId`, a 45 s deadline and a 2d6 roll. Player commands (`RollDice`, `EndTurn`) are accepted strictly before the deadline; `Timeout` only at or after it. Timeout before a roll: the system rolls and the same turn continues for 20 s with quotas unchanged. Timeout after a roll: the mandatory-settlement hook (a no-op in stage 1) runs and the turn closes. `EndTurn` closes the turn after a roll.
 - **Doubles.** A double marks a pending bonus turn; when the current turn closes (by `EndTurn` or `Timeout`) the same player starts a new turn with fresh time and quotas. A third consecutive double sends the player to jail before movement, resets the streak and ends the turn at once.
-- **Prior jail rule** (the three-attempt jail rule, temporary, replaced in stage 6). A prisoner's `RollDice` is a release attempt: a double releases and moves by its sum without a bonus turn; after the third failed attempt the player leaves and moves by that roll's sum.
+- **Interim jail rule** (`INTERIM_JAIL_RULE`, temporary, replaced in stage 6). A prisoner's `RollDice` is a release attempt: a double releases and moves by its sum without a bonus turn; after the third failed attempt the player leaves and moves by that roll's sum.
 - **Movement** by the 2d6 sum on a 40-cell ring exported as `PLACEHOLDER_RING`, explicitly marked as a placeholder replaced in stage 2, with one placeholder jail cell.
 - **Turn quotas** (one build, two trade offers) as remaining-count fields, reset on every new turn and not on continuation. Nothing consumes them yet.
 - **Host contracts.** `pendingDeadlines(state)` lists every `{ target, at }` that a `Timeout` may resolve. `restoreSession(engine, snapshotState, tail)` rebuilds a session from a snapshot and the log entries after it, throwing `ReplayDivergenceError` on mismatch.
@@ -26,7 +26,7 @@ This change implements the stage 1 core rules from `GAME-BREAKDOWN.md` § "По�
 - Events: `OrderRollStarted`, `OrderDieRolled`, `OrderTied`, `TurnOrderDetermined`, `TurnStarted`, `DiceRolled`, `PlayerMoved`, `TurnContinued`, `TurnEnded`, `SentToJail`, `InterimJailAttemptFailed`, `InterimJailReleased`.
 - State keys: `phase` (`uninitialized | lobby | setup | playing`), `setup`, `order`, `turn`, `positions`, `jail`.
 - Error codes: `NOT_ACTIVE_PLAYER`, `DEADLINE_PASSED`, `DEADLINE_NOT_REACHED`, `ALREADY_ROLLED`, `ROLL_REQUIRED`, plus existing `INVALID_PAYLOAD`, `TARGET_MISMATCH`.
-- Exports: `pendingDeadlines`, `PendingDeadline`, `restoreSession`, `PLACEHOLDER_RING`, the three-attempt jail rule, `TURN_DURATION_MS`, `CONTINUATION_MS`, `SETUP_ROLL_DURATION_MS`, `TURN_QUOTAS`.
+- Exports: `pendingDeadlines`, `PendingDeadline`, `restoreSession`, `PLACEHOLDER_RING`, `INTERIM_JAIL_RULE`, `TURN_DURATION_MS`, `CONTINUATION_MS`, `SETUP_ROLL_DURATION_MS`, `TURN_QUOTAS`.
 
 Exact payload shapes are in `design.md` § D9.
 
@@ -48,7 +48,7 @@ These follow from the sources but are not stated word for word; each is applied 
 
 - `engine/turn-order`: the setup phase that rolls for and fixes the turn order.
 - `engine/turn-cycle`: turns, 2d6 rolls, movement on the placeholder ring, doubles and bonus turns, third double to jail, turn quotas.
-- `engine/special-cells`: the temporary stage 1 jail stay and release rule.
+- `engine/interim-jail`: the temporary stage 1 jail stay and release rule.
 - `engine/deadlines`: the strict-before / at-or-after deadline rule, `Timeout` binding, and the pending-deadline listing for hosts.
 
 ### Modified Capabilities
@@ -60,7 +60,7 @@ These follow from the sources but are not stated word for word; each is applied 
 
 ## Impact
 
-- `packages/game-core/src`: `state.ts`, `registry.ts`, `lifecycle.ts`, `invariants.ts`, `projection.ts`, `session.ts`, `index.ts` change; new modules for the board placeholder, setup, turns, prior jail and deadlines.
+- `packages/game-core/src`: `state.ts`, `registry.ts`, `lifecycle.ts`, `invariants.ts`, `projection.ts`, `session.ts`, `index.ts` change; new modules for the board placeholder, setup, turns, interim jail and deadlines.
 - Tests that pin `core-1`, the `StartGame` event list, or "nothing accepted in setup" are updated; the replay property test grows to cover turn commands.
 - `packages/protocol` (parallel task) imports the published type names. `apps/server` and `apps/client` are not touched.
 - No new dependencies.

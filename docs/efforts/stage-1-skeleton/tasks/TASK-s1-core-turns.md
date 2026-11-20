@@ -15,7 +15,7 @@ status: proposed
 `packages/game-core` runs stage 1 rules from game start to an endless sequence
 of turns: setup order rolls, turns with deadlines, 2d6 movement on a
 placeholder 40-cell ring, doubles and bonus turns, third double to jail, and
-the prior jail rule. It exposes the deadline and recovery contracts the
+the interim jail rule. It exposes the deadline and recovery contracts the
 server needs.
 
 ## Acceptance criteria
@@ -34,7 +34,7 @@ Product (handoff criteria 2-7, 13; owner decisions in `ROADMAP.md` stage 1):
    from an automatic roll grants it after the current turn closes. A third
    consecutive double sends the player to jail before movement, resets the
    streak and ends the turn.
-4. Prior jail rule, named the three-attempt jail rule and marked temporary: on each
+4. Interim jail rule, named `INTERIM_JAIL_RULE` and marked temporary: on each
    of up to three own turns the prisoner rolls; a double releases and moves by
    that sum **without a bonus turn** (owner decision, handoff revision 2); after
    the third failed roll the player leaves and moves by that roll's sum.

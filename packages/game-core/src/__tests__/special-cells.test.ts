@@ -23,12 +23,18 @@ function landedAt(state:GameState,cell:number,rng=state.rng!) {
 
 describe('stage 6 special cells',()=>{
   it('derives the accepted casino caps and jail fees for every player count',()=>{
-    const capitals=[0,0,29910,19940,14950,11960,9970];
-    const fees=[0,0,990,660,490,390,330];
-    for(let n=2;n<=6;n++){
-      const cap=capitals[n]!;
-      expect(casinoCap({startingCapital:cap as never,lapReward:(10*Math.floor(2*cap/150)) as never})).toBe(10*Math.floor(cap/100));
-      expect(jailFee({startingCapital:cap as never,lapReward:fees[n]! * 4 as never})).toBe(fees[n]);
+    const expected=[
+      {players:2,capital:29910,lapReward:3980,cap:2990,fee:990},
+      {players:3,capital:19940,lapReward:2650,cap:1990,fee:660},
+      {players:4,capital:14950,lapReward:1990,cap:1490,fee:490},
+      {players:5,capital:11960,lapReward:1590,cap:1190,fee:390},
+      {players:6,capital:9970,lapReward:1320,cap:990,fee:330},
+    ];
+    for(const row of expected){
+      const game=playingGame(Array.from({length:row.players},(_,i)=>`p${i}`));
+      expect(game.state.economy).toEqual({startingCapital:row.capital,lapReward:row.lapReward});
+      expect(casinoCap(game.state.economy)).toBe(row.cap);
+      expect(jailFee(game.state.economy)).toBe(row.fee);
     }
   });
 
@@ -69,8 +75,22 @@ describe('stage 6 special cells',()=>{
     reject({...open.state,casino:null},{amount:10},'a',ctx().now,'NO_CASINO');
     reject({...open.state,charge:{payerId:pid('a'),amount:10 as Money,cause:'chance'}}, {amount:0},'a',ctx().now,'PAYMENT_PENDING');
     reject(open.state,{amount:0},'a',ctx().now,'INVALID_BET');
+    reject(open.state,{amount:15},'a',ctx().now,'INVALID_BET');
     reject(open.state,{amount:open.state.casino!.cap+10},'a',ctx().now,'INVALID_BET');
     reject({...open.state,balances:{...open.state.balances,a:0 as Money}},{amount:10},'a',ctx().now,'INVALID_BET');
+  });
+
+  it('accepts a maximum bet equal to cash when cash is below the cap',()=>{
+    const base=playingGame(['a','b']).state;
+    const opened=landedAt({...base,balances:{...base.balances,a:50 as Money}},20);
+    const session=createSession(gameEngine,opened.state);
+    const result=session.submit(cmd('PlaceCasinoBet',{amount:50},{actor:player('a'),target:{kind:'turn',id:opened.state.turn!.turnId}}),ctx());
+    expect(opened.state.casino!.cap).toBeGreaterThan(50);
+    expect(result.kind).toBe('accepted');
+    if(result.kind==='accepted'){
+      expect(types(result.events)).toEqual(['BalanceChanged','CasinoResolved']);
+      expect(result.events[1]!.payload).toMatchObject({playerId:'a',amount:50,balance:100});
+    }
   });
 
   it('supports manual decline and auto-declines before EndTurn or timeout closure',()=>{

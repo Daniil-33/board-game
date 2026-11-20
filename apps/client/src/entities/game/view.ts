@@ -125,7 +125,7 @@ export interface OrderEntry {
   readonly tieRolled: boolean;
   /** Setup only: the value rolled in the current round, when rolled. */
   readonly roll: number | null;
-  /** Interim jail rule: attempts used, when in jail. */
+  /** Jail attempts used, when in jail. */
   readonly jail: { readonly attemptsUsed: number } | null;
 }
 

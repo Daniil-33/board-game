@@ -42,7 +42,7 @@ How the snapshot upgrade works:
   - A tail written under the **old** rules can diverge. That only happens after a crash, because a normal deploy snapshots at SIGTERM. The existing recovery handling then logs the `ReplayDivergenceError` and marks the room failed (`GameRoom.failed`, logs kept). No new close path is added.
 - **Jail (`core-8 → core-9`).** An interim prisoner keeps `attemptsUsed`. The final rules apply from their next roll or action, as in the handoff's example.
 - **Mortgages (`core-7 → core-8`).** Every stored mortgage gets `lockedTurnId: null`, meaning not locked.
-- Finished games stay as stored history. No code re-executes old logs outside recovery, so removing the the earlier jail events breaks no reader. The replay test (C19) covers the new events.
+- Finished games stay as stored history. No code re-executes old logs outside recovery, so removing the `Interim*` events breaks no reader. The replay test (C19) covers the new events.
 
 ## Core (`packages/game-core`)
 
@@ -128,7 +128,7 @@ State: `jail[playerId] = { attemptsUsed }`, unchanged. The fee is `Q(lapReward /
   - the turn continues unrolled, and the player rolls with a normal `RollDice` (normal doubles rules, so a double grants the usual bonus turn);
   - if the deadline passes after paying and before rolling, the forced roll is a normal roll.
 - **Deadline (C10).** A `Timeout` before the roll goes through `applyRoll`, which takes the jail branch. That is the roll-for-a-double choice, including the forced fee on the third failure. The turn then continues for `CONTINUATION_MS`. A voluntary exit is never automatic.
-- **Removed:** `jail-attempt module`, the three-attempt jail rule, the the earlier jail events and their "temporary" texts in core, protocol (`frames.ts`) and client.
+- **Removed:** `interim-jail.ts`, `INTERIM_JAIL_RULE`, the `Interim*` events and their "temporary" texts in core, protocol (`frames.ts`) and client.
 
 ### Projection (C16)
 

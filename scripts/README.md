@@ -63,7 +63,7 @@ sg docker -c 'docker run --rm --network host --group-add 111 \
   -e E2E_SCREEN_EVIDENCE_DIR=/evidence/screens/captured-app \
   -e E2E_BASE_URL=http://127.0.0.1:8085 \
   mcr.microsoft.com/playwright:v1.58.2-noble \
-  ./node_modules/.bin/playwright test e2e/compose.spec.ts --grep "seed 6689" --workers=1'
+  ./node_modules/.bin/playwright test e2e/compose.spec.ts --grep "seed 129" --workers=1'
 
 sg docker -c 'docker run --rm --network host --group-add 111 \
   -v "$PWD":/workspace -v "$TASK_SOURCE/node_modules":/workspace/node_modules -v "$TASK_SOURCE/apps/client/node_modules":/workspace/apps/client/node_modules -v "$TASK_EVIDENCE":/evidence \

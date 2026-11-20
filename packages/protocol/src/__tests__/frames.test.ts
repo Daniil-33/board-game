@@ -48,6 +48,25 @@ it('round-trips PayCharge with the required null payload', () => {
   expect(decodeClientFrame(enc({ ...frame, payload: {} }))).toMatchObject({ ok: false, error: { code: 'MALFORMED_FRAME' } });
 });
 
+describe('stage 6 command payloads', () => {
+  const frame = (type: string, payload: unknown) => ({t:'Command',commandId:`${type}-1`,type,
+    expected:{kind:'target',target:{kind:'turn',id:'turn-3'}},payload});
+
+  it('decodes PlaceCasinoBet payloads and rejects invalid shapes', () => {
+    const valid=frame('PlaceCasinoBet',{amount:10});
+    expect(decodeClientFrame(enc(valid))).toEqual({ok:true,frame:valid});
+    for(const payload of [{amount:10.5},{amount:-10},{amount:10,extra:true},null]){
+      expect(isMalformed(decodeClientFrame(enc(frame('PlaceCasinoBet',payload))))).toBe(true);
+    }
+  });
+
+  it.each(['PayJailFee','DeclineCasino'])('%s accepts null and rejects an object payload', type => {
+    const valid=frame(type,null);
+    expect(decodeClientFrame(enc(valid))).toEqual({ok:true,frame:valid});
+    expect(isMalformed(decodeClientFrame(enc(frame(type,{}))))).toBe(true);
+  });
+});
+
 describe('static types come from game-core', () => {
   it('view, events, expected, revision', () => {
     expectTypeOf<WelcomeFrame['view']>().toEqualTypeOf<StateView>();

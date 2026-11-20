@@ -17,11 +17,11 @@
 - `board.ts`: `PLACEHOLDER_RING` (`{ placeholder: true, size: 40, startCell: 0, jailCell: 10, cells }`, each cell `{ index, kind: 'start' | 'jail' | 'blank' }`), with a `PLACEHOLDER` comment that stage 2 replaces it with `CLASSIC_40`. Jail on cell 10 mirrors the classic layout so stage 2 changes the least.
 - `setup.ts`: `RollForOrder` handler and the setup-side `Timeout` branch.
 - `turns.ts`: `RollDice`, `EndTurn`, the turn-side `Timeout` branch, `closeTurn`, `startTurn`, the no-op `settleMandatory` hook.
-- `jail-attempt module`: the three-attempt jail rule constant (`{ temporary: true, replacedInStage: 6, maxAttempts: 3 }`) and `resolveJailAttempt(...)`, isolated so stage 6 deletes one file.
+- `interim-jail.ts`: `INTERIM_JAIL_RULE` constant (`{ temporary: true, replacedInStage: 6, maxAttempts: 3 }`) and `resolveJailAttempt(...)`, isolated so stage 6 deletes one file.
 - `deadlines.ts`: duration constants, `PendingDeadline`, `pendingDeadlines(state)`.
 - `lifecycle.ts` keeps `CreateGame/AddPlayer/StartGame`; `gameEngine` is built from the merged registry in a new `rules.ts` (avoids an import cycle between lifecycle and setup). `index.ts` keeps re-exporting `gameEngine`.
 
-Alternative: one large `rules.ts`. Rejected: the prior jail must be removable in isolation.
+Alternative: one large `rules.ts`. Rejected: the interim jail must be removable in isolation.
 
 ### D2. State shape (all keys public)
 

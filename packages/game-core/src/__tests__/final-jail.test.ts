@@ -38,6 +38,32 @@ describe('final jail rules',()=>{
     expect(g.endTurn().at(-1)!.payload).toMatchObject({playerId:'b',bonus:false});
   });
 
+  it('opens casino after a jail double moves onto the casino without granting a bonus',()=>{
+    const g=prisonerUp(),state=jailedState(g,0),result=submit(state,[5,5]);
+    expect(result.kind).toBe('accepted');
+    if(result.kind==='accepted'){
+      expect(types(result.events)).toEqual(['DiceRolled','JailReleased','PlayerMoved','CasinoOffered']);
+      expect(result.events[2]!.payload).toMatchObject({from:JAIL,to:20,steps:10});
+      expect(result.events[3]!.payload).toEqual({playerId:'a',cap:2990});
+      expect(result.state.turn).toMatchObject({pendingBonus:false,doublesStreak:0});
+      expect(result.state.casino).toMatchObject({playerId:'a',turnId:state.turn!.turnId});
+    }
+  });
+
+  it('allows an own-turn asset action after a failed jail attempt',()=>{
+    const g=prisonerUp(),base=jailedState(g,0),asset=base.board!.cells[1]!.asset!;
+    const state={...base,owners:{...base.owners,[asset.assetId]:pid('a')}};
+    const failed=submit(state,[1,2]);
+    expect(failed.kind).toBe('accepted');
+    if(failed.kind==='accepted'){
+      expect(types(failed.events)).toEqual(['DiceRolled','JailAttemptFailed']);
+      const session=createSession(gameEngine,failed.state);
+      const mortgage=session.submit(cmd('Mortgage',{assetId:asset.assetId},{actor:player('a'),target:{kind:'turn',id:failed.state.turn!.turnId}}),ctx());
+      expect(mortgage.kind).toBe('accepted');
+      if(mortgage.kind==='accepted')expect(types(mortgage.events)).toEqual(['BalanceChanged','AssetMortgaged']);
+    }
+  });
+
   it('keeps the prisoner on the first two failures and allows normal own-turn closure',()=>{
     const g=prisonerUp();
     const first=g.roll(1,2);

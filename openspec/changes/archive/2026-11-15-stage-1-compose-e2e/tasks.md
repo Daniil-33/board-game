@@ -23,7 +23,7 @@
 - [x] 4.2 Add two/three-context lobby/setup/turn scenarios, including ties and several turns; verify visible order and movement against authoritative events, per effort criteria 1–6 and 11.
 - [x] 4.3 Add reload and server-container restart scenarios for deployment/compose “Persistent game storage” and effort criteria 9–10; verify same identity/room and successful post-reconnect command.
 - [x] 4.4 Add real-deadline AFK scenario per effort criterion 3; assert auto-roll, same-turn 20 s continuation and subsequent turn closure with trace timestamps.
-- [x] 4.5 Add seeded third-double and prior jail browser scenario for server/test-entropy “Reproducible dice” and effort criteria 4–5; verify jail before movement, streak reset and observable jail continuation.
+- [x] 4.5 Add seeded third-double and interim-jail browser scenario for server/test-entropy “Reproducible dice” and effort criteria 4–5; verify jail before movement, streak reset and observable jail continuation.
 - [x] 4.6 Add locked-room code/invite, leave/creator-close and resignation-to-game-over scenarios per effort criteria 1a–1c; verify winner screen in independent browser contexts.
 
 ## 5. Specs and CI
