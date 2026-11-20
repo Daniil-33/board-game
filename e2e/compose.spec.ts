@@ -182,12 +182,12 @@ test('seed 6689: setup tie, three doubles jail before movement and interim jail 
     expect(prisoner.view!.positions[prisoner.id]).toBe(jailPosition);
     await prisoner.page.setViewportSize({ width: 1440, height: 900 });
     await assertBoardBannerGeometry(prisoner.page);
+    await captureScreens(prisoner.page, 'jail-attempt-status');
     await expect(prisoner.page.locator(sel('jail'))).toHaveText('В тюрьме · 1/3');
     await expect(prisoner.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
     const observer = players.find(player => player !== prisoner)!;
     await expect(observer.page.locator(sel('jail-attempt-status'))).toHaveText('В тюрьме · попытка 2 из 3');
     await assertJournalEntryBelowHeading(prisoner.page);
-    await captureScreens(prisoner.page, 'jail-attempt-status');
   } else {
     expect(attempt.map(e => e.type)).toEqual(['DiceRolled', 'InterimJailReleased', 'PlayerMoved', ...(prisoner.view!.purchase ? ['PurchaseOffered'] : [])]);
     expect(attempt[1]!.payload).toMatchObject({ reason: 'double' });
