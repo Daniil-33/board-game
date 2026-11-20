@@ -216,7 +216,7 @@ test('desktop journal stacks and dismisses two RATE_LIMITED rejections without o
         `visible rejection boxes overlap: ${JSON.stringify({ a, b })}`).toBe(true);
     }
   };
-  const assertDismissHitTest = async (rejectionIndex: number) => {
+  const assertDismissHitTest = async (rejectionIndex: number, dismissAfterCheck = true) => {
     const wrapper = page.locator('.chat-rejections');
     const rejection = page.locator(sel('chat-rejection')).nth(rejectionIndex);
     const reason = rejection.locator('p').first();
@@ -244,7 +244,7 @@ test('desktop journal stacks and dismisses two RATE_LIMITED rejections without o
       return { hit: Boolean(target && (target === element || element.contains(target))), box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } };
     });
     expect(hit.hit, `dismiss is hit-testable at ${JSON.stringify(hit.box)}`).toBe(true);
-    await dismiss.click();
+    if (dismissAfterCheck) await dismiss.click();
   };
 
   for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
@@ -288,6 +288,9 @@ test('desktop journal stacks and dismisses two RATE_LIMITED rejections without o
       await captureScreens(page, 'chat-rejection-two-scrolled', ['desktop']);
     }
 
+    await assertDismissHitTest(1, false);
+    await assertNoOverlap();
+    await assertJournalEntryBelowHeading(page);
     await assertDismissHitTest(0);
     await expect(rejections).toHaveCount(1);
     await assertNoOverlap();
