@@ -12,13 +12,20 @@ const out = process.argv[3] ?? resolve(evidenceRoot, 'pairs');
 const captureRoot = resolve(evidenceRoot, 'screens');
 const checkoutHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'liquidation-next-turn', 'elimination', 'game-over']);
+const singleViewportScreens = new Map([
+  ['chat-rejection', ['desktop']],
+  ['chat-rejection-two', ['desktop']],
+  ['chat-rejection-two-scrolled', ['desktop']],
+  ['chat-rejection-two-mobile', ['mobile']],
+]);
 const provenance = new Map();
 function readManifest(screen) {
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
   const manifestPath = resolve(captureRoot, captureSet, `capture-manifest-${screen}.json`);
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const requiredViewports = singleViewportScreens.get(screen) ?? ['desktop', 'mobile'];
   if (manifest.screen !== screen || !Array.isArray(manifest.viewports)
-    || !manifest.viewports.includes('desktop') || !manifest.viewports.includes('mobile')) {
+    || !requiredViewports.every(viewport => manifest.viewports.includes(viewport))) {
     throw new Error(`Invalid capture provenance for ${screen}`);
   }
   if (manifest.producerHead !== checkoutHead) {
@@ -72,6 +79,10 @@ const pairs = [
   ['elimination-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Eliminated viewer; nearest mobile board frame'],
   ['game-over-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-10-итоги-партии.png', 'Game over'],
   ['game-over-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Game over; nearest mobile game frame'],
+  ['chat-rejection-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Single long RATE_LIMITED rejection in the bounded desktop journal row'],
+  ['chat-rejection-two-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'First of two real RATE_LIMITED rejections in the bounded journal scroll region'],
+  ['chat-rejection-two-scrolled-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Second rejection reason and message after scrolling the bounded journal region'],
+  ['chat-rejection-two-mobile-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-05-mobile-журнал-и-чат-copy.png', 'Two stacked RATE_LIMITED rejections; mobile flow has no desktop containment rules'],
 ].map(([name, designSource, description]) => {
   const viewport = name.endsWith('-mobile') ? 'mobile' : 'desktop';
   const screen = name.replace(/-(desktop|mobile)$/, '');
@@ -160,6 +171,7 @@ const indexReadme = [
   '',
   '- **TL-approved addition:** desktop side columns stay within the viewport below the top bar. My Assets scrolls internally with keyboard focus and a visible token-colored scrollbar; Players uses the same containment when its roster overflows. Mobile layout is unchanged.',
   '- The liquidation fixture asserts that the page does not scroll while My Assets does. A second-turn-after-liquidation capture confirms the overlay auto-hides while debt history remains readable.',
+  '- **TL-approved addition (RVW-010, S1):** multiple chat rejections share one bounded desktop journal scroll region. The exact-head evidence captures each of two real RATE_LIMITED messages at its scroll position and both stacked messages in the unchanged mobile journal flow.',
   '',
   '## Reproduction',
   '',

@@ -174,6 +174,131 @@ test('desktop journal keeps a long RATE_LIMITED rejection reachable', async ({ a
   await expect(rejection).toHaveCount(0);
 });
 
+test('desktop journal stacks and dismisses two RATE_LIMITED rejections without overlap', async ({ actors }) => {
+  test.setTimeout(120_000);
+  test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room setup');
+  const players = await actors(2);
+  const host = players[0]!;
+  const room = await createRoom(host);
+  await join(players[1]!, room);
+  await start(players);
+  await setup(players);
+
+  const page = host.page;
+  const rejectedTexts = ['я'.repeat(300), 'б'.repeat(300)] as const;
+  const sendTwoRateLimited = async () => {
+    const initialAckCount = host.chatAcks.length;
+    for (let i = 0; i < 5; i++) {
+      if (i > 0) await page.waitForTimeout(550);
+      await page.locator(sel('chat-input')).fill(`two-rejection seed ${i + 1}`);
+      await page.locator(sel('chat-send')).click();
+      await expect.poll(() => host.chatAcks.length).toBe(initialAckCount + i + 1);
+      expect(host.chatAcks.at(-1)?.ok).toBe(true);
+    }
+    for (let i = 0; i < 2; i++) {
+      await page.waitForTimeout(550);
+      await page.locator(sel('chat-input')).fill(rejectedTexts[i]!);
+      await page.locator(sel('chat-send')).click();
+      await expect.poll(() => host.chatAcks.length).toBe(initialAckCount + 6 + i);
+      expect(host.chatAcks.at(-1)).toMatchObject({ ok: false, reason: 'RATE_LIMITED' });
+    }
+  };
+  const assertNoOverlap = async () => {
+    const boxes = await page.locator(sel('chat-rejection')).evaluateAll(elements => elements.map(element => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+    }));
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i]!;
+      const b = boxes[j]!;
+      expect(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,
+        `visible rejection boxes overlap: ${JSON.stringify({ a, b })}`).toBe(true);
+    }
+  };
+  const assertDismissHitTest = async (rejectionIndex: number) => {
+    const wrapper = page.locator('.chat-rejections');
+    const rejection = page.locator(sel('chat-rejection')).nth(rejectionIndex);
+    const reason = rejection.locator('p').first();
+    await wrapper.evaluate((element, index) => {
+      const target = element.children[index] as HTMLElement;
+      const wrapperBox = element.getBoundingClientRect();
+      element.scrollTop += target.getBoundingClientRect().top - wrapperBox.top;
+    }, rejectionIndex);
+    await expect(reason).toContainText('Достигнут лимит отправки сообщений. Попробуйте позже.');
+    await expect.poll(() => reason.evaluate(element => {
+      const wrapperBox = element.closest('.chat-rejections')!.getBoundingClientRect();
+      const box = element.getBoundingClientRect();
+      return box.top >= wrapperBox.top && box.bottom <= wrapperBox.bottom;
+    })).toBe(true);
+
+    const dismiss = rejection.getByRole('button', { name: 'Закрыть' });
+    await wrapper.evaluate((element, index) => {
+      const target = element.children[index] as HTMLElement;
+      const button = target.querySelector('button')!;
+      element.scrollTop += button.getBoundingClientRect().bottom - element.getBoundingClientRect().bottom;
+    }, rejectionIndex);
+    const hit = await dismiss.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const target = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return { hit: Boolean(target && (target === element || element.contains(target))), box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } };
+    });
+    expect(hit.hit, `dismiss is hit-testable at ${JSON.stringify(hit.box)}`).toBe(true);
+    await dismiss.click();
+  };
+
+  for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+    if (width === 1920) {
+      await page.waitForTimeout(10_200);
+      await sendTwoRateLimited();
+    } else {
+      await sendTwoRateLimited();
+    }
+    await page.setViewportSize({ width, height });
+    const rejections = page.locator(sel('chat-rejection'));
+    await expect(rejections).toHaveCount(2);
+    for (const [index, rejection] of (await rejections.all()).entries()) {
+      await expect(rejection).toHaveAttribute('data-reason', 'RATE_LIMITED');
+      await expect(rejection.locator('p').first()).toContainText('Достигнут лимит отправки сообщений. Попробуйте позже.');
+      await expect(rejection.locator('p').nth(1)).toHaveText(rejectedTexts[index]!);
+    }
+    if (width === 1440) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator(sel('game-tab-journal')).click();
+      const mobileWrapper = page.locator('.chat-rejections');
+      if (await mobileWrapper.count()) {
+        await expect(mobileWrapper).toHaveCSS('max-height', 'none');
+        await expect(mobileWrapper).toHaveCSS('overflow-y', 'visible');
+        await expect(mobileWrapper).toHaveCSS('grid-row-start', 'auto');
+      }
+      await assertNoOverlap();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await captureScreens(page, 'chat-rejection-two-mobile', ['mobile']);
+      await page.setViewportSize({ width, height });
+    }
+    await expect.poll(() => page.locator('.chat-rejections').evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    await assertNoOverlap();
+    await assertJournalEntryBelowHeading(page);
+    if (width === 1440) {
+      await captureScreens(page, 'chat-rejection-two', ['desktop']);
+      await page.locator('.chat-rejections').evaluate(element => {
+        const second = element.children[1]!;
+        element.scrollTop += second.getBoundingClientRect().top - element.getBoundingClientRect().top;
+      });
+      await captureScreens(page, 'chat-rejection-two-scrolled', ['desktop']);
+    }
+
+    await assertDismissHitTest(0);
+    await expect(rejections).toHaveCount(1);
+    await assertNoOverlap();
+    await assertJournalEntryBelowHeading(page);
+    await assertDismissHitTest(0);
+    await expect(rejections).toHaveCount(0);
+    await assertJournalEntryBelowHeading(page);
+    const rowCount = await page.locator('.event-feed').evaluate(element => getComputedStyle(element).gridTemplateRows.split(' ').length);
+    expect(rowCount, 'dismissal restores the two-row journal grid').toBe(2);
+  }
+});
+
 test('desktop rent and debt overlays preserve the board and top bar', async ({ actors }) => {
   test.skip(process.env.E2E_FIXTURES !== '1', 'Uses isolated server fixtures');
   const players = await actors(2);

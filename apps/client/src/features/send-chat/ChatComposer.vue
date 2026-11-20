@@ -37,10 +37,12 @@ function submit(): void {
     <Button type="submit" variant="primary" :disabled="!connected || !checked.ok" data-testid="chat-send">{{ t('chat.send') }}</Button>
     <p v-if="text && !checked.ok" class="note" data-testid="chat-validation">{{ reason(checked.reason) }}</p>
   </form>
-  <div v-for="entry in rejection" :key="entry.clientMsgId" class="chat-rejection" role="status" data-testid="chat-rejection" :data-reason="entry.reason">
-    <p>{{ reason(entry.reason) }}</p>
-    <p>{{ entry.text }}</p>
-    <button type="button" class="link" :aria-label="t('common.dismiss')" @click="chat.dismiss(entry.clientMsgId)">{{ t('common.dismiss_icon') }}</button>
+  <div v-if="rejection.length" class="chat-rejections">
+    <div v-for="entry in rejection" :key="entry.clientMsgId" class="chat-rejection" role="status" data-testid="chat-rejection" :data-reason="entry.reason">
+      <p>{{ reason(entry.reason) }}</p>
+      <p>{{ entry.text }}</p>
+      <button type="button" class="link" :aria-label="t('common.dismiss')" @click="chat.dismiss(entry.clientMsgId)">{{ t('common.dismiss_icon') }}</button>
+    </div>
   </div>
   </div>
 </template>

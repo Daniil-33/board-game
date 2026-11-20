@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
     resize: none;
   }
   .board-column:has(canvas) .journal-column :deep(.journal-list) { grid-row: 2; grid-column: 1 / -1; }
-  .board-column:has(canvas) .journal-column :deep(.chat-rejection) {
+  .board-column:has(canvas) .journal-column :deep(.chat-rejections) {
     grid-row: 3;
     grid-column: 1 / -1;
     min-height: 0;
