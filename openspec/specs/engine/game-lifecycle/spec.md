@@ -61,14 +61,14 @@ A `CreateGame` seed SHALL be an integer from 0 to 2^32 − 1 inclusive. Any othe
 - **THEN** the engine SHALL reject it with `INVALID_SEED`
 
 ### Requirement: Rules version gate
-The engine SHALL accept CreateGame only for a rules version it explicitly supports. Any other version SHALL be rejected with UNSUPPORTED_RULES_VERSION. The engine MUST NOT run a game under a rules version it does not support. Only core-8 SHALL be supported; all earlier versions SHALL be rejected for new games.
+The engine SHALL accept CreateGame only for a rules version it explicitly supports. Any other version SHALL be rejected with UNSUPPORTED_RULES_VERSION. The engine MUST NOT run a game under a rules version it does not support. Only core-9 SHALL be supported for new games; all earlier versions SHALL be rejected.
 
 #### Scenario: Unknown rules version
 - **WHEN** CreateGame is issued with a rules version the engine does not list as supported
 - **THEN** the engine SHALL reject it with UNSUPPORTED_RULES_VERSION
 
 #### Scenario: Previous rules version
-- **WHEN** CreateGame is issued with core-1, core-2, core-3, core-4, core-5, core-6 or core-7
+- **WHEN** CreateGame is issued with core-1, core-2, core-3, core-4, core-5, core-6, core-7 or core-8
 - **THEN** the engine SHALL reject it with UNSUPPORTED_RULES_VERSION
 
 ### Requirement: Add player
@@ -132,12 +132,23 @@ LeaveLobby SHALL be revision-guarded, system-only and lobby-only, with payload {
 - **THEN** it SHALL reject with NOT_ENOUGH_PLAYERS
 
 ### Requirement: Upgrade core-7 state
-The pure state upgrade SHALL map a valid core-7 state to core-8 by setting charge to null, setting each mortgage lockedTurnId to null, and setting rulesVersion to core-8. A core-8 state SHALL be returned unchanged.
+The pure state upgrade SHALL map a valid core-7 state through core-8 to core-9 by setting charge to null, setting each mortgage `lockedTurnId` to null, adding `casino: null`, and setting the final `rulesVersion` to core-9. A core-8 state SHALL upgrade to core-9 while preserving jail entries.
 
 #### Scenario: Upgrade legacy state
 - **WHEN** a core-7 state contains a prisoner and mortgages
-- **THEN** the upgraded state SHALL preserve all existing data, preserve jail attempts and mortgage terms, add charge null and lockedTurnId null, and set rulesVersion to core-8
+- **THEN** the upgraded state SHALL preserve all existing data, preserve jail attempts and mortgage terms, add charge null, `lockedTurnId: null` and `casino: null`, and set rulesVersion to core-9
 
 #### Scenario: Current state identity
-- **WHEN** a core-8 state is upgraded
+- **WHEN** a core-9 state is upgraded
 - **THEN** the result SHALL be identical to the input state
+
+### Requirement: Core version upgrade chain
+The current rules version SHALL be `core-9`. `upgradeState` SHALL preserve a genesis state with `rulesVersion: null`, recognize `core-9` unchanged, chain `core-7 → core-8 → core-9`, and upgrade `core-8` by adding `casino: null` while preserving jail entries. Unsupported versions SHALL fail explicitly.
+
+#### Scenario: Core-8 prisoner upgrades
+- **WHEN** a core-8 state with a prisoner is upgraded
+- **THEN** the result SHALL be core-9 with the same `attemptsUsed` and `casino: null`
+
+#### Scenario: Genesis remains unchanged
+- **WHEN** genesis is passed to `upgradeState`
+- **THEN** the returned state SHALL equal genesis with `rulesVersion: null`

@@ -13,7 +13,7 @@ A viewer SHALL be either a player viewer carrying a `PlayerId` or a spectator vi
 - **THEN** the projection SHALL be deep-equal to the projection for a spectator viewer
 
 ### Requirement: State projection hides secrets
-Projecting a game state for any viewer SHALL return a view that contains no RNG state, in any phase. Every other field of the current state (revision, rules version, phase, players, order-roll state, turn order, current turn, positions, interim jail entries, eliminated ids, winner, board, economy, balances, owners, purchase and auction) SHALL be present in the view with the same value as in the state.
+Projecting a game state for any viewer SHALL return a view that contains no RNG state, in any phase. Every other field of the current state (revision, rules version, phase, players, order-roll state, turn order, current turn, positions, jail entries, eliminated ids, winner, board, economy, balances, owners, purchase and auction) SHALL be present in the view with the same value as in the state.
 
 #### Scenario: RNG never projected
 - **WHEN** a state in phase `lobby`, `setup`, `playing` or `finished` is projected for a player viewer and for a spectator viewer
@@ -42,7 +42,7 @@ Every field of the game state SHALL have an explicit visibility classification, 
 - **THEN** `tsc --noEmit` for `packages/game-core` SHALL fail
 
 ### Requirement: Event projection fails closed
-Projecting events for a viewer SHALL keep their order and return each event the viewer may see. Every acquisition event, BoardGenerated and BalanceChanged and every lifecycle event (`GameCreated`, `PlayerAdded`, `GameStarted`) and every order-roll, turn, interim-jail, leave, resignation and game-end event SHALL be visible to every viewer unchanged. An event whose type has no visibility classification SHALL raise an engine-defect error rather than be passed through.
+Projecting events for a viewer SHALL keep their order and return each event the viewer may see. Every acquisition event, BoardGenerated and BalanceChanged and every lifecycle event (`GameCreated`, `PlayerAdded`, `GameStarted`) and every order-roll, turn, jail, leave, resignation and game-end event SHALL be visible to every viewer unchanged. An event whose type has no visibility classification SHALL raise an engine-defect error rather than be passed through.
 
 #### Scenario: Lifecycle events are public
 - **WHEN** the events of `CreateGame`, `AddPlayer` and `StartGame` are projected for a spectator viewer
@@ -109,3 +109,10 @@ LiquidationApplied and PlayerBankrupt SHALL be classified public and exported as
 #### Scenario: Liquidation and bankruptcy visible to all
 - **WHEN** liquidation or bankruptcy events are projected for a player, eliminated player or spectator
 - **THEN** all SHALL receive equal ordered payloads, and mutating a projected payload SHALL not change authoritative events
+
+### Requirement: Casino and special-cell events are public
+`StateView` SHALL include public casino state. `CasinoOffered`, `CasinoResolved`, `CasinoDeclined`, `ChanceDrawn`, `JailAttemptFailed` and `JailReleased` SHALL be classified public, detached and preserved in event order for every viewer.
+
+#### Scenario: Spectator sees special-cell state and events
+- **WHEN** a spectator projects a state with an open casino decision and its events
+- **THEN** the view SHALL contain the decision and the event list SHALL preserve all classified public events in order

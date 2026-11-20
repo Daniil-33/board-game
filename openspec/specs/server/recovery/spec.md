@@ -7,7 +7,7 @@ happens when a log does not replay, and what a clean shutdown does.
 ## Requirements
 
 ### Requirement: Restore from snapshot and tail
-A room SHALL be rebuilt from the snapshot with the highest revision for its game plus every log entry with a higher revision, in revision order, through the core's restoreSession. Before restoration, a core-7 snapshot SHALL be upgraded in memory to core-8. A game without a snapshot SHALL be rebuilt from the genesis state and its whole log.
+A room SHALL be rebuilt from the snapshot with the highest revision for its game plus every log entry with a higher revision, in revision order, through the core's restoreSession. Before restoration, a core-7 snapshot SHALL be upgraded in memory through core-8 to core-9. A game without a snapshot SHALL be rebuilt from the genesis state and its whole log.
 
 #### Scenario: Restored state equals live state
 - **WHEN** a game is played past a snapshot, and a new manager on the same database restores it
@@ -26,11 +26,11 @@ A room SHALL be rebuilt from the snapshot with the highest revision for its game
 - **THEN** its state SHALL be the genesis state
 
 #### Scenario: Upgrade a core-7 snapshot
-- **WHEN** a room loads a core-7 snapshot containing an interim prisoner and a mortgage
-- **THEN** recovery SHALL preserve jail attempts and mortgage terms, set the core-8 neutral fields, and continue loading the room without a SQL migration or room closure
+- **WHEN** a room loads a core-7 snapshot containing a prisoner and a mortgage
+- **THEN** recovery SHALL preserve jail attempts and mortgage terms, set the core-9 neutral fields, and continue loading the room without a SQL migration or room closure
 
 #### Scenario: Replay a current-rule tail after upgrade
-- **WHEN** new core-8 commands follow the legacy snapshot and the server restarts without writing a shutdown snapshot
+- **WHEN** new core-9 commands follow the legacy snapshot and the server restarts without writing a shutdown snapshot
 - **THEN** recovery SHALL upgrade the snapshot, replay the tail and reproduce the exact live state and events
 
 #### Scenario: Diverging legacy tail
@@ -171,3 +171,17 @@ Unsupported core-6 games SHALL fail recovery without rewriting stored data or ar
 #### Scenario: Legacy closed room reconnect
 - **WHEN** a guest sends Hello for a stage 4 room retired by migration 0006
 - **THEN** the server SHALL return ROOM_CLOSED without modifying game data
+
+### Requirement: Restore stage 6 state
+Server recovery SHALL restore a prisoner with attempts, an open casino decision, a chance-loss bank charge, and a mortgage redeem lock with exact state and deadlines. The load path SHALL upgrade `core-8` snapshots to `core-9` before replay, and the upgrade SHALL not require a version literal in the server.
+
+#### Scenario: Core-8 snapshot restores as core-9
+- **WHEN** a core-8 snapshot is loaded
+- **THEN** the recovered room SHALL use core-9, retain jail attempts and expose neutral casino state
+
+### Requirement: Preserve genesis and divergence evidence
+`upgradeState` SHALL leave genesis unchanged so shutdown followed by restore produces state equal to genesis. A divergence test SHALL prove the logged failed room, `tailIndex: 1`, and `errorCode: 'REDEEM_LOCKED'` without changing stored rows.
+
+#### Scenario: Genesis room shutdown and restore
+- **WHEN** a genesis room is shut down and restored
+- **THEN** its recovered state SHALL equal genesis

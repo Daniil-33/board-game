@@ -96,20 +96,18 @@ return `{ ok: false, error: { code: 'MALFORMED_FRAME', message } }`.
 - **THEN** each SHALL return a `MALFORMED_FRAME` error and SHALL NOT throw
 
 ### Requirement: Typed from game-core
-`view` SHALL have the static type `StateView` and `events` the static type
-`GameEvent[]` from `@game/game-core`. At runtime the decoder SHALL check that
-`view` is a JSON object and that each event is `{ type: string, payload }`.
-`payload` SHALL be present on every event; an event without data SHALL carry
-`payload: null`. The `view` schema `description` SHALL state: "Interim jail
-state in this view is temporary (stage 1 interim rule, replaced in stage 6)."
-without naming game-core symbols.
+`view` and `events` SHALL have static types `StateView` and `GameEvent[]` from
+`@game/game-core`. The decoder SHALL check that the view is a JSON object and
+each event has a type and payload; missing payloads SHALL be rejected, and
+data-less events SHALL use `payload: null`. The view schema description SHALL
+document the public core-9 view without game-core symbols or interim-jail text.
 
 #### Scenario: View must be an object
 - **WHEN** an `Update` has `view: null` or `view: []`
 - **THEN** `decodeServerFrame` SHALL return a `MALFORMED_FRAME` error
 
 ### Requirement: Client command types
-The client Command types SHALL be exactly RollForOrder, RollDice, EndTurn, Resign, BuyAsset, StartAuction, Bid, PassAuction, PayRent, PayCharge, BuildHouse, SellHouse, Mortgage and Redeem, named as in game-core. All except BuildHouse, SellHouse, Mortgage and Redeem SHALL carry payload null. BuildHouse, SellHouse, Mortgage and Redeem SHALL carry exactly { assetId: string }, with a storable nonempty id bounded to 128 UTF-16 code units and no extra keys.
+The client Command types SHALL be exactly RollForOrder, RollDice, EndTurn, Resign, BuyAsset, StartAuction, Bid, PassAuction, PayRent, PayCharge, PayJailFee, PlaceCasinoBet, DeclineCasino, BuildHouse, SellHouse, Mortgage and Redeem. Payloads SHALL be null except for casino bets and asset commands. `PlaceCasinoBet` SHALL carry exactly `{ amount: integer }`. Asset commands SHALL carry exactly `{ assetId: string }`, where the id is storable, nonempty and at most 128 UTF-16 code units.
 
 #### Scenario: Resign frame
 - **WHEN** { t: 'Command', commandId: 'c1', type: 'Resign', expected: { kind: 'revision', revision: 7 }, payload: null } is decoded
@@ -135,6 +133,10 @@ The client Command types SHALL be exactly RollForOrder, RollDice, EndTurn, Resig
 - **WHEN** PayCharge is decoded
 - **THEN** null SHALL be accepted and every non-null payload SHALL be rejected
 
+#### Scenario: Jail and casino command payloads
+- **WHEN** PayJailFee, DeclineCasino or PlaceCasinoBet is decoded
+- **THEN** PayJailFee and DeclineCasino SHALL accept only null, and PlaceCasinoBet SHALL accept exactly an integer amount
+
 #### Scenario: Mortgage command payloads
 - **WHEN** Mortgage or Redeem is decoded
 - **THEN** exactly one bounded storable assetId string SHALL be accepted; null, missing ids, extra keys, nonstrings, empty or oversized ids, NUL and lone surrogates SHALL be rejected
@@ -157,7 +159,7 @@ Welcome and Update views SHALL carry the core public board, economy and balances
 
 #### Scenario: Public view schema description
 - **WHEN** the view schema description is read
-- **THEN** it SHALL equal "Public projection of the game state (game-core StateView), checked only as a JSON object. Includes the public generated board, economy, balances, asset owners, purchase decision, auction state, houses, rent and rent quotes. Interim jail state in this view is temporary (stage 1 interim rule, replaced in stage 6)."
+- **THEN** it SHALL equal "Public projection of the game state (game-core StateView), checked only as a JSON object. Includes the public generated board, economy, balances, asset owners, purchase decision, auction state, houses, rent, casino and rent quotes."
 
 ### Requirement: Stage 3 public projection and events
 Welcome and Update views SHALL carry the core public owners, purchase decision and auction, including the responder and response deadline. Purchase and auction events SHALL retain their core payloads. Views SHALL remain statically typed as StateView and checked as JSON objects at runtime.
@@ -205,3 +207,10 @@ Welcome and Update SHALL preserve core-8 mortgage lock state, open bank charges,
 #### Scenario: Charge events round trip
 - **WHEN** an Update carries ChargeDue, ChargePaid and a BalanceChanged reason chance
 - **THEN** encoding and decoding SHALL preserve those events and their payloads unchanged
+
+### Requirement: Special-cell protocol contracts
+The protocol SHALL validate `PlaceCasinoBet {amount}`, null-payload `DeclineCasino` and null-payload `PayJailFee`; expose casino in `StateView`; define the casino, chance and final jail event payloads; classify those events as public; and increment `PROTOCOL_VERSION` once for this contract change. Core exports SHALL include pure `jailFee(economy)` and `casinoCap(economy)` helpers. Interim jail commands, events and temporary text SHALL be absent.
+
+#### Scenario: Special-cell command round trip
+- **WHEN** a valid stage 6 command is encoded and decoded
+- **THEN** the payload and command type SHALL be preserved by the shared protocol schema
