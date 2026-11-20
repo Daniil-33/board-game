@@ -241,16 +241,22 @@ export function createClient(deps: ClientDeps): Client {
     // Before animation handling: a terminal update cancels the queue, and its bankruptcy must still show.
     const notices = debtNotices(events);
     let noticeIndex = 0;
+    let latestNoticeIndex: number | null = null;
+    let turnStarted = false;
     for (const event of events) {
-      if (event.type === 'TurnStarted') game.activeNoticeIndex = null;
+      if (event.type === 'TurnStarted') turnStarted = true;
       if (event.type !== 'LiquidationApplied' && event.type !== 'PlayerBankrupt') continue;
       const expectedKind = event.type === 'LiquidationApplied' ? 'liquidation' : 'bankruptcy';
       const notice = notices[noticeIndex];
       if (notice?.kind !== expectedKind) continue;
       appendNotices(game.notices, [notice]);
-      game.activeNoticeIndex = game.notices.length - 1;
+      latestNoticeIndex = game.notices.length - 1;
       noticeIndex++;
     }
+    // A debt result may be committed together with its resulting TurnStarted.
+    // Keep that result visible; only a later turn start ages it out.
+    if (latestNoticeIndex !== null) game.activeNoticeIndex = latestNoticeIndex;
+    else if (turnStarted) game.activeNoticeIndex = null;
     board?.refreshOwnership?.(view);
     const nextEliminated = JSON.stringify(view.eliminated);
     if (nextEliminated !== eliminatedKey || view.phase === 'finished' || events.some((e) => e.type === 'PlayerResigned' || e.type === 'GameEnded')) {

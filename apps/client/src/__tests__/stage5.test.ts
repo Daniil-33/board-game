@@ -367,6 +367,18 @@ describe('debt notices in the room session', () => {
     expect(h.client.game.activeNoticeIndex).toBeNull();
   });
 
+  it('keeps a newly created notice visible when its update also starts the following turn', () => {
+    const h = harness({ stored: storedSession(THREE) });
+    h.client.start(); h.sockets.last().open();
+    const s = owning(); const v = project(s);
+    h.sockets.last().receive(welcome(v));
+    const next = (n: number): StateView => ({ ...v, revision: (v.revision + n) as StateView['revision'] });
+    h.sockets.last().receive(update(next(1), [liquidation(), { type: 'TurnStarted', payload: { playerId: 'b' } }]));
+    expect(h.client.game.activeNoticeIndex).toBe(0);
+    h.sockets.last().receive(update(next(2), [{ type: 'TurnStarted', payload: { playerId: 'c' } }]));
+    expect(h.client.game.activeNoticeIndex).toBeNull();
+  });
+
   it('shows a terminal bankruptcy on the game-over screen even though the update cancels animations', async () => {
     const h = harness({ stored: storedSession(THREE) });
     h.client.start(); h.sockets.last().open();
