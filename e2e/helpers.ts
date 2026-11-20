@@ -7,21 +7,36 @@ import type { StateView, GameEvent } from '../packages/game-core/src/index';
 const roomCode = 'browser-fixture-code';
 export const sel = (name: string) => `[data-testid="${name}"]`;
 export async function assertJournalEntryBelowHeading(page: Page): Promise<void> {
-  const heading = await page.locator('.journal-column h2').boundingBox();
   const list = page.locator(sel('journal-list'));
-  const newest = await list.locator(sel('journal-entry')).last().boundingBox();
-  const visible = await list.evaluate(element => {
-    const rect = element.getBoundingClientRect();
-    return {
-      left: rect.left + element.clientLeft,
-      top: rect.top + element.clientTop,
-      right: rect.left + element.clientLeft + element.clientWidth,
-      bottom: rect.top + element.clientTop + element.clientHeight,
-      scrollTop: element.scrollTop,
-      scrollHeight: element.scrollHeight,
-      clientHeight: element.clientHeight,
-    };
-  });
+  const measure = async () => {
+    const heading = await page.locator('.journal-column h2').boundingBox();
+    const newest = await list.locator(sel('journal-entry')).last().boundingBox();
+    const visible = await list.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left + element.clientLeft,
+        top: rect.top + element.clientTop,
+        right: rect.left + element.clientLeft + element.clientWidth,
+        bottom: rect.top + element.clientTop + element.clientHeight,
+        scrollTop: element.scrollTop,
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      };
+    });
+    return { heading, newest, visible };
+  };
+  // Let resize and ResizeObserver work settle after viewport changes before
+  // checking the final row's unclipped box.
+  await expect.poll(async () => {
+    const { heading, newest, visible } = await measure();
+    return Boolean(heading && newest
+      && newest.y >= heading.y + heading.height - 1
+      && newest.y >= visible.top - 1
+      && newest.y + newest.height <= visible.bottom + 1
+      && newest.x >= visible.left - 1
+      && newest.x + newest.width <= visible.right + 1);
+  }, { timeout: 10_000 }).toBe(true);
+  const { heading, newest, visible } = await measure();
   expect(heading, 'journal heading').not.toBeNull();
   expect(newest, 'newest journal entry').not.toBeNull();
   // Playwright boxes retain fractions while clientWidth/clientHeight are integer CSS pixels.
