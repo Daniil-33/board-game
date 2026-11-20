@@ -18,12 +18,20 @@ export async function assertJournalEntryBelowHeading(page: Page): Promise<void> 
 
 export async function assertBoardBannerGeometry(page: Page): Promise<void> {
   const canvas = page.locator(sel('board-canvas'));
-  await expect.poll(() => canvas.getAttribute('data-banner-bounds'), { timeout: 1_000 }).not.toBeNull();
+  let measuredSnapshot: { size: number; bounds: { x: number; y: number; width: number; height: number } } | null = null;
+  await expect.poll(async () => {
+    measuredSnapshot = await canvas.evaluate(element => {
+      const canvas = element as HTMLCanvasElement;
+      const raw = canvas.dataset.bannerBounds;
+      const size = Number(canvas.dataset.boardSize);
+      if (!raw || !Number.isFinite(size)) return null;
+      try { return { size, bounds: JSON.parse(raw) as { x: number; y: number; width: number; height: number } }; }
+      catch { return null; }
+    });
+    return measuredSnapshot;
+  }, { timeout: 1_000 }).not.toBeNull();
   const canvasBox = await canvas.boundingBox();
-  const measured = await canvas.evaluate(element => ({
-    size: Number((element as HTMLCanvasElement).dataset.boardSize),
-    bounds: JSON.parse((element as HTMLCanvasElement).dataset.bannerBounds!) as { x: number; y: number; width: number; height: number },
-  }));
+  const measured = measuredSnapshot!;
   expect(canvasBox).not.toBeNull();
   const scale = canvasBox!.width / measured.size;
   const banner = {
