@@ -182,6 +182,8 @@ test('desktop rent and debt overlays preserve the board and top bar', async ({ a
   await expect.poll(() => secondDebtor.page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
   await captureScreens(secondDebtor.page, 'liquidation-next-turn');
 
+  const [observer] = await actors(1);
+  players.push(observer!);
   await load(players, 'bankruptcy-houses');
   const bankruptcyPayer = players.find(player => player.id === player.view?.rent?.payerId)!;
   await click(players, bankruptcyPayer, 'pay-rent');
