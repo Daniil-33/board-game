@@ -77,6 +77,7 @@ export async function card(p: Actor, cell: number) {
     await p.page.locator(sel('game-tab-board')).click();
   }
   const canvas = p.page.locator(sel('board')).locator(sel('board-canvas'));
+  await expect(canvas).toBeVisible();
   const box = (await canvas.boundingBox())!;
   const rect = cellRect(cell, box.width);
   await canvas.click({ position: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } });
