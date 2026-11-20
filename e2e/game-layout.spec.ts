@@ -140,6 +140,7 @@ test('desktop journal keeps a long RATE_LIMITED rejection reachable', async ({ a
   }
 
   const rejection = page.locator(`${sel('chat-rejection')}[data-reason="RATE_LIMITED"]`);
+  const rejectionRegion = page.locator('.chat-rejections');
   await expect(rejection).toHaveCount(1);
   await expect(rejection).toContainText('Достигнут лимит отправки сообщений. Попробуйте позже.');
   await captureScreens(page, 'chat-rejection', ['desktop']);
@@ -147,12 +148,12 @@ test('desktop journal keeps a long RATE_LIMITED rejection reachable', async ({ a
   for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
     await page.setViewportSize({ width, height });
     await expect.poll(() => rejection.evaluate((element, text) => element.textContent?.includes(text) ?? false, rejectedText)).toBe(true);
-    await expect.poll(() => rejection.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    await expect.poll(() => rejectionRegion.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
     await assertJournalEntryBelowHeading(page);
 
-    const box = await rejection.boundingBox();
-    expect(box, 'bounded rejection box').not.toBeNull();
-    await rejection.evaluate(element => { element.scrollTop = 0; });
+    const box = await rejectionRegion.boundingBox();
+    expect(box, 'bounded rejection region').not.toBeNull();
+    await rejectionRegion.evaluate(element => { element.scrollTop = 0; });
     const reason = rejection.locator('p').first();
     await expect(reason).toBeVisible();
     const reasonBox = await reason.boundingBox();
@@ -160,7 +161,7 @@ test('desktop journal keeps a long RATE_LIMITED rejection reachable', async ({ a
     expect(reasonBox!.y).toBeGreaterThanOrEqual(box!.y);
     expect(reasonBox!.y + reasonBox!.height).toBeLessThanOrEqual(box!.y + box!.height + 1);
 
-    await rejection.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await rejectionRegion.evaluate(element => { element.scrollTop = element.scrollHeight; });
     const dismiss = rejection.getByRole('button', { name: 'Закрыть' });
     await expect(dismiss).toBeVisible();
     const dismissBox = await dismiss.boundingBox();
