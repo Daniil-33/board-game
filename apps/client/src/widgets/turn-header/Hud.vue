@@ -2,7 +2,7 @@
 import { t } from '../../shared/i18n/index';
 import { Button, ResponsiveDialog } from '../../shared/ui/index';
 import { computed, ref, watch } from 'vue';
-import { INTERIM_JAIL_RULE, type PlayerId, type StateView } from '@game/game-core';
+import { type PlayerId, type StateView } from '@game/game-core';
 import type { ClientCommandType, HistoryEntry } from '@game/protocol';
 import { actionAvailability, activeDeadline, activePlayerId, turnOrder, type NullPayloadType } from '../../entities/game/index';
 import type { HudMessage } from '../../entities/game/index';
@@ -102,7 +102,7 @@ const headline = computed(() => {
 const jailStatus = computed(() => {
   const turnPlayer = props.view?.turn?.playerId;
   const jail = turnPlayer ? props.view?.jail[turnPlayer] : undefined;
-  return jail ? t('hud.jail_attempt', { attempt: jail.attemptsUsed + 1, maxAttempts: INTERIM_JAIL_RULE.maxAttempts }) : null;
+  return jail ? t('hud.jail_attempt', { attempt: jail.attemptsUsed + 1, maxAttempts: 3 }) : null;
 });
 const phase = computed(() => {
   if (setup.value) return t('game_layout.setup_phase');

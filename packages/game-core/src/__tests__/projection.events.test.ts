@@ -45,7 +45,7 @@ describe('projectEvents', () => {
 });
 
 // spec: engine/projection "Event projection fails closed" — Turn events are public.
-describe('projectEvents over order-roll, turn and interim-jail events', () => {
+describe('projectEvents over order-roll, turn and final-jail events', () => {
   function seededGameEvents(): GameEvent[][] {
     const g = setupGame(['a', 'b', 'c']);
     g.rollForOrder(5);
@@ -79,10 +79,19 @@ describe('projectEvents over order-roll, turn and interim-jail events', () => {
     const seen = new Set(lists.flat().map((e) => e.type));
     for (const t of [
       'OrderRollStarted', 'OrderDieRolled', 'OrderTied', 'TurnOrderDetermined', 'TurnStarted', 'DiceRolled',
-      'PlayerMoved', 'TurnContinued', 'TurnEnded', 'SentToJail', 'InterimJailAttemptFailed', 'InterimJailReleased',
+      'PlayerMoved', 'TurnContinued', 'TurnEnded', 'SentToJail', 'JailAttemptFailed', 'JailReleased',
     ]) {
       expect(seen.has(t), t).toBe(true);
     }
+    const special:GameEvent[]=[
+      {type:'CasinoOffered',payload:{playerId:'a',cap:100}},
+      {type:'CasinoResolved',payload:{playerId:'a',amount:10,won:true,balance:110}},
+      {type:'CasinoDeclined',payload:{playerId:'a',auto:false}},
+      {type:'ChanceDrawn',payload:{playerId:'a',card:'gain-5',amount:100}},
+      {type:'JailAttemptFailed',payload:{playerId:'a',attemptsUsed:1}},
+      {type:'JailReleased',payload:{playerId:'a',reason:'double'}},
+    ];
+    expect(projectEvents(special,SPECTATOR)).toEqual(special);
     for (const events of lists) {
       const frozen = deepFreeze(events);
       expect(projectEvents(frozen, SPECTATOR)).toEqual(frozen);

@@ -61,7 +61,7 @@ export async function assertBoardBannerGeometry(page: Page): Promise<void> {
       catch { return null; }
     });
     return measuredSnapshot;
-  }, { timeout: 10_000 }).not.toBeNull();
+  }, { timeout: 10_000, intervals: [100] }).not.toBeNull();
   const canvasBox = await canvas.boundingBox();
   const measured = measuredSnapshot!;
   expect(canvasBox).not.toBeNull();

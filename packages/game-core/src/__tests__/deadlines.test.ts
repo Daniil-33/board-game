@@ -145,18 +145,26 @@ describe('Timeout after the roll closes the turn', () => {
   it('idle after rolling: TurnEnded(timeout) then TurnStarted for the next player at T + 45 s', () => {
     const g = playingGame(['a', 'b']);
     g.roll(1, 3); // non-asset landing keeps this a plain timeout closure
+    const turnId=g.state.turn!.turnId;
     const T = g.deadline + 7;
     const events = g.timeout({ at: T });
-    expect(types(events)).toEqual(['TurnEnded', 'TurnStarted']);
-    expect(events[0]!.payload).toMatchObject({ reason: 'timeout', playerId: 'a' });
-    expect(events[1]!.payload).toMatchObject({ playerId: 'b', deadline: T + TURN_DURATION_MS });
+    expect(types(events)).toEqual(['BalanceChanged','ChargePaid','TurnEnded','TurnStarted']);
+    expect(events[0]!.payload).toEqual({playerId:'a',delta:-1490,balance:28420,reason:'chance'});
+    expect(events[1]!.payload).toEqual({payerId:'a',amount:1490,auto:true});
+    expect(events[2]!.payload).toEqual({turnId,playerId:'a',reason:'timeout'});
+    expect(events[3]!.payload).toMatchObject({ playerId: 'b', deadline: T + TURN_DURATION_MS });
   });
 
   it('a continued turn closes on its second Timeout', () => {
     const g = playingGame(['a', 'b']);
     g.timeout({ dice: [1, 3] }); // no pending purchase
+    const turnId=g.state.turn!.turnId;
     const events = g.timeout();
-    expect(types(events)).toEqual(['TurnEnded', 'TurnStarted']);
+    expect(types(events)).toEqual(['BalanceChanged','ChargePaid','TurnEnded','TurnStarted']);
+    expect(events[0]!.payload).toEqual({playerId:'a',delta:-1490,balance:28420,reason:'chance'});
+    expect(events[1]!.payload).toEqual({payerId:'a',amount:1490,auto:true});
+    expect(events[2]!.payload).toEqual({turnId,playerId:'a',reason:'timeout'});
+    expect(events[3]!.payload).toMatchObject({playerId:'b',bonus:false});
     expect(g.state.turn!.playerId).toBe('b');
   });
 });

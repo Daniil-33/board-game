@@ -22,9 +22,8 @@
     "finished": "Game over"
   },
   "animation": {
-    "jail_attempt_failed": "{player} stays in jail: attempt {attempts} failed (interim rule)",
-    "jail_released_double": "{player} leaves jail on a double (interim rule)",
-    "jail_released": "{player} leaves jail (interim rule)"
+    "jail_attempt_failed": "{player} stays in jail: attempt {attempts} failed.",
+    "jail_released": "{player} leaves jail."
   },
   "debts": {
     "resigned": "You are out: you resigned.",
@@ -412,6 +411,12 @@
     "jail": "{player} goes to jail.",
     "jail_failed": "{player} stays in jail.",
     "jail_release": "{player} leaves jail.",
+    "casino_offered": "{player} may bet up to {cap} at the casino.",
+    "casino_resolved": "{player} {outcome} {amount} at the casino.",
+    "casino_declined": "{player} declines the casino bet.",
+    "chance_drawn": "{player} draws {card}: {amount}.",
+    "won": "wins",
+    "lost": "loses",
     "auction_pass": "{player} passes.",
     "auction_unsold": "{asset} remains unsold.",
     "mortgage_expired": "The mortgage on {asset} expired.",

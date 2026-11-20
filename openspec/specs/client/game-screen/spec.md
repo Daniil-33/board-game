@@ -718,11 +718,11 @@ Purchase and auction dialogs, sheets and status surfaces SHALL use a defined opa
 - **WHEN** a purchase or auction surface overlays the board at a supported viewport
 - **THEN** its background SHALL be opaque and the page SHALL not scroll to reach its controls
 
-### Requirement: Temporary jail-attempt status
-The order panel SHALL show the projected temporary-jail attempts used out of INTERIM_JAIL_RULE.maxAttempts. It SHALL use only attemptsUsed and SHALL NOT add jail actions or the out-of-scope final jail state.
+### Requirement: Jail-attempt status
+The order panel SHALL show the projected jail attempts used out of three attempts. It SHALL use only attemptsUsed. Jail action controls are specified by TASK-s6-client.
 
-#### Scenario: Temporary jail status
-- **WHEN** the current projection marks a player in temporary jail
+#### Scenario: Jail status
+- **WHEN** the current projection marks a player in jail
 - **THEN** that player's order row SHALL show their current used attempts out of the configured maximum
 
 ### Requirement: Turn header contents
@@ -814,11 +814,11 @@ At desktop widths, the controls column SHALL be constrained below the top bar. T
 - **WHEN** a desktop side column's content fits its available height
 - **THEN** its named region SHALL not add a keyboard tab stop; when it overflows, the region SHALL receive `tabindex="0"`
 
-### Requirement: Temporary jail progress is visible
-When the active turn owner is in temporary jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of `INTERIM_JAIL_RULE.maxAttempts`.
+### Requirement: Jail progress is visible
+When the active turn owner is in jail, every viewer's turn header SHALL show that player is in jail and the ordinal of the next release attempt out of three attempts.
 
 #### Scenario: Observer sees next jail attempt
-- **WHEN** the active turn owner has a temporary jail entry
+- **WHEN** the active turn owner has a jail entry
 - **THEN** the turn header shows the next attempt and maximum attempt count to the jailed player and observers
 
 ### Requirement: Board caption does not overlap journal

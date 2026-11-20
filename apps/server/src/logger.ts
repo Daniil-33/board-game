@@ -20,7 +20,8 @@ export const consoleLogger: Logger = {
 /** Fields describing a caught value. */
 export function errorFields(error: unknown): LogFields {
   if (error instanceof Error) {
-    const code = (error as { code?: unknown }).code;
+    const value = error as { code?: unknown; errorCode?: unknown };
+    const code = typeof value.code === 'string' ? value.code : value.errorCode;
     return { error: error.message, errorName: error.name, ...(typeof code === 'string' ? { errorCode: code } : {}) };
   }
   return { error: String(error) };

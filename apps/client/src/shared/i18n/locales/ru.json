@@ -22,9 +22,8 @@
     "finished": "Партия завершена"
   },
   "animation": {
-    "jail_attempt_failed": "{player} остаётся в тюрьме: попытка {attempts} не удалась (временное правило)",
-    "jail_released_double": "{player} выходит из тюрьмы после дубля (временное правило)",
-    "jail_released": "{player} выходит из тюрьмы (временное правило)"
+    "jail_attempt_failed": "{player} остаётся в тюрьме: попытка {attempts} не удалась.",
+    "jail_released": "{player} выходит из тюрьмы."
   },
   "debts": {
     "resigned": "Вы выбыли: вы сдались.",
@@ -412,6 +411,12 @@
     "jail": "{player} попадает в тюрьму.",
     "jail_failed": "{player} остаётся в тюрьме.",
     "jail_release": "{player} выходит из тюрьмы.",
+    "casino_offered": "{player} может поставить в казино до {cap}.",
+    "casino_resolved": "{player} {outcome} {amount} в казино.",
+    "casino_declined": "{player} отказывается от ставки в казино.",
+    "chance_drawn": "{player} вытягивает {card}: {amount}.",
+    "won": "выигрывает",
+    "lost": "проигрывает",
     "auction_pass": "{player} пропускает ставку.",
     "auction_unsold": "«{asset}» не продан на аукционе.",
     "mortgage_expired": "Срок залога «{asset}» истёк.",

@@ -23,9 +23,13 @@ describe('doubles grant a bonus turn', () => {
   it('manual double: a Timeout closing the turn also starts the bonus turn', () => {
     const g = playingGame(['a', 'b']);
     g.roll(2, 2);
+    const oldTurn=g.state.turn!.turnId;
     const events = g.timeout();
-    expect(events[0]!.payload).toMatchObject({ reason: 'timeout', playerId: 'a' });
-    expect(events[1]!.payload).toMatchObject({ playerId: 'a', bonus: true });
+    expect(types(events)).toEqual(['BalanceChanged','ChargePaid','TurnEnded','TurnStarted']);
+    expect(events[0]!.payload).toEqual({playerId:'a',delta:-2990,balance:26920,reason:'chance'});
+    expect(events[1]!.payload).toEqual({payerId:'a',amount:2990,auto:true});
+    expect(events[2]!.payload).toEqual({turnId:oldTurn,playerId:'a',reason:'timeout'});
+    expect(events[3]!.payload).toMatchObject({ playerId: 'a', bonus: true });
   });
 
   it('automatic double: the bonus turn starts after the continued turn closes', () => {

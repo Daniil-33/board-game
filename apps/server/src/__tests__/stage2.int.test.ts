@@ -74,6 +74,8 @@ describe('stage 2 network state', () => {
     const clients = await Promise.all(guests.map(g => connect(server, g, id)));
     let last = clients[0]!.welcome.view;
     let crossing: GameEvent | undefined;
+    const rollStream: Array<{ playerId: string; dice: number[]; types: string[] }> = [];
+    const specialStream: GameEvent[] = [];
     for (let i = 0; i <= count; i++) {
       const command = networkMove(room.state);
       let actorIndex: number | undefined;
@@ -96,11 +98,65 @@ describe('stage 2 network state', () => {
       }
       last = updates[0]!.view;
       crossing = reward(updates[0]!.events);
+      const rolled = updates[0]!.events.find(e => e.type === 'DiceRolled');
+      if (rolled) {
+        const payload = rolled.payload as { playerId: string; dice: number[] };
+        rollStream.push({ playerId: payload.playerId, dice: payload.dice, types: updates[0]!.events.map(e => e.type) });
+      }
+      specialStream.push(...updates[0]!.events.filter(e => [
+        'ChanceDrawn', 'ChargeDue', 'ChargePaid', 'CasinoOffered', 'CasinoDeclined', 'BalanceChanged',
+      ].includes(e.type)));
     }
     expect(crossing).toBeDefined();
+    expect(rollStream.map(({ dice, types }) => ({ dice, types }))).toEqual([
+      { dice: [3, 1], types: ['DiceRolled', 'PlayerMoved', 'ChanceDrawn', 'BalanceChanged'] },
+      { dice: [5, 4], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [3, 5], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [1, 1], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [6, 1], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [1, 1], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [4, 2], types: ['DiceRolled', 'PlayerMoved', 'ChanceDrawn', 'ChargeDue'] },
+      { dice: [1, 5], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [6, 1], types: ['DiceRolled', 'PlayerMoved', 'CasinoOffered'] },
+      { dice: [6, 5], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [5, 1], types: ['DiceRolled', 'PlayerMoved', 'CasinoOffered'] },
+      { dice: [3, 2], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [6, 4], types: ['DiceRolled', 'PlayerMoved', 'ChanceDrawn', 'ChargeDue'] },
+      { dice: [4, 1], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [3, 3], types: ['DiceRolled', 'PlayerMoved', 'PurchaseOffered'] },
+      { dice: [6, 1], types: ['DiceRolled', 'PlayerMoved', 'ChanceDrawn', 'BalanceChanged'] },
+      { dice: [4, 4], types: ['DiceRolled', 'PlayerMoved', 'BalanceChanged', 'PurchaseOffered'] },
+    ]);
+    const [firstPlayer, secondPlayer, thirdPlayer] = [rollStream[0]!.playerId, rollStream[1]!.playerId, rollStream[2]!.playerId];
+    expect(rollStream.map(roll => roll.playerId)).toEqual([
+      firstPlayer, secondPlayer, thirdPlayer, firstPlayer, firstPlayer, secondPlayer, secondPlayer,
+      thirdPlayer, firstPlayer, secondPlayer, thirdPlayer, firstPlayer, secondPlayer, thirdPlayer,
+      firstPlayer, firstPlayer, secondPlayer,
+    ]);
+    expect(specialStream).toEqual([
+      { type: 'ChanceDrawn', payload: { playerId: firstPlayer, card: 'gain-5', amount: 990 } },
+      { type: 'BalanceChanged', payload: { playerId: firstPlayer, delta: 990, balance: 20930, reason: 'chance' } },
+      { type: 'ChanceDrawn', payload: { playerId: secondPlayer, card: 'loss-10', amount: 1990 } },
+      { type: 'ChargeDue', payload: { payerId: secondPlayer, amount: 1990, cause: 'chance' } },
+      { type: 'BalanceChanged', payload: { playerId: secondPlayer, delta: -1990, balance: 17950, reason: 'chance' } },
+      { type: 'ChargePaid', payload: { payerId: secondPlayer, amount: 1990, auto: true } },
+      { type: 'CasinoOffered', payload: { playerId: firstPlayer, cap: 1990 } },
+      { type: 'CasinoDeclined', payload: { playerId: firstPlayer, auto: true } },
+      { type: 'CasinoOffered', payload: { playerId: thirdPlayer, cap: 1990 } },
+      { type: 'CasinoDeclined', payload: { playerId: thirdPlayer, auto: true } },
+      { type: 'ChanceDrawn', payload: { playerId: secondPlayer, card: 'loss-5', amount: 990 } },
+      { type: 'ChargeDue', payload: { payerId: secondPlayer, amount: 990, cause: 'chance' } },
+      { type: 'BalanceChanged', payload: { playerId: secondPlayer, delta: -990, balance: 16960, reason: 'chance' } },
+      { type: 'ChargePaid', payload: { payerId: secondPlayer, amount: 990, auto: true } },
+      { type: 'ChanceDrawn', payload: { playerId: firstPlayer, card: 'gain-5', amount: 990 } },
+      { type: 'BalanceChanged', payload: { playerId: firstPlayer, delta: 990, balance: 21920, reason: 'chance' } },
+      { type: 'BalanceChanged', payload: { playerId: secondPlayer, delta: 2650, balance: 19610, reason: 'lap-reward' } },
+    ]);
     const payload = crossing!.payload as { playerId: string; delta: number; balance: number };
     expect(payload.delta).toBe(2650);
-    expect(payload.balance).toBe(19940 + 2650);
+    expect(payload.playerId).toBe(secondPlayer);
+    // The crossing player drew loss-10 and loss-5; the two gain-5 cards went to firstPlayer.
+    expect(payload.balance).toBe(19940 - 1990 - 990 + 2650);
     expect(last.balances[payload.playerId]).toBe(payload.balance);
     const revision = last.revision;
     await server.stop();

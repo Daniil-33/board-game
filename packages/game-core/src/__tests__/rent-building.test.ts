@@ -221,24 +221,51 @@ describe('projection, invariants and restore',()=>{
   });
 });
 
-it('retains the shared seed-6689 Compose setup tie and three-double jail stream', async()=>{
+it('retains the shared seed-129 Compose setup tie, final jail attempts, and rewarded lap stream', async()=>{
   const { entropy }=await import('../types.js');
-  let wordState=6689;
+  let wordState=129;
   const word=()=>{wordState=(wordState+0x9e3779b9)>>>0;let z=wordState;z=Math.imul(z^(z>>>16),0x85ebca6b);z=Math.imul(z^(z>>>13),0xc2b2ae35);return(z^(z>>>16))>>>0;};
   const session=createSession(gameEngine);
-  const submit=(type:string,payload:unknown=null)=>{
+  const submit=(type:string,payload:unknown=null,actorId?:string)=>{
     const s=session.state;
     const setup=s.setup;
-    const c=setup?cmd(type,payload,{actor:player(setup.playerId),target:{kind:'setupRoll',id:setup.setupRollId}}):s.turn?command(s,type,payload):cmd(type,payload,{rev:s.revision});
+    const auction=s.auction;
+    const c=setup?cmd(type,payload,{actor:player(setup.playerId),target:{kind:'setupRoll',id:setup.setupRollId}}):auction?cmd(type,payload,{actor:player(actorId??auction.responder),target:{kind:'auctionResponse',id:auction.responseId}}):s.turn?command(s,type,payload):cmd(type,payload,{rev:s.revision});
     const r=session.submit(c,ctx(undefined,entropy([word(),word(),word(),word()])));
     if(r.kind!=='accepted')throw new Error(r.error.code);return r.events;
   };
-  submit('CreateGame',{seed:6689,rulesVersion:CURRENT_RULES_VERSION});submit('AddPlayer',{playerId:'a'});submit('AddPlayer',{playerId:'b'});submit('StartGame');
-  let rolls=0;while(session.state.setup){submit('RollForOrder');rolls++;}expect(rolls).toBe(4);
-  for(const dice of [[1,1],[4,4],[6,6]]){
-    const events=submit('RollDice');expect(events[0]!.payload).toMatchObject({dice});
-    if(dice[0]!==6)submit('EndTurn');else expect(events.map(e=>e.type)).toEqual(['DiceRolled','SentToJail','TurnEnded','TurnStarted']);
-  }
+  submit('CreateGame',{seed:129,rulesVersion:CURRENT_RULES_VERSION});submit('AddPlayer',{playerId:'a'});submit('AddPlayer',{playerId:'b'});submit('StartGame');
+  let setupCount=0;while(session.state.setup){submit('RollForOrder');setupCount++;}expect(setupCount).toBe(4);
+  expect(session.log.flatMap(x=>x.events).filter(e=>e.type==='OrderDieRolled').map(e=>(e.payload as {value:number}).value)).toEqual([3,3,1,5]);
+  const roll=(dice:number[],expected:string[])=>{
+    const events=submit('RollDice');
+    expect(events.map(e=>e.type)).toEqual(expected);
+    expect(events[0]!.payload).toMatchObject({dice,double:dice[0]===dice[1]});
+    return events;
+  };
+  const closeWithAuction=()=>{
+    if(session.state.purchase)submit('StartAuction');
+    while(session.state.auction)submit('PassAuction',null,session.state.auction.responder);
+    if(session.state.turn?.rolled)submit('EndTurn');
+  };
+  roll([2,1],['DiceRolled','PlayerMoved','PurchaseOffered']);closeWithAuction();
+  roll([6,6],['DiceRolled','PlayerMoved','PurchaseOffered']);closeWithAuction();
+  roll([5,5],['DiceRolled','PlayerMoved','ChanceDrawn','BalanceChanged']);closeWithAuction();
+  roll([5,5],['DiceRolled','SentToJail','TurnEnded','TurnStarted']);
+  roll([4,2],['DiceRolled','PlayerMoved','PurchaseOffered']);closeWithAuction();
+  roll([4,5],['DiceRolled','JailAttemptFailed']);closeWithAuction();
+  roll([2,4],['DiceRolled','PlayerMoved','PurchaseOffered']);closeWithAuction();
+  roll([5,6],['DiceRolled','JailAttemptFailed']);closeWithAuction();
+  roll([3,5],['DiceRolled','PlayerMoved','PurchaseOffered']);closeWithAuction();
+  const beforeRelease=session.state.balances.a!;
+  const forced=roll([6,2],['DiceRolled','BalanceChanged','JailReleased','PlayerMoved','PurchaseOffered']);
+  expect(forced[1]!.payload).toMatchObject({reason:'jail-fee',delta:-990});
+  expect(forced[2]!.payload).toMatchObject({reason:'fee-forced',fee:990});
+  expect(session.state.balances.a).toBe(beforeRelease-990);closeWithAuction();
+  roll([4,4],['DiceRolled','PlayerMoved','PurchaseOffered']);closeWithAuction();
+  const beforeReward=session.state.balances.b!;
+  const reward=roll([6,6],['DiceRolled','PlayerMoved','BalanceChanged','PurchaseOffered']);
+  expect(reward.find(e=>e.type==='BalanceChanged')!.payload).toMatchObject({playerId:'b',delta:3980,balance:beforeReward+3980,reason:'lap-reward'});
 });
 
 it.each(['a','b'])('two-player resignation by %s drops rent before terminal closure',by=>{

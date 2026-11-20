@@ -84,16 +84,18 @@ describe('events to steps', () => {
     ]);
   });
 
-  it('jail events become banners marked as the interim rule', () => {
+  it('final jail events become journal banners', () => {
     const steps = stepsForEvents(
       [
-        { type: 'InterimJailAttemptFailed', payload: { playerId: 'a', attemptsUsed: 1 } },
-        { type: 'InterimJailReleased', payload: { playerId: 'a', reason: 'double' } },
+        { type: 'JailAttemptFailed', payload: { playerId: 'a', attemptsUsed: 1 } },
+        { type: 'JailReleased', payload: { playerId: 'a', reason: 'double' } },
       ],
       RING,
     );
+    const banners = steps.filter((step) => step.kind === 'banner');
     expect(steps.map((s) => s.kind)).toEqual(['banner', 'banner']);
-    for (const step of steps) expect(step.kind === 'banner' && step.text).toContain('временное правило');
+    expect(banners[0]!.text).toContain('остаётся в тюрьме');
+    expect(banners[1]!.text).toContain('выходит из тюрьмы');
   });
 
   it('skips unknown event types and malformed payloads without throwing', () => {

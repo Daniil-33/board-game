@@ -58,7 +58,7 @@ function allowedByView(view: StateView, me: PlayerId, type: ClientCommandType): 
   if (type === 'Bid' || type === 'PassAuction') return view.auction?.responder === me && (type !== 'Bid' || nextBidAmount(view.auction) <= (view.balances[me] ?? 0));
   if (view.auction !== null || view.phase !== 'playing' || view.turn === null || view.turn.playerId !== me) return false;
   if (type === 'PayRent') return view.rent?.payerId === me;
-  if (type === 'PayCharge') return false; // No charge UI in this task.
+  if (type === 'PayCharge' || type === 'PlaceCasinoBet' || type === 'DeclineCasino' || type === 'PayJailFee') return false; // Stage 6 controls are implemented by TASK-s6-client.
   // Per-asset: legality comes from game-core's helpers (game/houses.ts, game/mortgages.ts).
   if (type === 'BuildHouse' || type === 'SellHouse' || type === 'Mortgage' || type === 'Redeem') return false;
   if (type === 'BuyAsset' || type === 'StartAuction') {
@@ -105,6 +105,9 @@ export function actionAvailability(ctx: ActionContext): ActionAvailability {
     Bid: canIssue(ctx, 'Bid'),
     PassAuction: canIssue(ctx, 'PassAuction'),
     PayRent: canIssue(ctx, 'PayRent'),
+    PlaceCasinoBet: canIssue(ctx, 'PlaceCasinoBet'),
+    DeclineCasino: canIssue(ctx, 'DeclineCasino'),
+    PayJailFee: canIssue(ctx, 'PayJailFee'),
   };
 }
 
@@ -122,7 +125,7 @@ export interface OrderEntry {
   readonly tieRolled: boolean;
   /** Setup only: the value rolled in the current round, when rolled. */
   readonly roll: number | null;
-  /** Interim jail rule: attempts used, when in jail. */
+  /** Jail attempts used, when in jail. */
   readonly jail: { readonly attemptsUsed: number } | null;
 }
 

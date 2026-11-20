@@ -53,6 +53,9 @@ function summary(s: Session) {
   const count = (type: string) => events.filter((e) => e.type === type).length;
   return {
     revision: s.state.revision,
+    rulesVersion:s.state.rulesVersion,
+    casino:s.state.casino,
+    rng:s.state.rng,
     boardAssets: s.state.board!.cells.filter(c => c.asset).map(c => c.asset!.assetId),
     balances: s.state.balances,
     order: s.state.order,
@@ -63,7 +66,10 @@ function summary(s: Session) {
     bonusTurns: events.filter((e) => e.type === 'TurnStarted' && (e.payload as { bonus: boolean }).bonus).length,
     continuations: count('TurnContinued'),
     jailSends: count('SentToJail'),
-    jailReleases: count('InterimJailReleased'),
+    jailReleases: count('JailReleased'),
+    casinoOffers:count('CasinoOffered'),
+    casinoDeclines:count('CasinoDeclined'),
+    chanceDraws:count('ChanceDrawn'),
     eventCount: events.length,
   };
 }
@@ -74,10 +80,10 @@ describe('seeded multi-turn game', () => {
     expect(summary(s)).toMatchInlineSnapshot(`
       {
         "balances": {
-          "a": 19710,
-          "b": 12330,
-          "c": 7220,
-          "d": 10260,
+          "a": 8120,
+          "b": 14910,
+          "c": 11560,
+          "d": 11110,
         },
         "boardAssets": [
           "fuel-3",
@@ -109,12 +115,20 @@ describe('seeded multi-turn game', () => {
           "technology-1",
           "technology-3",
         ],
-        "bonusTurns": 20,
-        "continuations": 22,
-        "eventCount": 780,
-        "jail": {},
-        "jailReleases": 0,
-        "jailSends": 0,
+        "bonusTurns": 15,
+        "casino": null,
+        "casinoDeclines": 0,
+        "casinoOffers": 0,
+        "chanceDraws": 18,
+        "continuations": 24,
+        "eventCount": 831,
+        "jail": {
+          "b": {
+            "attemptsUsed": 1,
+          },
+        },
+        "jailReleases": 2,
+        "jailSends": 3,
         "order": [
           "d",
           "c",
@@ -122,17 +136,27 @@ describe('seeded multi-turn game', () => {
           "a",
         ],
         "positions": {
-          "a": 10,
-          "b": 35,
-          "c": 38,
-          "d": 31,
+          "a": 15,
+          "b": 10,
+          "c": 22,
+          "d": 0,
         },
         "revision": 300,
+        "rng": {
+          "algo": "xoshiro128**",
+          "s": [
+            724355114,
+            1877447573,
+            2441226580,
+            1921803430,
+          ],
+        },
+        "rulesVersion": "core-9",
         "turn": {
           "playerId": "b",
-          "turnId": "t299",
+          "turnId": "t300",
         },
-        "turnsStarted": 95,
+        "turnsStarted": 98,
       }
     `);
   });

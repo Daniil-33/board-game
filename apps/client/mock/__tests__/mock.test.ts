@@ -179,8 +179,8 @@ describe('mock socket', () => {
       'PlayerMoved',
       'TurnEnded',
       'SentToJail',
-      'InterimJailAttemptFailed',
-      'InterimJailReleased',
+      'JailAttemptFailed',
+      'JailReleased',
     ]) {
       expect(types, type).toContain(type);
     }

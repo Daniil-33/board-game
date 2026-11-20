@@ -273,21 +273,87 @@ describe('game presentation', () => {
 });
 
 describe('journal and feedback', () => {
+  it('keeps bottom-following through a delayed scroll event and viewport resize', async () => {
+    let observerCallback: ResizeObserverCallback | undefined;
+    class ResizeObserverStub {
+      constructor(callback: ResizeObserverCallback) { observerCallback = callback; }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    const frames: Array<{ id: number; callback: FrameRequestCallback }> = [];
+    let nextFrameId = 0;
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      const id = ++nextFrameId;
+      frames.push({ id, callback });
+      return id;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      const index = frames.findIndex(frame => frame.id === id);
+      if (index >= 0) frames.splice(index, 1);
+    });
+    try {
+      const make = (seq: number): JournalItem => ({ kind: 'chat', at: seq, key: String(seq), message: { seq, at: seq, authorId: pid('a'), text: 'Hello' } });
+      const w = mount(EventFeed, { props: { items: [make(1)], generation: 1, visible: true, nameOf, assetOf: nameOf } });
+      const list = w.get(hook('journal-list'));
+      let scrollHeight = 300;
+      let clientHeight = 100;
+      let scrollTop = 0;
+      Object.defineProperties(list.element, {
+        scrollHeight: { configurable: true, get: () => scrollHeight },
+        clientHeight: { configurable: true, get: () => clientHeight },
+        scrollTop: {
+          configurable: true,
+          get: () => scrollTop,
+          set: (value: number) => { scrollTop = Math.min(value, scrollHeight - clientHeight); },
+        },
+      });
+      await flushPromises();
+      frames.shift()!.callback(0);
+      frames.shift()!.callback(0);
+      expect(scrollTop).toBe(200);
+
+      await w.setProps({ items: [make(1), make(2)] });
+      scrollHeight = 360;
+      await list.trigger('scroll');
+      await flushPromises();
+      frames.shift()!.callback(0);
+      frames.shift()!.callback(0);
+      expect(scrollTop).toBe(260);
+
+      observerCallback?.([], {} as ResizeObserver);
+      frames.shift()!.callback(0);
+      scrollHeight = 420;
+      clientHeight = 120;
+      frames.shift()!.callback(0);
+      expect(scrollTop).toBe(300);
+      w.unmount();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('skips unknown events and preserves reader scroll position when a row arrives', async () => {
     expect(describeEvent({ type: 'FutureEvent', payload: null }, nameOf, nameOf)).toBeNull();
     const make = (seq: number): JournalItem => ({ kind: 'chat', at: seq, key: String(seq), message: { seq, at: seq, authorId: pid('a'), text: 'Hello' } });
+    const settleFrames = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     const w = mount(EventFeed, { props: { items: [make(1)], generation: 1, visible: true, nameOf, assetOf: nameOf } });
     const list = w.get(hook('journal-list'));
     Object.defineProperties(list.element, { scrollHeight: { value: 300 }, clientHeight: { value: 100 } });
+    await flushPromises();
+    await settleFrames();
     list.element.scrollTop = 20;
     await list.trigger('scroll');
     await w.setProps({ items: [make(1), make(2)] });
     await flushPromises();
+    await settleFrames();
     expect(list.element.scrollTop).toBe(20);
     list.element.scrollTop = 200;
     await list.trigger('scroll');
     await w.setProps({ items: [make(1), make(2), make(3)] });
     await flushPromises();
+    await settleFrames();
     expect(list.element.scrollTop).toBe(300);
     w.unmount();
   });

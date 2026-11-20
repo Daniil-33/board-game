@@ -20,14 +20,14 @@ In phase `playing` there SHALL always be exactly one current turn, identified by
 - **THEN** the engine SHALL reject it with `NOT_ACTIVE_PLAYER` and the state unchanged
 
 ### Requirement: Roll the dice once per turn
-An accepted `RollDice` by a player not in jail SHALL draw two values from 1 to 6, emit `DiceRolled` with both dice, the double flag and `auto: false`, and mark the turn rolled. A second `RollDice` in the same turn SHALL be rejected with `ALREADY_ROLLED`.
+An accepted `RollDice` by a free player SHALL draw two values from 1 to 6, emit `DiceRolled` with both dice, the double flag and `auto: false`, and mark the turn rolled. A prisoner still receives their turn in order, and `TurnStarted` names them; they choose to pay or attempt a double before rolling. A second `RollDice` in the same turn SHALL be rejected with `ALREADY_ROLLED`.
 
 #### Scenario: Second roll rejected
 - **WHEN** the turn owner issues `RollDice` after already rolling in this turn
 - **THEN** the engine SHALL reject it with `ALREADY_ROLLED`
 
 ### Requirement: Movement on CLASSIC_40
-After a roll that does not send the player to jail, the player SHALL move forward by the dice sum modulo 40 and `PlayerMoved` SHALL report the start cell, end cell and steps. The ring SHALL be the exported CLASSIC_40 layout. A forward crossing or exact landing on cell 0 SHALL credit economy.lapReward once immediately after PlayerMoved and before any landing settlement; landing on a free asset SHALL then offer purchase, while owned assets SHALL follow the rent landing rules.
+After each move, including jail release, the core SHALL dispatch the landing effect. The player SHALL move forward by dice sum modulo 40; `PlayerMoved` SHALL report from, to and steps on `CLASSIC_40`. A forward crossing or exact landing on cell 0 SHALL credit `lapReward` once after movement and before landing. Asset cells SHALL keep purchase/rent behavior; casino, chance and go-to-jail SHALL use their effects. Start and jail SHALL be inert; reaching cell 10 by movement is a visit.
 
 #### Scenario: Wrap around the ring
 - **WHEN** a player on cell 36 rolls 3 and 4

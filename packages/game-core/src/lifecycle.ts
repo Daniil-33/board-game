@@ -8,15 +8,20 @@ import { MAX_PLAYERS, MIN_PLAYERS } from './state.js';
 import { beginOrderRoll } from './setup.js';
 
 /** Rules versions this engine can run. Bump when transitions or the RNG stream change. */
-export const CURRENT_RULES_VERSION = 'core-8';
+export const CURRENT_RULES_VERSION = 'core-9';
 export const SUPPORTED_RULES_VERSIONS: readonly string[] = [CURRENT_RULES_VERSION];
 
 /** Upgrade persisted core-7 state without changing any game history. */
 export function upgradeState(state: import('./state.js').GameState): import('./state.js').GameState {
-  if (state.rulesVersion === 'core-8') return state;
-  if (state.rulesVersion !== 'core-7') throw new Error(`Unsupported state rules version: ${String(state.rulesVersion)}`);
-  return { ...state, rulesVersion: 'core-8', charge: null,
-    mortgages: Object.fromEntries(Object.entries(state.mortgages).map(([id, mortgage]) => [id, { ...mortgage, lockedTurnId: null }])) };
+  if (state.rulesVersion === null) return state;
+  if (state.rulesVersion === 'core-9') return state;
+  if (state.rulesVersion === 'core-8') return {...state,rulesVersion:'core-9',casino:null};
+  if (state.rulesVersion === 'core-7') {
+    const core8 = {...state,rulesVersion:'core-8',charge:null,
+      mortgages:Object.fromEntries(Object.entries(state.mortgages).map(([id,mortgage])=>[id,{...mortgage,lockedTurnId:null}]))};
+    return upgradeState(core8 as import('./state.js').GameState);
+  }
+  throw new Error(`Unsupported state rules version: ${String(state.rulesVersion)}`);
 }
 
 export type LifecycleErrorCode =
