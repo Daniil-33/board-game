@@ -35,6 +35,7 @@ async function settleAndScrollToBottom(): Promise<void> {
   await nextTick();
   await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   rowResizeObserver?.disconnect();
+  if (list.value) rowResizeObserver?.observe(list.value);
   for (const row of list.value?.children ?? []) rowResizeObserver?.observe(row);
   scrollToBottom();
 }

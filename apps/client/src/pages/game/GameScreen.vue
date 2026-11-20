@@ -372,6 +372,9 @@ onBeforeUnmount(() => {
     background: var(--bg-deep);
     padding: var(--space-2);
   }
+  .board-column:has(canvas) .journal-column :deep(.event-feed:has(.chat-rejection)) {
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 3rem);
+  }
   .board-column:has(canvas) .journal-column :deep(.event-feed > div) { display: contents; }
   .board-column:has(canvas) .journal-column :deep(.chat-composer) { grid-row: 1; grid-column: 2; margin: 0 0 0 var(--space-2); }
   .board-column:has(canvas) .journal-column :deep(.chat-composer textarea) {
@@ -381,6 +384,15 @@ onBeforeUnmount(() => {
     resize: none;
   }
   .board-column:has(canvas) .journal-column :deep(.journal-list) { grid-row: 2; grid-column: 1 / -1; }
+  .board-column:has(canvas) .journal-column :deep(.chat-rejection) {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    min-height: 0;
+    max-height: 3rem;
+    overflow: auto;
+    scrollbar-color: var(--border-strong) var(--bg-deep);
+    scrollbar-width: thin;
+  }
   .board-column:has(canvas) .journal-column :deep(h2) { margin-bottom: var(--space-1); }
   .board-column:has(canvas) .journal-column :deep(.journal-list) { min-height: 0; }
   .game-dialogs:has([data-testid="auction"]),

@@ -118,6 +118,62 @@ test('game layout stays within all supported widths and preserves mobile selecti
   await expect(page.locator(sel('screen-lobby'))).toBeVisible();
 });
 
+test('desktop journal keeps a long RATE_LIMITED rejection reachable', async ({ actors }) => {
+  test.setTimeout(120_000);
+  test.skip(process.env.E2E_FIXTURES === '1', 'Uses the standard room setup');
+  const players = await actors(2);
+  const host = players[0]!;
+  const room = await createRoom(host);
+  await join(players[1]!, room);
+  await start(players);
+  await setup(players);
+
+  const page = host.page;
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const rejectedText = 'я'.repeat(300);
+  const initialAckCount = host.chatAcks.length;
+  for (let i = 0; i < 6; i++) {
+    if (i > 0) await page.waitForTimeout(550);
+    await page.locator(sel('chat-input')).fill(i === 5 ? rejectedText : `limit message ${i + 1}`);
+    await page.locator(sel('chat-send')).click();
+    await expect.poll(() => host.chatAcks.length).toBe(initialAckCount + i + 1);
+  }
+
+  const rejection = page.locator(`${sel('chat-rejection')}[data-reason="RATE_LIMITED"]`);
+  await expect(rejection).toHaveCount(1);
+  await expect(rejection).toContainText('Достигнут лимит отправки сообщений. Попробуйте позже.');
+  await captureScreens(page, 'chat-rejection', ['desktop']);
+
+  for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => rejection.evaluate((element, text) => element.textContent?.includes(text) ?? false, rejectedText)).toBe(true);
+    await expect.poll(() => rejection.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    await assertJournalEntryBelowHeading(page);
+
+    const box = await rejection.boundingBox();
+    expect(box, 'bounded rejection box').not.toBeNull();
+    await rejection.evaluate(element => { element.scrollTop = 0; });
+    const reason = rejection.locator('p').first();
+    await expect(reason).toBeVisible();
+    const reasonBox = await reason.boundingBox();
+    expect(reasonBox).not.toBeNull();
+    expect(reasonBox!.y).toBeGreaterThanOrEqual(box!.y);
+    expect(reasonBox!.y + reasonBox!.height).toBeLessThanOrEqual(box!.y + box!.height + 1);
+
+    await rejection.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    const dismiss = rejection.getByRole('button', { name: 'Закрыть' });
+    await expect(dismiss).toBeVisible();
+    const dismissBox = await dismiss.boundingBox();
+    expect(dismissBox).not.toBeNull();
+    expect(dismissBox!.y).toBeGreaterThanOrEqual(box!.y);
+    expect(dismissBox!.y + dismissBox!.height).toBeLessThanOrEqual(box!.y + box!.height + 1);
+    await assertJournalEntryBelowHeading(page);
+  }
+
+  await rejection.getByRole('button', { name: 'Закрыть' }).click();
+  await expect(rejection).toHaveCount(0);
+});
+
 test('desktop rent and debt overlays preserve the board and top bar', async ({ actors }) => {
   test.skip(process.env.E2E_FIXTURES !== '1', 'Uses isolated server fixtures');
   const players = await actors(2);
