@@ -13,7 +13,9 @@ const props = defineProps<{
 }>();
 const list = ref<HTMLElement | null>(null);
 const atBottom = ref(true);
+let programmaticScrollTop: number | undefined;
 let rowResizeObserver: ResizeObserver | undefined;
+let scrollSettleFrame: number | undefined;
 const rows = computed(() => props.items.flatMap<{ key: string; at: number; icon: string; author: string | null; text: string; kind: JournalItem['kind'] }>(item => {
   if (item.kind === 'chat') {
     return [{ key: item.key, at: item.at, icon: '◌', author: props.nameOf(item.message.authorId), text: item.message.text, kind: 'chat' }];
@@ -24,30 +26,53 @@ const rows = computed(() => props.items.flatMap<{ key: string; at: number; icon:
 
 function updateScroll(): void {
   const el = list.value;
-  if (el && props.visible) atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight <= 2;
+  if (!el || !props.visible) return;
+  if (programmaticScrollTop !== undefined && Math.abs(el.scrollTop - programmaticScrollTop) <= 1) {
+    atBottom.value = true;
+    return;
+  }
+  programmaticScrollTop = undefined;
+  atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight <= 2;
 }
 
 function scrollToBottom(): void {
-  if (list.value && props.visible && atBottom.value) list.value.scrollTop = list.value.scrollHeight;
+  const el = list.value;
+  if (el && props.visible && atBottom.value) {
+    el.scrollTop = el.scrollHeight;
+    programmaticScrollTop = el.scrollTop;
+    atBottom.value = true;
+  }
+}
+
+function scheduleScrollToBottom(): void {
+  if (scrollSettleFrame !== undefined) cancelAnimationFrame(scrollSettleFrame);
+  scrollSettleFrame = requestAnimationFrame(() => {
+    scrollSettleFrame = requestAnimationFrame(() => {
+      scrollSettleFrame = undefined;
+      scrollToBottom();
+    });
+  });
 }
 
 async function settleAndScrollToBottom(): Promise<void> {
   await nextTick();
-  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   rowResizeObserver?.disconnect();
   if (list.value) rowResizeObserver?.observe(list.value);
   for (const row of list.value?.children ?? []) rowResizeObserver?.observe(row);
-  scrollToBottom();
+  scheduleScrollToBottom();
 }
 
 onMounted(() => {
-  rowResizeObserver = new ResizeObserver(scrollToBottom);
+  rowResizeObserver = new ResizeObserver(scheduleScrollToBottom);
   void settleAndScrollToBottom();
 });
 watch(() => [rows.value.length, props.generation, props.visible], async () => {
   await settleAndScrollToBottom();
 });
-onBeforeUnmount(() => rowResizeObserver?.disconnect());
+onBeforeUnmount(() => {
+  rowResizeObserver?.disconnect();
+  if (scrollSettleFrame !== undefined) cancelAnimationFrame(scrollSettleFrame);
+});
 </script>
 
 <template>
