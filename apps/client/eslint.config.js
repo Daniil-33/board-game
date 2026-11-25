@@ -39,7 +39,7 @@ export default [
     languageOptions: { parser: ts.parser },
     plugins: { boundaries, '@intlify/vue-i18n': i18nLint },
     settings: {
-      'vue-i18n': { localeDir: './src/shared/i18n/locales/ru.json', messageSyntaxVersion: '^11.0.0' },
+      'vue-i18n': { localeDir: ['./src/shared/i18n/locales/{ru,en}.json', './src/widgets/special-cells/locales/{ru,en}.json'], messageSyntaxVersion: '^11.0.0' },
       'import/resolver': { node: { extensions: ['.ts', '.vue', '.js', '.json'] } },
       'boundaries/dependency-nodes': ['import', 'export', 'dynamic-import'],
       'boundaries/elements': layers.map(type => ({ type, pattern: type === 'app' ? 'src/app' : `src/${type}/*`, mode: 'folder', capture: ['slice'] })),

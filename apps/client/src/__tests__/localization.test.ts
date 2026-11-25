@@ -12,6 +12,8 @@ import { i18n, messages, t } from '../shared/i18n/index';
 import { formatMoney, formatSeconds, formatTime } from '../shared/lib/index';
 import russian from '../shared/i18n/locales/ru.json';
 import english from '../shared/i18n/locales/en.json';
+import specialRussian from '../widgets/special-cells/locales/ru.json';
+import specialEnglish from '../widgets/special-cells/locales/en.json';
 
 const root = resolve(import.meta.dirname, '..');
 function sources(dir: string): string[] {
@@ -72,8 +74,8 @@ describe('localization contracts', () => {
   });
   it('has exact equality between used keys and both locale definitions', () => {
     const used = inventory();
-    expect(difference(used, new Set(flatten(russian)))).toEqual({ missing: [], unused: [] });
-    expect(difference(used, new Set(flatten(english)))).toEqual({ missing: [], unused: [] });
+    expect(difference(used, new Set([...flatten(russian), ...flatten(specialRussian)]))).toEqual({ missing: [], unused: [] });
+    expect(difference(used, new Set([...flatten(english), ...flatten(specialEnglish)]))).toEqual({ missing: [], unused: [] });
   });
   it('detects both missing and unused key probes', () => {
     expect(difference(new Set(['used']), new Set(['unused']))).toEqual({ missing: ['used'], unused: ['unused'] });
