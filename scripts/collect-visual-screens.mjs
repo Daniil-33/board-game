@@ -153,6 +153,8 @@ const indexReadme = stage6Only ? [
   '',
   'No mobile design frame was supplied for the casino dialog, chance card, or jail choice. The desktop `desktop-08-тюрьма-казино-шанс` frame is labeled nearest for those mobile pairs; app captures show the responsive bottom-sheet layout. Jail attempt status uses the nearest mobile board frame.',
   '',
+  'Five fresh-stack split seeded reruns are recorded in [runs/README.md](./runs/README.md), with per-run logs and Playwright result files.',
+  '',
   '## Reproduction',
   '',
   'Use the task handoff browser capture recipe, then run:',
