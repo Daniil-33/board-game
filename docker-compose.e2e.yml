@@ -3,4 +3,4 @@ services:
   server:
     environment:
       NODE_ENV: test
-      E2E_TEST_SEED: '129'
+      E2E_TEST_SEED: ${E2E_TEST_SEED:-129}

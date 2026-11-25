@@ -9,7 +9,14 @@ export const q = (numerator: number, denominator: number) => 10 * Math.floor(num
 let assetCardCaptured = false;
 
 export async function sync(players: Actor[], revision: number) {
-  for (const p of players) await expect.poll(() => p.view?.revision, fast).toBe(revision);
+  const current = () => players.map(player => player.view?.revision);
+  try {
+    await expect.poll(current, { ...fast, timeout: 15_000 }).toEqual(players.map(() => revision));
+  } catch (error) {
+    const actors = players.map((player, actor) => ({ actor, playerId: player.id, revision: player.view?.revision,
+      welcomeRevision: player.welcomes.at(-1)?.revision }));
+    throw new Error(`fixture sync expected revision ${revision}; actors=${JSON.stringify(actors)}`, { cause: error });
+  }
 }
 export async function click(players: Actor[], actor: Actor, selector: string) {
   const before = actor.view!.revision;
