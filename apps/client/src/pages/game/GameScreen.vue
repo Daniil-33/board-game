@@ -297,12 +297,14 @@ onBeforeUnmount(() => {
   .desktop-top-bar { display: none; }
   .game { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .game-dialogs:has([data-testid="jail-choice"]),
-  .game-dialogs:has([data-testid="bank-charge"]) {
+  .game-dialogs:has([data-testid="bank-charge"]),
+  .game-dialogs:has([data-testid="special-event-reveal"]) {
     position: fixed;
     z-index: 20;
     inset: auto 0 calc(68px + env(safe-area-inset-bottom));
     width: 100%;
     max-width: none;
+    transform: none;
     max-height: min(70dvh, 520px);
     overflow: auto;
     padding: var(--space-3);

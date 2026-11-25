@@ -248,37 +248,44 @@ jobs:
         env:
           WEB_PORT: '8081'
           E2E_TEST_SEED: '3'
-      - name: Stage 6 deterministic fixture scenarios
-        run: pnpm test:e2e e2e/stage6-e2e.spec.ts --grep 'S3 a double landing on cell 30' --output=test-results/stage6-cell30
-        env:
-          E2E_DETERMINISTIC: '1'
-          E2E_FIXTURES: '1'
-          E2E_BASE_URL: http://127.0.0.1:8081
-          E2E_FIXTURE_RESTART_COMMAND: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml restart server
-      - name: Preserve seeded cell-30 report
-        if: always()
+      - name: Stage 6 isolated seeded fixture scenarios
         run: |
-          mkdir -p evidence
-          test ! -f playwright-report/results.json || cp playwright-report/results.json evidence/stage6-cell30-results.json
-      - name: Replace with seed-129 fixture stack for remaining stage 6 scenarios
-        run: |
-          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml down -v
-          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml up --build -d --wait
+          set -euo pipefail
+          compose=(docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml)
+          fresh_stack() {
+            WEB_PORT=8081 "${compose[@]}" down -v
+            WEB_PORT=8081 E2E_TEST_SEED="$1" "${compose[@]}" up --no-build -d --wait
+          }
+          run_case() {
+            local name="$1" seed="$2" title="$3"
+            fresh_stack "$seed"
+            pnpm test:e2e e2e/stage6-e2e.spec.ts --grep "$title" --output="test-results/stage6-$name"
+            mkdir -p evidence
+            cp playwright-report/results.json "evidence/stage6-$name-results.json"
+          }
+          run_case cell30 3 'S3 a double landing on cell 30 sends the player to jail without a bonus'
+          run_case casino-win 3 'S1 casino win is public'
+          run_case casino-loss 0 'S1 casino loss is public'
+          run_case chance-gain 16 'S2 positive chance gain'
+          run_case chance-loss 4 'S2 negative chance loss'
+          run_case jail-release 3 'S3 a jailed player released by a double'
+          run_case jail-fee-double 4 'S4 voluntary jail fee'
+          run_case jail-forced-fee 0 'S5 third failed jail attempt'
+          run_case redeem-lock 129 'S6 mortgage locks redeem'
+          run_case restart 129 'S7 restart restores jail attempts'
+          run_case mobile-casino-decision 129 'RVW-002 mobile casino decision'
         env:
           WEB_PORT: '8081'
-          E2E_TEST_SEED: '129'
-      - name: Stage 6 remaining deterministic fixture scenarios
-        run: pnpm test:e2e e2e/stage6-e2e.spec.ts --grep-invert 'S3 a double landing on cell 30' --output=test-results/stage6
-        env:
+          GIT_SHA: ${{ github.sha }}
           E2E_DETERMINISTIC: '1'
           E2E_FIXTURES: '1'
           E2E_BASE_URL: http://127.0.0.1:8081
           E2E_FIXTURE_RESTART_COMMAND: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml restart server
-      - name: Preserve stage 6 browser report
+      - name: Preserve stage 6 browser reports
         if: always()
         run: |
           mkdir -p evidence
-          test ! -f playwright-report/results.json || cp playwright-report/results.json evidence/stage6-results.json
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml logs --no-color > evidence/stage6-compose.log 2>&1
       - name: Collect Compose logs and configuration evidence
         if: always()
         run: |
