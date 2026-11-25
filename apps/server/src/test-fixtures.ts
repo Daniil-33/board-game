@@ -8,7 +8,7 @@ export const STAGE5_FIXTURE_NAMES = ['mortgage-expiry', 'liquidation-tier-1', 'l
   'liquidation-tier-3', 'bankruptcy', 'final-bankruptcy', 'mortgage-restart',
   'liquidation-multi-tier', 'bankruptcy-houses'] as const;
 type Stage5FixtureName = typeof STAGE5_FIXTURE_NAMES[number];
-export const STAGE6_FIXTURE_NAMES = ['jail-choice', 'casino-decision', 'open-charge', 'redeem-locked', 'pre-roll-chance'] as const;
+export const STAGE6_FIXTURE_NAMES = ['jail-choice', 'casino-decision', 'open-charge', 'redeem-locked', 'pre-roll-chance', 'chance-liquidation', 'stage6-restart', 'jail-third-attempt', 'pre-roll-go-to-jail', 'pre-roll-go-to-jail-double4', 'redeem-bonus'] as const;
 type Stage6FixtureName = typeof STAGE6_FIXTURE_NAMES[number];
 
 export const FIXTURE_NAMES = ['regular-rent', 'full-group-rent', 'logistics-rent', 'energy-rent',
@@ -97,8 +97,9 @@ function stage6Fixture(name: Stage6FixtureName, session: FixtureSession): GameSt
   const state = session.state;
   const playerId = state.turn!.playerId;
   const nextAsset = state.board!.cells.find(cell => cell.asset)!;
-  if (name === 'jail-choice') {
-    const next = { ...state, jail: { ...state.jail, [playerId]: { attemptsUsed: 1 } }, positions: { ...state.positions, [playerId]: CLASSIC_40.jailCell }, turn: { ...state.turn!, rolled: false } };
+  if (name === 'jail-choice' || name === 'jail-third-attempt') {
+    const attemptsUsed = name === 'jail-third-attempt' ? 2 : 1;
+    const next = { ...state, jail: { ...state.jail, [playerId]: { attemptsUsed } }, positions: { ...state.positions, [playerId]: CLASSIC_40.jailCell }, turn: { ...state.turn!, rolled: false } };
     checkInvariants(next);
     return next;
   }
@@ -118,6 +119,38 @@ function stage6Fixture(name: Stage6FixtureName, session: FixtureSession): GameSt
   if (name === 'pre-roll-chance') {
     const target = CLASSIC_40.cells.find(cell => cell.kind === 'chance')!;
     const next = { ...state, positions: { ...state.positions, [playerId]: (target.index + 40 - 7) % 40 }, turn: { ...state.turn!, rolled: false } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'chance-liquidation') {
+    const target = CLASSIC_40.cells.find(cell => cell.kind === 'chance' && cell.index > 7)!;
+    const holdings = state.board!.cells.filter(cell => cell.asset);
+    const next = { ...state, owners: Object.fromEntries(holdings.map(cell => [cell.asset!.assetId, playerId])),
+      balances: { ...state.balances, [playerId]: 0 as Money },
+      positions: { ...state.positions, [playerId]: (target.index + 40 - 7) % 40 }, turn: { ...state.turn!, rolled: false } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'stage6-restart') {
+    const mortgage = { advance: mortgageAdvance(nextAsset.asset!.price), lapsCompleted: 0, pending: [...state.order!], lockedTurnId: state.turn!.turnId };
+    const next = { ...state, turn: { ...state.turn!, rolled: false },
+      jail: { ...state.jail, [playerId]: { attemptsUsed: 1 } }, positions: { ...state.positions, [playerId]: CLASSIC_40.jailCell },
+      owners: { ...state.owners, [nextAsset.asset!.assetId]: playerId }, mortgages: { ...state.mortgages, [nextAsset.asset!.assetId]: mortgage } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'pre-roll-go-to-jail' || name === 'pre-roll-go-to-jail-double4') {
+    const target = CLASSIC_40.cells.find(cell => cell.kind === 'go-to-jail')!;
+    const diceSum = name === 'pre-roll-go-to-jail-double4' ? 4 : 6;
+    const next = { ...state, positions: { ...state.positions, [playerId]: (target.index + 40 - diceSum) % 40 }, turn: { ...state.turn!, rolled: false } };
+    checkInvariants(next);
+    return next;
+  }
+  if (name === 'redeem-bonus') {
+    const mortgage = { advance: mortgageAdvance(nextAsset.asset!.price), lapsCompleted: 0, pending: [...state.order!], lockedTurnId: state.turn!.turnId };
+    const next = { ...state, owners: { ...state.owners, [nextAsset.asset!.assetId]: playerId },
+      mortgages: { ...state.mortgages, [nextAsset.asset!.assetId]: mortgage },
+      positions: { ...state.positions, [playerId]: 0 }, turn: { ...state.turn!, rolled: true, doublesStreak: 1, pendingBonus: true } };
     checkInvariants(next);
     return next;
   }

@@ -9,9 +9,10 @@ const { assertNonBlankImage } = require('./image-stats.cjs');
 
 const evidenceRoot = process.argv[2] ?? '/srv/agents/evidence/TASK-vd-final-evidence';
 const out = process.argv[3] ?? resolve(evidenceRoot, 'pairs');
+const stage6Only = process.argv.includes('--stage6-only');
 const captureRoot = resolve(evidenceRoot, 'screens');
 const checkoutHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'liquidation-next-turn', 'elimination', 'game-over']);
+const fixtureScreens = new Set(['asset-card', 'rent-shortfall', 'build-quota-toast', 'liquidation', 'liquidation-next-turn', 'elimination', 'game-over', 'casino-dialog', 'chance-card', 'jail-choice', 'jail-attempt-status']);
 const singleViewportScreens = new Map([
   ['chat-rejection', ['desktop']],
   ['chat-rejection-two', ['desktop']],
@@ -61,6 +62,12 @@ const pairs = [
   ['auction-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction bottom sheet'],
   ['jail-attempt-status-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Jail attempt status; nearest temporary-jail frame'],
   ['jail-attempt-status-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-03-mobile-поле-copy.png', 'Jail attempt status; nearest mobile board frame'],
+  ['casino-dialog-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Casino decision; nearest shared special-cells frame'],
+  ['casino-dialog-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Casino decision; nearest desktop special-cells frame for mobile (no mobile frame)'],
+  ['chance-card-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Chance card; nearest shared special-cells frame'],
+  ['chance-card-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Chance card; nearest desktop special-cells frame for mobile (no mobile frame)'],
+  ['jail-choice-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Jail choice; nearest shared special-cells frame'],
+  ['jail-choice-mobile', 'TASK-vd-evidence-frames/design-frames/desktop-08-тюрьма-казино-шанс.png', 'Jail choice; nearest desktop special-cells frame for mobile (no mobile frame)'],
   ['purchase-observer-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-06-mobile-покупка-copy.png', 'Purchase status for another player'],
   ['auction-observer-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-07-mobile-аукцион-copy.png', 'Auction status for another player'],
   ['asset-card-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-05-карточка-актива-свой-актив.png', 'Asset inspection'],
@@ -83,7 +90,7 @@ const pairs = [
   ['chat-rejection-two-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'First of two real RATE_LIMITED rejections in the bounded journal scroll region'],
   ['chat-rejection-two-scrolled-desktop', 'TASK-vd-evidence-frames/design-frames/desktop-09-рента-долги-ошибки-связь.png', 'Second rejection reason and message after scrolling the bounded journal region'],
   ['chat-rejection-two-mobile-mobile', 'TASK-vd-evidence-frames/design-frames/mobile-05-mobile-журнал-и-чат-copy.png', 'Two stacked RATE_LIMITED rejections; mobile flow has no desktop containment rules'],
-].map(([name, designSource, description]) => {
+].filter(([name]) => !stage6Only || /^(casino-dialog|chance-card|jail-choice|jail-attempt-status)-/.test(name)).map(([name, designSource, description]) => {
   const viewport = name.endsWith('-mobile') ? 'mobile' : 'desktop';
   const screen = name.replace(/-(desktop|mobile)$/, '');
   const captureSet = fixtureScreens.has(screen) ? 'captured-app-fixtures' : 'captured-app';
@@ -133,7 +140,26 @@ writeFileSync(resolve(out, 'capture-manifest-provenance.json'), JSON.stringify({
     capturedAtUtc: manifest.capturedAtUtc,
   })),
 }, null, 2) + '\n');
-const indexReadme = [
+const indexReadme = stage6Only ? [
+  '# Stage 6 visual evidence',
+  '',
+  `Stage 6 app/design pairs at 1440×900 and 390×844. App captures were produced from commit \`${producerHead}\`; each sidecar records the served \`/version.txt\`, verified equal to the producer commit. The collector rejects missing manifests, head/version mismatches and blank app or design images.`,
+  '',
+  '| Screen | App capture | Design frame | Producer head | Served `/version.txt` | Pairing label |',
+  '| --- | --- | --- | --- | --- | --- |',
+  ...rows,
+  '',
+  '## Mobile note',
+  '',
+  'No mobile design frame was supplied for the casino dialog, chance card, or jail choice. The desktop `desktop-08-тюрьма-казино-шанс` frame is labeled nearest for those mobile pairs; app captures show the responsive bottom-sheet layout. Jail attempt status uses the nearest mobile board frame.',
+  '',
+  '## Reproduction',
+  '',
+  'Use the task handoff browser capture recipe, then run:',
+  '',
+  `\`\`\`sh\nTASK_EVIDENCE=/srv/agents/evidence/TASK-s6-e2e\nnode scripts/collect-visual-screens.mjs "$TASK_EVIDENCE" "$TASK_EVIDENCE/pairs" --stage6-only\n\`\`\``,
+  '',
+].join('\n') : [
   '# Visual design screen pairs',
   '',
   `Screenshots at 1440×900 and 390×844 for handoff criteria C3 and C4. All app captures were produced from commit \`${producerHead}\`; each sidecar records the served \`/version.txt\`, which was verified to equal the producer commit. The collector rejects missing manifests, head/version mismatches and blank app or design images. “Nearest” labels identify states without an exact design frame; the pairing is an evidence aid, not an assertion that the states are identical.`,
@@ -153,6 +179,10 @@ const indexReadme = [
   '3. The players panel has no current-capital figure because the rules define no valuation method.',
   '4. There is no per-player disconnected badge because projections carry no presence data; a paused turn uses `pausedRemainingMs`.',
   '5. The purchase “decline” action is `StartAuction`; no decline command exists.',
+  '',
+  '### Stage 6 mobile note (PR #120)',
+  '',
+  'No mobile design frame was supplied for the casino dialog, chance card, or jail choice. The desktop `desktop-08-тюрьма-казино-шанс` frame is labeled nearest for those mobile pairs; the app captures show its existing responsive bottom-sheet layout and do not claim a one-to-one mobile frame match.',
   '',
   '### Design details not supplied by the current projection or rules',
   '',

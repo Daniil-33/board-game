@@ -238,11 +238,52 @@ jobs:
         env:
           E2E_DETERMINISTIC: '1'
           E2E_BASE_URL: http://127.0.0.1:8081
+      - name: Replace with fresh seeded fixture stack for stage 6
+        run: |
+          mkdir -p evidence
+          cp playwright-report/results.json evidence/seeded-results.json
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml logs --no-color > evidence/seeded-compose-initial.log 2>&1
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml down -v
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml up --build -d --wait
+        env:
+          WEB_PORT: '8081'
+          E2E_TEST_SEED: '3'
+      - name: Stage 6 deterministic fixture scenarios
+        run: pnpm test:e2e e2e/stage6-e2e.spec.ts --grep 'S3 a double landing on cell 30' --output=test-results/stage6-cell30
+        env:
+          E2E_DETERMINISTIC: '1'
+          E2E_FIXTURES: '1'
+          E2E_BASE_URL: http://127.0.0.1:8081
+          E2E_FIXTURE_RESTART_COMMAND: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml restart server
+      - name: Preserve seeded cell-30 report
+        if: always()
+        run: |
+          mkdir -p evidence
+          test ! -f playwright-report/results.json || cp playwright-report/results.json evidence/stage6-cell30-results.json
+      - name: Replace with seed-129 fixture stack for remaining stage 6 scenarios
+        run: |
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml down -v
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml up --build -d --wait
+        env:
+          WEB_PORT: '8081'
+          E2E_TEST_SEED: '129'
+      - name: Stage 6 remaining deterministic fixture scenarios
+        run: pnpm test:e2e e2e/stage6-e2e.spec.ts --grep-invert 'S3 a double landing on cell 30' --output=test-results/stage6
+        env:
+          E2E_DETERMINISTIC: '1'
+          E2E_FIXTURES: '1'
+          E2E_BASE_URL: http://127.0.0.1:8081
+          E2E_FIXTURE_RESTART_COMMAND: docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml restart server
+      - name: Preserve stage 6 browser report
+        if: always()
+        run: |
+          mkdir -p evidence
+          test ! -f playwright-report/results.json || cp playwright-report/results.json evidence/stage6-results.json
       - name: Collect Compose logs and configuration evidence
         if: always()
         run: |
           mkdir -p evidence
-          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml logs --no-color > evidence/seeded-compose.log 2>&1
+          WEB_PORT=8081 docker compose -p s1-seeded -f docker-compose.yml -f docker-compose.e2e.yml -f docker-compose.fixtures.yml logs --no-color > evidence/seeded-compose.log 2>&1
       - name: Sanitize artifacts
         id: sanitize
         if: always()
