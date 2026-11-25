@@ -3,6 +3,7 @@ import { join as pathJoin } from 'node:path';
 import type { GameEvent } from '../packages/game-core/src/index';
 import { test, expect, sel, active, captureScreens, type Actor } from './helpers';
 import { load, click, card, close, fast, balances } from './fixture-helpers';
+import { cellRect } from '../apps/client/src/widgets/board/layout';
 
 test.beforeEach(() => test.skip(process.env['E2E_FIXTURES'] !== '1', 'Requires isolated deterministic fixture stack'));
 
@@ -11,6 +12,33 @@ function eventSeenByAll(players: Actor[], type: string): GameEvent {
   expect(found[0], `${type} emitted`).toBeDefined();
   for (const event of found) expect(event).toEqual(found[0]);
   return found[0]!;
+}
+
+async function sampleBoardCanvas(page: Actor['page']) {
+  const canvas = page.locator(sel('board-canvas'));
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute('data-board-size', '660');
+  await canvas.evaluate(element => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  const box = await canvas.boundingBox();
+  expect(box, 'board canvas has a measurable box').not.toBeNull();
+  const png = (await canvas.screenshot()).toString('base64');
+  const points: Array<[number, number]> = Array.from({ length: 40 }, (_, cell) => {
+    const rect = cellRect(cell, 660);
+    return [(rect.x + rect.width / 2) / 660, (rect.y + rect.height / 2) / 660];
+  });
+  return page.evaluate(async ({ encoded, points, box }) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${encoded}`;
+    await image.decode();
+    const sample = document.createElement('canvas');
+    sample.width = image.width; sample.height = image.height;
+    const context = sample.getContext('2d')!;
+    context.drawImage(image, 0, 0);
+    const rgba = points.map(([x, y]) => [...context.getImageData(Math.floor(image.width * x), Math.floor(image.height * y), 1, 1).data]);
+    const opaqueSamples = rgba.filter(pixel => pixel[3] === 255).length;
+    const distinctColors = new Set(rgba.map(pixel => pixel.slice(0, 3).join(','))).size;
+    return { box, samples: rgba.length, opaqueSamples, distinctColors, rgba };
+  }, { encoded: png, points, box: box! });
 }
 
 async function responsiveGeometry(page: Actor['page'], selector: string) {
@@ -26,15 +54,22 @@ async function responsiveGeometry(page: Actor['page'], selector: string) {
 }
 
 async function exerciseMobileLayouts(page: Actor['page'], selector: string, name: string, centeredDesktop = true, sheet = false) {
-  const screenshots: Array<{ state: string; path: string }> = [];
+  const screenshots: Array<{ state: string; path: string; board?: Awaited<ReturnType<typeof sampleBoardCanvas>> }> = [];
   const measure = async (state: string) => {
     await expect(page.locator(selector).first()).toBeVisible();
     const geometry = await responsiveGeometry(page, selector);
+    let board: Awaited<ReturnType<typeof sampleBoardCanvas>> | undefined;
+    if (geometry.viewportWidth === 390 && geometry.viewportHeight === 844) {
+      board = await sampleBoardCanvas(page);
+      expect(board.opaqueSamples, `${name} ${state}: every sampled board cell is opaque`).toBe(board.samples);
+      expect(board.distinctColors, `${name} ${state}: sampled board cells are drawn`).toBeGreaterThanOrEqual(8);
+    }
     if (geometry.viewportWidth === 390) {
       expect(geometry.x, `${name} ${state}: left edge inside mobile viewport`).toBeGreaterThanOrEqual(0);
       expect(geometry.right, `${name} ${state}: right edge inside mobile viewport`).toBeLessThanOrEqual(390);
       expect(geometry.documentWidth, `${name} ${state}: no horizontal page scroll`).toBeLessThanOrEqual(390);
-      if (sheet) expect(geometry.transform, `${name} ${state}: sheet cancels desktop centring`).toBe('none');
+      if (sheet) expect(['none', 'matrix(1, 0, 0, 1, 0, 0)'], `${name} ${state}: sheet cancels desktop centring`)
+        .toContain(geometry.transform);
     }
     if (state === 'desktop-1440x900' && centeredDesktop) {
       expect((geometry.x + geometry.right) / 2, `${name}: desktop horizontal centring`).toBeCloseTo(720, 0);
@@ -46,9 +81,9 @@ async function exerciseMobileLayouts(page: Actor['page'], selector: string, name
       const file = `${name}-${state}.png`;
       const path = pathJoin(dir, file);
       await page.screenshot({ path, fullPage: false });
-      screenshots.push({ state, path });
+      screenshots.push({ state, path, ...(board === undefined ? {} : { board }) });
     }
-    return geometry;
+    return board === undefined ? geometry : { ...geometry, board };
   };
 
   const direct = await measure('direct-390x844');
@@ -262,6 +297,12 @@ test('S5 third failed jail attempt debits the forced fee before PlayerMoved', as
   expect(release.payload).toMatchObject({ playerId: prisoner.id, reason: 'fee-forced' });
   for (const player of players) {
     const eventTypes = player.events.slice(start).map(entry => entry.event.type);
+    const playerFeeIndex = player.events.slice(start).findIndex(entry => entry.event.type === 'BalanceChanged'
+      && (entry.event.payload as { reason?: string }).reason === 'jail-fee');
+    const playerMoveIndex = player.events.slice(start).findIndex(entry => entry.event.type === 'PlayerMoved');
+    expect(playerFeeIndex, `player ${player.id} received the forced jail-fee event`).toBeGreaterThanOrEqual(0);
+    expect(playerMoveIndex, `player ${player.id} received the PlayerMoved event`).toBeGreaterThanOrEqual(0);
+    expect(playerFeeIndex).toBeLessThan(playerMoveIndex);
     expect(eventTypes.indexOf('BalanceChanged')).toBeLessThan(eventTypes.indexOf('PlayerMoved'));
     expect(player.view!.jail[prisoner.id]).toBeUndefined();
     expect(player.view!.positions[prisoner.id]).toBe(destination);
