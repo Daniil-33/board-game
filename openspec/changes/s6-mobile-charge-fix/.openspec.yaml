@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-25
+goal: Correct mobile stage-6 surface geometry and the chance-loss board
+  rendering defect, with permanent browser coverage and unchanged desktop
+  layout.
