@@ -296,6 +296,18 @@ esac
         self.assertIn('--register-unsafely-without-email', calls[1])
         self.assertIn('reload.sh', calls[2])
 
+    def test_ops_certificate_names_only_the_ops_host(self):
+        result = subprocess.run(['sh', str(DEPLOY / 'edge/issue-certs.sh'), 'ops'], env=self.environment, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls.read_text().splitlines()
+        self.assertEqual(len(calls), 3)
+        for call in calls[:2]:
+            self.assertIn('--cert-name ops -d ops.focusima.space', call)
+            self.assertNotIn('-d stage', call)
+            self.assertNotIn('-d api', call)
+        self.assertIn('--staging', calls[0])
+        self.assertNotIn('--staging', calls[1])
+
     def test_failed_dry_run_does_not_issue_live(self):
         self.fake.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALLS"\nexit 1\n')
         result = subprocess.run(['sh', str(DEPLOY / 'edge/issue-certs.sh'), 'production'], env=self.environment, capture_output=True)
@@ -345,6 +357,25 @@ class RenderTests(unittest.TestCase):
             self.assertIn('resolver 127.0.0.11', config)
             self.assertIn('default_server; server_name _; return 444;', config)
 
+
+    def test_ops_cockpit_vhost_only_with_its_certificate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            def render():
+                return subprocess.check_output(['sh', str(DEPLOY / 'edge/render.sh'), tmp], text=True)
+            config = render()
+            self.assertIn('stage-api.focusima.space ops.focusima.space;', config)
+            self.assertNotIn('172.17.0.1', config)
+            cert = Path(tmp) / 'live/ops'
+            cert.mkdir(parents=True)
+            (cert / 'fullchain.pem').touch()
+            (cert / 'privkey.pem').touch()
+            config = render()
+            self.assertEqual(config.count('listen 443 ssl;'), 1)
+            self.assertIn('server_name ops.focusima.space;', config)
+            self.assertIn('proxy_pass http://172.17.0.1:8765;', config)
+            self.assertIn('if ($host != ops.focusima.space) { return 444; }', config)
+            self.assertIn('proxy_set_header X-Forwarded-Proto https;', config)
+            self.assertNotIn('http://staging-', config)
 
 if __name__ == '__main__':
     unittest.main()
