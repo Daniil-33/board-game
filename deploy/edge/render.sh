@@ -13,7 +13,7 @@ map $http_upgrade $connection_upgrade { default upgrade; '' close; }
 server { listen 80 default_server; server_name _; return 444; }
 server {
   listen 80;
-  server_name focusima.space api.focusima.space stage.focusima.space stage-api.focusima.space;
+  server_name focusima.space api.focusima.space stage.focusima.space stage-api.focusima.space ops.focusima.space;
   location /.well-known/acme-challenge/ { root /var/www/certbot; }
   location / { return 308 https://$host$request_uri; }
 }
@@ -75,3 +75,27 @@ server {
 }
 NGINX
 done
+# Harness cockpit (owner-only, read-only; separate harness-cockpit repository).
+# The cockpit listens on the docker0 bridge address only, never publicly.
+ops_cert="$cert_root/live/ops"
+if [ -f "$ops_cert/fullchain.pem" ] && [ -f "$ops_cert/privkey.pem" ]; then
+  cat <<NGINX
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name ops.focusima.space;
+  ssl_certificate $ops_cert/fullchain.pem;
+  ssl_certificate_key $ops_cert/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  add_header Strict-Transport-Security "max-age=31536000" always;
+  if (\$host != ops.focusima.space) { return 444; }
+  location / {
+    proxy_pass http://172.17.0.1:8765;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_connect_timeout 5s;
+  }
+}
+NGINX
+fi
